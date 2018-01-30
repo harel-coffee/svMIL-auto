@@ -11,7 +11,7 @@ __status__ = "Development"
 import sys
 sys.path.append('settings/') #Add settings path
 import settings
-from neo4J import Neo4J
+#from neo4J import Neo4J #I removed this to remove the dependency on Neo4J, which no one will likely use
 from flatFileDb import FlatFileDB
 
 class DatabaseConnector:
@@ -29,8 +29,8 @@ class DatabaseConnector:
 			Read the settings file and connect to the right database handler object. 
 		"""
 		
-		if settings.database['database'] == 'neo4j':
-			self.database = Neo4J() #initialize connection to Neo4J
+		#if settings.database['database'] == 'neo4j': #I removed this to remove the dependency on Neo4J, which no one will likely use
+		#	self.database = Neo4J() #initialize connection to Neo4J
 			
 		if settings.database['database'] == 'flatFile':
 			self.database = FlatFileDB()
