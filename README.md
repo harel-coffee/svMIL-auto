@@ -4,7 +4,7 @@ Variant annotation and prioritization
 Running the code:
 
 ```
-python main.py ../data/TPTNTestSet/TP.txt ../output/TP_annotations.txt
+python main.py ../data/TPTNTestSet/TP_genericFormat.txt ../output/TP_annotations.txt
 ```
 
 Versions on Marleen's laptop (working version):
