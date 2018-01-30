@@ -16,6 +16,7 @@ __status__ = "Development"
 	TODO:
 		- Update input data format
 """
+
 ### Imports ###
 import sys
 import numpy as np
@@ -63,8 +64,6 @@ def parseInputData():
 			
 			#chr 1, start, end, chr2, start2, end2
 			inputData.append([splitLine[0], splitLine[1], splitLine[2], splitLine[4], splitLine[5], splitLine[6]])
-	
-	
 	
 	return inputData
 

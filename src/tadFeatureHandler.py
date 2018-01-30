@@ -122,16 +122,32 @@ class TADFeatureHandler:
 			
 			startTime = time.time()
 			#Now compute how many TADs overlap
-			#The start should be before the end of the tad, and the end after the start of the tad. This detects 4 scenarios of overlap (currently without using the overlap parameter). 
-			startOverlapChr1 = int(lineList[1]) < chr1Subset[:,2] #I'm not sure if these indices are correct? 0 is chromosome right? 
-			endOverlapChr1 = int(lineList[5]) > chr1Subset[:,1]
+			#The start should be before the end of the tad, and the end after the start of the tad. This detects 4 scenarios of overlap (currently without using the overlap parameter).
+			
+			#If the chromosomes are the same, the start of the TAD is in s1 for chr1, and the end is in e2 for chr2.
+			if lineList[0] == lineList[3]:
+				start = int(lineList[1])
+				end = int(lineList[5])
+			else: #otherwise, we use the positions for chromosome 1 only
+				start = int(lineList[1])
+				end = int(lineList[2])
+				
+			startOverlapChr1 = start < chr1Subset[:,2] #I'm not sure if these indices are correct? 0 is chromosome right? 
+			endOverlapChr1 = end > chr1Subset[:,1]
 			
 			#Now find where both of these are true (multiply because both conditions need to be true)
 			overlappingSvsChr1 = startOverlapChr1 * endOverlapChr1
 			
-			#Overlap chr2 as well
-			startOverlapChr2 = int(lineList[1]) < chr2Subset[:,2] #I'm not sure if these indices are correct? 0 is chromosome right? 
-			endOverlapChr2 = int(lineList[5]) > chr2Subset[:,1]
+			#Overlap chr2 as well. #If the chromosomes are the same, the start of the TAD is in s1 for chr1, and the end is in e2 for chr2.
+			if lineList[0] == lineList[3]:
+				start = int(lineList[1])
+				end = int(lineList[5])
+			else: #otherwise, we use the positions for chromosome 2 only
+				start = int(lineList[4])
+				end = int(lineList[5])
+			
+			startOverlapChr2 = start < chr2Subset[:,2] #I'm not sure if these indices are correct? 0 is chromosome right? 
+			endOverlapChr2 = end > chr2Subset[:,1]
 			
 			#Now find where both of these are true (multiply because both conditions need to be true)
 			overlappingSvsChr2 = startOverlapChr2 * endOverlapChr2
