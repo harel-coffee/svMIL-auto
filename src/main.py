@@ -12,6 +12,9 @@ __status__ = "Development"
 	Input: tab-delimited file with variants (or simply, regions). Required format: columns chr 1, s1, e1, chr2, s2, e2 per region on the rows. 
 	Output: null
 	Functionality: starting point of the annotation pipeline. Sorts the input file and starts the annotation process.
+	
+	TODO:
+		- Update input data format
 """
 ### Imports ###
 import sys
