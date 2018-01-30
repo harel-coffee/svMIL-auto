@@ -9,7 +9,7 @@ __email__ = "m.m.nieboer@umcutrecht.nl"
 __status__ = "Development"
 
 """	
-	Input: tab-delimited file with variants (or simply, regions). Required format: columns chr 1, s1, e1, chr2, s2, e2 per region on the rows. 
+	Input: tab-delimited file with variants (or simply, regions). Required format: columns chr 1, s1, e1, chr2, s2, e2, somatic (yes/no) per region on the rows. 
 	Output: null
 	Functionality: starting point of the annotation pipeline. Sorts the input file and starts the annotation process.
 	
@@ -26,11 +26,19 @@ from annotator import Annotator
 
 def parseInputData():
 	"""
-		Parse the regional information from the input file provided on the command line. If s2 or e2 are NaN, the values for s1 and e1 are used instead and are copied to s2 and e2.
+		Parse the regional information from the input file provided on the command line. 
 		Positions are converted to integers.
 		
+		For SVs:
+			- If s2 or e2 are NaN, the values for s1 and e1 are used instead and are copied to s2 and e2.
+		For SNVs/SNPs:
+			- SNV/SNP files can be provided with only chr1, s1 and e1. For SVs, the values of s1 and e2 are used when chr1 and chr2 are the same. So in the case of SNVs/SNPs, we can copy the values of chr1 to chr2,
+			  e1 to e2, s1 to e1 and e2 to s2.
+		
 		Returns:
-			inputData (list): list with regions, where each entry is a list with entries in the order: chr 1, s1, e1, chr2, s2, e2
+			inputData (list): list with regions, where each entry is a list with entries in the order: chr 1, s1, e1, chr2, s2, e2, regionType. A a regionType is passed to the rest of the code as part of every
+			line in the inputData list, which can be SV, SNV or SNP. 
+			
 	"""
 	
 	inFile = sys.argv[1]
@@ -38,32 +46,66 @@ def parseInputData():
 	inputData = []
 	with open(inFile, "r") as f:
 		lineCount = 0
+		header = []
 		for line in f:
-			if lineCount < 2:
-				lineCount += 1
-				continue
 			line = line.strip()
 			splitLine = line.split("\t")
+			if lineCount < 1:
+				header = splitLine
+				lineCount += 1
+				continue
 			
-			#If the coordinates are missing on the second chromosome, we use the coordinates of the first chromosome unless chr 1 and chr 2 are different.
-			if splitLine[0] == splitLine[4]:
-				if splitLine[5] == 'NaN':
-					splitLine[5] = int(splitLine[1])
-					
-				if splitLine[6] == 'NaN':
-					splitLine[6] = int(splitLine[2])
+			#First, we check if the header contains SV-related values or not. If not, it is an SNV/SNP.
+			regionType = "SNV"
+			if 'chr2' in header: 
+				regionType = "SV"
 			else:
-				if splitLine[5] == 'NaN':
-					continue # This line does not have correct chromosome 2 information
+				somaticColumnIndex = header.index("somatic") #find which column describes if the variant is somatic or not
+				#Find the value of the 'somatic' column
+				if splitLine[somaticColumnIndex] == "no":
+					regionType = "SNP"
 			
-			#Convert the start and end positions to int here so that we do not need to do this in the loop, it slows down the code
-			splitLine[1] = int(splitLine[1])
-			splitLine[2] = int(splitLine[2])
-			splitLine[5] = int(splitLine[5])
-			splitLine[6] = int(splitLine[6])
+			#Obtain required data for each data type. Search which column has this information
+			chr1Index = header.index("chr1")
+			s1Index = header.index("s1")
+			e1Index = header.index("e1")
 			
-			#chr 1, start, end, chr2, start2, end2
-			inputData.append([splitLine[0], splitLine[1], splitLine[2], splitLine[4], splitLine[5], splitLine[6]])
+			if regionType == "SV": #format the data for SVs specifically. Skip the orientation information for now. We may need it later
+
+				chr2Index = header.index("chr2")
+				s2Index = header.index("s2")
+				e2Index = header.index("e2")
+
+				#If the coordinates are missing on the second chromosome, we use the coordinates of the first chromosome unless chr 1 and chr 2 are different.
+				if splitLine[chr1Index] == splitLine[chr2Index]:
+					if splitLine[s2Index] == 'NaN':
+						splitLine[s2Index] = int(splitLine[s1Index])
+						
+					if splitLine[e2Index] == 'NaN':
+						splitLine[e2Index] = int(splitLine[e1Index])
+				else:
+					if splitLine[chr2Index] == 'NaN':
+						continue # This line does not have correct chromosome 2 information (should we be skipping it?)
+			
+				s1 = int(splitLine[s1Index])
+				e1 = int(splitLine[e1Index])
+				s2 = int(splitLine[s2Index])
+				e2 = int(splitLine[e2Index])
+				chr2 = int(splitLine[chr2Index])
+			
+			else: #make sure that the end position is in e2 and the start in s1. Copy chr1 to chr2
+				
+				s1 = int(splitLine[s1Index])
+				e1 = int(splitLine[s1Index])
+				s2 = int(splitLine[e1Index])
+				e2 = int(splitLine[e1Index])
+				chr2 = int(splitLine[chr1Index])
+			
+				
+			chr1 = int(splitLine[chr1Index])
+			
+			#chr 1, start, end, chr2, start2, end2, regionType
+			inputData.append([chr1, s1, e1, chr2, s2, e2, regionType])
 	
 	return inputData
 
