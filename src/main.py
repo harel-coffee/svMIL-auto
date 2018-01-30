@@ -91,7 +91,7 @@ def parseInputData():
 				e1 = int(splitLine[e1Index])
 				s2 = int(splitLine[s2Index])
 				e2 = int(splitLine[e2Index])
-				chr2 = int(splitLine[chr2Index])
+				chr2 = splitLine[chr2Index]
 			
 			else: #make sure that the end position is in e2 and the start in s1. Copy chr1 to chr2
 				
@@ -99,10 +99,10 @@ def parseInputData():
 				e1 = int(splitLine[s1Index])
 				s2 = int(splitLine[e1Index])
 				e2 = int(splitLine[e1Index])
-				chr2 = int(splitLine[chr1Index])
+				chr2 = splitLine[chr1Index]
 			
 				
-			chr1 = int(splitLine[chr1Index])
+			chr1 = splitLine[chr1Index]
 			
 			#chr 1, start, end, chr2, start2, end2, regionType
 			inputData.append([chr1, s1, e1, chr2, s2, e2, regionType])
