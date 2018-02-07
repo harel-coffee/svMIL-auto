@@ -43,7 +43,8 @@ features = dict(
 #Locations of the input files
 inputFiles = dict(
 	geneList = '../data/Genes/MP_Genelist_HGNC_v2.txt',
-	tads = '../data/tads/tads.csv'
+	tads = '../data/tads/tads.csv',
+	hiCDegree = '../data/HiC/HUVEC_interchromosomal_degree.csv'
 )
 
 parameters = dict(
