@@ -17,36 +17,29 @@ import time
 
 class HiCFeatureHandler:
 	"""
-		This is a docstring. It is the standard way in Python to write documentation. Docstrings and good documentation are required to make collaboration possible.
-		The first line in a docstring usually contains basic information about what the class/function does.
-		
-		Attributes:
-			attribute1 (type): In here, you describe all attributes that the class has, what their types are, and what they are/do
+		Class for annotating regions with Hi-C related features. Currently implemented:
+		- Degree
+
 	"""
 	
 	def annotate(self, regions, hiCData, enabledFeatures = None):
 		"""
-			The annotate function is mandatory. This function should be called from a database handler, such as the FlatFileDb class. It should have one return value, which contains annotations.
+			Calls the functions to annotate regions based on Hi-C data.
 			
 			Parameters:
 				regions (numpy matrix): a Numpy matrix of dtype 'object' with on the columns chr 1, s1, e1, chr2, s2, e2, and the regions on the rows.
-				tadData (numpy matrix): matrix with columns chr, start, end, with each TAD on the rows. 
+				hiCData (numpy matrix): matrix with columns chr, start, end, with each node (region with interaction) on the rows. 
 				enabledFeatures (list): optional. Not yet implemented. The idea is that a list can be provided that contains the names of features that are enabled in the settings. If necessary, the listed features
 				can be excluded from computation to save computational time. It can be easily implemented by having an if statement checking for that in this function.
 				
 			Returns:
 				annotations (dict): a dictionary with annotations. {'featureName' : [values]}, where the values are in the same order as the provided regions. The value must be a list to guarantee that data is
-				written to the output file in the same manner, even if it has only 1 value. 
+				written to the output file in the same manner, even if it has only 1 value.
+				
+			TODO:
+				- Make matrix hiCData compatible with more data types than just the degree. 
 		"""
-		print hiCData.shape
-		exit()
-		annotations = self.computeHiCFeatures(regions, hiCData)
-		
-		return annotations
 
-	
-	def computeHiCFeatures(self, regions, hiCData):
-		
 		degreeAnnotations = self.computeDegreeFeatures(regions, hiCData) #hiCData is now only the degree, but could be a combination of different data types. 
 		
 		annotations = dict()
@@ -58,6 +51,9 @@ class HiCFeatureHandler:
 		"""
 			Function to annotate the provided regions with  features related to the degree of nodes in the HiC interaction matrix. For each region, we find which interaction nodes it overlaps with.
 			For each node that it overlaps with, we return the degree. The idea is that when the degree is high, there is a higher likelihood that the interaction does something important.
+			
+			Because the number of interactions per chromosome are quite large, the chromosome subset is first further reduced by removing the positions that will never overlap (end region < start interaction and
+			start region > end interaction). Then, the chromosome subset is divided into blocks in which we then find the overlap per block, which reduces overhead from searching through large matrices. 
 			
 			Parameters:
 				regions (numpy matrix): a Numpy matrix of dtype 'object' with on the columns chr 1, s1, e1, chr2, s2, e2, and the regions on the rows.
