@@ -64,6 +64,7 @@ class Annotator:
 		
 		#Hi-C interaction-based features
 		hiCFeatures = self.databaseConnector.database.computeHiCFeatures(regions)
+		print hiCFeatures
 		
 		#2. Combine all features into one big dictionary of annotations
 		allAnnotations = dict(nearestGeneFeatures.items() + tadFeatures.items())
