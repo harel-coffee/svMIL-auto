@@ -57,17 +57,17 @@ class Annotator:
 		
 		#1. Collect all annotations from the database
 		#Gene-related features
-		#nearestGeneFeatures = self.databaseConnector.database.computeNearestGeneFeatures(regions)
+		nearestGeneFeatures = self.databaseConnector.database.computeNearestGeneFeatures(regions)
 		
 		#TAD-related features (could potentially be grouped with Hi-C, but comes from an independent file atm)
-		#tadFeatures = self.databaseConnector.database.computeTADFeatures(regions)
+		tadFeatures = self.databaseConnector.database.computeTADFeatures(regions)
 		
 		#Hi-C interaction-based features
 		hiCFeatures = self.databaseConnector.database.computeHiCFeatures(regions)
-		print hiCFeatures
+		print len(hiCFeatures)
 		
 		#2. Combine all features into one big dictionary of annotations
-		allAnnotations = dict(nearestGeneFeatures.items() + tadFeatures.items())
+		allAnnotations = dict(nearestGeneFeatures.items() + tadFeatures.items() + hiCFeatures.items())
 		
 		#3. Link the annotations to the regions
 		annotatedRegions = self.annotateRegions(regions, allAnnotations)

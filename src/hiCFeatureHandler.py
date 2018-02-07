@@ -11,6 +11,7 @@ __status__ = "Development"
 ### Imports ###
 
 import numpy as np
+import time
 
 ### Code ###
 
@@ -37,6 +38,8 @@ class HiCFeatureHandler:
 				annotations (dict): a dictionary with annotations. {'featureName' : [values]}, where the values are in the same order as the provided regions. The value must be a list to guarantee that data is
 				written to the output file in the same manner, even if it has only 1 value. 
 		"""
+		print hiCData.shape
+		exit()
 		annotations = self.computeHiCFeatures(regions, hiCData)
 		
 		return annotations
@@ -46,7 +49,8 @@ class HiCFeatureHandler:
 		
 		degreeAnnotations = self.computeDegreeFeatures(regions, hiCData) #hiCData is now only the degree, but could be a combination of different data types. 
 		
-		annotations = degreeAnnotations
+		annotations = dict()
+		annotations['hiCDegree'] = degreeAnnotations
 		
 		return annotations
 		
@@ -63,7 +67,7 @@ class HiCFeatureHandler:
 				degreeAnnotations (numpy matrix): a list with the degrees of the interaction nodes that each region overlaps with. 
 		
 		"""
-		
+		startTime = time.time()
 		#1. Make a subset of the chromosomes that we are interested in
 		
 		degreeAnnotations = [] #here we store all the degrees
@@ -79,9 +83,8 @@ class HiCFeatureHandler:
 			#Obtain start and end positions and chromosome from the regions (chr 1 and 2)
 			lineList = regions[lineCount,:]
 			
-			#Check if the previous chromosome is the same. If not, make a new subset of chromosomes. 
-			if str(lineList[0]) != previousChr1 and str(lineList[3]) != previousChr2:
-				
+			#Check if the previous chromosome is the same. If not, make a new subset of chromosomes.
+			if "chr" + str(lineList[0]) != previousChr1 and "chr" + str(lineList[3]) != previousChr2:
 				#Find the two subsets that match on both chromosomes. 
 				matchingChr1Ind = degreeData[:,0] == 'chr' + lineList[0]
 				matchingChr2Ind = degreeData[:,0] == 'chr' + lineList[3]
@@ -93,9 +96,23 @@ class HiCFeatureHandler:
 				else:
 					chr2Subset = degreeData[np.where(matchingChr2Ind)]
 				
-				#Make sure to update the previous chromosome when it changes
-				previousChr1 = 'chr' + str(lineList[0])
-				previousChr2 = 'chr' + str(lineList[3])
+			# 	#Make sure to update the previous chromosome when it changes
+			 	previousChr1 = 'chr' + str(lineList[0])
+			 	previousChr2 = 'chr' + str(lineList[3])
+				
+				#Try to improve the speed of the code:
+				#- Make a subset of the positions to search through for start and end given the first start position.
+				#If the chromosome changes, we have a new subset. The positions with an end smaller than the smallest start can be ignored, and also the positions with a start larger than the largest end. These will never overlap.
+				
+				if lineList[0] == lineList[3]:
+					#The region end must always be larger than the interaction start
+					chr1Subset = chr1Subset[np.where(chr1Subset[:,1] <= int(lineList[5]))]
+					#The region start must always be smaller than the interaction end
+					chr1Subset = chr1Subset[np.where(chr1Subset[:,2] >= int(lineList[1]))]
+				else:
+					chr1Subset = chr1Subset[np.where(chr1Subset[:,1] >= int(lineList[2]))]
+					chr1Subset = chr1Subset[np.where(chr1Subset[:,2] <= int(lineList[1]))]
+				
 			
 			if np.size(chr1Subset) < 1 and np.size(chr2Subset) < 1:
 				degreeAnnotations.append('NA') #otherwise we will not have one annotation per SV
@@ -111,43 +128,98 @@ class HiCFeatureHandler:
 			else: #otherwise, we use the positions for chromosome 1 only
 				start = int(lineList[1])
 				end = int(lineList[2])
-				
-			startOverlapChr1 = start < chr1Subset[:,2] #I'm not sure if these indices are correct? 0 is chromosome right?
-			endOverlapChr1 = end > chr1Subset[:,1]
 			
+			blocks = 4
+			blockLen = int(round(chr1Subset[:,2].shape[0] / blocks))
+			startOffset = 0
+			endOffset = blockLen
+			startOverlapChr1 = np.zeros(chr1Subset[:,2].shape, dtype="bool")
+			endOverlapChr1 = np.zeros(chr1Subset[:,1].shape, dtype="bool")
+			
+			
+			#print "SV size: ", lineList[0], lineList[1], lineList[2], lineList[3], lineList[4], lineList[5]
+			
+			for blockInd in range(0, blocks):
+				
+				if startOffset + blockLen > chr1Subset[:,2].shape[0]:
+					endOffset = chr1Subset[:,2].shape[0]
+				
+				currentEndSubset = chr1Subset[startOffset:endOffset,2]
+				
+				currentStartOverlap = start < currentEndSubset
+				startOverlapChr1[startOffset:endOffset] = currentStartOverlap
+				
+				#Repeat for the end
+				currentStartSubset = chr1Subset[startOffset:endOffset,1]
+				currentEndOverlap = end > currentStartSubset
+				endOverlapChr1[startOffset:endOffset] = currentEndOverlap
+				
+				startOffset = endOffset
+				endOffset += blockLen
+				overlappingSvsChr1 = startOverlapChr1 * endOverlapChr1
+				
 			#Now find where both of these are true (multiply because both conditions need to be true)
 			overlappingSvsChr1 = startOverlapChr1 * endOverlapChr1
 			
-			#Overlap chr2 as well. #If the chromosomes are the same, the start of the TAD is in s1 for chr1, and the end is in e2 for chr2.
+			#Only re-do the overlap if chromosome 1 and 2 are different.
 			if lineList[0] == lineList[3]:
-				start = int(lineList[1])
-				end = int(lineList[5])
-			else: #otherwise, we use the positions for chromosome 2 only
-				start = int(lineList[4])
-				end = int(lineList[5])
-			
-			startOverlapChr2 = start < chr2Subset[:,2] #This should really be a setting somwhere 
-			endOverlapChr2 = end > chr2Subset[:,1]
-			
-			#Now find where both of these are true (multiply because both conditions need to be true)
-			overlappingSvsChr2 = startOverlapChr2 * endOverlapChr2
+				overlappingSvsChr2 = overlappingSvsChr1
+			else:
+				
+				#Overlap chr2 as well. #If the chromosomes are the same, the start of the TAD is in s1 for chr1, and the end is in e2 for chr2.
+				if lineList[0] == lineList[3]:
+					start = int(lineList[1])
+					end = int(lineList[5])
+				else: #otherwise, we use the positions for chromosome 2 only
+					start = int(lineList[4])
+					end = int(lineList[5])
+				
+				blocks = 4
+				blockLen = int(round(chr2Subset[:,2].shape[0] / blocks))
+				startOffset = 0
+				endOffset = blockLen
+				startOverlapChr2 = np.empty(chr2Subset[:,2].shape, dtype="bool")
+				endOverlapChr2 = np.empty(chr2Subset[:,1].shape, dtype="bool")
+				for blockInd in range(0, blocks):
+					
+					if startOffset + blockLen > chr2Subset[:,2].shape[0]:
+						endOffset = chr2Subset[:,2].shape[0]
+					
+					currentEndSubset = chr2Subset[startOffset:endOffset,2]
+					
+					currentStartOverlap = start < currentEndSubset
+					startOverlapChr2[startOffset:endOffset] = currentStartOverlap
+					
+					#Repeat for the end
+					currentStartSubset = chr2Subset[startOffset:endOffset,1]
+					
+					currentEndOverlap = end > currentStartSubset
+					endOverlapChr2[startOffset:endOffset] = currentEndOverlap
+					
+					startOffset = endOffset
+					endOffset += blockLen
+				
+				overlappingSvsChr2 = startOverlapChr2 * endOverlapChr2
 			
 			#Get the indices where both the start and end match the overlap criteria
-			overlappingSvIndsChr1 = np.argwhere(overlappingSvsChr1 == True)
-			overlappingSvIndsChr2 = np.argwhere(overlappingSvsChr2 == True)
+			overlappingSvIndsChr1 = np.ravel(np.argwhere(overlappingSvsChr1 == True))
+			overlappingSvIndsChr2 = np.ravel(np.argwhere(overlappingSvsChr2 == True))
 			
 			#For these overlapping interactions, find out what their degrees are. 
+			
+			degreesChr1 = list(degreeData[overlappingSvIndsChr1, 3])
+			degreesChr2 = list(degreeData[overlappingSvIndsChr2, 3])
+			
+			allDegrees = np.array(degreesChr1 + degreesChr1)
+			
+			#Sort the degrees and get a top 10
+			sortedDegrees = np.sort(allDegrees)
+			top10Degrees = sortedDegrees[1:10]
+			
+			degreeAnnotations.append(top10Degrees)
 		
-			degreesChr1 = degreeData[overlappingSvIndsChr1, 3]
-			degreesChr2 = degreeData[overlappingSvIndsChr2, 3]
-			# allDegrees = []
-			# allDegrees.append(degreesChr1)
-			# allDegrees.append(degreesChr2)
-			# 
-			# print allDegrees
-			# 
-			# degreeAnnotations.append(allDegrees)
+		endTime = time.time()
+		print "used ", endTime - startTime, " seconds to compute the degree annotations"
 		
-		exit()
 		return degreeAnnotations
 	
