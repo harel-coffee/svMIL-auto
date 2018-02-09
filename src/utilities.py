@@ -69,7 +69,7 @@ def writeToCsvManual(outFile, annotatedRegions):
 			line += annotatedRegions['s2'][annotationInd] + '\t'
 			line += annotatedRegions['e2'][annotationInd] + '\t'
 			
-			line += str(annotatedRegions['nearestGeneDistance'][annotationInd]) + '\t'
+			line += str(annotatedRegions['noOfGenesInWindow'][annotationInd]) + '\t'
 			line += str(annotatedRegions['pLI'][annotationInd]) + '\t'
 			line += str(annotatedRegions['RVIS'][annotationInd]) + '\t'
 			#line += str(annotatedRegions['HPO'][annotationInd]) + '\t'
