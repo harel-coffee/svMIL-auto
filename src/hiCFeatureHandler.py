@@ -125,7 +125,8 @@ class HiCFeatureHandler:
 				start = int(lineList[1])
 				end = int(lineList[2])
 			
-			blocks = 4
+			#We split the degree data into blocks of a smaller size, it is quicker to compare to a small set of data a few times than comparing to a large set of data at once. 
+			blocks = 4 #The block size should be a setting somewhere! 
 			blockLen = int(round(chr1Subset[:,2].shape[0] / blocks))
 			startOffset = 0
 			endOffset = blockLen
@@ -211,8 +212,10 @@ class HiCFeatureHandler:
 			#Sort the degrees and get a top 10
 			sortedDegrees = np.sort(allDegrees)
 			top10Degrees = sortedDegrees[1:10]
+			#Convert to a string so that we can join it and have the comma separated format in the output file
+			top10DegreesStr = [str(i) for i in top10Degrees]
 			
-			degreeAnnotations.append(top10Degrees)
+			degreeAnnotations.append(','.join(top10DegreesStr))
 		
 		endTime = time.time()
 		print "used ", endTime - startTime, " seconds to compute the degree annotations"
