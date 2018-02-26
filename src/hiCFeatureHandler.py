@@ -41,13 +41,12 @@ class HiCFeatureHandler:
 		"""
 
 		degreeAnnotations = self.computeDegreeFeatures(regions, hiCData[0]) #hiCData contains both the degree and the betweenness, separate these here 
-		#betweennessAnnotations = self.computeBetweennessFeatures(regions, hiCData[1])
+		betweennessAnnotations = self.computeBetweennessFeatures(regions, hiCData[1])
 		
 		annotations = dict()
 		annotations['hiCDegree'] = degreeAnnotations
-		#annotations['hiCBetweenness'] = betweennessAnnotations
-		
-		
+		annotations['hiCBetweenness'] = betweennessAnnotations
+
 		
 		return annotations
 	
@@ -96,9 +95,7 @@ class HiCFeatureHandler:
 				#Find the two subsets that match on both chromosomes. 
 				matchingChr1Ind = degreeData[:,0] == 'chr' + lineList[0]
 				matchingChr2Ind = degreeData[:,0] == 'chr' + lineList[3]
-				print degreeData[:,0]
-				print lineList[0]
-				exit()
+				
 				#It is not even necessary to make 2 lists if both chromosomes are the same, we could use a reference without re-allocating
 				chr1Subset = degreeData[np.where(matchingChr1Ind)]
 				if lineList[0] == lineList[3]:
@@ -225,7 +222,6 @@ class HiCFeatureHandler:
 			#Sort the degrees and get a top 10
 			sortedDegrees = np.sort(allDegrees)
 			top10Degrees = sortedDegrees[1:10]
-			
 			#Convert to a string so that we can join it and have the comma separated format in the output file
 			top10DegreesStr = [str(i) for i in top10Degrees]
 			
