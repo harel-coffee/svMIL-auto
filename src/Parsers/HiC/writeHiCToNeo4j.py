@@ -19,6 +19,7 @@ __status__ = "Development"
 	TODO:
 		- Improve documentation of the code
 		- Remove hardcoded paths
+		- Clarity of how paths are being read
 
 """
 
@@ -38,22 +39,25 @@ from subprocess import call
 
 #Read the edges and directly write these to a csv file that can be read by Neo4J. Using Networx or other libraries runs into memory issues. 
 
-hiCFolder = "../../../../../Data/HiC/HUVEC_interchromosomal/5kb_resolution_interchromosomal/" #Replace this path if you want to run the script yourself
+#hiCFolder = "../../../../../Data/HiC/HUVEC_interchromosomal/5kb_resolution_interchromosomal/" #Use and replace this path if you want to run the script yourself with your own local dataset
+hiCFolder = "../../../data/thresholdedHiC/" #Edit to read the thresholded data. The code will read a folder inside this thresholdedHiC folder, so if the folder Intrachromosomal is in there, it will read from inside that Intrachromosomal directory. 
 
 #Obtain the names of the files that we wish to read for each folder, use a wildcard since the names are different
 filesToRead = []
 for folderName in os.listdir(hiCFolder):
+	
 	#Skip if it is an osx specific file and not a folder
 	if os.path.isdir(hiCFolder + "/" + folderName):
-		filesToRead.append(hiCFolder + "/" + folderName + "/MAPQG0/*.RAWobserved")
-
+		filesToRead = glob.glob(hiCFolder + "/" + folderName + "/*.RAWobserved_thresholded_5")
+		
 startTime = time.time()
 
 #The output files to write the results to, these will be input for Neo4J
 regionsFile = "regions.csv"
 relationsFile = "regions_regions_rel.csv"
 
-subdir = "Interchromosomal/"
+#This subdir is where Neo4J will write the data to
+subdir = "Intrachromosomal/"
 
 if not os.path.exists(subdir):
    os.makedirs(subdir)
@@ -62,7 +66,7 @@ if not os.path.exists(subdir):
 seenPositions = dict() #Keep a dictionary with previous regions that were already seen. Neo4J has issues with resolving collisions when there are many non-unique regions, so filtering here saves computational time. 
 
 previousLen = 0
-intrachromosomal = True
+intrachromosomal = True #Used to see if chr1 and chr2 need to be parsed, or only chr1
 notSkipped = 0 #just some counters to see how many regions have 0.0, these will be skipped
 total = 0 #see how many lines are in the file in total
 with open(subdir + regionsFile, 'w') as regionsOut:
@@ -71,13 +75,11 @@ with open(subdir + regionsFile, 'w') as regionsOut:
 		regionsOut.write("id:ID\n")
 		relationsOut.write(":START_ID,:END_ID\n")
 		
-			
-		for hiCFilePath in filesToRead:
-			hiCFile = glob.glob(hiCFilePath) #get the actual file path instead of the wildcard one
-			print hiCFile[0] #There will always be only one file that matches
-			
+		
+		for hiCFile in filesToRead:
+			print hiCFile
 			#Read the chromosome identifier from the file name, this is not present in the data
-			splitPath = re.split("/", hiCFile[0])
+			splitPath = re.split("/", hiCFile)
 			fileName = splitPath[len(splitPath)-1]
 		
 			splitFileName = re.split("_", fileName)
@@ -86,7 +88,7 @@ with open(subdir + regionsFile, 'w') as regionsOut:
 			chr1 = "".join(chr1Split[3:len(chr1Split)])
 			chr2 = splitFileName[1] 
 		
-			with open(hiCFile[0], "r") as f:
+			with open(hiCFile, "r") as f:
 				for line in f:
 					total += 1
 					splitLine = line.split("\t")
@@ -129,6 +131,8 @@ endTime = time.time()
 print "Took ", endTime - startTime, " seconds to store edges from all files"
 
 #Upload the data to Neo4J
-os.system("./importData.sh")
-
+if intrachromosomal == True:
+	os.system("./importData_intrachromosomal.sh")
+else:
+	os.system("./importData_interchromosomal.sh")
 

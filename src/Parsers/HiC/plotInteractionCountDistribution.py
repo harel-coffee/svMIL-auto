@@ -32,54 +32,53 @@ import pickle
 #Uncomment this part of the code until the end of part 1 to read the measured interaction counts from the interaction matrices.
 
 
-#Read into edges. Runs into memory issues when using networkx. 
-# 
-# hiCFolder = "../../../../../Data/HiC/HUVEC_intrachromosomal/5kb_resolution_intrachromosomal/"
-# 
-# #Obtain the names of the files that we wish to read for each folder, use a wildcard since the names are different
-# filesToRead = []
-# for folderName in os.listdir(hiCFolder):
-# 	#Skip if it is an osx specific file and not a folder
-# 	if os.path.isdir(hiCFolder + "/" + folderName):
-# 		filesToRead.append(hiCFolder + "/" + folderName + "/MAPQG0/*.RAWobserved")
-# 
-# startTime = time.time()
-# 
-# interactionCounts = dict()
-# 
-# fileCount = 0
-# for hiCFilePath in filesToRead:
-# 	hiCFile = glob.glob(hiCFilePath) #get the actual file path instead of the wildcard one
-# 	print hiCFile[0] #There will always be only one file that matches
-# 	
-# 	currentEdges = [] #refresh the list to make sure that not everything is in memory
-# 	with open(hiCFile[0], "r") as f:
-# 		for line in f:
-# 			line = line.strip()
-# 			splitLine = line.split("\t")
-# 		
-# 			count = int(float(splitLine[2]))
-# 			if count > 0:
-# 				
-# 				if count in interactionCounts:
-# 					interactionCounts[count] += 1
-# 				else:
-# 					interactionCounts[count] = 1
-# 	
-# 
-# 	fileCount += 1
-# 	
-# endTime = time.time()
-# print "Took ", endTime - startTime, " seconds to store edges from all files"
-# 
-# #store the data with pickle, do not re-read the files each time
-# 
-# output = open('interactionCounts_intrachromosomal.pkl', 'wb')
-# 
-# # Pickle dictionary using protocol 0.
-# pickle.dump(interactionCounts, output)
 
+hiCFolder = "../../../../../Data/HiC/HUVEC_interchromosomal/5kb_resolution_interchromosomal/"
 
+#Obtain the names of the files that we wish to read for each folder, use a wildcard since the names are different
+filesToRead = []
+for folderName in os.listdir(hiCFolder):
+	#Skip if it is an osx specific file and not a folder
+	if os.path.isdir(hiCFolder + "/" + folderName):
+		filesToRead.append(hiCFolder + "/" + folderName + "/MAPQG0/*.RAWobserved")
+
+startTime = time.time()
+
+interactionCounts = dict()
+
+fileCount = 0
+for hiCFilePath in filesToRead:
+	hiCFile = glob.glob(hiCFilePath) #get the actual file path instead of the wildcard one
+	print hiCFile[0] #There will always be only one file that matches
+	
+	currentEdges = [] #refresh the list to make sure that not everything is in memory
+	with open(hiCFile[0], "r") as f:
+		for line in f:
+			line = line.strip()
+			splitLine = line.split("\t")
+		
+			count = int(float(splitLine[2]))
+			if count > 0:
+				
+				if count in interactionCounts:
+					interactionCounts[count] += 1
+				else:
+					interactionCounts[count] = 1
+	
+
+	fileCount += 1
+	
+endTime = time.time()
+print "Took ", endTime - startTime, " seconds to store edges from all files"
+
+#store the data with pickle, do not re-read the files each time
+
+output = open('interactionCounts_interchromosomal.pkl', 'wb')
+
+# Pickle dictionary using protocol 0.
+pickle.dump(interactionCounts, output)
+
+exit()
 
 
 ########## END PART 1
