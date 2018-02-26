@@ -40,12 +40,24 @@ class HiCFeatureHandler:
 				- Make matrix hiCData compatible with more data types than just the degree. 
 		"""
 
-		degreeAnnotations = self.computeDegreeFeatures(regions, hiCData) #hiCData is now only the degree, but could be a combination of different data types. 
+		degreeAnnotations = self.computeDegreeFeatures(regions, hiCData[0]) #hiCData contains both the degree and the betweenness, separate these here 
+		#betweennessAnnotations = self.computeBetweennessFeatures(regions, hiCData[1])
 		
 		annotations = dict()
 		annotations['hiCDegree'] = degreeAnnotations
+		#annotations['hiCBetweenness'] = betweennessAnnotations
+		
+		
 		
 		return annotations
+	
+	def computeBetweennessFeatures(self, regions, betweennessData):
+		
+		#To compute the betweenness feature, we actually do the same as for the degree. So we can re-use that function.
+		
+		betweennessFeatures = self.computeDegreeFeatures(regions, betweennessData)
+		return betweennessFeatures
+		
 		
 	def computeDegreeFeatures(self, regions, degreeData):
 		"""
@@ -84,7 +96,9 @@ class HiCFeatureHandler:
 				#Find the two subsets that match on both chromosomes. 
 				matchingChr1Ind = degreeData[:,0] == 'chr' + lineList[0]
 				matchingChr2Ind = degreeData[:,0] == 'chr' + lineList[3]
-				
+				print degreeData[:,0]
+				print lineList[0]
+				exit()
 				#It is not even necessary to make 2 lists if both chromosomes are the same, we could use a reference without re-allocating
 				chr1Subset = degreeData[np.where(matchingChr1Ind)]
 				if lineList[0] == lineList[3]:
@@ -108,8 +122,7 @@ class HiCFeatureHandler:
 				else:
 					chr1Subset = chr1Subset[np.where(chr1Subset[:,1] >= int(lineList[2]))]
 					chr1Subset = chr1Subset[np.where(chr1Subset[:,2] <= int(lineList[1]))]
-				
-			
+
 			if np.size(chr1Subset) < 1 and np.size(chr2Subset) < 1:
 				degreeAnnotations.append('NA') #otherwise we will not have one annotation per SV
 				continue #no need to compute more annotations, there are no interactions on these chromosomes
@@ -212,6 +225,7 @@ class HiCFeatureHandler:
 			#Sort the degrees and get a top 10
 			sortedDegrees = np.sort(allDegrees)
 			top10Degrees = sortedDegrees[1:10]
+			
 			#Convert to a string so that we can join it and have the comma separated format in the output file
 			top10DegreesStr = [str(i) for i in top10Degrees]
 			

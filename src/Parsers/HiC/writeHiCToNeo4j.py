@@ -93,7 +93,7 @@ with open(subdir + regionsFile, 'w') as regionsOut:
 					total += 1
 					splitLine = line.split("\t")
 					
-					#Skip lines that have less than 1 interaction. 
+					#Skip lines that have less than 1 interaction 
 					if splitLine[2] != "0.0": #This is faster than the larger than 0, when converting to float first
 						notSkipped += 1
 						start = "chr" + str(chr1) + "_" + splitLine[0]
