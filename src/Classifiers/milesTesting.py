@@ -1,4 +1,12 @@
+#!/usr/bin/env python
 
+######### Documentation #########
+
+__author__ = "Marleen Nieboer"
+__credits__ = []
+__maintainer__ = "Marleen Nieboer"
+__email__ = "m.m.nieboer@umcutrecht.nl"
+__status__ = "Development"
 
 """ Basic test for a MILES-based classifier
 
@@ -19,9 +27,12 @@
 
 """
 
+### Imports ###
+
 import numpy as np
 from sklearn.ensemble import RandomForestClassifier
 
+### Code ###
 
 # Define data
 patient1P = np.array([[50,150],[60, 200]])
