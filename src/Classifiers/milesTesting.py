@@ -31,6 +31,7 @@ __status__ = "Development"
 
 import numpy as np
 from sklearn.ensemble import RandomForestClassifier
+from inputDataParser import InputDataParser
 
 ### Code ###
 
@@ -50,6 +51,19 @@ labels = np.array([1,1,-1, 1, 1, -1])
 
 #Read some test and training data from the real datasets
 
+truePositives = sys.argv[1]
+trueNegatives = sys.argv[2]
+inputDataParser = InputDataParser()
+
+#Some weird naming going on here... 
+tpInputDataParsed = inputDataParser.parseInputData(truePositives)
+preparedTP = inputDataParser.prepareInputData(tpInputDataParsed)
+
+tnInputDataParsed = inputDataParser.parseInputData(trueNegatives)
+preparedTN = inputDataParser.prepareInputData(tnInputDataParsed)
+
+#Subset the data for testing
+#Also only use the features that we can use with the current absolute distance
 
 
 
