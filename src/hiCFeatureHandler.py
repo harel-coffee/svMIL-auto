@@ -53,6 +53,7 @@ class HiCFeatureHandler:
 	def computeBetweennessFeatures(self, regions, betweennessData):
 		
 		#To compute the betweenness feature, we actually do the same as for the degree. So we can re-use that function.
+		#It should eventually probably be named differently. 
 		
 		betweennessFeatures = self.computeDegreeFeatures(regions, betweennessData)
 		return betweennessFeatures
@@ -106,20 +107,30 @@ class HiCFeatureHandler:
 			# 	#Make sure to update the previous chromosome when it changes
 			 	previousChr1 = 'chr' + str(lineList[0])
 			 	previousChr2 = 'chr' + str(lineList[3])
-				
+	
 				#Try to improve the speed of the code:
 				#- Make a subset of the positions to search through for start and end given the first start position.
-				#If the chromosome changes, we have a new subset. The positions with an end smaller than the smallest start can be ignored, and also the positions with a start larger than the largest end. These will never overlap.
+				#Thus, the start position of the degree dataset must be smaller than the end of the SV, while the end of the position in the degree dataset must be larger than the start of the SV.
+				# #If the chromosome changes, we have a new subset. The positions with an end smaller than the smallest start can be ignored, and also the positions with a start larger than the largest end. These will never overlap.
+				# But we should then also do this for chromosome 2.
 				
-				if lineList[0] == lineList[3]:
-					#The region end must always be larger than the interaction start
-					chr1Subset = chr1Subset[np.where(chr1Subset[:,1] <= int(lineList[5]))]
-					#The region start must always be smaller than the interaction end
-					chr1Subset = chr1Subset[np.where(chr1Subset[:,2] >= int(lineList[1]))]
-				else:
-					chr1Subset = chr1Subset[np.where(chr1Subset[:,1] >= int(lineList[2]))]
-					chr1Subset = chr1Subset[np.where(chr1Subset[:,2] <= int(lineList[1]))]
-
+				#The way that we should subset is by finding entries that are never overlapping with any SV.
+				#But for now I will leave this out as it may not help in gaining speed.
+				# 
+				# if lineList[0] == lineList[3]:
+				# 	#The region end must always be larger than the interaction start
+				# 	chr1Subset = originalChr1Subset[np.where(originalChr1Subset[:,1] <= int(lineList[5]))]
+				# 	#The region start must always be smaller than the interaction end
+				# 	chr1Subset = originalChr1Subset[np.where(originalChr1Subset[:,2] >= int(lineList[1]))]
+				# 	chr2Subset = chr1Subset
+				# else:
+				# 	chr1Subset = chr1Subset[np.where(chr1Subset[:,1] >= int(lineList[2]))]
+				# 	chr1Subset = chr1Subset[np.where(chr1Subset[:,2] <= int(lineList[1]))]
+				# 	
+				# 	chr2Subset = chr2Subset[np.where(chr2Subset[:,1] >= int(lineList[2]))]
+				# 	chr2Subset = chr2Subset[np.where(chr2Subset[:,2] <= int(lineList[1]))]
+		
+			
 			if np.size(chr1Subset) < 1 and np.size(chr2Subset) < 1:
 				degreeAnnotations.append('NA') #otherwise we will not have one annotation per SV
 				continue #no need to compute more annotations, there are no interactions on these chromosomes
@@ -153,12 +164,12 @@ class HiCFeatureHandler:
 				
 				currentEndSubset = chr1Subset[startOffset:endOffset,2]
 				
-				currentStartOverlap = start < currentEndSubset
+				currentStartOverlap = start <= currentEndSubset
 				startOverlapChr1[startOffset:endOffset] = currentStartOverlap
 				
 				#Repeat for the end
 				currentStartSubset = chr1Subset[startOffset:endOffset,1]
-				currentEndOverlap = end > currentStartSubset
+				currentEndOverlap = end >= currentStartSubset
 				endOverlapChr1[startOffset:endOffset] = currentEndOverlap
 				
 				startOffset = endOffset
@@ -194,13 +205,13 @@ class HiCFeatureHandler:
 					
 					currentEndSubset = chr2Subset[startOffset:endOffset,2]
 					
-					currentStartOverlap = start < currentEndSubset
+					currentStartOverlap = start <= currentEndSubset
 					startOverlapChr2[startOffset:endOffset] = currentStartOverlap
 					
 					#Repeat for the end
 					currentStartSubset = chr2Subset[startOffset:endOffset,1]
 					
-					currentEndOverlap = end > currentStartSubset
+					currentEndOverlap = end >= currentStartSubset
 					endOverlapChr2[startOffset:endOffset] = currentEndOverlap
 					
 					startOffset = endOffset
@@ -217,7 +228,7 @@ class HiCFeatureHandler:
 			degreesChr1 = list(degreeData[overlappingSvIndsChr1, 3])
 			degreesChr2 = list(degreeData[overlappingSvIndsChr2, 3])
 			
-			allDegrees = np.array(degreesChr1 + degreesChr1)
+			allDegrees = np.array(degreesChr1 + degreesChr2)
 			
 			#Sort the degrees and get a top 10
 			sortedDegrees = np.sort(allDegrees)
