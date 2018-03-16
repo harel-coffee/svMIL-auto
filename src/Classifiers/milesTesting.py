@@ -87,18 +87,21 @@ def readAnnotationData(annotationFile):
 			overlappingTadBoundaries = splitLine[overlappingTadBoundariesIndex]
 			
 			if len(splitLine[hiCDegreeIndex]) > 0:
-				hiCDegree = max(splitLine[hiCDegreeIndex]) #take max for now
+				#hiCDegree = max(splitLine[hiCDegreeIndex]) #take max for now
+				hiCDegree = [int(degree) for degree in splitLine[hiCDegreeIndex].split(",")] #Split on comma, entry is read as a string rather than a list
+				
 			else:
 				hiCDegree = 0
 			if len(splitLine[hiCBetweennessIndex]) > 0:
-				hiCBetweenness = max(splitLine[hiCBetweennessIndex])
+				#hiCBetweenness = max(splitLine[hiCBetweennessIndex])
+				hiCBetweenness = [float(betweenness) for betweenness in splitLine[hiCBetweennessIndex].split(",")]
 			else:
 				hiCBetweenness = 0
-			currentAnnotations = [int(noOfGenesInWindow), int(overlappingTadBoundaries), int(hiCDegree), int(hiCBetweenness)]
+			currentAnnotations = [int(noOfGenesInWindow), int(overlappingTadBoundaries), hiCDegree, hiCBetweenness]
 			
 			annotations.append(currentAnnotations)	
 
-	return np.matrix(annotations, dtype="int")
+	return np.matrix(annotations, dtype="object")
 
 # Define data
 patient1P = np.array([[50,150],[60, 200]])
@@ -129,7 +132,6 @@ truePositives = sys.argv[1]
 trueNegatives = sys.argv[2]
 
 #Read the annotation files into a list of features
-### there is still a problem with the files, the output does not look as expected for the TN
 
 tpAnnotations = readAnnotationData(truePositives)
 tnAnnotations = readAnnotationData(trueNegatives)
@@ -194,6 +196,24 @@ for bag in train_bags:
 	
 
 #2. Compute the distance from each cluster center to other points and take the minimum
+
+#Here we first define the distance functions that we will use per feature.
+#Features in order: noOfGenes pLI	RVIS	overlappingTadBoundaries	hiCDegree	hiCBetweenness
+#For noOfGenes and overlappingTadBoundaries we can compute the absolute distance (sum of distances)
+#For the hiCDegree and hiCBetweenness, we could in principle do the same. If there is a very high degree there, the score will be high. Even if one degree is low, the total score will remain high.
+#The same can be used for the pLI and RVIS. (these are not yet in the code right now)
+distanceFunctions = ["absoluteDistance", "absoluteDistance", "listAbsoluteDistance", "listAbsoluteDistance"]
+
+def absoluteDistance(center, instance): #compute distance simply based on integer values
+	return np.sum(np.abs(instance - center))
+	 
+	
+def listAbsoluteDistance(center, instance): #Compute distance given a list of entries, for HiC degree and HiC betweenness
+	#Take the difference of sums
+	return np.abs(np.sum(np.array(center)) -  np.sum(np.array(instance)))
+	
+	
+
 #3. Generate a similarity matrix
 similarityMatrix = np.zeros([len(centers), len(train_bags)])
 
@@ -207,7 +227,11 @@ for centerInd in range(0, len(centers)):
 		
 		smallestDistance = float("inf")
 		for instance in train_bags[bagInd]:
-			distance = np.sum(np.abs(instance - centers[centerInd]))
+			distance = 0
+			#Distance is computed differently for each feature.
+			for featureInd in range(0, len(instance)):
+				distance += locals()[distanceFunctions[featureInd]](centers[centerInd][featureInd], instance[featureInd])
+				
 			
 			if distance < smallestDistance:
 				smallestDistance = distance
@@ -216,11 +240,21 @@ for centerInd in range(0, len(centers)):
 		
 				
 print similarityMatrix
+
+#Also get training labels per instance (not used in the classification, only to test the performance and also to plot)
+trainLabels = []
+
+#Fix the labels per instance
+labelCount = 0
+for bag in train_bags:
 		
+	for instance in bag:
+		trainLabels.append(train_labels[labelCount])
+	labelCount += 1
+
 #4. Train a classifier on the similarity space
 
-
-rfClassifier = RandomForestClassifier(max_depth=5, n_estimators=10)
+rfClassifier = RandomForestClassifier(max_depth=5, n_estimators=2)
 rfClassifier.fit(similarityMatrix, train_labels)
 
 #5. Test the classifier on a new point (should this also be in the similarity space? Yes, right?)
@@ -256,7 +290,11 @@ for centerInd in range(0, testInstances.shape[0]):
 		
 		smallestDistance = float("inf")
 		for instance in test_bags[bagInd]:
-			distance = np.sum(np.abs(instance - testInstances[centerInd]))
+			distance = 0
+			#Distance is computed differently for each feature.
+			for featureInd in range(0, len(instance)):
+				distance += locals()[distanceFunctions[featureInd]](testInstances[centerInd][featureInd], instance[featureInd])
+				
 			
 			if distance < smallestDistance:
 				smallestDistance = distance
@@ -268,3 +306,35 @@ score = rfClassifier.score(testSimilarityMatrix, testLabels)
 print score
 
 print rfClassifier.predict(testSimilarityMatrix)
+# 
+# #Make a plot of the classifier
+# from matplotlib.colors import ListedColormap
+# import matplotlib.pyplot as plt
+# def plotClassificationResult(allData, dataSubset, labels, clf):
+# 
+#     cmap_light = ListedColormap(['#FFAAAA', '#AAFFAA', '#AAAAFF'])
+#     cmap_bold = ListedColormap(['#FF0000', '#00FF00', '#0000FF'])
+#     X = allData
+#     h = 0.1 #fine size of mesh
+#     x_min, x_max = X[:, 0].min() - 1, X[:, 0].max() + 1
+#     y_min, y_max = X[:, 1].min() - 1, X[:, 1].max() + 1
+#     xx, yy = np.meshgrid(np.arange(x_min, x_max, h),
+#                              np.arange(y_min, y_max, h))
+#     Z = clf.predict(np.c_[xx.ravel(), yy.ravel()])
+# 
+#     # Put the result into a color plot
+#     Z = Z.reshape(xx.shape)
+#     plt.figure()
+#     plt.pcolormesh(xx, yy, Z, cmap=cmap_light)
+# 
+#     #Plot the training data with decision boundary
+#     plt.scatter(dataSubset[:,0], dataSubset[:,1], c=labels, cmap=cmap_bold)
+#     plt.show()
+# 	
+# #We cannot plot the bags using this function, only the instance labels.
+# #There is a way to do this probably, but I'll leave it for now. 
+# trainingSubset = np.vstack(train_bags)
+# 
+# plotClassificationResult(trainingSubset, trainingSubset, trainLabels, rfClassifier)
+
+
