@@ -53,7 +53,7 @@ def writeToCsvManual(outFile, annotatedRegions):
 	"""
 	
 	#First write the header
-	header = 'chr1\ts1\te1\tchr2\ts2\te2\tnoOfGenesInWindow\tpLI\tRVIS\toverlappingTadBoundaries\thiCDegree\thiCBetweenness\t\n'
+	header = 'chr1\ts1\te1\tchr2\ts2\te2\tidentifier\tnoOfGenesInWindow\tpLI\tRVIS\toverlappingTadBoundaries\thiCDegree\thiCBetweenness\t\n'
 	
 	with open(outFile, "wb") as f:
 		
@@ -68,6 +68,7 @@ def writeToCsvManual(outFile, annotatedRegions):
 			line += annotatedRegions['chr2'][annotationInd] + '\t'
 			line += annotatedRegions['s2'][annotationInd] + '\t'
 			line += annotatedRegions['e2'][annotationInd] + '\t'
+			line += annotatedRegions['identifier'][annotationInd] + '\t'
 			
 			line += str(annotatedRegions['noOfGenesInWindow'][annotationInd]) + '\t'
 			line += str(annotatedRegions['pLI'][annotationInd]) + '\t'

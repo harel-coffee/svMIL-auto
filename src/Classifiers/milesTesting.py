@@ -76,6 +76,7 @@ def readAnnotationData(annotationFile):
 			chr2Index = header.index("chr2")
 			s2Index = header.index("s2")
 			e2Index = header.index("e2")
+			identifierIndex = header.index("identifier")
 			noOfGenesInWindowIndex = header.index("noOfGenesInWindow")
 			overlappingTadBoundariesIndex = header.index("overlappingTadBoundaries")
 			
@@ -83,47 +84,61 @@ def readAnnotationData(annotationFile):
 			hiCDegreeIndex = header.index("hiCDegree")
 			hiCBetweennessIndex = header.index("hiCBetweenness")
 			
+			identifier = splitLine[identifierIndex]
+			
 			noOfGenesInWindow = splitLine[noOfGenesInWindowIndex]
 			overlappingTadBoundaries = splitLine[overlappingTadBoundariesIndex]
 			
+			hiCDegree = []
 			if len(splitLine[hiCDegreeIndex]) > 0:
 				#hiCDegree = max(splitLine[hiCDegreeIndex]) #take max for now
-				hiCDegree = [int(degree) for degree in splitLine[hiCDegreeIndex].split(",")] #Split on comma, entry is read as a string rather than a list
+				for degree in splitLine[hiCDegreeIndex].split(","):
+					if degree != 'NA':
+						hiCDegree.append(int(degree))
+					else:
+						hiCDegree.append(0) #set to 0 if the annotation is NA. In this case, there is no degree so 0 is appropriate. 
+				#hiCDegree = [int(degree) for degree in splitLine[hiCDegreeIndex].split(",")] #Split on comma, entry is read as a string rather than a list
 				
 			else:
 				hiCDegree = 0
+				
+			hiCBetweenness = []
 			if len(splitLine[hiCBetweennessIndex]) > 0:
 				#hiCBetweenness = max(splitLine[hiCBetweennessIndex])
-				hiCBetweenness = [float(betweenness) for betweenness in splitLine[hiCBetweennessIndex].split(",")]
+				for betweenness in splitLine[hiCBetweennessIndex].split(","):
+					if betweenness != 'NA':
+						hiCBetweenness.append(float(betweenness))
+					else:
+						hiCBetweenness.append(0)
 			else:
 				hiCBetweenness = 0
-			currentAnnotations = [int(noOfGenesInWindow), int(overlappingTadBoundaries), hiCDegree, hiCBetweenness]
+			currentAnnotations = [identifier, int(noOfGenesInWindow), int(overlappingTadBoundaries), hiCDegree, hiCBetweenness]
 			
 			annotations.append(currentAnnotations)	
 
-	return np.matrix(annotations, dtype="object")
+	return np.array(annotations, dtype="object")
 
-# Define data
-patient1P = np.array([[50,150],[60, 200]])
-patient2P = np.array([[60, 200],[100, 50]])
-patient3P = np.array([[100, 75],[80, 80]])
-patient4P = np.array([[120, 50],[90, 100]])
-
-#Negative bags. 
-patient1N = np.array([[1, 4],[0, 9]])
-patient2N = np.array([[10, 5],[14, 3]])
-#Add more patients later for balance
-
-bags = np.array([patient1P, patient2P, patient1N, patient3P, patient4P, patient2N])
-labels = np.array([1,1,-1, 1, 1, -1])
-
-train_bags = bags[3:]
-print "original train_bags: "
-print train_bags
-
-train_labels = labels[3:]
-test_bags = bags[:3]
-test_labels = labels[:3]
+# # Define data
+# patient1P = np.array([[50,150],[60, 200]])
+# patient2P = np.array([[60, 200],[100, 50]])
+# patient3P = np.array([[100, 75],[80, 80]])
+# patient4P = np.array([[120, 50],[90, 100]])
+# 
+# #Negative bags. 
+# patient1N = np.array([[1, 4],[0, 9]])
+# patient2N = np.array([[10, 5],[14, 3]])
+# #Add more patients later for balance
+# 
+# bags = np.array([patient1P, patient2P, patient1N, patient3P, patient4P, patient2N])
+# labels = np.array([1,1,-1, 1, 1, -1])
+# 
+# train_bags = bags[3:]
+# print "original train_bags: "
+# print train_bags
+# 
+# train_labels = labels[3:]
+# test_bags = bags[:3]
+# test_labels = labels[:3]
 
 ###### Real data test
 
@@ -143,28 +158,43 @@ tnAnnotations = readAnnotationData(trueNegatives)
 
 #Lots of conversions between numpy going on here, it could probably be better
 
-allTpBags = []
-allTnBags = []
+#Make the bags, each sample will go in one bag
 
-#Make 10 bags with 50 instances
-totalBagNum = 10
-instanceNum = 50
+#First sort the data by identifier, it is now sorted by chromosome. For the bags, the ordering of the annotations does not matter
+idColumn = tpAnnotations[:,0]
+sortedTpAnnotationsIndex = np.argsort(idColumn)
+sortedTpAnnotations = tpAnnotations[sortedTpAnnotationsIndex,:]
 
-currentInstanceNum = 0
-for bagNum in range(0, totalBagNum):
+idColumn = tnAnnotations[:,0]
+sortedTnAnnotationsIndex = np.argsort(idColumn)
+sortedTnAnnotations = tnAnnotations[sortedTnAnnotationsIndex,:]
+
+def makeBags(annotations):
+	fullBag = []
+		
+	previousId = annotations[0,:][0]
+	seenIdentifiers = []
+	bagStartInd = 0 #keep a start coordinate where the identifier for this bag starts
+	currentInd = 0 #increase this each time to keep track of if the bag has ended 
+	for annotation in annotations:
+		#check if the identifier is still the same as the previous line, otherwise start a new bag
+		if annotation[0] != previousId:
+			bag = annotations[bagStartInd:currentInd, 1:] #omit the identifier
+			fullBag.append(bag)
+			bagStartInd = currentInd
+			previousId = annotation[0] #update the identifier we are currently looking at
+			seenIdentifiers.append(annotation[0])
+		currentInd += 1
 	
-	tpBag = tpAnnotations[currentInstanceNum:instanceNum, :]
-	allTpBags.append(tpBag)
+	print len(seenIdentifiers)
+	print len(np.unique(np.array(seenIdentifiers)))
 	
-	tnBag = tnAnnotations[currentInstanceNum:instanceNum, :]
-	allTnBags.append(tnBag)
-	
-	currentInstanceNum += instanceNum
-	instanceNum += instanceNum
+	return fullBag
 
-
+allTpBags = makeBags(sortedTpAnnotations)
+allTnBags = makeBags(sortedTnAnnotations)
+#Convert back to numpy
 allTpBags = np.array(allTpBags)
-
 allTnBags = np.array(allTnBags)
 
 #Determine training/test labels
@@ -172,17 +202,48 @@ allTnBags = np.array(allTnBags)
 #Is this still the good format?? It does not really look like the other one anymore, there's now types which is a bit weird
 #Also I should change the naming conventions in the rest of the code to look the same as in the rest of the program
 
-train_bags = np.array([allTpBags[5:,:], allTnBags[5:,:]])
-train_bags = np.concatenate((train_bags[0], train_bags[1]), axis=0) #there must be a better way... but not looking into it now
-train_labels = np.array([1,1,1,1,1,-1,-1,-1,-1,-1]) #some random labels for now
-test_bags = np.array([allTpBags[:5,:], allTnBags[:5,:]])
-test_bags = np.concatenate((test_bags[0], test_bags[1]), axis=0)
-test_labels = train_labels
+#Ensure that the labels are added correctly, also the separation of training/test bags needs to be made random
 
-print "training data:"
-print train_bags
+trainRatio = 60 #Use 60% for training, 40% for testing
+#There will be a different number of patients in the positive data compared to the negative data.
+positiveBagNum = allTpBags.shape[0]
+negativeBagNum = allTnBags.shape[0]
+
+#Select training data
+trainingTpNum = int(round(positiveBagNum * (trainRatio / float(100.0))))
+trainingTnNum = int(round(negativeBagNum * (trainRatio / float(100.0))))
+
+#Randomly select bags that will be in the training data
+trainingDataTpInd = np.random.choice(range(0, allTpBags.shape[0]), trainingTpNum, replace=False)
+trainingDataTnInd = np.random.choice(range(0, allTnBags.shape[0]), trainingTnNum, replace=False)
+
+print trainingDataTpInd
+print trainingDataTnInd
+
+trainingBagsTp = allTpBags[trainingDataTpInd]
+trainingBagsTn = allTnBags[trainingDataTnInd]
+
+#Use the remaining data as test data
+testDataTpInd = np.setdiff1d(range(0,allTpBags.shape[0]), trainingDataTpInd)
+testDataTnInd = np.setdiff1d(range(0,allTnBags.shape[0]), trainingDataTnInd)
+
+print testDataTpInd
+print testDataTnInd
+
+testBagsTp = allTpBags[testDataTpInd]
+testBagsTn = allTnBags[testDataTnInd]
+
+train_bags = np.array([trainingBagsTp, trainingBagsTn])
+train_bags = np.concatenate((train_bags[0], train_bags[1]), axis=0) #there must be a better way... but not looking into it now
+
+train_labels = np.array([1]*trainingBagsTp.shape[0] + [-1]*trainingBagsTn.shape[0])
+
+test_bags = np.array([testBagsTp, testBagsTn])
+test_bags = np.concatenate((test_bags[0], test_bags[1]), axis=0)
+test_labels = np.array([1]*testBagsTp.shape[0] + [-1]*testBagsTn.shape[0])
 
 #1. Obtain centers in each bag. Here I will use random points
+print "computing centers"
 centers = []
 for bag in train_bags:
 	
@@ -202,6 +263,7 @@ for bag in train_bags:
 #For noOfGenes and overlappingTadBoundaries we can compute the absolute distance (sum of distances)
 #For the hiCDegree and hiCBetweenness, we could in principle do the same. If there is a very high degree there, the score will be high. Even if one degree is low, the total score will remain high.
 #The same can be used for the pLI and RVIS. (these are not yet in the code right now)
+#distanceFunctions = ["absoluteDistance", "absoluteDistance", "listAbsoluteDistance", "listAbsoluteDistance"]
 distanceFunctions = ["absoluteDistance", "absoluteDistance", "listAbsoluteDistance", "listAbsoluteDistance"]
 
 def absoluteDistance(center, instance): #compute distance simply based on integer values
@@ -215,6 +277,7 @@ def listAbsoluteDistance(center, instance): #Compute distance given a list of en
 	
 
 #3. Generate a similarity matrix
+print "generating similarity matrix"
 similarityMatrix = np.zeros([len(centers), len(train_bags)])
 
 for centerInd in range(0, len(centers)):
@@ -238,9 +301,6 @@ for centerInd in range(0, len(centers)):
 		
 		similarityMatrix[centerInd, bagInd] = smallestDistance
 		
-				
-print similarityMatrix
-
 #Also get training labels per instance (not used in the classification, only to test the performance and also to plot)
 trainLabels = []
 
@@ -253,12 +313,12 @@ for bag in train_bags:
 	labelCount += 1
 
 #4. Train a classifier on the similarity space
-
+print "training the classifier in similarity space"
 rfClassifier = RandomForestClassifier(max_depth=5, n_estimators=2)
 rfClassifier.fit(similarityMatrix, train_labels)
 
 #5. Test the classifier on a new point (should this also be in the similarity space? Yes, right?)
-print test_bags
+
 
 #Convert test bags to a format that we can use
 testInstances = np.vstack(test_bags)
@@ -277,12 +337,17 @@ for bag in test_bags:
 		testLabels.append(test_labels[labelCount])
 	labelCount += 1
 
+#Computing the distance from every instance to all other instances is computationally expensive
+#we should compute the distance from a random center
+#But should the distance be computed to the center points of the training data? or to centers of the test data? training, right? otherwise the space is not the same.
 
 
-for centerInd in range(0, testInstances.shape[0]):
+print "computing test data centers"
+
+for centerInd in range(0, len(centers)):
 	
 	
-	for bagInd in range(0, len(train_bags)):
+	for bagInd in range(0, len(test_bags)):
 		
 		#Skip this bag if the center is in the current bag
 		if centerInd == bagInd:
@@ -293,15 +358,14 @@ for centerInd in range(0, testInstances.shape[0]):
 			distance = 0
 			#Distance is computed differently for each feature.
 			for featureInd in range(0, len(instance)):
-				distance += locals()[distanceFunctions[featureInd]](testInstances[centerInd][featureInd], instance[featureInd])
+				distance += locals()[distanceFunctions[featureInd]](centers[centerInd][featureInd], instance[featureInd])
 				
-			
 			if distance < smallestDistance:
 				smallestDistance = distance
 		
 		testSimilarityMatrix[centerInd, bagInd] = smallestDistance
 		
-
+print "scoring classifier"
 score = rfClassifier.score(testSimilarityMatrix, testLabels)
 print score
 
@@ -336,5 +400,4 @@ print rfClassifier.predict(testSimilarityMatrix)
 # trainingSubset = np.vstack(train_bags)
 # 
 # plotClassificationResult(trainingSubset, trainingSubset, trainLabels, rfClassifier)
-
 

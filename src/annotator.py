@@ -93,6 +93,7 @@ class Annotator:
 		regionsDict['chr2'] = regions[:,3]
 		regionsDict['s2'] = regions[:,4]
 		regionsDict['e2'] = regions[:,5]
+		regionsDict['identifier'] = regions[:,7]
 		
 		#merge the regions and annotations
 		annotatedRegions = dict(regionsDict.items() + annotations.items())

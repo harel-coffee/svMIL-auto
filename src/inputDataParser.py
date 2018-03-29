@@ -66,6 +66,7 @@ class InputDataParser:
 				chr1Index = header.index("chr1")
 				s1Index = header.index("s1")
 				e1Index = header.index("e1")
+				identifierIndex = header.index("identifier")
 				
 				if regionType == "SV": #format the data for SVs specifically. Skip the orientation information for now. We may need it later
 	
@@ -100,9 +101,10 @@ class InputDataParser:
 				
 					
 				chr1 = splitLine[chr1Index]
+				identifier = splitLine[identifierIndex]
 				
 				#chr 1, start, end, chr2, start2, end2, regionType
-				inputData.append([chr1, s1, e1, chr2, s2, e2, regionType])
+				inputData.append([chr1, s1, e1, chr2, s2, e2, regionType, identifier])
 		
 		return inputData
 	
