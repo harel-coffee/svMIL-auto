@@ -112,7 +112,11 @@ def readAnnotationData(annotationFile):
 						hiCBetweenness.append(0)
 			else:
 				hiCBetweenness = 0
-			currentAnnotations = [identifier, int(noOfGenesInWindow), int(overlappingTadBoundaries), hiCDegree, hiCBetweenness]
+			
+			#Currently the list-based distance function is very slow for large sets of data, so I already take the sum of the degrees and betweenness here. This also helps to deal with lists of different sizes, for which we need
+			#to use something like sum anway to get to one score. 
+			#currentAnnotations = [identifier, int(noOfGenesInWindow), int(overlappingTadBoundaries), np.sum(np.array(hiCDegree)), np.sum(np.array(hiCBetweenness))]
+			currentAnnotations = [identifier, int(noOfGenesInWindow), int(overlappingTadBoundaries), int(np.sum(np.array(hiCDegree))), int(np.sum(np.array(hiCBetweenness)))]
 			
 			annotations.append(currentAnnotations)	
 
@@ -217,18 +221,12 @@ trainingTnNum = int(round(negativeBagNum * (trainRatio / float(100.0))))
 trainingDataTpInd = np.random.choice(range(0, allTpBags.shape[0]), trainingTpNum, replace=False)
 trainingDataTnInd = np.random.choice(range(0, allTnBags.shape[0]), trainingTnNum, replace=False)
 
-print trainingDataTpInd
-print trainingDataTnInd
-
 trainingBagsTp = allTpBags[trainingDataTpInd]
 trainingBagsTn = allTnBags[trainingDataTnInd]
 
 #Use the remaining data as test data
 testDataTpInd = np.setdiff1d(range(0,allTpBags.shape[0]), trainingDataTpInd)
 testDataTnInd = np.setdiff1d(range(0,allTnBags.shape[0]), trainingDataTnInd)
-
-print testDataTpInd
-print testDataTnInd
 
 testBagsTp = allTpBags[testDataTpInd]
 testBagsTn = allTnBags[testDataTnInd]
@@ -263,44 +261,92 @@ for bag in train_bags:
 #For noOfGenes and overlappingTadBoundaries we can compute the absolute distance (sum of distances)
 #For the hiCDegree and hiCBetweenness, we could in principle do the same. If there is a very high degree there, the score will be high. Even if one degree is low, the total score will remain high.
 #The same can be used for the pLI and RVIS. (these are not yet in the code right now)
+distanceFunctions = ["absoluteDistance", "absoluteDistance", "absoluteDistance", "absoluteDistance"]
 #distanceFunctions = ["absoluteDistance", "absoluteDistance", "listAbsoluteDistance", "listAbsoluteDistance"]
-distanceFunctions = ["absoluteDistance", "absoluteDistance", "listAbsoluteDistance", "listAbsoluteDistance"]
 
-def absoluteDistance(center, instance): #compute distance simply based on integer values
-	return np.sum(np.abs(instance - center))
-	 
+def absoluteDistance(center, instances): #compute distance simply based on integer values
+	distances = np.abs(center - instances)
+	#Then take the sum across all differences, and report one column
+	return np.sum(distances, axis=1)
 	
-def listAbsoluteDistance(center, instance): #Compute distance given a list of entries, for HiC degree and HiC betweenness
-	#Take the difference of sums
-	return np.abs(np.sum(np.array(center)) -  np.sum(np.array(instance)))
+def listAbsoluteDistance(center, instances): #Compute distance given a list of entries, for HiC degree and HiC betweenness
+	#First sum all elements (so all lists) of the same features
+	#This sum is to avoid computing the difference between lists that are of different sizes (e.g. different number of degrees in window of variant)
+	summedInstances = np.zeros(instances.shape)
+	for row in range(0, instances.shape[0]):
+		for col in range(0, instances.shape[1]):
+			summedInstances[row,col] = np.sum(instances[row,col])
+	
+	#Do the same summing for the center as well
+	
+	centerSum = center
+	centerSum[0] = np.sum(center[0])
+	centerSum[1] = np.sum(center[1])
+	
+	#Then take the difference between the lists
+	difference = np.abs(centerSum - summedInstances)
+	
+	#Return the sum of the difference
+	return np.sum(difference, axis=1)
 	
 	
 
 #3. Generate a similarity matrix
+
+###THIS PART IS REALLY, REALLY SLOW, BUT THE DATASET IS ALSO LARGE SO I CONSIDER IT FOR NOW SUFFICIENT
+
 print "generating similarity matrix"
-similarityMatrix = np.zeros([len(centers), len(train_bags)])
+similarityMatrix = np.zeros([len(train_bags), len(centers)])
+
+print "size of the similarity matrix: "
+print similarityMatrix.shape
+
+print "size of the training bags: "
+print train_bags.shape
+
+print train_bags[0]
+#The goal here is:
+#- we want to have a matrix where the rows are the instances, and the columns are the bags.
+#- To compute a distance from the bag to the instances, we want a bag center to all other instances, and take the smallest distance. 
+#- Can we compute the distances quicker than now? At the moment, we first take a center for each bag, and then compute the distance to all other elements.
+#- Currently, we have 350 bags. Then there will be 350x350 distances (bag to smallest instance in each bag).
+#- Can we compute the distance to all instances at once and then take the minimum?
+
+#Get the number of different disance functions we need to call, we can do it once for all features at once that we treat in the same fashion, should speed up the code
+uniqueDistanceFunctions = np.unique(np.array(distanceFunctions))
 
 for centerInd in range(0, len(centers)):
-	
+	print "center: ", centerInd
 	for bagInd in range(0, len(train_bags)):
 		
 		#Skip this bag if the center is in the current bag
 		if centerInd == bagInd:
 			continue
 		
-		smallestDistance = float("inf")
-		for instance in train_bags[bagInd]:
-			distance = 0
-			#Distance is computed differently for each feature.
-			for featureInd in range(0, len(instance)):
-				distance += locals()[distanceFunctions[featureInd]](centers[centerInd][featureInd], instance[featureInd])
-				
+		#Compute the distance from center to all instances for each set of features with the same distance function at once
+		allDistances = np.zeros([train_bags[bagInd].shape[0], len(uniqueDistanceFunctions)])
+		distanceFunctionInd = 0
+		for distanceFunction in uniqueDistanceFunctions:
+			#Check which feature indices match with the current distance function
+			matchingFeatureIndices = np.where(np.array(distanceFunctions) == distanceFunction)[0]
 			
-			if distance < smallestDistance:
-				smallestDistance = distance
+			#Extract the feature columns
+			#Provide to this function the center and the feature columns for all instances in the current bag
+			currentDistances = locals()[distanceFunction](centers[centerInd][matchingFeatureIndices], train_bags[bagInd][:,matchingFeatureIndices])
+			
+			allDistances[:,distanceFunctionInd] = currentDistances
+			distanceFunctionInd += 1
 		
-		similarityMatrix[centerInd, bagInd] = smallestDistance
+		#Here we should find the row (or the instance) that is closest to this center
 		
+		#Sum across the rows
+		#Identify the row (instance) that has the smallest total sum
+		summedDistances = np.sum(allDistances, axis=1)
+
+		smallestDistance = np.min(summedDistances)
+		
+		similarityMatrix[bagInd, centerInd] = smallestDistance
+	
 #Also get training labels per instance (not used in the classification, only to test the performance and also to plot)
 trainLabels = []
 
@@ -312,10 +358,16 @@ for bag in train_bags:
 		trainLabels.append(train_labels[labelCount])
 	labelCount += 1
 
+print "similarity matrix shape: "
+print similarityMatrix.shape
+print "test labels shape: "
+print len(train_labels)
+
+
 #4. Train a classifier on the similarity space
 print "training the classifier in similarity space"
 rfClassifier = RandomForestClassifier(max_depth=5, n_estimators=2)
-rfClassifier.fit(similarityMatrix, train_labels)
+rfClassifier.fit(similarityMatrix, train_labels) #Use the bag labels, not the instance labels
 
 #5. Test the classifier on a new point (should this also be in the similarity space? Yes, right?)
 
@@ -326,7 +378,7 @@ testInstances = np.vstack(test_bags)
 #Do we now compute the distance to the training data to get the same number of features?
 
 
-testSimilarityMatrix = np.zeros([testInstances.shape[0], len(test_bags)])
+testSimilarityMatrix = np.zeros([len(test_bags), len(centers)])
 testLabels = []
 
 #Fix the labels per instance
@@ -341,11 +393,12 @@ for bag in test_bags:
 #we should compute the distance from a random center
 #But should the distance be computed to the center points of the training data? or to centers of the test data? training, right? otherwise the space is not the same.
 
+#Here we should not use the distance from center to bags, but from center to each instance. Otherwise we cannot do instance-based classification!
 
-print "computing test data centers"
+print "computing test data similarity matrix"
 
 for centerInd in range(0, len(centers)):
-	
+	print "center: ", centerInd
 	
 	for bagInd in range(0, len(test_bags)):
 		
@@ -353,20 +406,36 @@ for centerInd in range(0, len(centers)):
 		if centerInd == bagInd:
 			continue
 		
-		smallestDistance = float("inf")
-		for instance in test_bags[bagInd]:
-			distance = 0
-			#Distance is computed differently for each feature.
-			for featureInd in range(0, len(instance)):
-				distance += locals()[distanceFunctions[featureInd]](centers[centerInd][featureInd], instance[featureInd])
-				
-			if distance < smallestDistance:
-				smallestDistance = distance
+		allDistances = np.zeros([test_bags[bagInd].shape[0], len(uniqueDistanceFunctions)])
+		distanceFunctionInd = 0
+		for distanceFunction in uniqueDistanceFunctions:
+			#Check which feature indices match with the current distance function
+			matchingFeatureIndices = np.where(np.array(distanceFunctions) == distanceFunction)[0]
+			
+			#Extract the feature columns
+			#Provide to this function the center and the feature columns for all instances in the current bag
+			currentDistances = locals()[distanceFunction](centers[centerInd][matchingFeatureIndices], test_bags[bagInd][:,matchingFeatureIndices])
+			
+			allDistances[:,distanceFunctionInd] = currentDistances
+			distanceFunctionInd += 1
 		
-		testSimilarityMatrix[centerInd, bagInd] = smallestDistance
+		#Here we should find the row (or the instance) that is closest to this center
+		
+		#Sum across the rows
+		#Identify the row (instance) that has the smallest total sum
+		summedDistances = np.sum(allDistances, axis=1)
+
+		smallestDistance = np.min(summedDistances)
+		
+		testSimilarityMatrix[bagInd, centerInd] = smallestDistance
+
+print "similarity matrix shape: "
+print testSimilarityMatrix.shape
+print "test labels shape: "
+print len(test_labels)
 		
 print "scoring classifier"
-score = rfClassifier.score(testSimilarityMatrix, testLabels)
+score = rfClassifier.score(testSimilarityMatrix, test_labels) #First try with classifying bags, later we can do instance-based classification.
 print score
 
 print rfClassifier.predict(testSimilarityMatrix)
