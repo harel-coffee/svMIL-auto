@@ -11,7 +11,7 @@ __status__ = "Development"
 
 ### Imports ###
 from databaseConnector import DatabaseConnector
-from utilities import writeToCsv
+from utilities import writeToTsv
 from utilities import writeToCsvManual
 
 import time
@@ -50,6 +50,10 @@ class Annotator:
 	def annotate(self, regions):
 		"""
 			Annotate the provided regions with features.
+			
+			
+			TO DO:
+			- Allow features to be turned off in a settings file to make it easier to test the algorithm. 
 			
 			Parameters:
 				regions (numpy matrix): a Numpy matrix of dtype 'object' with on the columns chr 1, s1, e1, chr2, s2, e2, and the regions on the rows.
@@ -110,10 +114,10 @@ class Annotator:
 		"""
 
 		#The writeToCsv does not seem to work somehow, what if we do this by hand? Can we then write to file?
-		writeToCsvManual(sys.argv[2], annotatedRegions)
+		#writeToCsvManual(sys.argv[2], annotatedRegions)
 			
-		#write the merged dictionary to csv, the order of the annotations and regions should column-wise be the same. 
-		#writeToCsv('test.csv', annotatedRegions, False)	
+		#write the merged dictionary to tsv, the order of the annotations and regions should column-wise be the same. 
+		writeToTsv(sys.argv[2], annotatedRegions)	
 		
 		
 		

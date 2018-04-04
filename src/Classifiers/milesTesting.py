@@ -63,12 +63,15 @@ def readAnnotationData(annotationFile):
 		for line in f:
 			#line = line.strip() #do not do this as it removes entries that are empty if these are at the end of the line
 			#print line
-			splitLine = line.split('\t')
+			
 			if lineCount < 1:
+				line = line.strip() #we do not want the newline in the header to be able to match on columns
+				splitLine = line.split('\t')
 				header = splitLine
+				
 				lineCount += 1
 				continue
-		
+			splitLine = line.split('\t')
 			#Obtain required data by header information
 			chr1Index = header.index("chr1")
 			s1Index = header.index("s1")
@@ -115,9 +118,9 @@ def readAnnotationData(annotationFile):
 			
 			#Currently the list-based distance function is very slow for large sets of data, so I already take the sum of the degrees and betweenness here. This also helps to deal with lists of different sizes, for which we need
 			#to use something like sum anway to get to one score. 
-			#currentAnnotations = [identifier, int(noOfGenesInWindow), int(overlappingTadBoundaries), np.sum(np.array(hiCDegree)), np.sum(np.array(hiCBetweenness))]
+			#currentAnnotations = [identifier, int(np.sum(np.array(hiCDegree))), int(np.sum(np.array(hiCBetweenness)))]
 			currentAnnotations = [identifier, int(noOfGenesInWindow), int(overlappingTadBoundaries), int(np.sum(np.array(hiCDegree))), int(np.sum(np.array(hiCBetweenness)))]
-			
+			#currentAnnotations = [identifier, int(noOfGenesInWindow), int(overlappingTadBoundaries)]
 			annotations.append(currentAnnotations)	
 
 	return np.array(annotations, dtype="object")
@@ -262,6 +265,7 @@ for bag in train_bags:
 #For the hiCDegree and hiCBetweenness, we could in principle do the same. If there is a very high degree there, the score will be high. Even if one degree is low, the total score will remain high.
 #The same can be used for the pLI and RVIS. (these are not yet in the code right now)
 distanceFunctions = ["absoluteDistance", "absoluteDistance", "absoluteDistance", "absoluteDistance"]
+distanceFunctions = ["absoluteDistance", "absoluteDistance"]
 #distanceFunctions = ["absoluteDistance", "absoluteDistance", "listAbsoluteDistance", "listAbsoluteDistance"]
 
 def absoluteDistance(center, instances): #compute distance simply based on integer values
