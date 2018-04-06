@@ -12,6 +12,9 @@ __status__ = "Development"
 
 import numpy as np
 import time
+import sys
+sys.path.append('settings/') #Add settings path
+import settings
 
 ### Code ###
 
@@ -19,6 +22,7 @@ class HiCFeatureHandler:
 	"""
 		Class for annotating regions with Hi-C related features. Currently implemented:
 		- Degree
+		- Betweenness
 
 	"""
 	
@@ -28,26 +32,24 @@ class HiCFeatureHandler:
 			
 			Parameters:
 				regions (numpy matrix): a Numpy matrix of dtype 'object' with on the columns chr 1, s1, e1, chr2, s2, e2, and the regions on the rows.
-				hiCData (numpy matrix): matrix with columns chr, start, end, with each node (region with interaction) on the rows. 
+				hiCData (list): List with at each entry a Numpy matrix with columns chr, start, end, with each node (region with interaction) on the rows. For example, element 0 is for the degree data, and 1 for the betweenness data
 				enabledFeatures (list): optional. Not yet implemented. The idea is that a list can be provided that contains the names of features that are enabled in the settings. If necessary, the listed features
 				can be excluded from computation to save computational time. It can be easily implemented by having an if statement checking for that in this function.
 				
 			Returns:
 				annotations (dict): a dictionary with annotations. {'featureName' : [values]}, where the values are in the same order as the provided regions. The value must be a list to guarantee that data is
 				written to the output file in the same manner, even if it has only 1 value.
-				
-			TODO:
-				- Make matrix hiCData compatible with more data types than just the degree. 
-		"""
 
-		degreeAnnotations = self.computeDegreeFeatures(regions, hiCData[0]) #hiCData contains both the degree and the betweenness, separate these here 
-		betweennessAnnotations = self.computeBetweennessFeatures(regions, hiCData[1])
+		"""
 		
 		annotations = dict()
-		annotations['hiCDegree'] = degreeAnnotations
-		annotations['hiCBetweenness'] = betweennessAnnotations
+		if settings.features['hiCDegree'] == True:
+			degreeAnnotations = self.computeDegreeFeatures(regions, hiCData[0]) #hiCData contains both the degree and the betweenness, separate these here
+			annotations['hiCDegree'] = degreeAnnotations
+		if settings.features['hiCBetweenness'] == True:
+			betweennessAnnotations = self.computeBetweennessFeatures(regions, hiCData[1])
+			annotations['hiCBetweenness'] = betweennessAnnotations
 
-		
 		return annotations
 	
 	def computeBetweennessFeatures(self, regions, betweennessData):
@@ -179,7 +181,7 @@ class HiCFeatureHandler:
 			#Now find where both of these are true (multiply because both conditions need to be true)
 			overlappingSvsChr1 = startOverlapChr1 * endOverlapChr1
 			
-			#Only re-do the overlap if chromosome 1 and 2 are different.
+			#Only re-do the overlap if chromosome 1 and 2 are different (will only be the case for SVs).
 			if lineList[0] == lineList[3]:
 				overlappingSvsChr2 = overlappingSvsChr1
 			else:

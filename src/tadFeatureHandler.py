@@ -59,7 +59,8 @@ class TADFeatureHandler:
 		
 		#1. How many tads overlap with each region?
 		#annotations['overlappingTadCount'] = self.computeNumberOfOverlappingTADs(regions, tadData)
-		annotations['overlappingTadBoundaries'] = self.computeNumberOfOverlappingTadsByBoundaries(regions, tadData)
+		if settings.features['numberOfDisruptedTadBoundaries'] == True:
+			annotations['overlappingTadBoundaries'] = self.computeNumberOfOverlappingTadsByBoundaries(regions, tadData)
 		
 		#2. How many boundaries are disrupted by an SV?
 		#- for this query, we need to check if the SV directly overlaps with either a start or end coordinate, so cases where the SV is within the TAD should not count. 
