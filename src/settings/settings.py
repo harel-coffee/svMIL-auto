@@ -27,16 +27,15 @@ neo4j = dict(
 	
 )
 
-#determine which features to enable. The idea is that features can be turned off if necessary without having to modify the code. 
+#determine which features to enable. The idea is that features can be turned off if necessary without having to modify the code.
+#NOTE: does not work well with gene-based features yet, (including overlapping gene count, pLi and RVIS)
 features = dict(
-	nearestTadDistance = True,
-	nearestEnhancerDistance = True,
-	numberOfOverlappingTads = True,
-	numberOfOverlappingEnhancers = True,
-	svLength = True,
+	numberOfOverlappingGenes = True, 
+	numberOfDisruptedTadBoundaries = True,
 	pLi = True,
 	RVIS = True,
-	nearestGeneDistance = True
+	hiCDegree = True,
+	hiCBetweenness = True
 )
 
 
