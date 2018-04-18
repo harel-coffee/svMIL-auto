@@ -7,6 +7,10 @@ Running the code:
 python main.py ../data/TPTNTestSet/TP.txt ../output/TP_annotations.txt
 ```
 
+**IMPORTANT NOTE**
+
+Files that are larger than 100 Mb (and ideally not much larger than 25 Mb) should not be uploaded to GitHub. This includes for example the output file, but also intermediate files. 
+
 Versions on Marleen's laptop (working version):
 
 **Python 2.7.13** <br />

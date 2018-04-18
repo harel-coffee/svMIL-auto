@@ -44,7 +44,8 @@ features = dict(
 inputFiles = dict(
 	geneList = '../data/Genes/MP_Genelist_HGNC_v2.txt',
 	tads = '../data/tads/tads.csv',
-	hiCDegree = '../data/HiC/HUVEC_interchromosomal_degree.csv'
+	hiCDegree = '../data/HiC/HUVEC_intrachromosomal_degree.csv',
+	hiCBetweenness = '../data/HiC/HUVEC_intrachromosomal_betweenness.csv'
 )
 
 parameters = dict(
