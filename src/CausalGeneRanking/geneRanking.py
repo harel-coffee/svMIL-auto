@@ -1,3 +1,5 @@
+import numpy as np
+
 class GeneRanking:
 	"""
 		Class responsible for ranking genes by their causality given the SVs in their neighborhood.
@@ -14,49 +16,48 @@ class GeneRanking:
 	
 	"""
 	
-	
-	
+
 	def __init__(self, genes):
+		
+		
 		
 		
 		#1. Get all unique cancer types and map the gene objects to the right cancer type
 		cancerTypes = dict()
+		
 		for gene in genes:
 			
 			if gene.SVs is not None:
 				for sv in gene.SVs:
-					
 					cancerType = sv.cancerType
 					if cancerType not in cancerTypes.keys():
 						cancerTypes[cancerType] = []
-					else:
-						cancerTypes[cancerType].append(gene)
-		
-		
+					
+					cancerTypes[cancerType].append(sv)
 		
 		for cancerType in cancerTypes:
+			cancerTypeSVs = cancerTypes[cancerType] #Use these SVs to map to the right position in the scoring matrix
+			print cancerTypeSVs
+			#For each cancer type, loop through the genes.
+			#Define the scoring matrix
 			
-			cancerTypeGenes = cancerTypes[cancerType] 
+			scoringMatrix = np.empty([len(cancerTypeSVs), len(genes)])
 			
-			#First check to see if the SVs are really set for all elements
-			print "gene SVs:"
-			for sv in gene.SVs:
-				print sv.chr1, sv.s1, sv.e1
+			for geneInd in range(0, len(genes)):
 				
-			print "right TAD SVs:"
-			for sv in gene.rightTAD.SVs:
-				print sv.chr1, sv.s1, sv.e1
+				gene = genes[geneInd]
 				
-			print "left TAD SVs:"
-			for sv in gene.leftTAD.SVs:
-				print sv.chr1, sv.s1, sv.e1
-			
-			
-			#For the causal genes, first:
-			#1. Make a subset of SVs in a specific cancer type
-			
-			#2. For each sample, if there are SVs overlapping the gene, the score is 1 for that gene and that SV
-			
-			
-			
-			
+				#1. Check which genes are directly overlapped by an SV, these get a score of 1 for these SVs.
+				
+				#Perform additional check to see if the gene has SVs at all
+				
+				geneSVs = gene.SVs
+				
+				for sv in geneSVs:
+					svInd = cancerTypeSVs.index(sv) ##Somehow the SVs here are not in the list, I don't understand why. 
+					
+					scoringMatrix[svInd][geneInd] = 1
+					
+					
+			print scoringMatrix
+					
