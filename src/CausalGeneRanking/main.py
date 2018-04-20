@@ -20,12 +20,17 @@
 	
 
 """
+import sys
+
+from gene import Gene
+from neighborhoodDefiner import NeighborhoodDefiner
+from geneRanking import GeneRanking
 
 #1. Read and parse the causal genes
 
 def readCausalGeneFile(causalGeneFile):
 		
-	cosmicGeneList = [] #later change this into numpy array for quick overlap
+	cosmicGenes = [] #later change this into numpy array for quick overlap
 	with open(causalGeneFile, 'r') as geneFile:
 		
 		lineCount = 0
@@ -59,11 +64,12 @@ def readCausalGeneFile(causalGeneFile):
 			if start == '' or end == '':
 				continue
 			
-			newLine = [geneSymbol, chromosome, int(start), int(end)]
-			cosmicGeneList.append(newLine)
+			gene = Gene(geneSymbol, chromosome, int(start), int(end)) #Keep in objects for easy access of properties related to the neighborhood of the gene
+			
+			cosmicGenes.append(gene)
 			
 	
-	cosmicGenes = np.array(cosmicGeneList, dtype='object')
+	#cosmicGenes = np.array(cosmicGeneList, dtype='object')
 	
 	return cosmicGenes
 
@@ -71,8 +77,10 @@ causalGeneFile = sys.argv[1]
 causalGenes = readCausalGeneFile(causalGeneFile)
 
 #2. Get the neighborhood for these genes
+NeighborhoodDefiner(causalGenes) 
 
-
+#3. Do simple ranking of the genes and report the causal SVs
+GeneRanking(causalGenes)
 
 
 		

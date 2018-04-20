@@ -4,19 +4,28 @@ class Gene:
 		
 	"""
 	
+	
+	
 	def __init__(self, name, chromosome, start, end):
 		
 		self.name = name
 		self.chromosome = chromosome
 		self.start = start
 		self.end = end
-		
+		self.SVs = None
 		
 	def setTADs(self, leftTAD, rightTAD):
 		
 		self.leftTAD = leftTAD
 		self.rightTAD = rightTAD
+	
+	def setLeftTAD(self, leftTAD):
+		self.leftTAD = leftTAD
 		
+	def setRightTAD(self, rightTAD):
+		self.rightTAD = rightTAD
+		
+	
 	def setEQTLS(self, eQTLS):
 		
 		self.eQTLS = eQTLS
