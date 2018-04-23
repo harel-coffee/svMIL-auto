@@ -13,6 +13,8 @@ class Gene:
 		self.start = start
 		self.end = end
 		self.SVs = None
+		self.leftTAD = None
+		self.rightTAD = None
 		
 	def setTADs(self, leftTAD, rightTAD):
 		
