@@ -79,7 +79,7 @@ class GeneRanking:
 					if cancerType not in cancerTypeTotalSVs:
 						cancerTypeTotalSVs[cancerType] = 0
 					
-					if leftTAD not in cancerTypes[cancerType]:
+					if leftTAD not in cancerTypes[cancerType]["TADs"]:
 						cancerTypes[cancerType]["TADs"][leftTAD] = []	
 					
 					cancerTypes[cancerType]["TADs"][leftTAD].append(sv)
@@ -101,13 +101,13 @@ class GeneRanking:
 					if cancerType not in cancerTypeTotalSVs:
 						cancerTypeTotalSVs[cancerType] = 0
 					
-					if rightTAD not in cancerTypes[cancerType]:
+					if rightTAD not in cancerTypes[cancerType]["TADs"]:
 						cancerTypes[cancerType]["TADs"][rightTAD] = []	
 					
 					cancerTypes[cancerType]["TADs"][rightTAD].append(sv)
 					cancerTypeTotalSVs[cancerType] += 1
 					
-				
+		
 		#For each gene, get the SVs.
 		#Only get the SVs of the right cancer type (can be different per gene)
 					
@@ -119,10 +119,29 @@ class GeneRanking:
 			#Define the scoring matrix
 			
 			scoringMatrix = np.zeros([len(svMap), len(geneMap)])
-			scoringMatrix = self.scoreBySVsInGenes(scoringMatrix, cancerTypeSVs["genes"], svMap, geneMap)
+			geneScoringMatrix = self.scoreBySVsInGenes(scoringMatrix, cancerTypeSVs["genes"], svMap, geneMap)
 			tadScoringMatrix = self.scoreBySVsInTADs(scoringMatrix, cancerTypeSVs, svMap, geneMap)
 			#Combine the scoring matrices
 			
+			#First use xor to remove entries where both the TADs and genes are affected by the same SVs
+			xorMatrix = np.logical_xor(geneScoringMatrix, tadScoringMatrix).astype(int)
+			affectedPosGenes =  np.where(geneScoringMatrix > 0)
+			affectedPosTads = np.where(tadScoringMatrix > 0)
+			
+			# XOR would be good if genes and TADs are always affected by the same SV. If the gene is already disrupted, it does not really matter anymore that the TAD is gone as well. Now we are counting this double,
+			# which may not be necessary. 
+			# print affectedPosGenes
+			# print affectedPosTads
+			# 
+			# print np.setdiff1d(affectedPosGenes, affectedPosTads)
+			# 
+			# print xorMatrix
+			# exit()
+			#geneXorMatrix = geneScoringMatrix * xorMatrix
+			#tadXorMatrix = tadScoringMatrix * xorMatrix
+			
+			#scoringMatrix = geneXorMatrix + tadXorMatrix
+			scoringMatrix = geneScoringMatrix + tadScoringMatrix
 			
 			#Sum the total score per gene and report the genes by which ones are most likely causal.
 			
@@ -135,7 +154,7 @@ class GeneRanking:
 
 				gene = geneMap.keys()[geneMap.values().index(geneInd)]
 			
-				if geneScoresSummed[geneInd] > 20:
+				if geneScoresSummed[geneInd] > 0:
 					print gene.name, gene.chromosome, gene.start, ": ", geneScoresSummed[geneInd]	
 		
 			exit()
@@ -173,6 +192,8 @@ class GeneRanking:
 		#Get the left and right TAD for each gene.
 		#The score is 1 for each TAD boundary affected.
 		
+		#Here it goes wrong because we go through the genes that are directly affected by SVs in some cancer type, but the TADs may not be affected in that cancer type. 
+		
 		for geneInd in range(0, len(cancerTypeSVs["genes"])): #first loop over the genes, then get their SVs
 			
 			gene = cancerTypeSVs["genes"].keys()[geneInd]
@@ -183,23 +204,27 @@ class GeneRanking:
 			
 			leftTAD = gene.leftTAD
 			rightTAD = gene.rightTAD
-			leftTADSVs = cancerTypeSVs["TADs"][leftTAD]
-			rightTADSVs = cancerTypeSVs["TADs"][rightTAD]
 			
+			#If the TAD does not have any SVs in that cancer type, skip it.
+			if leftTAD in cancerTypeSVs["TADs"]:
+				leftTADSVs = cancerTypeSVs["TADs"][leftTAD]
+				
+				#2. Add a score of 1 for every affected TAD.
+			
+				for sv in leftTADSVs:
+					
+					matrixSvInd = svMap[sv]
+					
+					scoringMatrix[matrixSvInd][geneInd] = 1
+			
+			if rightTAD in cancerTypeSVs["TADs"]:
+				rightTADSVs = cancerTypeSVs["TADs"][rightTAD]
 
-			#2. Add a score of 1 for every affected TAD.
-			
-			for sv in leftTADSVs:
-				
-				matrixSvInd = svMap[sv]
-				
-				scoringMatrix[matrixSvInd][geneInd] = 1
-			
-			for sv in rightTADSVs:
-				
-				matrixSvInd = svMap[sv]
-				
-				scoringMatrix[matrixSvInd][geneInd] = 1
+				for sv in rightTADSVs:
+					
+					matrixSvInd = svMap[sv]
+					
+					scoringMatrix[matrixSvInd][geneInd] = 1
 			
 		return scoringMatrix
 		
