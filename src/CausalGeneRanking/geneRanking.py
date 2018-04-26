@@ -20,16 +20,20 @@ class GeneRanking:
 	#This part of the code is still very sloppy, it can be distributed into different functions much better, but for now it is ok just to test
 	def __init__(self, genes):
 		
+		#Check if the genes are always annotated int he same way.Where is the random factor?
+		
 		#1. Get all unique cancer types and map the gene objects to the right cancer type
 		cancerTypes = dict()
 	
 		cancerTypeTotalSVs = dict() #save a number of how many SVs are there in total for each cancer type to make the final scoring matrix. 
-		svMap = dict() #SVs and their index in the final scoring matrix. 
+		sampleMap = dict() #samples and their index in the final scoring matrix. 
 		geneMap = dict() #genes adn their index
 		geneIndex = 0 #Keep index for where the genes will be stored in the scoring matrix. 
-		svIndex = 0
+		sampleIndex = 0 #Index for the samples in the scoring matrix
+		reverseGeneMap = dict() #also keep a map where we can search by index to later obtain back the gene from the matrix. 
 		
 		for gene in genes:
+			samplesAndSVCounts = dict()
 			if gene not in geneMap:
 				geneMap[gene] = geneIndex
 				geneIndex += 1
@@ -37,11 +41,16 @@ class GeneRanking:
 			
 			
 			if gene.SVs is not None:
+				
 				for sv in gene.SVs:
 					
-					if sv not in svMap:
-						svMap[sv] = svIndex
-						svIndex += 1
+					if sv.sampleName not in sampleMap:
+						sampleMap[sv.sampleName] = sampleIndex
+						sampleIndex += 1
+						
+					if sv.sampleName not in samplesAndSVCounts:
+						samplesAndSVCounts[sv.sampleName] = 0
+					samplesAndSVCounts[sv.sampleName] += 1
 					
 					cancerType = sv.cancerType
 					if cancerType not in cancerTypes:
@@ -52,14 +61,14 @@ class GeneRanking:
 						cancerTypeTotalSVs[cancerType] = 0
 					
 					#If the gene is not yet in the list of cancer types, add it
-					if gene not in cancerTypes[cancerType]:
+					if gene not in cancerTypes[cancerType]["genes"]:
 						cancerTypes[cancerType]["genes"][gene] = []	
 					
 					#Also add all SVs to that gene that are relevant for this cancer type.
 					
 					cancerTypes[cancerType]["genes"][gene].append(sv)
 					cancerTypeTotalSVs[cancerType] += 1
-			
+				
 			#Also add the SVs affecting TADs to the total list of SVs and the SV map
 			
 			#Get the left TAD
@@ -68,9 +77,9 @@ class GeneRanking:
 			
 			if leftTAD is not None:
 				for sv in leftTAD.SVs:
-					if sv not in svMap:
-						svMap[sv] = svIndex
-						svIndex += 1
+					if sv.sampleName not in sampleMap:
+						sampleMap[sv.sampleName] = sampleIndex
+						sampleIndex += 1
 					cancerType = sv.cancerType
 					if cancerType not in cancerTypes:
 						cancerTypes[cancerType] = dict()
@@ -90,9 +99,9 @@ class GeneRanking:
 			if rightTAD is not None:
 				
 				for sv in rightTAD.SVs:
-					if sv not in svMap:
-						svMap[sv] = svIndex
-						svIndex += 1
+					if sv.sampleName not in sampleMap:
+						sampleMap[sv.sampleName] = sampleIndex
+						sampleIndex += 1
 					cancerType = sv.cancerType
 					if cancerType not in cancerTypes:
 						cancerTypes[cancerType] = dict()
@@ -106,7 +115,10 @@ class GeneRanking:
 					
 					cancerTypes[cancerType]["TADs"][rightTAD].append(sv)
 					cancerTypeTotalSVs[cancerType] += 1
-					
+		
+		for gene in geneMap:
+			index = geneMap[gene]
+			reverseGeneMap[index] = gene
 		
 		#For each gene, get the SVs.
 		#Only get the SVs of the right cancer type (can be different per gene)
@@ -114,59 +126,57 @@ class GeneRanking:
 		for cancerType in cancerTypes:
 			print "cancer type: ", cancerType
 			cancerTypeSVs = cancerTypes[cancerType] #Use these SVs to map to the right position in the scoring matrix
-			#print cancerTypeSVs
+			
 			#For each cancer type, loop through the genes.
 			#Define the scoring matrix
+
+			geneScoringMatrix = self.scoreBySVsInGenes(cancerTypeSVs["genes"], sampleMap, geneMap)
 			
-			scoringMatrix = np.zeros([len(svMap), len(geneMap)])
-			geneScoringMatrix = self.scoreBySVsInGenes(scoringMatrix, cancerTypeSVs["genes"], svMap, geneMap)
-			tadScoringMatrix = self.scoreBySVsInTADs(scoringMatrix, cancerTypeSVs, svMap, geneMap)
+			tadScoringMatrix = self.scoreBySVsInTADs(cancerTypeSVs, sampleMap, geneMap)
+			
 			#Combine the scoring matrices
 			
 			#First use xor to remove entries where both the TADs and genes are affected by the same SVs
 			xorMatrix = np.logical_xor(geneScoringMatrix, tadScoringMatrix).astype(int)
-			affectedPosGenes =  np.where(geneScoringMatrix > 0)
-			affectedPosTads = np.where(tadScoringMatrix > 0)
 			
-			# XOR would be good if genes and TADs are always affected by the same SV. If the gene is already disrupted, it does not really matter anymore that the TAD is gone as well. Now we are counting this double,
-			# which may not be necessary. 
-			# print affectedPosGenes
-			# print affectedPosTads
-			# 
-			# print np.setdiff1d(affectedPosGenes, affectedPosTads)
-			# 
-			# print xorMatrix
-			# exit()
-			#geneXorMatrix = geneScoringMatrix * xorMatrix
-			#tadXorMatrix = tadScoringMatrix * xorMatrix
+			geneXorMatrix = geneScoringMatrix * xorMatrix
+			tadXorMatrix = tadScoringMatrix * xorMatrix
 			
-			#scoringMatrix = geneXorMatrix + tadXorMatrix
-			scoringMatrix = geneScoringMatrix + tadScoringMatrix
+			scoringMatrix = geneXorMatrix + tadXorMatrix
 			
+			
+			#exit()
 			#Sum the total score per gene and report the genes by which ones are most likely causal.
-			
+
 			geneScoresSummed = np.sum(scoringMatrix, axis=0)
 			
 			#Sort and report the names of the genes that are involved
 			sortedGenesInd = np.argsort(geneScoresSummed)[::-1]
-
-			for geneInd in sortedGenesInd:
-
-				gene = geneMap.keys()[geneMap.values().index(geneInd)]
 			
+			
+			
+			geneCount = 0
+			for geneInd in sortedGenesInd:
+				
+				gene = geneMap.keys()[geneMap.values().index(geneInd)] #Isn't this the part that is going wrong? The best index is probably the index in the matrix? 
+				gene = reverseGeneMap[geneInd]
+				 
 				if geneScoresSummed[geneInd] > 0:
+					geneCount += 1
 					print gene.name, gene.chromosome, gene.start, ": ", geneScoresSummed[geneInd]	
-		
+			print "total genes: ", geneCount
 			exit()
 	
 	
 	#The issue that we run into here is that there are different SVs, but mapping between indices of all SVs and genes is rather tough. 		
-	def scoreBySVsInGenes(self, scoringMatrix, cancerTypeSVs, svMap, geneMap):
-		#In this function, loop through the genes and SVs and give the right score.  
-
+	def scoreBySVsInGenes(self, cancerTypeSVs, sampleMap, geneMap):
+		#In this function, loop through the genes and SVs and give the right score.
+		scoringMatrix = np.zeros([len(sampleMap), len(geneMap)])
+		checkedSampleInds = []
+		
 		for geneInd in range(0, len(cancerTypeSVs)): #first loop over the genes, then get their SVs
-			
 			gene = cancerTypeSVs.keys()[geneInd]
+			
 			
 			matrixGeneInd = geneMap[gene]
 			
@@ -175,19 +185,30 @@ class GeneRanking:
 			#Perform additional check to see if the gene has SVs at all
 			
 			geneSVs = cancerTypeSVs[gene]
-			
-			for svInd in range(0, len(geneSVs)):
-				
-				#If the SV is not in the list of SVs, it is from a different cancer type, do not score it. 
-				matrixSvInd = svMap[geneSVs[svInd]]
-				
-				scoringMatrix[matrixSvInd][matrixGeneInd] = 1
 		
+			
+			geneUniqueSamples = dict()
+			for svInd in range(0, len(geneSVs)):
+			
+				
+				#check the sample of this sv
+				sampleName = geneSVs[svInd].sampleName
+				sampleInd = sampleMap[sampleName]
+				
+				
+					
+				#If the SV is not in the list of SVs, it is from a different cancer type, do not score it. 
+				#matrixSvInd = svMap[geneSVs[svInd]]
+				
+				scoringMatrix[sampleInd][matrixGeneInd] += 1
+	
 		return scoringMatrix
 		
 	#Make sure that the scoring matrix has the same dimensions
 	#However here we need to make sure that the filtered set of SVs is also applicable to the TADs. 
-	def scoreBySVsInTADs(self, scoringMatrix, cancerTypeSVs, svMap, geneMap):
+	def scoreBySVsInTADs(self, cancerTypeSVs, sampleMap, geneMap):
+		
+		scoringMatrix = np.zeros([len(sampleMap), len(geneMap)])
 		
 		#Get the left and right TAD for each gene.
 		#The score is 1 for each TAD boundary affected.
@@ -198,34 +219,50 @@ class GeneRanking:
 			
 			gene = cancerTypeSVs["genes"].keys()[geneInd]
 			
+			
 			matrixGeneInd = geneMap[gene]
+			
 			
 			#1. Check the left and right TAD
 			
 			leftTAD = gene.leftTAD
 			rightTAD = gene.rightTAD
 			
+			if gene.name == "MUC1":
+				print leftTAD.chromosome, leftTAD.start, leftTAD.end
+				print rightTAD.chromosome, rightTAD.start, rightTAD.end
+			
+			
 			#If the TAD does not have any SVs in that cancer type, skip it.
 			if leftTAD in cancerTypeSVs["TADs"]:
 				leftTADSVs = cancerTypeSVs["TADs"][leftTAD]
 				
 				#2. Add a score of 1 for every affected TAD.
-			
+				
+				if gene.name == "MUC1":
+					print "Number of SVs in left TAD: "
+					print len(leftTADSVs)
+				
 				for sv in leftTADSVs:
 					
-					matrixSvInd = svMap[sv]
+					sampleInd = sampleMap[sv.sampleName]
 					
-					scoringMatrix[matrixSvInd][geneInd] = 1
+					scoringMatrix[sampleInd][matrixGeneInd] += 1
 			
 			if rightTAD in cancerTypeSVs["TADs"]:
 				rightTADSVs = cancerTypeSVs["TADs"][rightTAD]
 
+				if gene.name == "MUC1":
+					print "Number of SVs in right TAD: "
+					print len(rightTADSVs)
+
+					
 				for sv in rightTADSVs:
 					
-					matrixSvInd = svMap[sv]
+					sampleInd = sampleMap[sv.sampleName]
 					
-					scoringMatrix[matrixSvInd][geneInd] = 1
-			
+					scoringMatrix[sampleInd][matrixGeneInd] += 1
+		
 		return scoringMatrix
 		
 		
