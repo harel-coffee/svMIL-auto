@@ -116,6 +116,9 @@ class GeneRanking:
 					cancerTypes[cancerType]["TADs"][rightTAD].append(sv)
 					cancerTypeTotalSVs[cancerType] += 1
 		
+			#Get the eQTLs and add the SVs to the right cancer type
+		
+		
 		for gene in geneMap:
 			index = geneMap[gene]
 			reverseGeneMap[index] = gene
@@ -131,17 +134,19 @@ class GeneRanking:
 			#Define the scoring matrix
 
 			geneScoringMatrix = self.scoreBySVsInGenes(cancerTypeSVs["genes"], sampleMap, geneMap)
+			scoringMatrix = geneScoringMatrix
 			
-			tadScoringMatrix = self.scoreBySVsInTADs(cancerTypeSVs, sampleMap, geneMap)
-			
-			#Combine the scoring matrices
-			
-			#First use xor to remove entries where both the TADs and genes are affected by the same SVs
-			xorMatrix = np.logical_xor(geneScoringMatrix, tadScoringMatrix).astype(int)
-			
-			geneXorMatrix = geneScoringMatrix * xorMatrix
-			tadXorMatrix = tadScoringMatrix * xorMatrix
-			
+			#Leave out the TADs for now to test with eQTLs
+			# tadScoringMatrix = self.scoreBySVsInTADs(cancerTypeSVs, sampleMap, geneMap)
+			# 
+			# #Combine the scoring matrices
+			# 
+			# #First use xor to remove entries where both the TADs and genes are affected by the same SVs
+			# xorMatrix = np.logical_xor(geneScoringMatrix, tadScoringMatrix).astype(int)
+			# 
+			# geneXorMatrix = geneScoringMatrix * xorMatrix
+			# tadXorMatrix = tadScoringMatrix * xorMatrix
+			# 
 			scoringMatrix = geneXorMatrix + tadXorMatrix
 			
 			

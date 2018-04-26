@@ -225,6 +225,8 @@ class NeighborhoodDefiner:
 		"""
 			Take as input gene objects with the neighborhood pre-set, and search through the SVs to find which SVs overlap the genes, TADs and eQTLs in the gene neighborhood
 		
+			This function will need to be properly split into multiple functions. 
+		
 		"""
 		
 		previousChr = None
@@ -349,10 +351,24 @@ class NeighborhoodDefiner:
 				gene.rightTAD.setSVs(svsOverlappingRightTAD)
 			
 			#Check which SVs overlap with the eQTLs
+			
+			#Repeat for eQTLs. Is the gene on the same chromosome as the eQTL? Then use the above chromosome subset.
+			
+			geneEQTLs = gene.eQTLs
+			
+			for eQTL in geneEQTLs: #only if the gene has eQTLs
+				
+				startMatches = eQTL.start <= svSubset[:,2]
+				endMatches = eQTL.end >= svSubset[:,1]
+				
+				allMatches = startMatches * endMatches
+				
+				svsOverlappingEQTL = svSubset[allMatches, 10]
+				eQTL.setSVs(svsOverlappingEQTL)
+			
 		
 		
-		
-		
+		exit()
 		
 		
 	
