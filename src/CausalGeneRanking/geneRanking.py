@@ -265,11 +265,6 @@ class GeneRanking:
 		
 		return scoringMatrix
 		
-		
-		
-		
-		
-		
-		1+1
+
 		
 					

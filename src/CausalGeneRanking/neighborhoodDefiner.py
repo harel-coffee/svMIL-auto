@@ -3,6 +3,7 @@ import numpy as np
 from tad import TAD
 from sv import SV
 from gene import Gene
+from eQTL import EQTL
 
 
 class NeighborhoodDefiner:
@@ -28,6 +29,9 @@ class NeighborhoodDefiner:
 		self.mapTADsToGenes(genes, tadData)
 		
 		#2. Map genes to eQTLs
+		
+		eQTLFile = "../../data/eQTLs/eQTLsFilteredForCausalGenes.txt"
+		eQTLData = self.getEQTLsFromFile(eQTLFile, genes)
 		
 		#3. Map SVs to all neighborhood elements
 		svFile = "../../data/TPTNTestSet/TP.txt"
@@ -68,9 +72,28 @@ class NeighborhoodDefiner:
 		return tadData
 		
 		
-	def getEQTLsFromFile(self, eQTLFile):
+	def getEQTLsFromFile(self, eQTLFile, genes):
 		
-		1+1
+		eQTLs = []
+		with open(eQTLFile, 'rb') as f:
+			
+			lineCount = 0
+			for line in f:
+				if lineCount < 1:
+					lineCount += 1
+					continue
+				
+				line = line.strip()
+				splitLine = line.split("\t")
+				
+				eQTLObject = EQTL(splitLine[0], splitLine[1], splitLine[2]) #chr, start, end
+				
+				#The mapping information is in the file, so we can already do it here
+				self.mapEQTLsToGenes(eQTLObject, genes, splitLine[3])
+						
+				eQTLs.append(eQTLObject)				
+		
+		return eQTLs
 		
 	def getSVsFromFile(self, svFile):
 			
@@ -186,10 +209,17 @@ class NeighborhoodDefiner:
 			
 			
 		
-	def mapEQTLsToGenes(self, eQTLs):
+	def mapEQTLsToGenes(self, eQTL, genes, geneSymbol):
+		"""
+			Map the right gene object to the eQTL object. 
 		
-		1+1
-		
+		"""
+		for gene in genes:
+			
+			if gene.name == geneSymbol:
+				
+				gene.addEQTL(eQTL)
+			
 		
 	def mapSVsToNeighborhood(self, genes, svData):
 		"""

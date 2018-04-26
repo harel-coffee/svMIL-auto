@@ -15,6 +15,7 @@ class Gene:
 		self.SVs = None
 		self.leftTAD = None
 		self.rightTAD = None
+		self.eQTLs = []
 		
 	def setTADs(self, leftTAD, rightTAD):
 		
@@ -35,3 +36,7 @@ class Gene:
 	def setSVs(self, SVs):
 		
 		self.SVs = SVs
+		
+		
+	def addEQTL(self, eQTL):
+		self.eQTLs.append(eQTL)
