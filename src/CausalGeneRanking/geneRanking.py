@@ -57,6 +57,7 @@ class GeneRanking:
 						cancerTypes[cancerType] = dict()
 						cancerTypes[cancerType]["genes"] = dict()
 						cancerTypes[cancerType]["TADs"] = dict()
+						cancerTypes[cancerType]["eQTLs"] = dict()
 					if cancerType not in cancerTypeTotalSVs:
 						cancerTypeTotalSVs[cancerType] = 0
 					
@@ -85,6 +86,7 @@ class GeneRanking:
 						cancerTypes[cancerType] = dict()
 						cancerTypes[cancerType]["genes"] = dict()
 						cancerTypes[cancerType]["TADs"] = dict()
+						cancerTypes[cancerType]["eQTLs"] = dict()
 					if cancerType not in cancerTypeTotalSVs:
 						cancerTypeTotalSVs[cancerType] = 0
 					
@@ -107,6 +109,7 @@ class GeneRanking:
 						cancerTypes[cancerType] = dict()
 						cancerTypes[cancerType]["genes"] = dict()
 						cancerTypes[cancerType]["TADs"] = dict()
+						cancerTypes[cancerType]["eQTLs"] = dict()
 					if cancerType not in cancerTypeTotalSVs:
 						cancerTypeTotalSVs[cancerType] = 0
 					
@@ -117,7 +120,31 @@ class GeneRanking:
 					cancerTypeTotalSVs[cancerType] += 1
 		
 			#Get the eQTLs and add the SVs to the right cancer type
+			
+			eQTLs = gene.eQTLs
+			
+			for eQTL in eQTLs:
+				for sv in eQTLs.SVs:
+					if sv.sampleName not in sampleMap:
+						sampleMap[sv.sampleName] = sampleIndex
+						sampleIndex += 1
+						
+					cancerType = sv.cancerType
+					if cancerType not in cancerTypes:
+						cancerTypes[cancerType] = dict()
+						cancerTypes[cancerType]["genes"] = dict()
+						cancerTypes[cancerType]["TADs"] = dict()
+						cancerTypes[cancerType]["eQTLs"] = dict()
+					if cancerType not in cancerTypeTotalSVs:
+						cancerTypeTotalSVs[cancerType] = 0
+					
+					if eQTL not in cancerTypes[cancerType]["eQTLs"]:
+						cancerTypes[cancerType]["eQTLs"][eQTL] = []	
+					
+					cancerTypes[cancerType]["eQTLs"][eQTL].append(sv)
+					cancerTypeTotalSVs[cancerType] += 1
 		
+		exit()
 		
 		for gene in geneMap:
 			index = geneMap[gene]
