@@ -14,7 +14,7 @@ class EQTL:
 		self.start = start
 		self.end = end
 		self.enhancerStatus = "N" #y default not an enhancer
-		self.SVs = None
+		self.SVs = []
 		
 	def setSVs(self, SVs):
 		

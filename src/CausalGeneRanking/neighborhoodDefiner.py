@@ -86,7 +86,7 @@ class NeighborhoodDefiner:
 				line = line.strip()
 				splitLine = line.split("\t")
 				
-				eQTLObject = EQTL(splitLine[0], splitLine[1], splitLine[2]) #chr, start, end
+				eQTLObject = EQTL(splitLine[0], int(splitLine[1]), int(splitLine[2])) #chr, start, end
 				
 				#The mapping information is in the file, so we can already do it here
 				self.mapEQTLsToGenes(eQTLObject, genes, splitLine[3])
@@ -358,14 +358,20 @@ class NeighborhoodDefiner:
 			
 			for eQTL in geneEQTLs: #only if the gene has eQTLs
 				
+				
+				
 				startMatches = eQTL.start <= svSubset[:,2]
 				endMatches = eQTL.end >= svSubset[:,1]
 				
 				allMatches = startMatches * endMatches
 				
+				
+				
 				svsOverlappingEQTL = svSubset[allMatches, 10]
+
+				
 				eQTL.setSVs(svsOverlappingEQTL)
-			
+
 		
 		
 		
