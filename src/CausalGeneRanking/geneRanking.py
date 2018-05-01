@@ -161,33 +161,15 @@ class GeneRanking:
 			#Define the scoring matrix
 
 			geneScoringMatrix = self.scoreBySVsInGenes(cancerTypeSVs["genes"], sampleMap, geneMap)
-			eQTLScoringMatrix = self.scoreBySVsInEQTLs(cancerTypeSVs, sampleMap, geneMap)
-			
-			
-			
-			#scoringMatrix = eQTLScoringMatrix
-			
-			#Leave out the TADs for now to test with eQTLs
-			# tadScoringMatrix = self.scoreBySVsInTADs(cancerTypeSVs, sampleMap, geneMap)
-			# 
-			# #Combine the scoring matrices
-			# 
-			# #First use xor to remove entries where both the TADs and genes are affected by the same SVs
-			# xorMatrix = np.logical_xor(geneScoringMatrix, tadScoringMatrix).astype(int)
-			# 
-			# geneXorMatrix = geneScoringMatrix * xorMatrix
-			# tadXorMatrix = tadScoringMatrix * xorMatrix
-			# 
-			#scoringMatrix = geneXorMatrix + tadXorMatrix
-			
+			eQTLScoringMatrix = self.scoreBySVsInEQTLs(cancerTypeSVs, sampleMap, geneMap, cancerType)
+			tadScoringMatrix = self.scoreBySVsInTADs(cancerTypeSVs, sampleMap, geneMap, cancerType)
+
 			xorMatrix = np.logical_xor(geneScoringMatrix, eQTLScoringMatrix).astype(int)
 			geneXorMatrix = geneScoringMatrix * xorMatrix
 			eQTLXorMatrix = eQTLScoringMatrix * xorMatrix
-			
-			
-			
-			
-			scoringMatrix = geneXorMatrix + eQTLXorMatrix
+			tadXorMatrix = tadScoringMatrix * xorMatrix
+
+			scoringMatrix = geneXorMatrix + eQTLXorMatrix + tadXorMatrix
 			
 			#exit()
 			#Sum the total score per gene and report the genes by which ones are most likely causal.
@@ -204,10 +186,12 @@ class GeneRanking:
 				
 				gene = geneMap.keys()[geneMap.values().index(geneInd)] #Isn't this the part that is going wrong? The best index is probably the index in the matrix? 
 				gene = reverseGeneMap[geneInd]
-				 
+				
+				
 				if geneScoresSummed[geneInd] > 0:
 					geneCount += 1
-					print gene.name, gene.chromosome, gene.start, ": ", geneScoresSummed[geneInd]	
+					print gene.name, gene.chromosome, gene.start, ": ", geneScoresSummed[geneInd], " gene score: ", np.sum(geneXorMatrix[:,geneInd]), " eQTL score: ", np.sum(eQTLXorMatrix[:,geneInd]), " TAD score: ", np.sum(tadXorMatrix[:,geneInd])	
+			
 			print "total genes: ", geneCount
 			exit()
 	
@@ -250,7 +234,7 @@ class GeneRanking:
 		
 	#Make sure that the scoring matrix has the same dimensions
 	#However here we need to make sure that the filtered set of SVs is also applicable to the TADs. 
-	def scoreBySVsInTADs(self, cancerTypeSVs, sampleMap, geneMap):
+	def scoreBySVsInTADs(self, cancerTypeSVs, sampleMap, geneMap, cancerType):
 		
 		scoringMatrix = np.zeros([len(sampleMap), len(geneMap)])
 		
@@ -288,10 +272,9 @@ class GeneRanking:
 					print len(leftTADSVs)
 				
 				for sv in leftTADSVs:
-					
 					sampleInd = sampleMap[sv.sampleName]
-					
-					scoringMatrix[sampleInd][matrixGeneInd] += 1
+					if sv.cancerType == cancerType:
+						scoringMatrix[sampleInd][matrixGeneInd] += 1
 			
 			if rightTAD in cancerTypeSVs["TADs"]:
 				rightTADSVs = cancerTypeSVs["TADs"][rightTAD]
@@ -305,7 +288,9 @@ class GeneRanking:
 					
 					sampleInd = sampleMap[sv.sampleName]
 					
-					scoringMatrix[sampleInd][matrixGeneInd] += 1
+					if sv.cancerType == cancerType:
+					
+						scoringMatrix[sampleInd][matrixGeneInd] += 1
 		
 		return scoringMatrix
 		
@@ -313,7 +298,7 @@ class GeneRanking:
 		
 					
 					
-	def scoreBySVsInEQTLs(self, cancerTypeSVs, sampleMap, geneMap):
+	def scoreBySVsInEQTLs(self, cancerTypeSVs, sampleMap, geneMap, cancerType):
 		
 		scoringMatrix = np.zeros([len(sampleMap), len(geneMap)])
 		
@@ -321,7 +306,8 @@ class GeneRanking:
 		#The score is 1 for each TAD boundary affected.
 		
 		#Here it goes wrong because we go through the genes that are directly affected by SVs in some cancer type, but the TADs may not be affected in that cancer type. 
-		
+		foundSamples = []
+		sampleCount = dict()
 		for geneInd in range(0, len(cancerTypeSVs["genes"])): #first loop over the genes, then get their SVs
 			
 			gene = cancerTypeSVs["genes"].keys()[geneInd]
@@ -333,18 +319,33 @@ class GeneRanking:
 			
 			for eQTL in eQTLs:
 				
+				
 				if eQTL in cancerTypeSVs["eQTLs"]: #only score this eQTL if it has overlapping SVs in this particular cancer type
 					
 					for sv in eQTL.SVs:
 						
-						sampleInd = sampleMap[sv.sampleName]
-						scoringMatrix[sampleInd][matrixGeneInd] += 1
+						if sv.cancerType == cancerType:
+							
+							if gene.name == "CNBD1":
+							
+								
+								if sv.sampleName not in sampleCount:
+									sampleCount[sv.sampleName] = 0
+								sampleCount[sv.sampleName] += 1
+							
+									
+								foundSamples.append([sv.cancerType, sv.sampleName, sv.chr1, sv.s1, sv.e1, sv.chr2, sv.s2, sv.e2])
+							
+							sampleInd = sampleMap[sv.sampleName]
+							scoringMatrix[sampleInd][matrixGeneInd] += 1
 			
+		
 			
 			#Divide the score at each position in the matrix by the total number of eQTLs mapped to this gene. It would be ideal to do this on the final summed matrix, but is more difficult because of the combination.
 			for row in range(0, scoringMatrix.shape[0]):
-				scoringMatrix[row][matrixGeneInd] = scoringMatrix[row][matrixGeneInd] / len(eQTLs)
-			
+				if scoringMatrix[row][matrixGeneInd] > 0:
+					scoringMatrix[row][matrixGeneInd] = scoringMatrix[row][matrixGeneInd] / len(eQTLs)
+	
 						
 		return scoringMatrix
 		
