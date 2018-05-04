@@ -16,6 +16,9 @@ class GeneRanking:
 	
 	"""
 	
+	
+	#temporary global
+	self.scores = dict()
 
 	#This part of the code is still very sloppy, it can be distributed into different functions much better, but for now it is ok just to test
 	def __init__(self, genes):
@@ -32,7 +35,7 @@ class GeneRanking:
 		sampleIndex = 0 #Index for the samples in the scoring matrix
 		reverseGeneMap = dict() #also keep a map where we can search by index to later obtain back the gene from the matrix. 
 		
-		
+		scores = dict() #save the final scores per gene per cancer type. 
 		for gene in genes:
 			samplesAndSVCounts = dict()
 			if gene not in geneMap:
@@ -182,6 +185,7 @@ class GeneRanking:
 			
 			
 			geneCount = 0
+			geneScores = []
 			for geneInd in sortedGenesInd:
 				
 				gene = geneMap.keys()[geneMap.values().index(geneInd)] #Isn't this the part that is going wrong? The best index is probably the index in the matrix? 
@@ -190,10 +194,19 @@ class GeneRanking:
 				
 				if geneScoresSummed[geneInd] > 0:
 					geneCount += 1
-					print gene.name, gene.chromosome, gene.start, ": ", geneScoresSummed[geneInd], " gene score: ", np.sum(geneXorMatrix[:,geneInd]), " eQTL score: ", np.sum(eQTLXorMatrix[:,geneInd]), " TAD score: ", np.sum(tadXorMatrix[:,geneInd])	
+					#print gene.name, gene.chromosome, gene.start, ": ", geneScoresSummed[geneInd], " gene score: ", np.sum(geneXorMatrix[:,geneInd]), " eQTL score: ", np.sum(eQTLXorMatrix[:,geneInd]), " TAD score: ", np.sum(tadXorMatrix[:,geneInd])	
 			
-			print "total genes: ", geneCount
-			exit()
+				geneScores.append([gene, np.sum(geneXorMatrix[:,geneInd]), np.sum(eQTLXorMatrix[:,geneInd]), np.sum(tadXorMatrix[:,geneInd])])
+			
+			
+			geneScores = np.array(geneScores, dtype="object")
+			scores[cancerType] = geneScores
+			#print "total genes: ", geneCount
+		self.scores = scores #make it global for now because I can't return from here. When everything here is a proper function, this should be fixed. 
+			
+			
+			#It would be nice to do the scoring steps above in a function as well
+			
 	
 	
 	#The issue that we run into here is that there are different SVs, but mapping between indices of all SVs and genes is rather tough. 		
@@ -256,10 +269,10 @@ class GeneRanking:
 			leftTAD = gene.leftTAD
 			rightTAD = gene.rightTAD
 			
-			if gene.name == "MUC1":
-				print leftTAD.chromosome, leftTAD.start, leftTAD.end
-				print rightTAD.chromosome, rightTAD.start, rightTAD.end
-			
+			# if gene.name == "MUC1":
+			# 	print leftTAD.chromosome, leftTAD.start, leftTAD.end
+			# 	print rightTAD.chromosome, rightTAD.start, rightTAD.end
+			# 
 			
 			#If the TAD does not have any SVs in that cancer type, skip it.
 			if leftTAD in cancerTypeSVs["TADs"]:
@@ -267,10 +280,10 @@ class GeneRanking:
 				
 				#2. Add a score of 1 for every affected TAD.
 				
-				if gene.name == "MUC1":
-					print "Number of SVs in left TAD: "
-					print len(leftTADSVs)
-				
+				# if gene.name == "MUC1":
+				# 	print "Number of SVs in left TAD: "
+				# 	print len(leftTADSVs)
+				# 
 				for sv in leftTADSVs:
 					sampleInd = sampleMap[sv.sampleName]
 					if sv.cancerType == cancerType:
@@ -278,10 +291,10 @@ class GeneRanking:
 			
 			if rightTAD in cancerTypeSVs["TADs"]:
 				rightTADSVs = cancerTypeSVs["TADs"][rightTAD]
-
-				if gene.name == "MUC1":
-					print "Number of SVs in right TAD: "
-					print len(rightTADSVs)
+				# 
+				# if gene.name == "MUC1":
+				# 	print "Number of SVs in right TAD: "
+				# 	print len(rightTADSVs)
 
 					
 				for sv in rightTADSVs:
