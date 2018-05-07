@@ -23,6 +23,7 @@
 import sys
 import numpy as np
 import random
+import matplotlib as plt
 
 from gene import Gene
 from neighborhoodDefiner import NeighborhoodDefiner
@@ -33,7 +34,7 @@ from sv import SV
 
 def readCausalGeneFile(causalGeneFile):
 		
-	cosmicGenes = [] #later change this into numpy array for quick overlap
+	cosmicGenes = [] 
 	with open(causalGeneFile, 'r') as geneFile:
 		
 		lineCount = 0
@@ -69,12 +70,15 @@ def readCausalGeneFile(causalGeneFile):
 			
 			gene = Gene(geneSymbol, chromosome, int(start), int(end)) #Keep in objects for easy access of properties related to the neighborhood of the gene
 			
-			cosmicGenes.append(gene)
+			cosmicGenes.append([chromosome, int(start), int(end), gene])
 			
+	#Sort the genes
+	cosmicGenes = np.array(cosmicGenes, dtype='object')
 	
-	#cosmicGenes = np.array(cosmicGeneList, dtype='object')
-	
-	return cosmicGenes
+	sortedInd = np.lexsort((cosmicGenes[:,1], cosmicGenes[:,0])) #first sort by chromosome and then by start position. 
+	cosmicGenesSorted = cosmicGenes[sortedInd]
+
+	return cosmicGenesSorted
 
 causalGeneFile = sys.argv[1]
 causalGenes = readCausalGeneFile(causalGeneFile)
@@ -145,11 +149,13 @@ svFile = "../../data/TPTNTestSet/TP.txt" #should be a setting
 svData = getSVsFromFile(svFile)
 
 #2. Get the neighborhood for these genes
-#NeighborhoodDefiner(causalGenes, svData) 
+print "Defining the neighborhood for the causal genes and the real SVs"
+NeighborhoodDefiner(causalGenes, svData) 
 
 #3. Do simple ranking of the genes and report the causal SVs
-#GeneRanking(causalGenes)
-
+print "Ranking the genes for the SVs"
+realGeneRanking = GeneRanking(causalGenes[:,3])
+realScores = realGeneRanking.scores
 
 #4. Randomly shuffle the SVs 1000 times
 
@@ -238,8 +244,9 @@ for sv in svData:
 		newEnd1 = random.randint(minimumStart1, maximumStart2) #chr2 has the same start coordinate as chr 1
 		newEnd2 = newEnd1 + endDifference
 		
-	#Sample name and cancer type can be copied from the other SV. Chromosome information also remains the same. 	
-	newSvObj = SV(chromosome1, newStart1, newStart2, chromosome2, newEnd1, newEnd2, sv[6], sv[7])
+	#Sample name and cancer type can be copied from the other SV. Chromosome information also remains the same.
+	#Keep in mind that the sample name and cancer type are reversed in the SV object beause that order makes more sense. 
+	newSvObj = SV(chromosome1, newStart1, newStart2, chromosome2, newEnd1, newEnd2, sv[7], sv[6])
 	newSv = [chromosome1, newStart1, newStart2, chromosome2, newEnd1, newEnd2, sv[6], sv[7], newSvObj]	
 	shuffledSvs.append(newSv)	
 
@@ -249,17 +256,91 @@ shuffledSvs = np.array(shuffledSvs, dtype="object")
 print shuffledSvs
 
 #We have to make sure here that the objects will not get overlaps with previous objects
+print "Defining the neighborhood for the causal genes and shuffled SVs"
 NeighborhoodDefiner(causalGenes, shuffledSvs)
 
 #6. Rank the shuffled genes
-geneRanking = GeneRanking(causalGenes)
+print "Ranking the genes for the shuffled SVs"
+geneRanking = GeneRanking(causalGenes[:,3])
 
 #7. Compute p-values
 
 #For each cancer type, get the scores of the genes after shuffling.
 
+#We wish to have a distribution per gene, so it would be ideal to score the scores of all permutations per gene instead, rather than per permutation.
 
+#A dictionary will suffice, per cancer type an array of permutation scores.
 
+scores = geneRanking.scores
+
+perGeneScores = dict()
+geneIndices = dict()
+geneIndex = 0
+permutationInd = 0
+noOfPermutations = 10
+for cancerType in scores:
+	
+	cancerTypeScores = scores[cancerType]
+	
+	print cancerTypeScores
+	perGeneScores[cancerType] = dict()
+	perGeneScores[cancerType]["geneScore"] = np.zeros([len(causalGenes), noOfPermutations])
+	perGeneScores[cancerType]["eQTLScore"] = np.zeros([len(causalGenes), noOfPermutations])
+	perGeneScores[cancerType]["tadScore"] = np.zeros([len(causalGenes), noOfPermutations])
+	
+	for row in range(0, cancerTypeScores.shape[0]):
+		gene = cancerTypeScores[row][0]
+		geneName = gene.name
+		
+		#make a matrix of genes by permutations
+		
+		#Keep the index of this gene in the matrix
+		geneIndices[geneName] = geneIndex
+		
+
+		perGeneScores[cancerType]["geneScore"][geneIndex, permutationInd] = cancerTypeScores[row, 1]
+		perGeneScores[cancerType]["eQTLScore"][geneIndex, permutationInd] = cancerTypeScores[row, 2]
+		perGeneScores[cancerType]["tadScore"][geneIndex, permutationInd] = cancerTypeScores[row, 3]
+	
+		geneIndex += 1 #for the next iteration of permutations, make sure that we use the right gene indices that we previously stored
+	
+	print perGeneScores
+
+#Check how many of the permutation scores for this gene are larger than the observed gene score for this gene.
+#We can compute this separately per layer, and then rank them based on having the highest score in most columns. 
+	
+for cancerType in realScores:
+	
+	cancerTypeScores = realScores[cancerType]
+	
+	for row in range(0, cancerTypeScores.shape[0]):
+	
+		#Get the distribution of scores for the permutation for this gene
+		gene = cancerTypeScores[row][0]
+		geneName = gene.name
+		
+		geneScore = cancerTypeScores[row,1]
+		eQTLScore = cancerTypeScores[row,2]
+		tadScore = cancerTypeScores[row,3]
+		
+		geneIndex = geneIndices[geneName]
+		
+		permutedGeneScores = perGeneScores[cancerType]["geneScore"][geneIndex]
+		permutedEQTLScores = perGeneScores[cancerType]["eQTLScore"][geneIndex]
+		permutedTADScores = perGeneScores[cancerType]["tadScore"][geneIndex]
+		
+		#First compute the p-value for the gene score layer
+		proportion = (np.sum((permutedGeneScores >= geneScore).astype(int)) + 1) / (len(permutedGeneScores) + 1) #I think we need equals, when the sum is the same, the value should be TRUE and receive a lower p-value. 
+		
+		print "gene: ", geneName
+		print "p-value for the gene layer: ", proportion
+		
+			
+		
+		
+		
+		
+	
 
 
 

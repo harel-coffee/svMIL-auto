@@ -16,10 +16,6 @@ class GeneRanking:
 	
 	"""
 	
-	
-	#temporary global
-	self.scores = dict()
-
 	#This part of the code is still very sloppy, it can be distributed into different functions much better, but for now it is ok just to test
 	def __init__(self, genes):
 		
@@ -35,7 +31,10 @@ class GeneRanking:
 		sampleIndex = 0 #Index for the samples in the scoring matrix
 		reverseGeneMap = dict() #also keep a map where we can search by index to later obtain back the gene from the matrix. 
 		
-		scores = dict() #save the final scores per gene per cancer type. 
+		scores = dict() #save the final scores per gene per cancer type.
+		
+		
+		print "ordering genes by cancer types"
 		for gene in genes:
 			samplesAndSVCounts = dict()
 			if gene not in geneMap:
@@ -43,7 +42,7 @@ class GeneRanking:
 				geneIndex += 1
 				
 			
-			
+			#print "mapping genes to cancer types"
 			if gene.SVs is not None:
 				
 				for sv in gene.SVs:
@@ -76,6 +75,8 @@ class GeneRanking:
 				
 			#Also add the SVs affecting TADs to the total list of SVs and the SV map
 			
+			#print "mapping left TAD SVs to cancer type"
+			
 			#Get the left TAD
 			leftTAD = gene.leftTAD
 			
@@ -99,6 +100,8 @@ class GeneRanking:
 					
 					cancerTypes[cancerType]["TADs"][leftTAD].append(sv)
 					cancerTypeTotalSVs[cancerType] += 1
+			
+			#print "mapping right tad svs to cancer types"
 				
 			rightTAD = gene.rightTAD
 			
@@ -124,6 +127,8 @@ class GeneRanking:
 					cancerTypeTotalSVs[cancerType] += 1
 		
 			#Get the eQTLs and add the SVs to the right cancer type
+			
+			#print "mapping eQTLs to cancer type"
 			
 			eQTLs = gene.eQTLs
 			
@@ -155,8 +160,14 @@ class GeneRanking:
 		
 		#For each gene, get the SVs.
 		#Only get the SVs of the right cancer type (can be different per gene)
-					
+		
+		print "doing the scoring"
+		print cancerTypes.keys()
 		for cancerType in cancerTypes:
+			
+			if cancerType != "breast/gastric": #restrict to one cancer type for now
+				continue
+			
 			print "cancer type: ", cancerType
 			cancerTypeSVs = cancerTypes[cancerType] #Use these SVs to map to the right position in the scoring matrix
 			
@@ -202,6 +213,9 @@ class GeneRanking:
 			geneScores = np.array(geneScores, dtype="object")
 			scores[cancerType] = geneScores
 			#print "total genes: ", geneCount
+			
+			
+			
 		self.scores = scores #make it global for now because I can't return from here. When everything here is a proper function, this should be fixed. 
 			
 			

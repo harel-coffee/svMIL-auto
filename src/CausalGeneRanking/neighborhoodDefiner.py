@@ -25,18 +25,20 @@ class NeighborhoodDefiner:
 		
 		#Make these pats a setting!
 		tadFile = "../../data/tads/tads.csv"
+		print "Getting TADs"
 		tadData = self.getTADsFromFile(tadFile)
-		self.mapTADsToGenes(genes, tadData)
+		print "mapping TADs to genes"
+		self.mapTADsToGenes(genes[:,3], tadData) #only pass the gene objects will suffice
 		
 		#2. Map genes to eQTLs
 		
 		eQTLFile = "../../data/eQTLs/eQTLsFilteredForCausalGenes.txt"
-		eQTLData = self.getEQTLsFromFile(eQTLFile, genes)
+		print "getting eQTLs"
+		eQTLData = self.getEQTLsFromFile(eQTLFile, genes[:,3])
 		
 		#3. Map SVs to all neighborhood elements
-		
+		print "Mapping SVs to the neighborhood"
 		self.mapSVsToNeighborhood(genes, svData)
-	
 	
 	def getTADsFromFile(self, tadFile):
 		"""
@@ -167,12 +169,12 @@ class NeighborhoodDefiner:
 		"""
 		
 		previousChr = None
-		for gene in genes:
+		for gene in genes[:,3]:
 			
 			#Make a subset of SVs that either overlap on their chromosome 1 or chromosome 2
 			
 			if gene.chromosome != previousChr:
-					
+				
 				matchingSvChr1Ind = svData[:,0] == str(gene.chromosome)
 				matchingSvChr2Ind = svData[:,3] == str(gene.chromosome)
 				
