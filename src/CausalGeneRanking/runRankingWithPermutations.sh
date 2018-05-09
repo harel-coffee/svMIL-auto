@@ -17,9 +17,8 @@ causalGeneFile="$1"
 
 uuid=$(uuidgen)
 
-qsub runRanking.py "$causalGeneFile" "$uuid"
+qsub runRanking.sh "$causalGeneFile" "$uuid"
 
 permutationsYN="$2"
-
 
 #qsub runRankingPermutations.sh "$causalGeneFile" "$uuid" "$permutationsYN" "$i" #use job array and inside this script SGE TASK ID to get the run number
