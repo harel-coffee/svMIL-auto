@@ -27,9 +27,9 @@ nonPermutedScores = np.loadtxt(nonPermutedScoresFile, dtype="object")
 noOfCausalGenes = len(nonPermutedScores[:,0])	
 
 perGeneScores = dict()
-perGeneScores["geneScore"] = np.zeros([noOfCausalGenes, noOfPermutations])
-perGeneScores["eQTLScore"] = np.zeros([noOfCausalGenes, noOfPermutations])
-perGeneScores["tadScore"] = np.zeros([noOfCausalGenes, noOfPermutations])
+perGeneScores["geneScore"] = np.zeros([noOfCausalGenes, noOfPermutations+1])
+perGeneScores["eQTLScore"] = np.zeros([noOfCausalGenes, noOfPermutations+1])
+perGeneScores["tadScore"] = np.zeros([noOfCausalGenes, noOfPermutations+1])
 
 
 #Make an index for the positions of the genes in the final scoring matrix
