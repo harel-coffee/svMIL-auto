@@ -54,7 +54,7 @@ for geneScoreFile in geneScoreFiles:
 	
 	#separate the permutation round number from the file name
 
-	permutationRound = geneScoreFile.split("_")[1]
+	permutationRound = int(geneScoreFile.split("_")[1])
 	
 	geneScores = np.loadtxt(dataFolder + "/" + geneScoreFile, dtype="object")
 	
@@ -62,6 +62,8 @@ for geneScoreFile in geneScoreFiles:
 	
 		#get the right index of the gene
 		currentGeneIndex = geneIndexDict[geneScores[row,0]]
+		
+		
 		
 		perGeneScores["geneScore"][currentGeneIndex, permutationRound] = geneScores[row][1]
 		perGeneScores["eQTLScore"][currentGeneIndex, permutationRound] = geneScores[row][2]
