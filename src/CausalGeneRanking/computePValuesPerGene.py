@@ -53,7 +53,10 @@ for geneScoreFile in geneScoreFiles:
 	#Then we make the per gene score arrays, keep the score separate per permutation round
 	
 	#separate the permutation round number from the file name
-
+	
+	if geneScoreFile == "realSVs_geneScores.txt": #skip the non-permutation file
+		continue
+	
 	permutationRound = int(geneScoreFile.split("_")[1])
 	
 	geneScores = np.loadtxt(dataFolder + "/" + geneScoreFile, dtype="object")
