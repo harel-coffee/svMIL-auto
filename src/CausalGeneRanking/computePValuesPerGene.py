@@ -12,6 +12,7 @@
 import sys
 from os import listdir
 from os.path import isfile, join
+import numpy as np
 
 #1. For each folder in the gene ranking related to this particular run (provide uuid), read the files for the real case and the permutations
 
