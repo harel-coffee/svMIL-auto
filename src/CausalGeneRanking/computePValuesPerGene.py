@@ -56,7 +56,7 @@ for geneScoreFile in geneScoreFiles:
 
 	permutationRound = geneScoreFile.split("_")[1]
 	
-	geneScores = np.loadtxt(geneScoreFile, dtype="object")
+	geneScores = np.loadtxt(dataFolder + "/" + geneScoreFile, dtype="object")
 	
 	for row in range(0, geneScores.shape[0]):
 	
