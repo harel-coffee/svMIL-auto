@@ -87,8 +87,7 @@ cancerTypePValues = np.empty([nonPermutedScores.shape[0], 7], dtype="object") #f
 for row in range(0, nonPermutedScores.shape[0]):
 
 	#Get the distribution of scores for the permutation for this gene
-	gene = nonPermutedScores[row][0]
-	geneName = gene.name
+	geneName = nonPermutedScores[row][0]
 	
 	geneScore = nonPermutedScores[row,1]
 	eQTLScore = nonPermutedScores[row,2]
