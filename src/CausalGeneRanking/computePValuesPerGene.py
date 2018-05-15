@@ -53,8 +53,8 @@ for geneScoreFile in geneScoreFiles:
 	#Then we make the per gene score arrays, keep the score separate per permutation round
 	
 	#separate the permutation round number from the file name
-	
-	permutationRound = geneScoreFile.split("\t")[1]
+
+	permutationRound = geneScoreFile.split("_")[1]
 	
 	geneScores = np.loadtxt(geneScoreFile, dtype="object")
 	
