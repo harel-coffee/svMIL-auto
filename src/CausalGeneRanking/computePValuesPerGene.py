@@ -27,6 +27,9 @@ nonPermutedScores = np.loadtxt(nonPermutedScoresFile, dtype="object")
 noOfCausalGenes = len(nonPermutedScores[:,0])	
 
 perGeneScores = dict()
+perGeneScores["bla"] = 1
+perGeneScores["bla"] = np.zeros([1,1])
+exit()
 perGeneScores["geneScore"] = np.zeros([noOfCausalGenes, noOfPermutations])
 perGeneScores["eQTLScore"] = np.zeros([noOfCausalGenes, noOfPermutations])
 perGeneScores["tadScore"] = np.zeros([noOfCausalGenes, noOfPermutations])
