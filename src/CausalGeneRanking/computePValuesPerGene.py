@@ -22,7 +22,7 @@ noOfPermutations = sys.argv[2]
 #first read the non-permuted scores
 
 nonPermutedScoresFile = dataFolder + "/realSVs_geneScores.txt"
-nonPermutedScores = np.loadtxt(nonPermutedScoresFile)
+nonPermutedScores = np.loadtxt(nonPermutedScoresFile, dtype="object")
 
 print nonPermutedScores
 		
