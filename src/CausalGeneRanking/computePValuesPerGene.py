@@ -2,6 +2,10 @@
 	Script to run after all permutations to compare the scores of the genes with real SVs to the genes with shuffled SVs. The p-values will be computed per layer. The genes with the lowest p-values across all layers will be reported as
 	the most intersting genes. 
 
+	Step 1: read all the permutation scores for the genes and for the original round, store the scores per gene.
+	Step 2: compute the p-values
+	
+	This script now runs for each data folder/cancer type individually. 
 
 """
 
@@ -12,16 +16,37 @@ from os.path import isfile, join
 #1. For each folder in the gene ranking related to this particular run (provide uuid), read the files for the real case and the permutations
 
 dataFolder = sys.argv[1]
+noOfPermutations = sys.argv[2]
+
+#first read the non-permuted scores
+
+nonPermutedScoresFile = dataFolder + "/realSVs_geneScores.txt"
+nonPermutedScores = np.loadtxt(nonPermutedScoresFile)
+
+print nonPermutedScores
+		
+exit()
+		
+	
+
+perGeneScores = dict()
+perGeneScores["geneScore"] = np.zeros([len(causalGenes), noOfPermutations])
+perGeneScores["eQTLScore"] = np.zeros([len(causalGenes), noOfPermutations])
+perGeneScores["tadScore"] = np.zeros([len(causalGenes), noOfPermutations])
+
 
 #list all files in this data folder
 
 geneScoreFiles = [f for f in listdir(dataFolder) if isfile(join(dataFolder, f))]
 
-print geneScoreFiles
-
-exit()
-
-
+for geneScoreFile in geneScoreFiles:
+	
+	#For each of these files, convert the file back to a numpy array
+	#Then we make the per gene score arrays, keep the score separate per permutation round
+	
+	#separate the permutation round number from the file name
+	
+	1+1
 
 
 #2.Prepare a placeholder where all the scores will be stored in one array
