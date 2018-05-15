@@ -5,8 +5,21 @@
 
 """
 
+from os import listdir
+from os.path import isfile, join
 
-#1. For each folder in the gene ranking related to this particular run (provide uuid), read the pkl files for the real case and the permutations
+#1. For each folder in the gene ranking related to this particular run (provide uuid), read the files for the real case and the permutations
+
+dataFolder = sys.argv[1]
+
+#list all files in this data folder
+
+geneScoreFiles = [f for f in listdir(dataFolder) if isfile(join(dataFolder, f))]
+
+print geneScoreFiles
+
+exit()
+
 
 
 
