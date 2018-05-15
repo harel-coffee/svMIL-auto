@@ -17,7 +17,7 @@ import numpy as np
 #1. For each folder in the gene ranking related to this particular run (provide uuid), read the files for the real case and the permutations
 
 dataFolder = sys.argv[1]
-noOfPermutations = sys.argv[2]
+noOfPermutations = int(sys.argv[2])
 
 #first read the non-permuted scores
 
@@ -26,14 +26,11 @@ nonPermutedScores = np.loadtxt(nonPermutedScoresFile, dtype="object")
 
 noOfCausalGenes = len(nonPermutedScores[:,0])	
 
-perGeneScores = dict()
-perGeneScores["bla"] = 1
-perGeneScores["bla"] = np.zeros([1,1])
-
 perGeneScores["geneScore"] = np.zeros([noOfCausalGenes, noOfPermutations])
 perGeneScores["eQTLScore"] = np.zeros([noOfCausalGenes, noOfPermutations])
 perGeneScores["tadScore"] = np.zeros([noOfCausalGenes, noOfPermutations])
-exit()
+
+
 #Make an index for the positions of the genes in the final scoring matrix
 geneIndex = 0
 geneIndexDict = dict()
