@@ -102,7 +102,7 @@ for row in range(0, nonPermutedScores.shape[0]):
 	print permutedGeneScores
 	print geneScore
 	
-	print permutedGeneScores >= geneScore
+	print np.array(permutedGeneScores) >= float(geneScore)
 	
 	exit()
 	
