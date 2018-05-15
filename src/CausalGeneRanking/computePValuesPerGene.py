@@ -24,16 +24,22 @@ noOfPermutations = sys.argv[2]
 nonPermutedScoresFile = dataFolder + "/realSVs_geneScores.txt"
 nonPermutedScores = np.loadtxt(nonPermutedScoresFile, dtype="object")
 
-print nonPermutedScores
-		
-exit()
-		
-	
+noOfCausalGenes = len(nonPermutedScores[:,0])	
 
 perGeneScores = dict()
-perGeneScores["geneScore"] = np.zeros([len(causalGenes), noOfPermutations])
-perGeneScores["eQTLScore"] = np.zeros([len(causalGenes), noOfPermutations])
-perGeneScores["tadScore"] = np.zeros([len(causalGenes), noOfPermutations])
+perGeneScores["geneScore"] = np.zeros([noOfCausalGenes, noOfPermutations])
+perGeneScores["eQTLScore"] = np.zeros([noOfCausalGenes, noOfPermutations])
+perGeneScores["tadScore"] = np.zeros([noOfCausalGenes, noOfPermutations])
+
+#Make an index for the positions of the genes in the final scoring matrix
+geneIndex = 0
+geneIndexDict = dict()
+for row in range(0, nonPermutedScores.shape[0]):
+	
+	gene = nonPermutedScores[row][0]
+	geneIndexDict[gene] = geneIndex
+	geneIndex += 1
+	
 
 
 #list all files in this data folder
@@ -47,7 +53,23 @@ for geneScoreFile in geneScoreFiles:
 	
 	#separate the permutation round number from the file name
 	
-	1+1
+	permutationRound = geneScoreFile.split("\t")[1]
+	
+	geneScores = np.loadtxt(geneScoreFile, dtype="object")
+	
+	for row in range(0, geneScores.shape[0]):
+	
+		#get the right index of the gene
+		currentGeneIndex = geneIndexDict[geneScores[row,0]]
+		
+		perGeneScores["geneScore"][currentGeneIndex, permutationRound] = geneScores[row][1]
+		perGeneScores["eQTLScore"][currentGeneIndex, permutationRound] = geneScores[row][2]
+		perGeneScores["tadScore"][currentGeneIndex, permutationRound] = geneScores[row][3]
+	
+
+print perGeneScores["geneScore"]
+
+exit()
 
 
 #2.Prepare a placeholder where all the scores will be stored in one array
