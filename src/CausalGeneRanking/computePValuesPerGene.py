@@ -93,7 +93,7 @@ for row in range(0, nonPermutedScores.shape[0]):
 	eQTLScore = nonPermutedScores[row,2]
 	tadScore = nonPermutedScores[row,3]
 	
-	geneIndex = geneIndices[geneName]
+	geneIndex = geneIndexDict[geneName]
 	
 	permutedGeneScores = perGeneScores[cancerType]["geneScore"][geneIndex]
 	permutedEQTLScores = perGeneScores[cancerType]["eQTLScore"][geneIndex]
@@ -122,9 +122,9 @@ for row in range(0, nonPermutedScores.shape[0]):
 		print "p-value for the TAD layer: ", tadProportion
 	
 	
-	cancerTypePValues[row][0] = gene.name
-	cancerTypePValues[row][1] = gene.chromosome
-	cancerTypePValues[row][2] = gene.start
+	cancerTypePValues[row][0] = geneName
+	#cancerTypePValues[row][1] = gene.chromosome
+	#cancerTypePValues[row][2] = gene.start
 	cancerTypePValues[row][3] = proportion
 	cancerTypePValues[row][4] = eQTLProportion
 	cancerTypePValues[row][5] = tadProportion
