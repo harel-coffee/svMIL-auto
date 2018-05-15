@@ -131,9 +131,20 @@ for row in range(0, nonPermutedScores.shape[0]):
 	cancerTypePValues[row][5] = tadProportion
 
 	#Compute a total score to sort by. 
-	totalScore = proportion + eQTLProportion + tadProportion
-	cancerTypePValues[row][6] = totalScore
-
+	#totalScore = proportion + eQTLProportion + tadProportion
+	#cancerTypePValues[row][6] = totalScore
+	
+	cutoff = 0.01
+	totalCutoffMatches = 0
+	
+	if proportion < cutoff:
+		totalCutoffMatches += 1
+	if eQTLProportion < cutoff:
+		totalCutoffMatches += 1	
+	if tadProportion < cutoff:
+		totalCutoffMatches += 1
+		
+	cancerTypePValues[row][6] = totalCutoffMatches	
 
 #Rank by the total score and report the genes.
 np.set_printoptions(threshold=np.nan)
