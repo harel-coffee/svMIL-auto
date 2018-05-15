@@ -95,9 +95,9 @@ for row in range(0, nonPermutedScores.shape[0]):
 	
 	geneIndex = geneIndexDict[geneName]
 	
-	permutedGeneScores = perGeneScores[cancerType]["geneScore"][geneIndex]
-	permutedEQTLScores = perGeneScores[cancerType]["eQTLScore"][geneIndex]
-	permutedTADScores = perGeneScores[cancerType]["tadScore"][geneIndex]
+	permutedGeneScores = perGeneScores["geneScore"][geneIndex]
+	permutedEQTLScores = perGeneScores["eQTLScore"][geneIndex]
+	permutedTADScores = perGeneScores["tadScore"][geneIndex]
 	
 	#First compute the p-value for the gene score layer
 	proportion = (np.sum((permutedGeneScores >= geneScore).astype(int)) + 1) / float(len(permutedGeneScores) + 1) #I think we need equals, when the sum is the same, the value should be TRUE and receive a lower p-value. 
