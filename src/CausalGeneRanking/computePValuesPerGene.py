@@ -89,22 +89,16 @@ for row in range(0, nonPermutedScores.shape[0]):
 	#Get the distribution of scores for the permutation for this gene
 	geneName = nonPermutedScores[row][0]
 	
-	geneScore = nonPermutedScores[row,1]
-	eQTLScore = nonPermutedScores[row,2]
-	tadScore = nonPermutedScores[row,3]
+	geneScore = float(nonPermutedScores[row,1])
+	eQTLScore = float(nonPermutedScores[row,2])
+	tadScore = float(nonPermutedScores[row,3])
 	
 	geneIndex = geneIndexDict[geneName]
 	
-	permutedGeneScores = perGeneScores["geneScore"][geneIndex]
-	permutedEQTLScores = perGeneScores["eQTLScore"][geneIndex]
-	permutedTADScores = perGeneScores["tadScore"][geneIndex]
+	permutedGeneScores = np.array(perGeneScores["geneScore"][geneIndex])
+	permutedEQTLScores = np.array(perGeneScores["eQTLScore"][geneIndex])
+	permutedTADScores = np.array(perGeneScores["tadScore"][geneIndex])
 	
-	print permutedGeneScores
-	print geneScore
-	
-	print np.array(permutedGeneScores) >= float(geneScore)
-	
-	exit()
 	
 	#First compute the p-value for the gene score layer
 	proportion = (np.sum((permutedGeneScores >= geneScore).astype(int)) + 1) / float(len(permutedGeneScores) + 1) #I think we need equals, when the sum is the same, the value should be TRUE and receive a lower p-value. 
