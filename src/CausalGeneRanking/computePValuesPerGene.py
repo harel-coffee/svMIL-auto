@@ -81,17 +81,20 @@ for geneScoreFile in geneScoreFiles:
 print "plotting genes"
 
 #First for the gene scores only
-plt.figure()
 
-for row in range(0, perGeneScores["geneScore"].shape[0]):
+if not os.path.exists("RankedGenes/Results/"):
+	os.makedirs("RankedGenes/Results/")
 	
+for row in range(0, perGeneScores["geneScore"].shape[0]):
+	plt.figure()
 	geneName = nonPermutedScores[row][0]
 	geneIndex = geneIndexDict[geneName]
 	
 	geneScores = np.array(perGeneScores["geneScore"][geneIndex])
 	plt.plot(geneScores)
+	plt.savefig("RankedGenes/Results/" + geneName + "_eneScore.svg")
 
-plt.show()
+#plt.show()
 exit()
 #3. Compute the p-value for each gene
 
