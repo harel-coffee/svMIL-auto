@@ -93,8 +93,18 @@ for row in range(0, perGeneScores["geneScore"].shape[0]):
 	geneIndex = geneIndexDict[geneName]
 	
 	geneScores = np.array(perGeneScores["geneScore"][geneIndex])
+	eQTLScores = np.array(perGeneScores["eQTLScore"][geneIndex])
+	tadScores = np.array(perGeneScores["tadScore"][geneIndex])
+	
 	plt.plot(geneScores)
-	plt.savefig("RankedGenes/Results/" + geneName + "_eneScore.svg")
+	#plt.savefig("RankedGenes/Results/" + geneName + "_eneScore.svg")
+	plt.clf()
+	plt.plot(eQTLScores)
+	plt.savefig("RankedGenes/Results/" + geneName + "_eQTLScore.svg")
+	plt.clf()
+	plt.plot(tadScores)
+	plt.savefig("RankedGenes/Results/" + geneName + "_tadScore.svg")
+	plt.clf()
 
 #plt.show()
 exit()
