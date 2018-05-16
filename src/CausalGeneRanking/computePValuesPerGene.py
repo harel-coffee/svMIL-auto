@@ -13,6 +13,7 @@ import sys
 from os import listdir
 from os.path import isfile, join
 import numpy as np
+import matplotlib as plt
 
 #1. For each folder in the gene ranking related to this particular run (provide uuid), read the files for the real case and the permutations
 
@@ -73,6 +74,20 @@ for geneScoreFile in geneScoreFiles:
 		perGeneScores["tadScore"][currentGeneIndex, permutationRound] = geneScores[row][3]
 	
 
+#Extra step:
+
+#Show the distribution of the permutation scores for each gene
+
+#First for the gene scores only
+plt.fig()
+
+for row in range(0, perGeneScores["geneScore"].shape[0]):
+	
+	geneScores = np.array(perGeneScores["geneScore"][geneIndex])
+	plt.plot(geneScores)
+
+plt.show()
+exit()
 #3. Compute the p-value for each gene
 
 #Check how many of the permutation scores for this gene are larger than the observed gene score for this gene.
