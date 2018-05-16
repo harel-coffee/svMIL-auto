@@ -13,7 +13,7 @@ import sys
 from os import listdir
 from os.path import isfile, join
 import numpy as np
-import matplotlib as plt
+import matplotlib.pyplot as plt
 
 #1. For each folder in the gene ranking related to this particular run (provide uuid), read the files for the real case and the permutations
 
