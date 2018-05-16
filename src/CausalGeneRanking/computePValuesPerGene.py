@@ -78,8 +78,10 @@ for geneScoreFile in geneScoreFiles:
 
 #Show the distribution of the permutation scores for each gene
 
+print "plotting genes"
+
 #First for the gene scores only
-plt.fig()
+plt.figure()
 
 for row in range(0, perGeneScores["geneScore"].shape[0]):
 	
