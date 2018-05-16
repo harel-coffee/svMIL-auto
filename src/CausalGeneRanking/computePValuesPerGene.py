@@ -85,6 +85,9 @@ plt.figure()
 
 for row in range(0, perGeneScores["geneScore"].shape[0]):
 	
+	geneName = nonPermutedScores[row][0]
+	geneIndex = geneIndexDict[geneName]
+	
 	geneScores = np.array(perGeneScores["geneScore"][geneIndex])
 	plt.plot(geneScores)
 
