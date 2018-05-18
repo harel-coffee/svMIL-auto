@@ -80,6 +80,8 @@ for geneScoreFile in geneScoreFiles:
 
 #Show the distribution of the permutation scores for each gene
 
+#Normalize this, use a pdf for plotting
+
 print "plotting genes"
 
 #First for the gene scores only
@@ -96,13 +98,13 @@ for row in range(0, perGeneScores["geneScore"].shape[0]):
 	eQTLScores = np.array(perGeneScores["eQTLScore"][geneIndex])
 	tadScores = np.array(perGeneScores["tadScore"][geneIndex])
 	
-	plt.plot(geneScores)
-	#plt.savefig("RankedGenes/Results/" + geneName + "_eneScore.svg")
+	plt.hist(geneScores)
+	plt.savefig("RankedGenes/Results/" + geneName + "_eneScore.svg")
 	plt.clf()
-	plt.plot(eQTLScores)
+	plt.hist(eQTLScores)
 	plt.savefig("RankedGenes/Results/" + geneName + "_eQTLScore.svg")
 	plt.clf()
-	plt.plot(tadScores)
+	plt.hist(tadScores)
 	plt.savefig("RankedGenes/Results/" + geneName + "_tadScore.svg")
 	plt.clf()
 
