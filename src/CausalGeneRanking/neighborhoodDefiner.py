@@ -344,10 +344,24 @@ class NeighborhoodDefiner:
 			if np.size(snvSubset) < 1:
 				continue #no need to compute the distance, there are no TADs on this chromosome
 			
+			#Make a smaller subset for the interval. Is this speeding up the code?
+			
+			startDistance = snvSubset[:,1] - gene.start 
+			afterStart = snvSubset[np.where(startDistance > 0)]
+			endDistance = gene.end - snvSubset[:,2]
+			beforeEnd = snvSubset[np.where(endDistance > 0)]
+			
+			intervalSNVs = snvSubset[afterStart * beforeEnd]
+			
+			print intervalSNVs
+			
 			#Check which of these SNVs overlap with the gene itself
 			
-			geneStartMatches = gene.start <= snvSubset[:,2]
-			geneEndMatches = gene.end >= snvSubset[:,1]
+			geneStartMatches = gene.start <= intervalSNVs[:,2]
+			geneEndMatches = gene.end >= intervalSNVs[:,1]
+			
+			#geneStartMatches = gene.start <= snvSubset[:,2]
+			#geneEndMatches = gene.end >= snvSubset[:,1]
 			
 			geneMatches = geneStartMatches * geneEndMatches #both should be true, use AND for concatenating
 		
@@ -359,50 +373,50 @@ class NeighborhoodDefiner:
 			gene.setSNVs(snvsOverlappingGenes)
 			
 			#Check which SVs overlap with the right/left TAD
-			
-			if gene.leftTAD != None:
-				
-				leftTADStartMatches = gene.leftTAD.start <= snvSubset[:,2]
-				leftTADEndMatches = gene.leftTAD.end >= snvSubset[:,1]
-				
-				leftTADMatches = leftTADStartMatches * leftTADEndMatches
-				
-				snvsOverlappingLeftTAD = []
-				gene.leftTAD.setSNVs(snvsOverlappingLeftTAD)
-			
-			if gene.rightTAD != None:
-				
-				rightTADStartMatches = gene.rightTAD.start <= snvSubset[:,2]
-				rightTADEndMatches = gene.rightTAD.end >= snvSubset[:,1]
-				
-				rightTADMatches = rightTADStartMatches * rightTADEndMatches
-			
-				snvsOverlappingRightTAD = []
-				gene.rightTAD.setSNVs(snvsOverlappingRightTAD)
-			
-			#Check which SVs overlap with the eQTLs
-			
-			#Repeat for eQTLs. Is the gene on the same chromosome as the eQTL? Then use the above chromosome subset.
-			
-			geneEQTLs = gene.eQTLs
-			
-			for eQTL in geneEQTLs: #only if the gene has eQTLs
-				
-				
-				
-				startMatches = eQTL.start <= snvSubset[:,2]
-				endMatches = eQTL.end >= snvSubset[:,1]
-				
-				allMatches = startMatches * endMatches
-				
-				
-				
-				snvsOverlappingEQTL = []
-
-				
-				eQTL.setSNVs(snvsOverlappingEQTL)
-
-		
+			# 
+			# if gene.leftTAD != None:
+			# 	
+			# 	leftTADStartMatches = gene.leftTAD.start <= snvSubset[:,2]
+			# 	leftTADEndMatches = gene.leftTAD.end >= snvSubset[:,1]
+			# 	
+			# 	leftTADMatches = leftTADStartMatches * leftTADEndMatches
+			# 	
+			# 	snvsOverlappingLeftTAD = []
+			# 	gene.leftTAD.setSNVs(snvsOverlappingLeftTAD)
+			# 
+			# if gene.rightTAD != None:
+			# 	
+			# 	rightTADStartMatches = gene.rightTAD.start <= snvSubset[:,2]
+			# 	rightTADEndMatches = gene.rightTAD.end >= snvSubset[:,1]
+			# 	
+			# 	rightTADMatches = rightTADStartMatches * rightTADEndMatches
+			# 
+			# 	snvsOverlappingRightTAD = []
+			# 	gene.rightTAD.setSNVs(snvsOverlappingRightTAD)
+			# 
+			# #Check which SVs overlap with the eQTLs
+			# 
+			# #Repeat for eQTLs. Is the gene on the same chromosome as the eQTL? Then use the above chromosome subset.
+			# 
+			# geneEQTLs = gene.eQTLs
+			# 
+			# for eQTL in geneEQTLs: #only if the gene has eQTLs
+			# 	
+			# 	
+			# 	
+			# 	startMatches = eQTL.start <= snvSubset[:,2]
+			# 	endMatches = eQTL.end >= snvSubset[:,1]
+			# 	
+			# 	allMatches = startMatches * endMatches
+			# 	
+			# 	
+			# 	
+			# 	snvsOverlappingEQTL = []
+			# 
+			# 	
+			# 	eQTL.setSNVs(snvsOverlappingEQTL)
+			# 
+			# 
 		
 		
 		
