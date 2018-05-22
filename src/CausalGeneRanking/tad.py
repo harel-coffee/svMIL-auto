@@ -17,4 +17,7 @@ class TAD:
 		
 		self.SVs = SVs
 	
+	def setSNVs(self, SNVs):
+		
+		self.SNVs = SNVs
 	

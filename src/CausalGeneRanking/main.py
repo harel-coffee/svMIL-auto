@@ -54,24 +54,27 @@ uniqueCancerTypes = []
 
 #2. Read the SVs or SNVs depending on the mode.
 
+variantData = []
 if mode == "SV":		
 	svFile = "../../data/TPTNTestSet/TP.txt" #should be a setting, or provide the data as parameter
-	svData = InputParser().getSVsFromFile(svFile)
+	variantData = InputParser().getSVsFromFile(svFile)
 
 if mode == "SNV":
 	snvFile = "../../data/SNVs/cosmicNCSNVsSubset.txt" #use a simple subset for now because the original file with NC SNVs is very large
-	snvData = InputParser().getSNVsFromFile(snvFile)
-exit()
+	variantData = InputParser().getSNVsFromFile(snvFile)
+
 #3. If this is a permutation run, we wish to shuffle these SVs.
  #Check if this run is a permutation or not. The output file name depends on this
 if permutationYN == "True":
-	print "Shuffling SVs"
-	#Do shuffling of SVs
-	svData = shuffleSVs(svData)
+	print "Shuffling variants"
+	
+	#Shuffle the variants, provide the mode such that the function knows how to permute
+	
+	#svData = shuffleSVs(svData)
 
 #2. Get the neighborhood for these genes
 print "Defining the neighborhood for the causal genes and the SVs"
-NeighborhoodDefiner(causalGenes, svData) 
+NeighborhoodDefiner(causalGenes, variantData, mode) #Provide the mode to ensure that the right variant type is used (different positions used in annotation)
 
 #3. Do simple ranking of the genes and report the causal SVs
 print "Ranking the genes for the SVs"

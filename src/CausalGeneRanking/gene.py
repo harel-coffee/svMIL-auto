@@ -13,6 +13,7 @@ class Gene:
 		self.start = start
 		self.end = end
 		self.SVs = None
+		self.SNVs = None
 		self.leftTAD = None
 		self.rightTAD = None
 		self.eQTLs = []
@@ -37,6 +38,8 @@ class Gene:
 		
 		self.SVs = SVs
 		
+	def setSNVs(self, SNVs):
+		self.SNVs = SNVs
 		
 	def addEQTL(self, eQTL):
 		self.eQTLs.append(eQTL)

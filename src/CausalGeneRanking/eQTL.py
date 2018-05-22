@@ -15,10 +15,15 @@ class EQTL:
 		self.end = end
 		self.enhancerStatus = "N" #y default not an enhancer
 		self.SVs = []
+		self.SNVs = []
 		
 	def setSVs(self, SVs):
 		
 		self.SVs = SVs
+		
+	def setSNVs(self, SNVs):
+		
+		self.SNVs = SNVs
 		
 	def setEnhancerStatus(self, enhancerStatus): #This funcion can later be replaced to include other regulatory element types as well
 		self.enhancerStatus = enhancerStatus
