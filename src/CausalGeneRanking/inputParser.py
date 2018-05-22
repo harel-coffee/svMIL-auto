@@ -125,7 +125,7 @@ class InputParser:
 				
 				#snvObject = SNV(chromosome, start, end, sampleName, cancerType)
 				#snvList.append([chromosome, start, end, sampleName, cancerType, snvObject])
-				snvList.append([chromosome, start, end, sampleName, cancerType])
+				snvList.append([chromosome, int(start), int(end), sampleName, cancerType])
 				
 		regions = np.array(snvList, dtype="object")
 		
