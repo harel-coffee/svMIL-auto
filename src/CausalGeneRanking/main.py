@@ -60,7 +60,7 @@ if mode == "SV":
 	variantData = InputParser().getSVsFromFile(svFile)
 
 if mode == "SNV":
-	snvFile = "../../data/SNVs/cosmicNCSNVsSubset.txt" #use a simple subset for now because the original file with NC SNVs is very large
+	snvFile = "../../data/SNVs/cosmicNCV.txt" #use a simple subset for now because the original file with NC SNVs is very large
 	variantData = InputParser().getSNVsFromFile(snvFile)
 
 #3. If this is a permutation run, we wish to shuffle these SVs.
@@ -78,7 +78,7 @@ NeighborhoodDefiner(causalGenes, variantData, mode) #Provide the mode to ensure 
 
 #3. Do simple ranking of the genes and report the causal SVs
 print "Ranking the genes for the SVs"
-geneRanking = GeneRanking(causalGenes[:,3])
+geneRanking = GeneRanking(causalGenes[:,3], mode)
 
 #Output the ranking scores to a file (should probably also be its own class or at least a function)
 

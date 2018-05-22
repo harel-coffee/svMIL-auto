@@ -17,7 +17,7 @@ class GeneRanking:
 	"""
 	
 	#This part of the code is still very sloppy, it can be distributed into different functions much better, but for now it is ok just to test
-	def __init__(self, genes):
+	def __init__(self, genes, mode):
 		
 		#Check if the genes are always annotated int he same way.Where is the random factor?
 		
@@ -42,20 +42,28 @@ class GeneRanking:
 				geneIndex += 1
 				
 			
-			#print "mapping genes to cancer types"
+			#First collect all variants of the gene, both SVs and SNVs
+			geneVariants = [] #have one big list of objects
 			if gene.SVs is not None:
+				geneVariants += list(gene.SVs)
+			if gene.SNVs is not None:
+				geneVariants += list(gene.SNVs)
 				
-				for sv in gene.SVs:
+			
+				
+			if len(geneVariants) > 0:
+				
+				for variant in geneVariants:
 					
-					if sv.sampleName not in sampleMap:
-						sampleMap[sv.sampleName] = sampleIndex
+					if variant.sampleName not in sampleMap:
+						sampleMap[variant.sampleName] = sampleIndex
 						sampleIndex += 1
 						
-					if sv.sampleName not in samplesAndSVCounts:
-						samplesAndSVCounts[sv.sampleName] = 0
-					samplesAndSVCounts[sv.sampleName] += 1
+					if variant.sampleName not in samplesAndSVCounts:
+						samplesAndSVCounts[variant.sampleName] = 0
+					samplesAndSVCounts[variant.sampleName] += 1
 					
-					cancerType = sv.cancerType
+					cancerType = variant.cancerType
 					if cancerType not in cancerTypes:
 						cancerTypes[cancerType] = dict()
 						cancerTypes[cancerType]["genes"] = dict()
@@ -70,7 +78,7 @@ class GeneRanking:
 					
 					#Also add all SVs to that gene that are relevant for this cancer type.
 					
-					cancerTypes[cancerType]["genes"][gene].append(sv)
+					cancerTypes[cancerType]["genes"][gene].append(variant)
 					cancerTypeTotalSVs[cancerType] += 1
 				
 			#Also add the SVs affecting TADs to the total list of SVs and the SV map
@@ -80,13 +88,20 @@ class GeneRanking:
 			#Get the left TAD
 			leftTAD = gene.leftTAD
 			
-			
+			leftTADVariants = [] #have one big list of objects
 			if leftTAD is not None:
-				for sv in leftTAD.SVs:
-					if sv.sampleName not in sampleMap:
-						sampleMap[sv.sampleName] = sampleIndex
+				if leftTAD.SVs is not None:
+					leftTADVariants += list(leftTAD.SVs)
+				if leftTAD.SNVs is not None:
+					leftTADVariants += list(leftTAD.SNVs)
+				
+			
+			if len(leftTADVariants) > 0:
+				for variant in leftTADVariants:
+					if variant.sampleName not in sampleMap:
+						sampleMap[variant.sampleName] = sampleIndex
 						sampleIndex += 1
-					cancerType = sv.cancerType
+					cancerType = variant.cancerType
 					if cancerType not in cancerTypes:
 						cancerTypes[cancerType] = dict()
 						cancerTypes[cancerType]["genes"] = dict()
@@ -98,20 +113,27 @@ class GeneRanking:
 					if leftTAD not in cancerTypes[cancerType]["TADs"]:
 						cancerTypes[cancerType]["TADs"][leftTAD] = []	
 					
-					cancerTypes[cancerType]["TADs"][leftTAD].append(sv)
+					cancerTypes[cancerType]["TADs"][leftTAD].append(variant)
 					cancerTypeTotalSVs[cancerType] += 1
 			
 			#print "mapping right tad svs to cancer types"
 				
 			rightTAD = gene.rightTAD
-			
+			rightTADVariants = [] #have one big list of objects
 			if rightTAD is not None:
 				
-				for sv in rightTAD.SVs:
-					if sv.sampleName not in sampleMap:
-						sampleMap[sv.sampleName] = sampleIndex
+				if rightTAD.SVs is not None:
+					rightTADVariants += list(rightTAD.SVs)
+				if rightTAD.SNVs is not None:
+					rightTADVariants += list(rightTAD.SNVs)
+				
+			if len(rightTADVariants) > 0:
+				
+				for variant in rightTADVariants:
+					if variant.sampleName not in sampleMap:
+						sampleMap[variant.sampleName] = sampleIndex
 						sampleIndex += 1
-					cancerType = sv.cancerType
+					cancerType = variant.cancerType
 					if cancerType not in cancerTypes:
 						cancerTypes[cancerType] = dict()
 						cancerTypes[cancerType]["genes"] = dict()
@@ -123,7 +145,7 @@ class GeneRanking:
 					if rightTAD not in cancerTypes[cancerType]["TADs"]:
 						cancerTypes[cancerType]["TADs"][rightTAD] = []	
 					
-					cancerTypes[cancerType]["TADs"][rightTAD].append(sv)
+					cancerTypes[cancerType]["TADs"][rightTAD].append(variant)
 					cancerTypeTotalSVs[cancerType] += 1
 		
 			#Get the eQTLs and add the SVs to the right cancer type
@@ -132,13 +154,23 @@ class GeneRanking:
 			
 			eQTLs = gene.eQTLs
 			
+			
 			for eQTL in eQTLs:
-				for sv in eQTL.SVs:
-					if sv.sampleName not in sampleMap:
-						sampleMap[sv.sampleName] = sampleIndex
+				
+				#Collect all variants of this eQTL	
+				eQTLVariants = [] #have one big list of objects
+				if eQTL.SVs is not None:
+					eQTLVariants += list(eQTL.SVs)
+				if eQTL.SNVs is not None:
+					eQTLVariants += list(eQTL.SNVs)
+					
+				
+				for variant in eQTLVariants:
+					if variant.sampleName not in sampleMap:
+						sampleMap[variant.sampleName] = sampleIndex
 						sampleIndex += 1
 						
-					cancerType = sv.cancerType
+					cancerType = variant.cancerType
 					if cancerType not in cancerTypes:
 						cancerTypes[cancerType] = dict()
 						cancerTypes[cancerType]["genes"] = dict()
@@ -150,7 +182,7 @@ class GeneRanking:
 					if eQTL not in cancerTypes[cancerType]["eQTLs"]:
 						cancerTypes[cancerType]["eQTLs"][eQTL] = []	
 					
-					cancerTypes[cancerType]["eQTLs"][eQTL].append(sv)
+					cancerTypes[cancerType]["eQTLs"][eQTL].append(variant)
 					cancerTypeTotalSVs[cancerType] += 1
 
 		
@@ -165,8 +197,12 @@ class GeneRanking:
 		print cancerTypes.keys()
 		for cancerType in cancerTypes:
 			
-			if cancerType != "breast/gastric": #restrict to one cancer type for now
-				continue
+			if mode == "SV":
+				if cancerType != "breast/gastric": #restrict to one cancer type for now
+					continue
+			if mode == "SNV":
+				if cancerType != "breast": #Use a different cancer type to filter for in the SNVs, these come form different patients. 
+					continue
 			
 			print "cancer type: ", cancerType
 			cancerTypeSVs = cancerTypes[cancerType] #Use these SVs to map to the right position in the scoring matrix
