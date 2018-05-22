@@ -351,13 +351,7 @@ class NeighborhoodDefiner:
 		
 			#Get the SNV objects of the overlapping SNVs
 			
-			snvsOverlappingGenes = []
-			for match in geneMatches:
-				snvObject = SNV(snvSubset[match, 0], snvSubset[match, 1], snvSubset[match, 2], snvSubset[match, 3], snvSubset[match, 4])
-				snvsOverlappingGenes.append(snvObject)
-			
-			#snvsOverlappingGenes = snvSubset[geneMatches,5]
-			
+			snvsOverlappingGenes = snvSubset[geneMatches]
 			
 			#Get the SV objects and link them to the gene
 			gene.setSNVs(snvsOverlappingGenes)
