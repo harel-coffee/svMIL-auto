@@ -332,11 +332,13 @@ class NeighborhoodDefiner:
 			#Make a subset of SNVs on the right chromosome
 			
 			if gene.chromosome != previousChr:
-				
+				print "new chromosome: ", gene.chromosome
 				matchingChrInd = snvData[:,0] == str(gene.chromosome)
 
 				snvSubset = snvData[matchingChrInd]
-				
+				print snvSubset[:,0]
+				print snvSubset.shape
+				exit()
 				previousChr = gene.chromosome
 			
 			if np.size(snvSubset) < 1:
