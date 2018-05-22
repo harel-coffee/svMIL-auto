@@ -123,11 +123,12 @@ class InputParser:
 				cancerType = splitLine[cancerTypeIndex]
 				sampleName = splitLine[sampleNameIndex]
 				
-				snvObject = SNV(chromosome, start, end, sampleName, cancerType)
-				snvList.append([chromosome, start, end, sampleName, cancerType, snvObject])
+				#snvObject = SNV(chromosome, start, end, sampleName, cancerType)
+				#snvList.append([chromosome, start, end, sampleName, cancerType, snvObject])
+				snvList.append([chromosome, start, end, sampleName, cancerType])
 				
 		regions = np.array(snvList, dtype="object")
-		
+		exit()
 		return regions
 	
 	def readCausalGeneFile(self, causalGeneFile):
