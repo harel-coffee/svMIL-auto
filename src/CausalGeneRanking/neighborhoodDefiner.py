@@ -346,10 +346,10 @@ class NeighborhoodDefiner:
 			
 			#Make a smaller subset for the interval. Is this speeding up the code?
 			
-			print snvSubset[:,1]
+			print snvSubset[1,1]
 			print gene.start
 			print type(gene.start)
-			print type(snvSubset[:,1])
+			print type(snvSubset[1,1])
 			
 			startDistance = snvSubset[:,1] - int(gene.start)
 			afterStart = snvSubset[np.where(startDistance > 0)]
