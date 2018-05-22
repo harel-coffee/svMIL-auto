@@ -348,9 +348,9 @@ class NeighborhoodDefiner:
 			
 			
 			
-			startDistance = snvSubset[:,1] - gene.start
+			startDistance = snvSubset[:,1] - int(gene.start)
 			afterStart = snvSubset[np.where(startDistance > 0)]
-			endDistance = gene.end - snvSubset[:,2]
+			endDistance = int(gene.end) - snvSubset[:,2]
 			beforeEnd = snvSubset[np.where(endDistance > 0)]
 			
 			intervalSNVs = snvSubset[afterStart * beforeEnd]
