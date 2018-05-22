@@ -10,6 +10,7 @@
 """
 from gene import Gene
 from sv import SV
+from snv import SNV
 import numpy as np
 
 class InputParser:
@@ -79,9 +80,55 @@ class InputParser:
 		
 		return regions
 	
-	def readSNVFile(self, snvFile):
+
+	#What do we want from the SNV file?
+	#chromosome (combined with position in 'position' field)
+	#position
+	#cancer type (ID_tumour or Primary site) 
+	#sample name (ID_SAMPLE)
+	def getSNVsFromFile(self, snvFile):
 		
-		1+1
+		snvList = []
+		
+		with open(snvFile, 'rb') as f:
+			
+			lineCount = 0
+			header = []
+			for line in f:
+				line = line.strip()
+				splitLine = line.split("\t")
+				
+				#First extract the header and store it in the dictionary to remove dependency on the order of columns in the file
+				if lineCount < 1:
+		
+					header = splitLine
+					lineCount += 1
+					continue
+				
+				#Now extract the chromosome, start and end (there are multiple)
+				positionIndex = header.index("genome position")
+				fullPosition = splitLine[positionIndex]
+				
+				#split the position to get the coordinates and the chromosome
+				colonSplitPosition = fullPosition.split(":")
+				dashSplitPosition = colonSplitPosition[1].split("-")
+				
+				chromosome = colonSplitPosition[0]
+				start = dashSplitPosition[0]
+				end = dashSplitPosition[1]
+				
+				cancerTypeIndex = header.index("Primary site") 
+				sampleNameIndex = header.index("ID_SAMPLE")
+				
+				cancerType = splitLine[cancerTypeIndex]
+				sampleName = splitLine[sampleNameIndex]
+				
+				snvObject = SNV(chromosome, start, end, sampleName, cancerType)
+				snvList.append([chromosome, start, end, sampleName, cancerType, snvObject])
+				
+		regions = np.array(snvList, dtype="object")
+		
+		return regions
 	
 	def readCausalGeneFile(self, causalGeneFile):
 			

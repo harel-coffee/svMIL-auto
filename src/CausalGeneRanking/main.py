@@ -59,8 +59,9 @@ if mode == "SV":
 	svData = InputParser().getSVsFromFile(svFile)
 
 if mode == "SNV":
-	1+1 #SNV stuff here
-
+	snvFile = "../../data/SNVs/cosmicNCSNVsSubset.txt" #use a simple subset for now because the original file with NC SNVs is very large
+	snvData = InputParser().getSNVsFromFile(snvFile)
+exit()
 #3. If this is a permutation run, we wish to shuffle these SVs.
  #Check if this run is a permutation or not. The output file name depends on this
 if permutationYN == "True":
