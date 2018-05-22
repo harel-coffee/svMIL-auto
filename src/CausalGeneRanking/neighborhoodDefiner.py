@@ -351,6 +351,9 @@ class NeighborhoodDefiner:
 			endDistance = int(gene.end) - snvSubset[:,2]
 			beforeEnd = np.where(endDistance > 0)
 			
+			print afterStart
+			print beforeStart
+			
 			intervalSNVs = snvSubset[afterStart * beforeEnd]
 			
 			print snvSubset.shape
