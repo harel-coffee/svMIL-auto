@@ -75,7 +75,7 @@ if permutationYN == "True":
 #2. Get the neighborhood for these genes
 print "Defining the neighborhood for the causal genes and the SVs"
 NeighborhoodDefiner(causalGenes, variantData, mode) #Provide the mode to ensure that the right variant type is used (different positions used in annotation)
-
+exit()
 #3. Do simple ranking of the genes and report the causal SVs
 print "Ranking the genes for the SVs"
 geneRanking = GeneRanking(causalGenes[:,3], mode)

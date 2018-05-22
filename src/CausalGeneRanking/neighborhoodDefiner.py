@@ -349,7 +349,13 @@ class NeighborhoodDefiner:
 			geneMatches = geneStartMatches * geneEndMatches #both should be true, use AND for concatenating
 		
 			#Get the SNV objects of the overlapping SNVs
-			snvsOverlappingGenes = snvSubset[geneMatches,5]
+			
+			snvsOverlappingGenes = []
+			for match in geneMatches:
+				snvObject = SNV(match[0], match[1], match[2], match[3], match[4])
+				snvsOverlappingGenes.append(snvObject)
+			
+			#snvsOverlappingGenes = snvSubset[geneMatches,5]
 			
 			
 			#Get the SV objects and link them to the gene
@@ -364,7 +370,7 @@ class NeighborhoodDefiner:
 				
 				leftTADMatches = leftTADStartMatches * leftTADEndMatches
 				
-				snvsOverlappingLeftTAD = snvSubset[leftTADMatches, 5]
+				snvsOverlappingLeftTAD = []
 				gene.leftTAD.setSNVs(snvsOverlappingLeftTAD)
 			
 			if gene.rightTAD != None:
@@ -374,7 +380,7 @@ class NeighborhoodDefiner:
 				
 				rightTADMatches = rightTADStartMatches * rightTADEndMatches
 			
-				snvsOverlappingRightTAD = snvSubset[rightTADMatches, 5]
+				snvsOverlappingRightTAD = []
 				gene.rightTAD.setSNVs(snvsOverlappingRightTAD)
 			
 			#Check which SVs overlap with the eQTLs
@@ -394,7 +400,7 @@ class NeighborhoodDefiner:
 				
 				
 				
-				snvsOverlappingEQTL = snvSubset[allMatches, 5]
+				snvsOverlappingEQTL = []
 
 				
 				eQTL.setSNVs(snvsOverlappingEQTL)

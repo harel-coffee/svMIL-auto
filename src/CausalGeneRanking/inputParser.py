@@ -128,7 +128,7 @@ class InputParser:
 				snvList.append([chromosome, start, end, sampleName, cancerType])
 				
 		regions = np.array(snvList, dtype="object")
-		exit()
+		
 		return regions
 	
 	def readCausalGeneFile(self, causalGeneFile):
