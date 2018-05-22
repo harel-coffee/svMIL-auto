@@ -338,7 +338,7 @@ class NeighborhoodDefiner:
 				snvSubset = snvData[matchingChrInd]
 				print snvSubset[:,0]
 				print snvSubset.shape
-				exit()
+				
 				previousChr = gene.chromosome
 			
 			if np.size(snvSubset) < 1:
