@@ -4,6 +4,7 @@ from tad import TAD
 from sv import SV
 from gene import Gene
 from eQTL import EQTL
+from snv import SNV
 
 
 class NeighborhoodDefiner:
