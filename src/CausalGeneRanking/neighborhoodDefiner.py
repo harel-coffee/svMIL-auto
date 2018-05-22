@@ -346,19 +346,15 @@ class NeighborhoodDefiner:
 			
 			#Make a smaller subset for the interval. Is this speeding up the code?
 			
-			print snvSubset[1,1]
-			print gene.start
-			print type(gene.start)
-			print type(snvSubset[1,1])
-			
 			startDistance = snvSubset[:,1] - int(gene.start)
-			afterStart = snvSubset[np.where(startDistance > 0)]
+			afterStart = np.where(startDistance > 0)
 			endDistance = int(gene.end) - snvSubset[:,2]
-			beforeEnd = snvSubset[np.where(endDistance > 0)]
+			beforeEnd = np.where(endDistance > 0)
 			
 			intervalSNVs = snvSubset[afterStart * beforeEnd]
 			
-			print intervalSNVs
+			print snvSubset.shape
+			print intervalSNVs.shape
 			
 			#Check which of these SNVs overlap with the gene itself
 			
