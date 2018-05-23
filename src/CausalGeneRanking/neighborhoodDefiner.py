@@ -391,7 +391,7 @@ class NeighborhoodDefiner:
 				
 				leftTADMatches = leftTADStartMatches * leftTADEndMatches
 				
-				snvsOverlappingLeftTAD = []
+				snvsOverlappingLeftTAD = snvSubset[leftTADMatches]
 				gene.leftTAD.setSNVs(snvsOverlappingLeftTAD)
 			
 			if gene.rightTAD != None:
@@ -401,7 +401,7 @@ class NeighborhoodDefiner:
 				
 				rightTADMatches = rightTADStartMatches * rightTADEndMatches
 			
-				snvsOverlappingRightTAD = []
+				snvsOverlappingRightTAD = snvSubset[rightTADMatches]
 				gene.rightTAD.setSNVs(snvsOverlappingRightTAD)
 			
 			#Check which SVs overlap with the eQTLs
@@ -421,7 +421,7 @@ class NeighborhoodDefiner:
 				
 				
 				
-				snvsOverlappingEQTL = []
+				snvsOverlappingEQTL = snvSubset[allMatches]
 			
 				
 				eQTL.setSNVs(snvsOverlappingEQTL)
