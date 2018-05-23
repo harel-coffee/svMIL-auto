@@ -86,14 +86,16 @@ print "plotting genes"
 
 #First for the gene scores only
 
-if not os.path.exists("RankedGenes/Results/"):
-	os.makedirs("RankedGenes/Results/")
-if not os.path.exists("RankedGenes/Results/geneScores/"):
-	os.makedirs("RankedGenes/Results/geneScores/")
-if not os.path.exists("RankedGenes/Results/eQTLScores/"):
-	os.makedirs("RankedGenes/Results/eQTLScores/")
-if not os.path.exists("RankedGenes/Results/tadScores/"):
-	os.makedirs("RankedGenes/Results/tadScores/")
+outputDir = "RankedGenes/Results_SNVs/"
+
+if not os.path.exists(outputDir):
+	os.makedirs(outputDir)
+if not os.path.exists(outputDir + "geneScores/"):
+	os.makedirs(outputDir + "geneScores/")
+if not os.path.exists(outputDir + "eQTLScores/"):
+	os.makedirs(outputDir + "eQTLScores/")
+if not os.path.exists(outputDir + "tadScores/"):
+	os.makedirs(outputDir + "tadScores/")
 	
 for row in range(0, perGeneScores["geneScore"].shape[0]):
 	plt.figure()
@@ -105,17 +107,17 @@ for row in range(0, perGeneScores["geneScore"].shape[0]):
 	tadScores = np.array(perGeneScores["tadScore"][geneIndex])
 	
 	plt.hist(geneScores)
-	plt.savefig("RankedGenes/Results/geneScores/" + geneName + "_eneScore.svg")
+	plt.savefig(outputDir + "geneScores/" + geneName + "_eneScore.svg")
 	plt.clf()
 	plt.hist(eQTLScores)
-	plt.savefig("RankedGenes/Results/eQTLScores/" + geneName + "_eQTLScore.svg")
+	plt.savefig(outputDir + "eQTLScores/" + geneName + "_eQTLScore.svg")
 	plt.clf()
 	plt.hist(tadScores)
-	plt.savefig("RankedGenes/Results/tadScores/" + geneName + "_tadScore.svg")
+	plt.savefig(outputDir + "tadScores/" + geneName + "_tadScore.svg")
 	plt.clf()
 
 #plt.show()
-exit()
+
 #3. Compute the p-value for each gene
 
 #Check how many of the permutation scores for this gene are larger than the observed gene score for this gene.
