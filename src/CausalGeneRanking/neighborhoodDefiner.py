@@ -351,32 +351,33 @@ class NeighborhoodDefiner:
 			
 			#Make a smaller subset for the interval. Is this speeding up the code?
 			
-			startDistance = snvSubset[:,1] - int(gene.start)
-			afterStart = startDistance > 0
-			endDistance = int(gene.end) - snvSubset[:,2]
-			beforeEnd = endDistance > 0
+			# startDistance = snvSubset[:,1] - int(gene.start)
+			# afterStart = startDistance > 0
+			# endDistance = int(gene.end) - snvSubset[:,2]
+			# beforeEnd = endDistance > 0
+			# 
+			# #print afterStart
+			# #print beforeEnd
+			# 
+			# intervalSNVs = snvSubset[afterStart * beforeEnd]
+			# 
+			# #print snvSubset.shape
+			# #print intervalSNVs.shape
+			# 
+			# #Check which of these SNVs overlap with the gene itself
+			# 
+			# geneStartMatches = gene.start <= intervalSNVs[:,2]
+			# geneEndMatches = gene.end >= intervalSNVs[:,1]
 			
-			#print afterStart
-			#print beforeEnd
-			
-			intervalSNVs = snvSubset[afterStart * beforeEnd]
-			
-			#print snvSubset.shape
-			#print intervalSNVs.shape
-			
-			#Check which of these SNVs overlap with the gene itself
-			
-			geneStartMatches = gene.start <= intervalSNVs[:,2]
-			geneEndMatches = gene.end >= intervalSNVs[:,1]
-			
-			#geneStartMatches = gene.start <= snvSubset[:,2]
-			#geneEndMatches = gene.end >= snvSubset[:,1]
+			geneStartMatches = gene.start <= snvSubset[:,2]
+			geneEndMatches = gene.end >= snvSubset[:,1]
 			
 			geneMatches = geneStartMatches * geneEndMatches #both should be true, use AND for concatenating
 		
 			#Get the SNV objects of the overlapping SNVs
 			
-			snvsOverlappingGenes = intervalSNVs[geneMatches]
+			#snvsOverlappingGenes = intervalSNVs[geneMatches]
+			snvsOverlappingGenes = snvSubset[geneMatches]
 			
 			#Get the SV objects and link them to the gene
 			gene.setSNVs(snvsOverlappingGenes)
