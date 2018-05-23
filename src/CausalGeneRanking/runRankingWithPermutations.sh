@@ -19,8 +19,10 @@ uuid=$(uuidgen)
 
 permutationsYN="False"
 
-qsub runRanking.sh "$causalGeneFile" "$uuid" "$permutationsYN"
+mode="$3"
+
+qsub runRanking.sh "$causalGeneFile" "$uuid" "$permutationsYN" "$mode"
 
 permutationsYN="$2"
 
-qsub -t 1-1000:1 -tc 100 runRanking.sh "$causalGeneFile" "$uuid" "$permutationsYN" #use job array and inside this script SGE TASK ID to get the run number
+qsub -t 1-1000:1 -tc 100 runRanking.sh "$causalGeneFile" "$uuid" "$permutationsYN" "$mode" #use job array and inside this script SGE TASK ID to get the run number
