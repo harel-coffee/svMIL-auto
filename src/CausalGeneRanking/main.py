@@ -44,7 +44,7 @@ causalGeneFile = sys.argv[1]
 uuid = sys.argv[2] #This uuid will normally be provided by the sh script when running in parallel
 permutationYN = sys.argv[3] #True or False depending on if we want to permute or not
 mode = sys.argv[4] #Either SV or SNV, then the relevant functions for this data type will be called. For now, a combination of data types is not yet implemented. 
-
+#permutationRound is parameter 5, only used when running on the HPC
 
 #1. Read and parse the causal genes
 
@@ -124,7 +124,7 @@ for cancerType in geneRanking.scores:
 		os.makedirs(cancerTypeFolder)
 
 	if permutationYN == "True":
-		permutationRound = sys.argv[4]	
+		permutationRound = sys.argv[5]	
 		outfileName = cancerTypeFolder + "/permutedSVs_" + permutationRound + "_geneScores.txt"
 	else:
 		outfileName = cancerTypeFolder + "/realSVs_geneScores.txt"
