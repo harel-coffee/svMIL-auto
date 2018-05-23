@@ -325,19 +325,24 @@ class NeighborhoodDefiner:
 			Will also need to be properly split into multiple functions, many pieces of code can be re-used. 
 		
 		"""
+		import time
 		
+		startTime = time.time()
 		previousChr = None
 		for gene in genes[:,3]:
 			
 			#Make a subset of SNVs on the right chromosome
 			
 			if gene.chromosome != previousChr:
+				
+				endTime = time.time()
+				
 				print "new chromosome: ", gene.chromosome
+				print "time for one chromosome: ", endTime - startTime
+				startTime = time.time()
 				matchingChrInd = snvData[:,0] == str(gene.chromosome)
 
 				snvSubset = snvData[matchingChrInd]
-				print snvSubset[:,0]
-				print snvSubset.shape
 				
 				previousChr = gene.chromosome
 			
@@ -351,13 +356,13 @@ class NeighborhoodDefiner:
 			endDistance = int(gene.end) - snvSubset[:,2]
 			beforeEnd = endDistance > 0
 			
-			print afterStart
-			print beforeEnd
+			#print afterStart
+			#print beforeEnd
 			
 			intervalSNVs = snvSubset[afterStart * beforeEnd]
 			
-			print snvSubset.shape
-			print intervalSNVs.shape
+			#print snvSubset.shape
+			#print intervalSNVs.shape
 			
 			#Check which of these SNVs overlap with the gene itself
 			
