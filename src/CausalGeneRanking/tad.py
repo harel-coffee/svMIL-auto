@@ -12,6 +12,8 @@ class TAD:
 		self.chromosome = chromosome
 		self.start = start
 		self.end = end
+		self.SVs = None
+		self.SNVs = None
 		
 	def setSVs(self, SVs):
 		

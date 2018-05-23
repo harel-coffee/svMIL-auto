@@ -55,15 +55,15 @@ class GeneRanking:
 				
 				for variant in geneVariants:
 					
-					if variant.sampleName not in sampleMap:
-						sampleMap[variant.sampleName] = sampleIndex
+					if variant[3] not in sampleMap:
+						sampleMap[variant[3]] = sampleIndex
 						sampleIndex += 1
 						
-					if variant.sampleName not in samplesAndSVCounts:
-						samplesAndSVCounts[variant.sampleName] = 0
-					samplesAndSVCounts[variant.sampleName] += 1
+					if variant[3] not in samplesAndSVCounts:
+						samplesAndSVCounts[variant[3]] = 0
+					samplesAndSVCounts[variant[3]] += 1
 					
-					cancerType = variant.cancerType
+					cancerType = variant[4]
 					if cancerType not in cancerTypes:
 						cancerTypes[cancerType] = dict()
 						cancerTypes[cancerType]["genes"] = dict()
@@ -98,10 +98,10 @@ class GeneRanking:
 			
 			if len(leftTADVariants) > 0:
 				for variant in leftTADVariants:
-					if variant.sampleName not in sampleMap:
-						sampleMap[variant.sampleName] = sampleIndex
+					if variant[3] not in sampleMap:
+						sampleMap[variant[3]] = sampleIndex
 						sampleIndex += 1
-					cancerType = variant.cancerType
+					cancerType = variant[4]
 					if cancerType not in cancerTypes:
 						cancerTypes[cancerType] = dict()
 						cancerTypes[cancerType]["genes"] = dict()
@@ -130,10 +130,10 @@ class GeneRanking:
 			if len(rightTADVariants) > 0:
 				
 				for variant in rightTADVariants:
-					if variant.sampleName not in sampleMap:
-						sampleMap[variant.sampleName] = sampleIndex
+					if variant[3] not in sampleMap:
+						sampleMap[variant[3]] = sampleIndex
 						sampleIndex += 1
-					cancerType = variant.cancerType
+					cancerType = variant[4]
 					if cancerType not in cancerTypes:
 						cancerTypes[cancerType] = dict()
 						cancerTypes[cancerType]["genes"] = dict()
@@ -166,11 +166,11 @@ class GeneRanking:
 					
 				
 				for variant in eQTLVariants:
-					if variant.sampleName not in sampleMap:
-						sampleMap[variant.sampleName] = sampleIndex
+					if variant[3] not in sampleMap:
+						sampleMap[variant[3]] = sampleIndex
 						sampleIndex += 1
 						
-					cancerType = variant.cancerType
+					cancerType = variant[4]
 					if cancerType not in cancerTypes:
 						cancerTypes[cancerType] = dict()
 						cancerTypes[cancerType]["genes"] = dict()
@@ -283,7 +283,7 @@ class GeneRanking:
 			
 				
 				#check the sample of this sv
-				sampleName = geneSVs[svInd].sampleName
+				sampleName = geneSVs[svInd][3]
 				sampleInd = sampleMap[sampleName]
 				
 				
@@ -335,8 +335,8 @@ class GeneRanking:
 				# 	print len(leftTADSVs)
 				# 
 				for sv in leftTADSVs:
-					sampleInd = sampleMap[sv.sampleName]
-					if sv.cancerType == cancerType:
+					sampleInd = sampleMap[sv[3]]
+					if sv[4] == cancerType:
 						scoringMatrix[sampleInd][matrixGeneInd] += 1
 			
 			if rightTAD in cancerTypeSVs["TADs"]:
@@ -349,9 +349,9 @@ class GeneRanking:
 					
 				for sv in rightTADSVs:
 					
-					sampleInd = sampleMap[sv.sampleName]
+					sampleInd = sampleMap[sv[3]]
 					
-					if sv.cancerType == cancerType:
+					if sv[4] == cancerType:
 					
 						scoringMatrix[sampleInd][matrixGeneInd] += 1
 		
@@ -392,14 +392,14 @@ class GeneRanking:
 							if gene.name == "CNBD1":
 							
 								
-								if sv.sampleName not in sampleCount:
-									sampleCount[sv.sampleName] = 0
-								sampleCount[sv.sampleName] += 1
+								if sv[3] not in sampleCount:
+									sampleCount[sv[3]] = 0
+								sampleCount[sv[3]] += 1
 							
 									
-								foundSamples.append([sv.cancerType, sv.sampleName, sv.chr1, sv.s1, sv.e1, sv.chr2, sv.s2, sv.e2])
+								foundSamples.append([sv[4], sv[3], sv.chr1, sv.s1, sv.e1, sv.chr2, sv.s2, sv.e2])
 							
-							sampleInd = sampleMap[sv.sampleName]
+							sampleInd = sampleMap[sv[3]]
 							scoringMatrix[sampleInd][matrixGeneInd] += 1
 			
 		
