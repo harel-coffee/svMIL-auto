@@ -404,29 +404,29 @@ class NeighborhoodDefiner:
 				snvsOverlappingRightTAD = []
 				gene.rightTAD.setSNVs(snvsOverlappingRightTAD)
 			
-			# #Check which SVs overlap with the eQTLs
-			# 
-			# #Repeat for eQTLs. Is the gene on the same chromosome as the eQTL? Then use the above chromosome subset.
-			# 
-			# geneEQTLs = gene.eQTLs
-			# 
-			# for eQTL in geneEQTLs: #only if the gene has eQTLs
-			# 	
-			# 	
-			# 	
-			# 	startMatches = eQTL.start <= snvSubset[:,2]
-			# 	endMatches = eQTL.end >= snvSubset[:,1]
-			# 	
-			# 	allMatches = startMatches * endMatches
-			# 	
-			# 	
-			# 	
-			# 	snvsOverlappingEQTL = []
-			# 
-			# 	
-			# 	eQTL.setSNVs(snvsOverlappingEQTL)
-			# 
-			# 
+			#Check which SVs overlap with the eQTLs
+			
+			#Repeat for eQTLs. Is the gene on the same chromosome as the eQTL? Then use the above chromosome subset.
+			
+			geneEQTLs = gene.eQTLs
+			
+			for eQTL in geneEQTLs: #only if the gene has eQTLs
+				
+				
+				
+				startMatches = eQTL.start <= snvSubset[:,2]
+				endMatches = eQTL.end >= snvSubset[:,1]
+				
+				allMatches = startMatches * endMatches
+				
+				
+				
+				snvsOverlappingEQTL = []
+			
+				
+				eQTL.setSNVs(snvsOverlappingEQTL)
+			
+			
 		
 		
 		
