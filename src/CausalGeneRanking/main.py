@@ -33,6 +33,7 @@ import os
 from neighborhoodDefiner import NeighborhoodDefiner
 from geneRanking import GeneRanking
 from inputParser import InputParser
+from variantShuffler import VariantShuffler
 
 ###############
 ###Main code###
@@ -67,10 +68,12 @@ if mode == "SNV":
  #Check if this run is a permutation or not. The output file name depends on this
 if permutationYN == "True":
 	print "Shuffling variants"
-	
+	variantShuffler = VariantShuffler()
 	#Shuffle the variants, provide the mode such that the function knows how to permute
-	
-	#svData = shuffleSVs(svData)
+	if mode == "SV":
+		variantData = variantShuffler.shuffleSVs(variantData)
+	if mode == "SNV":
+		variantData = variantShuffler.shuffleSNVs(variantData)
 
 #2. Get the neighborhood for these genes
 print "Defining the neighborhood for the causal genes and the SVs"
