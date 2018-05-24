@@ -204,6 +204,10 @@ class GeneRanking:
 				if cancerType != "breast": #Use a different cancer type to filter for in the SNVs, these come form different patients. 
 					continue
 			
+			if mode == "SV+SNV":
+				if cancerType != "breast/gastric" or cancerType != "breast": #here we tolerate either of these
+					continue
+			
 			print "cancer type: ", cancerType
 			cancerTypeSVs = cancerTypes[cancerType] #Use these SVs to map to the right position in the scoring matrix
 			
