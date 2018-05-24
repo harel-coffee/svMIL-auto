@@ -387,7 +387,7 @@ class GeneRanking:
 					
 					for sv in eQTL.SVs:
 						
-						if sv.cancerType == cancerType:
+						if sv[4] == cancerType:
 							
 							if gene.name == "CNBD1":
 							

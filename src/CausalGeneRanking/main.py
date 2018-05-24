@@ -55,15 +55,26 @@ uniqueCancerTypes = []
 
 #2. Read the SVs or SNVs depending on the mode.
 
+svFile = "../../data/TPTNTestSet/TP.txt" #should be a setting, or provide the data as parameter
+snvFile = "../../data/SNVs/cosmicNCV.txt" #use a simple subset for now because the original file with NC SNVs is very large
+
 variantData = []
-if mode == "SV":		
-	svFile = "../../data/TPTNTestSet/TP.txt" #should be a setting, or provide the data as parameter
-	variantData = InputParser().getSVsFromFile(svFile)
+if mode == "SV":
+	print "Reading SV data"
+	svData = InputParser().getSVsFromFile(svFile)
 
 if mode == "SNV":
-	snvFile = "../../data/SNVs/cosmicNCV.txt" #use a simple subset for now because the original file with NC SNVs is very large
-	variantData = InputParser().getSNVsFromFile(snvFile)
-
+	print "Reading SNV data"
+	snvData = InputParser().getSNVsFromFile(snvFile)
+	
+#This can be done better with an array of parameters,but this is quick and dirty for now	
+if mode == "SV+SNV":
+	print "Reading SV data"
+	svData = InputParser().getSVsFromFile(svFile)
+	print "Reading SNV data"
+	snvData = InputParser().getSNVsFromFile(snvFile)
+	
+	
 #3. If this is a permutation run, we wish to shuffle these SVs.
  #Check if this run is a permutation or not. The output file name depends on this
 if permutationYN == "True":
@@ -71,17 +82,28 @@ if permutationYN == "True":
 	variantShuffler = VariantShuffler()
 	#Shuffle the variants, provide the mode such that the function knows how to permute
 	if mode == "SV":
-		variantData = variantShuffler.shuffleSVs(variantData)
+		svData = variantShuffler.shuffleSVs(svData)
 	if mode == "SNV":
-		variantData = variantShuffler.shuffleSNVs(variantData)
-
+		snvData = variantShuffler.shuffleSNVs(snvData)
+	if mode == "SV+SNV":
+		svData = variantShuffler.shuffleSVs(svData)
+		snvData = variantShuffler.shuffleSNVs(snvData)
+		
+		
 #2. Get the neighborhood for these genes
-print "Defining the neighborhood for the causal genes and the SVs"
-NeighborhoodDefiner(causalGenes, variantData, mode) #Provide the mode to ensure that the right variant type is used (different positions used in annotation)
-
-
+if mode == "SV":
+	print "Defining the neighborhood for the causal genes and the SVs"
+	NeighborhoodDefiner(causalGenes, svData, None, mode) #Provide the mode to ensure that the right variant type is used (different positions used in annotation)
+if mode == "SNV":
+	print "Defining the neighborhood for the causal genes and the SNVs"
+	NeighborhoodDefiner(causalGenes, None, snvData, mode) #Provide the mode to ensure that the right variant type is used (different positions used in annotation)
+if mode == "SV+SNV":
+	print "Defining the neighborhood for the causal genes and the SVs and SNVs"
+	NeighborhoodDefiner(causalGenes, svData, snvData, mode) #Provide the mode to ensure that the right variant type is used (different positions used in annotation)
+	
+	
 #3. Do simple ranking of the genes and report the causal SVs
-print "Ranking the genes for the SVs"
+print "Ranking the genes for the variants"
 geneRanking = GeneRanking(causalGenes[:,3], mode)
 
 #Output the ranking scores to a file (should probably also be its own class or at least a function)

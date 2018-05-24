@@ -20,7 +20,7 @@ class NeighborhoodDefiner:
 	"""
 
 	
-	def __init__(self, genes, variantData, mode):
+	def __init__(self, genes, svData, snvData, mode):
 		
 		#1. Map genes to TADs
 		
@@ -41,11 +41,17 @@ class NeighborhoodDefiner:
 		#3. Map SVs to all neighborhood elements
 		if mode == "SV":
 			print "Mapping SVs to the neighborhood"
-			self.mapSVsToNeighborhood(genes, variantData)
+			self.mapSVsToNeighborhood(genes, svData)
 		if mode == "SNV":
 			print "Mapping SNVs to the neighborhood"
-			self.mapSNVsToNeighborhood(genes, variantData, eQTLData)
-
+			self.mapSNVsToNeighborhood(genes, snvData, eQTLData)
+		if mode == "SV+SNV": #in this case map both
+			print "Mapping SVs to the neighborhood"
+			self.mapSVsToNeighborhood(genes, svData)
+			
+			print "Mapping SNVs to the neighborhood"
+			self.mapSNVsToNeighborhood(genes, snvData, eQTLData)
+		
 		
 	def getTADsFromFile(self, tadFile):
 		"""
@@ -268,7 +274,7 @@ class NeighborhoodDefiner:
 			
 			geneMatches = geneStartMatches * geneEndMatches #both should be true, use AND for concatenating
 		
-			svsOverlappingGenes = svSubset[geneMatches,10]
+			svsOverlappingGenes = svSubset[geneMatches]
 			
 			
 			#Get the SV objects and link them to the gene
@@ -283,7 +289,7 @@ class NeighborhoodDefiner:
 				
 				leftTADMatches = leftTADStartMatches * leftTADEndMatches
 				
-				svsOverlappingLeftTAD = svSubset[leftTADMatches, 10]
+				svsOverlappingLeftTAD = svSubset[leftTADMatches]
 				gene.leftTAD.setSVs(svsOverlappingLeftTAD)
 			
 			if gene.rightTAD != None:
@@ -293,7 +299,7 @@ class NeighborhoodDefiner:
 				
 				rightTADMatches = rightTADStartMatches * rightTADEndMatches
 			
-				svsOverlappingRightTAD = svSubset[rightTADMatches, 10]
+				svsOverlappingRightTAD = svSubset[rightTADMatches]
 				gene.rightTAD.setSVs(svsOverlappingRightTAD)
 			
 			#Check which SVs overlap with the eQTLs
@@ -313,7 +319,7 @@ class NeighborhoodDefiner:
 				
 				
 				
-				svsOverlappingEQTL = svSubset[allMatches, 10]
+				svsOverlappingEQTL = svSubset[allMatches]
 
 				
 				eQTL.setSVs(svsOverlappingEQTL)
