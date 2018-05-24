@@ -49,6 +49,10 @@ class InputParser:
 				cancerType = splitLine[cancerTypeIndex]
 				sampleName = splitLine[sampleNameIndex]
 				
+				#Dirty workaround to make sure that the cancer type names are the same, we only focus on 1 type for this intial run
+				if cancerType == "breast/gastric":
+					cancerType = "breast"
+				
 				
 				#if cancerType not in uniqueCancerTypes:
 				#	uniqueCancerTypes.append(cancerType)
@@ -125,7 +129,7 @@ class InputParser:
 				
 				#snvObject = SNV(chromosome, start, end, sampleName, cancerType)
 				#snvList.append([chromosome, start, end, sampleName, cancerType, snvObject])
-				snvList.append([chromosome, int(start), int(end), sampleName, cancerType])
+				snvList.append([chromosome, int(start), int(end), None, None, None, sampleName, cancerType]) #Add None because in the end we wish to treat variants the same way, but since objects take up memory it needs to be in a NP array but requires to be int he same column
 				
 		regions = np.array(snvList, dtype="object")
 		

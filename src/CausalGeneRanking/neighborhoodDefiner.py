@@ -216,48 +216,34 @@ class NeighborhoodDefiner:
 				svChr1Subset[:,0] = interChr1Subset[:,0] #For chromosome 1, we use just the first chromosome, s1 and e1.
 				svChr1Subset[:,1] = interChr1Subset[:,1] #For chromosome 1, we use just the first chromosome, s1 and e1.
 				svChr1Subset[:,2] = interChr1Subset[:,2] #For chromosome 1, we use just the first chromosome, s1 and e1.
-				svChr1Subset[:,3] = interChr1Subset[:,7] #Also keep the sample name
-				
-				#Keep other regional info as well just to check
-				svChr1Subset[:,4] = interChr1Subset[:,0] #Also keep the sample name
-				svChr1Subset[:,5] = interChr1Subset[:,1] #Also keep the sample name
-				svChr1Subset[:,6] = interChr1Subset[:,2] #Also keep the sample name
-				svChr1Subset[:,7] = interChr1Subset[:,3] #Also keep the sample name
-				svChr1Subset[:,8] = interChr1Subset[:,4] #Also keep the sample name
-				svChr1Subset[:,9] = interChr1Subset[:,5] #Also keep the sample name
-				svChr1Subset[:,10] = interChr1Subset[:,8]
+				svChr1Subset[:,3] = None #Here fill with None because the SVs need to have the cancer type and sample name in the same place in the array as the SNVs, but the SNVs don't have this info. Also just use None because we won't use the other position anymore.
+				svChr1Subset[:,4] = None
+				svChr1Subset[:,5] = None
+				svChr1Subset[:,6] = interChr1Subset[:,7]
+				svChr1Subset[:,7] = interChr1Subset[:,6]
 				
 				#Make the subset for the chr2 matches
 				svChr2Subset = np.empty([interChr2Subset.shape[0],11], dtype='object')
 				svChr2Subset[:,0] = interChr2Subset[:,0] #For chromosome 2, we use just the second chromosome, s2 and e2.
 				svChr2Subset[:,1] = interChr2Subset[:,4] 
 				svChr2Subset[:,2] = interChr2Subset[:,5] 
-				svChr2Subset[:,3] = interChr2Subset[:,7] #Also keep the sample name
+				svChr2Subset[:,3] = None
+				svChr2Subset[:,4] = None
+				svChr2Subset[:,5] = None
+				svChr2Subset[:,6] = interChr2Subset[:,7] 
+				svChr2Subset[:,7] = interChr2Subset[:,6] 
 				
-				#Keep other regional info as well just to check
-				svChr2Subset[:,4] = interChr2Subset[:,0] #Also keep the sample name
-				svChr2Subset[:,5] = interChr2Subset[:,1] #Also keep the sample name
-				svChr2Subset[:,6] = interChr2Subset[:,2] #Also keep the sample name
-				svChr2Subset[:,7] = interChr2Subset[:,3] #Also keep the sample name
-				svChr2Subset[:,8] = interChr2Subset[:,4] #Also keep the sample name
-				svChr2Subset[:,9] = interChr2Subset[:,5] #Also keep the sample name
-				svChr2Subset[:,10] = interChr2Subset[:,8]
 				
 				#For the intra subset, we need to use s1 and e2.
 				svIntraSubset = np.empty([intraSubset.shape[0],11], dtype='object')
 				svIntraSubset[:,0] = intraSubset[:,0] #For chromosome 2, we use chromosome 1, s1 and e2.
 				svIntraSubset[:,1] = intraSubset[:,1] 
 				svIntraSubset[:,2] = intraSubset[:,5] 
-				svIntraSubset[:,3] = intraSubset[:,7] #Also keep the sample name
-				
-				#Keep other regional info as well just to check
-				svIntraSubset[:,4] = intraSubset[:,0] #Also keep the sample name
-				svIntraSubset[:,5] = intraSubset[:,1] #Also keep the sample name
-				svIntraSubset[:,6] = intraSubset[:,2] #Also keep the sample name
-				svIntraSubset[:,7] = intraSubset[:,3] #Also keep the sample name
-				svIntraSubset[:,8] = intraSubset[:,4] #Also keep the sample name
-				svIntraSubset[:,9] = intraSubset[:,5] #Also keep the sample name
-				svIntraSubset[:,10] = intraSubset[:,8]
+				svIntraSubset[:,3] = None
+				svIntraSubset[:,4] = None
+				svIntraSubset[:,5] = None
+				svIntraSubset[:,6] = intraSubset[:,7] 
+				svIntraSubset[:,7] = intraSubset[:,6] 
 				
 				#Now concatenate the arrays
 				svSubset = np.concatenate((svChr1Subset, svChr2Subset, svIntraSubset))
