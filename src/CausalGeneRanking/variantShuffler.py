@@ -132,7 +132,7 @@ class VariantShuffler:
 			#Sample name and cancer type can be copied from the other SV. Chromosome information also remains the same.
 			#Keep in mind that the sample name and cancer type are reversed in the SV object beause that order makes more sense. 
 			
-			newSnv = [chromosome1, newStart1, newEnd1, snv[3], snv[4]]	
+			newSnv = [chromosome1, newStart1, newEnd1, None, None, None, snv[3], snv[4]]	
 			shuffledSnvs.append(newSnv)	
 		
 		shuffledSnvs = np.array(shuffledSnvs, dtype="object")	
