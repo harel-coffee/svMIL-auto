@@ -86,7 +86,7 @@ print "plotting genes"
 
 #First for the gene scores only
 
-outputDir = "RankedGenes/Results_SNVs/"
+outputDir = "RankedGenes/Results_SNVsSVs/"
 
 if not os.path.exists(outputDir):
 	os.makedirs(outputDir)

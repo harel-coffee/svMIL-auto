@@ -4,7 +4,7 @@
 #$ -cwd
 #$ -m as
 #$ -M m.m.nieboer@umcutrecht.nl
-#$ -l h_vmem=10G
+#$ -l h_vmem=16G
 #$ -l h_rt=00:30:00
 #$ -e ranking_normal_err
 #$ -o ranking_normal_out
