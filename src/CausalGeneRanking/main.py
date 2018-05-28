@@ -10,10 +10,13 @@
 	The setup of these scripts will initally be (it will not be too pretty and perfect at first):
 	
 	- The main script where the input (genes) are parsed and the relevant scripts are called
-	- The getNeighborhood class, where things such as neighboring TADs, related eQTLs and overlapping SVs are obtained
-	- The RankGenes class, where the genes are ranked by how likely they are causal for the disease depending on the SVs affecting their neighborhood
-	- The output will be a matrix with all causal genes in the columns, and the relevant SVs in the rows.
+	- The neighborhoodDefiner, which takes SNVs or SVs as input (or both) and links these to the genes and elements in the neighborhood of that gene that these variants disrupt
+	- The geneRanking script, which takes annotated neighborhoods of genes as input, and then computes a score for each layer (i.e. genes, TADs, eQTLs)
+	- The above 3 scripts need to be repeated 1000 times (or more) with permutations to compute the scores for genes when the variants are randomly distributed
 	
+	To run these scripts, the starting point in runRankingWithPermutations.sh. It does not require any parameters (set the file locations in settings.py), and will run 1 normal scoring run and 1000 permutations on the HPC.
+	Then when all permutations are completed, you will need to run computePValuesPerGene.py. This script reads a given output directory containing all gene scores for the normal run and 1000 permutation runs. It will compute
+	a p-value for each layer and rank the causal genes by which have significant p-values in the most layers. 
 	
 	Using a gene-based approach will likely be quicker than an SV-based approach, and we can get the relevant SVs through the genes. If an SV is never affecting any of our features defined as interesting, there is no
 	need to look at that SV at all. This idea may change along the way.
@@ -34,16 +37,16 @@ from neighborhoodDefiner import NeighborhoodDefiner
 from geneRanking import GeneRanking
 from inputParser import InputParser
 from variantShuffler import VariantShuffler
+import settings
 
 ###############
 ###Main code###
 
 
 #0. Collect all the relevant parameters here for clarity
-causalGeneFile = sys.argv[1]
-uuid = sys.argv[2] #This uuid will normally be provided by the sh script when running in parallel
-permutationYN = sys.argv[3] #True or False depending on if we want to permute or not
-mode = sys.argv[4] #Either SV or SNV, then the relevant functions for this data type will be called. For now, a combination of data types is not yet implemented. 
+uuid = sys.argv[1] #This uuid will normally be provided by the sh script when running in parallel
+permutationYN = sys.argv[2] #True or False depending on if we want to permute or not
+mode = settings.general['mode'] #Either SV or SNV, then the relevant functions for this data type will be called. For now, a combination of data types is not yet implemented. 
 #permutationRound is parameter 5, only used when running on the HPC
 
 #1. Read and parse the causal genes
@@ -55,23 +58,24 @@ uniqueCancerTypes = []
 
 #2. Read the SVs or SNVs depending on the mode.
 
-svFile = "../../data/TPTNTestSet/TP.txt" #should be a setting, or provide the data as parameter
-snvFile = "../../data/SNVs/cosmicNCV.txt" #use a simple subset for now because the original file with NC SNVs is very large
-
 variantData = []
 if mode == "SV":
 	print "Reading SV data"
+	svFile = settings.files['svFile']
 	svData = InputParser().getSVsFromFile(svFile)
 
 if mode == "SNV":
 	print "Reading SNV data"
+	snvFile = settings.files['snvFile']
 	snvData = InputParser().getSNVsFromFile(snvFile)
 	
 #This can be done better with an array of parameters,but this is quick and dirty for now	
 if mode == "SV+SNV":
 	print "Reading SV data"
+	svFile = settings.files['svFile']
 	svData = InputParser().getSVsFromFile(svFile)
 	print "Reading SNV data"
+	snvFile = settings.files['snvFile']
 	snvData = InputParser().getSNVsFromFile(snvFile)
 	
 	
@@ -146,7 +150,7 @@ for cancerType in geneRanking.scores:
 		os.makedirs(cancerTypeFolder)
 
 	if permutationYN == "True":
-		permutationRound = sys.argv[5]	
+		permutationRound = sys.argv[3]	
 		outfileName = cancerTypeFolder + "/permutedSVs_" + permutationRound + "_geneScores.txt"
 	else:
 		outfileName = cancerTypeFolder + "/realSVs_geneScores.txt"

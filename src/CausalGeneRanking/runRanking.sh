@@ -12,4 +12,4 @@
 #Run 1 normal run without permutations
 
 
-python main.py "$1" "$2" "$3" "$4" "$SGE_TASK_ID"
+python main.py "$1" "$2" "$SGE_TASK_ID"

@@ -19,8 +19,8 @@ import matplotlib.pyplot as plt
 
 #1. For each folder in the gene ranking related to this particular run (provide uuid), read the files for the real case and the permutations
 
-dataFolder = sys.argv[1]
-noOfPermutations = int(sys.argv[2])
+dataFolder = sys.argv[1] #provide the folder which contains the output of all permutation runs. 
+noOfPermutations = int(sys.argv[2]) #provide how many permutations we expected. I can probably get that from the data folder as well, but that is more risky. 
 
 #first read the non-permuted scores
 

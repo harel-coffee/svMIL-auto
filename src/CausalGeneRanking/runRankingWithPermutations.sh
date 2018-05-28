@@ -13,16 +13,13 @@
 
 #Then run the permutation runs 1000 times, create jobs for that. 
 
-causalGeneFile="$1"
 
 uuid=$(uuidgen)
 
 permutationsYN="False"
 
-mode="$2"
-
-qsub runRanking.sh "$causalGeneFile" "$uuid" "$permutationsYN" "$mode"
+qsub runRanking.sh "$uuid" "$permutationsYN"
 
 permutationsYN="True"
 
-qsub -t 1-1000:1 -tc 50 runRanking.sh "$causalGeneFile" "$uuid" "$permutationsYN" "$mode" #use job array and inside this script SGE TASK ID to get the run number
+qsub -t 1-1000:1 -tc 50 runRanking.sh "$uuid" "$permutationsYN" #use job array and inside this script SGE TASK ID to get the run number
