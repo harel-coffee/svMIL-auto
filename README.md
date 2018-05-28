@@ -1,20 +1,16 @@
-# integrative-omics
-Variant annotation and prioritization
+# Causal gene-based ranking
 
-Running the code:
+This branch is intended for the code where we rank known causal genes by how likely these were causal for a specific set of SVs and/or SNVs from cancer patients. An idea of the causal SVs and SNVs can then be obtained from the highest ranked genes. 
 
-```
-python main.py ../data/TPTNTestSet/TP.txt ../output/TP_annotations.txt
-```
+The currently included datasets are TADs and eQTLs. 
 
-**IMPORTANT NOTE**
+In the settings file the required file paths can be specified. 
 
-Files that are larger than 100 Mb (and ideally not much larger than 25 Mb) should not be uploaded to GitHub. This includes for example the output file, but also intermediate files. 
+# How to use
 
-Also, the code does not run on the HPC using any of the default Python installations, it requires **Numpy 1.11.3** to work. I run the code using a Python virtual environment (virtualenv) with the versions shown below.
+The starting script is runRankingWithPermutations.sh. This script does not require any parameters. If run on the HPC, it will first score all causal genes for causality and then repeat the process 1000 times with SVs and/or SNVs permuted across the genome. 
 
-Versions on Marleen's laptop (working version):
+If these scripts are done, the computePValuesPerGene.py script can be run to do the actual ranking of the genes. As parameters the script requires the output folder containing the scores for the normal run and 1000 permutations, and the number of permutations that were run (+1 because there is currently still a bug :)).
 
-**Python 2.7.13** <br />
-**Numpy 1.11.3** <br />
-**(optional) Neo4J 1.1.0b3 bolt driver** if you wish to switch the database type to Neo4J. The Neo4J feature is deprecated. <br />
+The output is a list of all causal genes that have significant p-values in as much layers as possible. 
+
