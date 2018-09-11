@@ -17,6 +17,7 @@ class Gene:
 		self.leftTAD = None
 		self.rightTAD = None
 		self.eQTLs = []
+		self.interactions = []
 		
 	def setTADs(self, leftTAD, rightTAD):
 		
@@ -33,6 +34,9 @@ class Gene:
 	def setEQTLS(self, eQTLS):
 		
 		self.eQTLS = eQTLS
+		
+	def setInteractions(self, interactions):
+		self.interactions = interactions
 		
 	def setSVs(self, SVs):
 		

@@ -49,7 +49,48 @@ for folderName in os.listdir(hiCFolder):
 	#Skip if it is an osx specific file and not a folder
 	if os.path.isdir(hiCFolder + "/" + folderName):
 		filesToRead = glob.glob(hiCFolder + "/" + folderName + "/*.RAWobserved_thresholded_5")
+
+#Read the hg19 genes
+hg19Genes = "../../../data/Genes/ensemblGenesHg19"
+
+geneLocations = []
+with open(hg19Genes, 'r') as geneIn:
+	lineCount = 0
+	for line in geneIn:
+		line = line.strip()
 		
+		if lineCount < 1:
+			lineCount += 1
+			continue
+		splitLine = line.split("\t")
+		
+		#chr, start, end, name
+		geneLocations.append([splitLine[1], int(splitLine[3]), int(splitLine[4]), splitLine[6]])
+
+geneLocations = np.array(geneLocations, dtype='object')
+
+#Read the causal genes
+causalGenes = "../../../data/Genes/causalGenes.bed"
+causalGeneNames = dict() #easy searching if a gene is causal yes/no
+causalGeneLocations = []
+with open(causalGenes, 'r') as geneIn:
+	lineCount = 0
+	for line in geneIn:
+		line = line.strip()
+		
+		if lineCount < 1:
+			lineCount += 1
+			continue
+		splitLine = line.split("\t")
+		
+		if splitLine[3] not in causalGeneNames:
+			causalGeneNames[splitLine[3]] = 0
+			
+		#chr, start, end, name
+		causalGeneLocations.append([('chr' + splitLine[0]), int(splitLine[1]), int(splitLine[2]), splitLine[3]])
+
+causalGeneLocations = np.array(causalGeneLocations, dtype='object')
+	
 startTime = time.time()
 
 #The output files to write the results to, these will be input for Neo4J
@@ -72,9 +113,8 @@ total = 0 #see how many lines are in the file in total
 with open(subdir + regionsFile, 'w') as regionsOut:
 	with open(subdir + relationsFile, 'w') as relationsOut:
 		#Write the headers for the Neo4J input file
-		regionsOut.write("id:ID\n")
+		regionsOut.write("id:ID,geneNames:string,causality:string\n")
 		relationsOut.write(":START_ID,:END_ID\n")
-		
 		
 		for hiCFile in filesToRead:
 			print hiCFile
@@ -101,6 +141,10 @@ with open(subdir + regionsFile, 'w') as regionsOut:
 							end = "chr" + str(chr1) + "_" + splitLine[1]
 						else:	
 							end = "chr" + str(chr2) + "_" + splitLine[1]
+						if start == end:
+							continue #avoid adding self-loops to the database, these are not useful for now
+							
+						
 						
 						#We wish to only write a region to the regions file (which will be a node in the graph), when it has not already been written to the file previously.
 						#To save computational time, we add a key to the dictionary, dictionaries are really fast. The value does not matter.
@@ -111,7 +155,37 @@ with open(subdir + regionsFile, 'w') as regionsOut:
 						diff = len(seenPositions) - previousLen #check if we added something or not. 
 						if diff == 1:
 							#write start to file
-							regionsOut.write(start + "\n")
+							regionsOut.write(start + ",")
+							
+							#Check if this region overlaps with a gene or causal gene
+							#First get the subset with the right chromosome
+							chrSubset = geneLocations[geneLocations[:,0] == 'chr' + str(chr1)]
+							
+							
+							startEnd = int(splitLine[0]) + 5000 #the end coordinate of the region starting the interaction
+							
+							regionStartMatches = int(splitLine[0]) <= chrSubset[:,2]
+							regionEndMatches = startEnd >= chrSubset[:,1]
+
+							allMatches = regionStartMatches * regionEndMatches
+							
+							matchingGenes = chrSubset[allMatches,:] #the genes in this region, can be multiple
+							
+							geneNames = dict()
+							causality = False
+							if len(matchingGenes) > 0:
+								tmpGeneNames = matchingGenes[:,3]
+								for geneName in tmpGeneNames: #use a dictionary to quickly make genes unique
+									
+									if geneName in causalGeneNames:
+										causality = True
+									geneNames[geneName] = 0
+								
+							geneNames = ";".join(geneNames)
+							
+								
+							regionsOut.write(geneNames + ",")
+							regionsOut.write(str(causality) + "\n")
 							previousLen = len(seenPositions)
 							
 						seenPositions[end] = 0
@@ -119,7 +193,41 @@ with open(subdir + regionsFile, 'w') as regionsOut:
 						diff = len(seenPositions) - previousLen
 						if diff == 1:
 							#write end to file
-							regionsOut.write(end + "\n")
+							regionsOut.write(end + ",")
+							
+							
+							#Check if this region overlaps with a gene or causal gene
+							#First get the subset with the right chromosome
+							if intrachromosomal == True:
+								chrSubset = geneLocations[geneLocations[:,0] == 'chr' + str(chr1)]
+							else:
+								chrSubset = geneLocations[geneLocations[:,0] == 'chr' + str(chr2)]
+							
+							startEnd = int(splitLine[1]) + 5000 #the end coordinate of the region ending the interaction
+							
+							regionStartMatches = int(splitLine[1]) <= chrSubset[:,2]
+							regionEndMatches = startEnd >= chrSubset[:,1]
+							
+							allMatches = regionStartMatches * regionEndMatches
+							
+							matchingGenes = chrSubset[allMatches] #the genes in this region, can be multiple
+							
+							geneNames = dict()
+							causality = False
+							if len(matchingGenes) > 0:
+								tmpGeneNames = matchingGenes[:,3]
+								for geneName in tmpGeneNames: #use a dictionary to quickly make genes unique
+									
+									if geneName in causalGeneNames:
+										causality = True
+								
+									geneNames[geneName] = 0
+								
+							geneNames = ";".join(geneNames)
+							
+							regionsOut.write(geneNames + ",")
+							regionsOut.write(str(causality) + "\n")
+
 							previousLen = len(seenPositions)
 						
 						relationsOut.write(start + "," + end + "\n")

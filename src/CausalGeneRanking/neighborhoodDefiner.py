@@ -1,11 +1,14 @@
 import numpy as np
+import json
 
 from tad import TAD
 from sv import SV
 from gene import Gene
 from eQTL import EQTL
+from interaction import Interaction
 from snv import SNV
 
+import settings
 
 class NeighborhoodDefiner:
 	"""
@@ -24,19 +27,31 @@ class NeighborhoodDefiner:
 		
 		#1. Map genes to TADs
 		
-		#Make these pats a setting!
-		tadFile = "../../data/tads/tads.csv"
-		print "Getting TADs"
-		tadData = self.getTADsFromFile(tadFile)
-		print "mapping TADs to genes"
-		self.mapTADsToGenes(genes[:,3], tadData) #only pass the gene objects will suffice
-		
+		if settings.general['tads'] == True:
+			
+			#Make these pats a setting!
+			tadFile = "../../data/tads/tads.csv"
+			print "Getting TADs"
+			tadData = self.getTADsFromFile(tadFile)
+			print "mapping TADs to genes"
+			self.mapTADsToGenes(genes[:,3], tadData) #only pass the gene objects will suffice
+			
 		#2. Map genes to eQTLs
 		
-		eQTLFile = "../../data/eQTLs/eQTLsFilteredForCausalGenes.txt"
-		print "getting eQTLs"
-		eQTLData = self.getEQTLsFromFile(eQTLFile, genes[:,3])
+		eQTLData = [] #Keep empty by default
+		if settings.general['eQTLs'] == True:
+			eQTLFile = "../../data/eQTLs/eQTLsFilteredForCausalGenes.txt"
+			print "getting eQTLs"
+			eQTLData = self.getEQTLsFromFile(eQTLFile, genes[:,3])
 		
+		
+		#Add reading/parsing of 3D genome information
+		if settings.general['interactions'] == True: 
+			interactionsFile = "../../data/HiC/intrachromosomal_geneNonGeneInteractions.csv" #should be setting
+			print "Getting interactions"
+			interactionData = self.getInteractionsFromFile(interactionsFile)
+			print "mapping interactions to genes"
+			self.mapInteractionsToGenes(genes[:,3], interactionData)
 		
 		#3. Map SVs to all neighborhood elements
 		if mode == "SV":
@@ -108,7 +123,55 @@ class NeighborhoodDefiner:
 				eQTLs.append(eQTLObject)				
 		
 		return eQTLs
+	
+	def getInteractionsFromFile(self, interactionsFile):
+		"""
+			Read the HiC interactions between genes and interaction pairs into numPy array format. Each numpy array will be in the format of:
+			0: chromosome of non-coding interaction
+			1: start of non-coding interaction
+			2: end of non-coding interaction
+			3: name of gene that is interacted with. If there are multiple genes, this is split across multiple lines
+			4: bin in which the gene resides in the format of chr_binStartPosition
 			
+			Notes:
+			There is an issue with the csv export in Neo4J and now there are double quotation marks which I cannot fix. Thus the string is not real json. 
+		"""
+		
+		#Read the gene list data into a list
+		interactionData = []
+		with open(interactionsFile, "r") as f:
+			lineCount = 0
+			for line in f:
+				if lineCount < 1: #skip header
+					lineCount += 1
+					continue
+				line = line.strip()
+				splitLine = line.split('}","{') #split on every column which is encoded strangely now
+				
+				encodedNonCodingRegion = splitLine[0].split('"')[7] #this is where the region ID will always be
+				nonCodingRegionChr = encodedNonCodingRegion.split("_")[0]
+				nonCodingRegionStart = int(encodedNonCodingRegion.split("_")[1])
+				nonCodingRegionEnd = nonCodingRegionStart + 5000 #bin of 5kb
+				
+				encodedGeneData = splitLine[1].split('"')
+				encodedGeneRegion = encodedGeneData[14]
+				encodedGeneRegionChr = encodedGeneRegion.split("_")[0]
+				encodedGeneRegionStart = int(encodedGeneRegion.split("_")[1])
+				encodedGeneRegionEnd = encodedGeneRegionStart + 5000
+				encodedGeneNames = encodedGeneData[6]
+				
+				splitGeneNames = encodedGeneNames.split(";")
+				for geneName in splitGeneNames: #Add the region separately for each gene in the coding region. 
+					
+					interactionObj = Interaction(nonCodingRegionChr, nonCodingRegionStart, nonCodingRegionEnd, encodedGeneRegionChr, encodedGeneRegionStart, encodedGeneRegionEnd, geneName)
+					#For now I will not make objects because working with the numpy arrays is much much faster
+					interactionData.append([nonCodingRegionChr, nonCodingRegionStart, nonCodingRegionEnd, geneName, encodedGeneRegion, interactionObj])
+					
+	
+		#Also convert the dataset to numpy
+		interactionData = np.array(interactionData, dtype='object')
+
+		return interactionData
 		
 	def mapTADsToGenes(self, genes, tadData):
 		"""
@@ -171,6 +234,23 @@ class NeighborhoodDefiner:
 			if gene.name == geneSymbol:
 				
 				gene.addEQTL(eQTL)
+	
+	def mapInteractionsToGenes(self, genes, interactionData):
+		"""
+			Take Hi-C interactions as input (see getInteractionsFromFile for the format) and link these to the causal genes. 
+		
+		"""
+		
+		#1. For each gene, find the non-coding regions that have an interaction with this gene. 
+		
+		previousChr = None
+		for gene in genes:
+			
+			#Get the interactions bby the name of the gene
+			interactionsSubset = interactionData[interactionData[:,3] == gene.name,5] #get the objects
+			
+			#add interaction objects to the genes
+			gene.setInteractions(interactionsSubset)
 			
 		
 	def mapSVsToNeighborhood(self, genes, svData):
@@ -309,7 +389,18 @@ class NeighborhoodDefiner:
 
 				
 				eQTL.setSVs(svsOverlappingEQTL)
-
+			
+			#Check which SVs overlap with the interactions.
+			for interaction in gene.interactions:
+				
+				startMatches = interaction.start1 <= svSubset[:,2]
+				endMatches = interaction.end1 >= svSubset[:,1]
+				
+				allMatches = startMatches * endMatches
+				
+				svsOverlappingInteraction = svSubset[allMatches]
+				
+				interaction.setSVs(svsOverlappingInteraction)
 		
 		
 		
@@ -491,6 +582,21 @@ class NeighborhoodDefiner:
 			
 				
 				eQTL.setSNVs(snvsOverlappingEQTL)
+		
+			#Check which SNVs overlap with the interactions.
+			# for interaction in gene.interactions:
+			# 	
+			# 	startMatches = interaction.start1 <= svSubset[:,2]
+			# 	endMatches = interaction.end >= svSubset[:,1]
+			# 	
+			# 	allMatches = startMatches * endMatches
+			# 	
+			# 	svsOverlappingInteraction = svSubset[allMatches]
+			# 	
+			# 	interaction.setSVs(svsOverlappingInteraction)
+			# 
+		
+		
 		# 			
 		# 		
 		# 	

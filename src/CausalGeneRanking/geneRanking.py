@@ -1,4 +1,5 @@
 import numpy as np
+import settings
 
 class GeneRanking:
 	"""
@@ -69,6 +70,7 @@ class GeneRanking:
 						cancerTypes[cancerType]["genes"] = dict()
 						cancerTypes[cancerType]["TADs"] = dict()
 						cancerTypes[cancerType]["eQTLs"] = dict()
+						cancerTypes[cancerType]["interactions"] = dict()
 					if cancerType not in cancerTypeTotalSVs:
 						cancerTypeTotalSVs[cancerType] = 0
 					
@@ -107,6 +109,7 @@ class GeneRanking:
 						cancerTypes[cancerType]["genes"] = dict()
 						cancerTypes[cancerType]["TADs"] = dict()
 						cancerTypes[cancerType]["eQTLs"] = dict()
+						cancerTypes[cancerType]["interactions"] = dict()
 					if cancerType not in cancerTypeTotalSVs:
 						cancerTypeTotalSVs[cancerType] = 0
 					
@@ -139,6 +142,7 @@ class GeneRanking:
 						cancerTypes[cancerType]["genes"] = dict()
 						cancerTypes[cancerType]["TADs"] = dict()
 						cancerTypes[cancerType]["eQTLs"] = dict()
+						cancerTypes[cancerType]["interactions"] = dict()
 					if cancerType not in cancerTypeTotalSVs:
 						cancerTypeTotalSVs[cancerType] = 0
 					
@@ -176,6 +180,7 @@ class GeneRanking:
 						cancerTypes[cancerType]["genes"] = dict()
 						cancerTypes[cancerType]["TADs"] = dict()
 						cancerTypes[cancerType]["eQTLs"] = dict()
+						cancerTypes[cancerType]["interactions"] = dict()
 					if cancerType not in cancerTypeTotalSVs:
 						cancerTypeTotalSVs[cancerType] = 0
 					
@@ -185,6 +190,38 @@ class GeneRanking:
 					cancerTypes[cancerType]["eQTLs"][eQTL].append(variant)
 					cancerTypeTotalSVs[cancerType] += 1
 
+			print "mapping interactions to cancer types"
+			
+			for interaction in gene.interactions:
+				
+				#Collect all variants of this eQTL	
+				interactionVariants = [] #have one big list of objects
+				if interaction.SVs is not None:
+					interactionVariants += list(interaction.SVs)
+				if interaction.SNVs is not None:
+					interactionVariants += list(interaction.SNVs)
+					
+				
+				for variant in interactionVariants:
+					if variant[6] not in sampleMap:
+						sampleMap[variant[6]] = sampleIndex
+						sampleIndex += 1
+						
+					cancerType = variant[7]
+					if cancerType not in cancerTypes:
+						cancerTypes[cancerType] = dict()
+						cancerTypes[cancerType]["genes"] = dict()
+						cancerTypes[cancerType]["TADs"] = dict()
+						cancerTypes[cancerType]["eQTLs"] = dict()
+						cancerTypes[cancerType]["interactions"] = dict()
+					if cancerType not in cancerTypeTotalSVs:
+						cancerTypeTotalSVs[cancerType] = 0
+					
+					if interaction not in cancerTypes[cancerType]["interactions"]:
+						cancerTypes[cancerType]["interactions"][interaction] = []	
+					
+					cancerTypes[cancerType]["interactions"][interaction].append(variant)
+					cancerTypeTotalSVs[cancerType] += 1
 		
 		for gene in geneMap:
 			index = geneMap[gene]
@@ -217,13 +254,16 @@ class GeneRanking:
 			geneScoringMatrix = self.scoreBySVsInGenes(cancerTypeSVs["genes"], sampleMap, geneMap)
 			eQTLScoringMatrix = self.scoreBySVsInEQTLs(cancerTypeSVs, sampleMap, geneMap, cancerType)
 			tadScoringMatrix = self.scoreBySVsInTADs(cancerTypeSVs, sampleMap, geneMap, cancerType)
+			interactionScoringMatrix = self.scoreBySVsInInteractions(cancerTypeSVs, sampleMap, geneMap, cancerType)
 
+			#? Does this part make sense, to first xor with eQtls and then again later?
 			xorMatrix = np.logical_xor(geneScoringMatrix, eQTLScoringMatrix).astype(int)
 			geneXorMatrix = geneScoringMatrix * xorMatrix
 			eQTLXorMatrix = eQTLScoringMatrix * xorMatrix
 			tadXorMatrix = tadScoringMatrix * xorMatrix
+			interactionXorMatrix = interactionScoringMatrix * xorMatrix
 
-			scoringMatrix = geneXorMatrix + eQTLXorMatrix + tadXorMatrix
+			scoringMatrix = geneXorMatrix + eQTLXorMatrix + tadXorMatrix  + interactionXorMatrix
 			
 			#exit()
 			#Sum the total score per gene and report the genes by which ones are most likely causal.
@@ -232,9 +272,7 @@ class GeneRanking:
 			
 			#Sort and report the names of the genes that are involved
 			sortedGenesInd = np.argsort(geneScoresSummed)[::-1]
-			
-			
-			
+
 			geneCount = 0
 			geneScores = []
 			for geneInd in sortedGenesInd:
@@ -247,7 +285,8 @@ class GeneRanking:
 					geneCount += 1
 					#print gene.name, gene.chromosome, gene.start, ": ", geneScoresSummed[geneInd], " gene score: ", np.sum(geneXorMatrix[:,geneInd]), " eQTL score: ", np.sum(eQTLXorMatrix[:,geneInd]), " TAD score: ", np.sum(tadXorMatrix[:,geneInd])	
 			
-				geneScores.append([gene, np.sum(geneXorMatrix[:,geneInd]), np.sum(eQTLXorMatrix[:,geneInd]), np.sum(tadXorMatrix[:,geneInd])])
+				
+				geneScores.append([gene, np.sum(geneXorMatrix[:,geneInd]), np.sum(eQTLXorMatrix[:,geneInd]), np.sum(tadXorMatrix[:,geneInd]), np.sum(interactionXorMatrix[:,geneInd])])
 			
 			
 			geneScores = np.array(geneScores, dtype="object")
@@ -360,11 +399,7 @@ class GeneRanking:
 						scoringMatrix[sampleInd][matrixGeneInd] += 1
 		
 		return scoringMatrix
-		
-
-		
-					
-					
+							
 	def scoreBySVsInEQTLs(self, cancerTypeSVs, sampleMap, geneMap, cancerType):
 		
 		scoringMatrix = np.zeros([len(sampleMap), len(geneMap)])
@@ -415,5 +450,243 @@ class GeneRanking:
 	
 						
 		return scoringMatrix
+		
+	def scoreBySVsInEQTLs(self, cancerTypeSVs, sampleMap, geneMap, cancerType):
+		
+		scoringMatrix = np.zeros([len(sampleMap), len(geneMap)])
+		
+		#Get the left and right TAD for each gene.
+		#The score is 1 for each TAD boundary affected.
+		
+		#Here it goes wrong because we go through the genes that are directly affected by SVs in some cancer type, but the TADs may not be affected in that cancer type. 
+		foundSamples = []
+		sampleCount = dict()
+		for geneInd in range(0, len(cancerTypeSVs["genes"])): #first loop over the genes, then get their SVs
+			
+			gene = cancerTypeSVs["genes"].keys()[geneInd]
+			
+			matrixGeneInd = geneMap[gene]
+			
+			#Score SVs in the eQTLs
+			eQTLs = gene.eQTLs
+			
+			for eQTL in eQTLs:
+				
+				
+				if eQTL in cancerTypeSVs["eQTLs"]: #only score this eQTL if it has overlapping SVs in this particular cancer type
+					
+					for sv in eQTL.SVs:
+						
+						if sv[7] == cancerType:
+							
+							if gene.name == "CNBD1":
+							
+								
+								if sv[6] not in sampleCount:
+									sampleCount[sv[6]] = 0
+								sampleCount[sv[7]] += 1
+							
+									
+								foundSamples.append([sv[7], sv[6], sv.chr1, sv.s1, sv.e1, sv.chr2, sv.s2, sv.e2])
+							
+							sampleInd = sampleMap[sv[6]]
+							scoringMatrix[sampleInd][matrixGeneInd] += 1
+			
+		
+			
+			#Divide the score at each position in the matrix by the total number of eQTLs mapped to this gene. It would be ideal to do this on the final summed matrix, but is more difficult because of the combination.
+			for row in range(0, scoringMatrix.shape[0]):
+				if scoringMatrix[row][matrixGeneInd] > 0:
+					scoringMatrix[row][matrixGeneInd] = scoringMatrix[row][matrixGeneInd] / len(eQTLs)
+	
+						
+		return scoringMatrix
+		
+	def scoreBySVsInEQTLs(self, cancerTypeSVs, sampleMap, geneMap, cancerType):
+		
+		scoringMatrix = np.zeros([len(sampleMap), len(geneMap)])
+		
+		#Get the left and right TAD for each gene.
+		#The score is 1 for each TAD boundary affected.
+		
+		#Here it goes wrong because we go through the genes that are directly affected by SVs in some cancer type, but the TADs may not be affected in that cancer type. 
+		foundSamples = []
+		sampleCount = dict()
+		for geneInd in range(0, len(cancerTypeSVs["genes"])): #first loop over the genes, then get their SVs
+			
+			gene = cancerTypeSVs["genes"].keys()[geneInd]
+			
+			matrixGeneInd = geneMap[gene]
+			
+			#Score SVs in the eQTLs
+			eQTLs = gene.eQTLs
+			
+			for eQTL in eQTLs:
+				
+				
+				if eQTL in cancerTypeSVs["eQTLs"]: #only score this eQTL if it has overlapping SVs in this particular cancer type
+					
+					for sv in eQTL.SVs:
+						
+						if sv[7] == cancerType:
+							
+							if gene.name == "CNBD1":
+							
+								
+								if sv[6] not in sampleCount:
+									sampleCount[sv[6]] = 0
+								sampleCount[sv[7]] += 1
+							
+									
+								foundSamples.append([sv[7], sv[6], sv.chr1, sv.s1, sv.e1, sv.chr2, sv.s2, sv.e2])
+							
+							sampleInd = sampleMap[sv[6]]
+							scoringMatrix[sampleInd][matrixGeneInd] += 1
+			
+		
+			
+			#Divide the score at each position in the matrix by the total number of eQTLs mapped to this gene. It would be ideal to do this on the final summed matrix, but is more difficult because of the combination.
+			for row in range(0, scoringMatrix.shape[0]):
+				if scoringMatrix[row][matrixGeneInd] > 0:
+					scoringMatrix[row][matrixGeneInd] = scoringMatrix[row][matrixGeneInd] / len(eQTLs)
+	
+						
+		return scoringMatrix
+		
+	#Scoring specific for interactions	
+	def scoreBySVsInInteractions(self, cancerTypeSVs, sampleMap, geneMap, cancerType):
+		
+		scoringMatrix = np.zeros([len(sampleMap), len(geneMap)])
+		
+		#Here it goes wrong because we go through the genes that are directly affected by SVs in some cancer type, but the TADs may not be affected in that cancer type. 
+		foundSamples = []
+		sampleCount = dict()
+		genePositions = []
+		for geneInd in range(0, len(cancerTypeSVs["genes"])): #first loop over the genes, then get their SVs
+			
+			gene = cancerTypeSVs["genes"].keys()[geneInd]
+			
+			genePositions.append(['chr' + gene.chromosome, gene.start, gene.end, gene.name, gene])
+			
+			matrixGeneInd = geneMap[gene]
+			
+			#Score SVs in the interactions
+			
+			for interaction in gene.interactions:
+				
+				
+				if interaction in cancerTypeSVs["interactions"]: #only score this eQTL if it has overlapping SVs in this particular cancer type
+					
+					for sv in interaction.SVs:
+						
+						if sv[7] == cancerType:
+							
+							if gene.name == "CNBD1":
+							
+								
+								if sv[6] not in sampleCount:
+									sampleCount[sv[6]] = 0
+								sampleCount[sv[7]] += 1
+							
+									
+								foundSamples.append([sv[7], sv[6], sv.chr1, sv.s1, sv.e1, sv.chr2, sv.s2, sv.e2])
+							
+							sampleInd = sampleMap[sv[6]]
+							scoringMatrix[sampleInd][matrixGeneInd] += 1
+
+			#Normalize for the total number of interactions
+			for row in range(0, scoringMatrix.shape[0]):
+				if scoringMatrix[row][matrixGeneInd] > 0:
+					scoringMatrix[row][matrixGeneInd] = scoringMatrix[row][matrixGeneInd] / len(gene.interactions)
+	
+		#These are the initial heat scores per gene, now we need to overlap these with the diffusion scores
+		#The heat * diffusion scores will be the final scores for the genes that we use to rank.
+		
+		genePositions = np.array(genePositions, dtype='object')
+		
+		heatDiffusionScoresMatrix = self.computeHeatDiffusionScoresInteractions(cancerTypeSVs, scoringMatrix, geneMap, genePositions)
+		
+		return heatDiffusionScoresMatrix
+	
+	def computeHeatDiffusionScoresInteractions(self, cancerTypeSVs, svScoresMatrix, geneMap, genePositions):
+		"""
+			Obtain the heat diffusion scores from the file for each region.
+			Then overlap each gene with the regions, and obtain the correct score.
+			If a gene overlaps with multiple regions, take the sum of the scores of those regions.
+			Multiply the diffusion score with the SV-based score for that gene.
+			Return the scoring matrix with the multiplied scores. 
+		"""
+
+		diffusionScores = self.readHiCDiffusionScores(genePositions)
+		
+		
+		
+		for geneInd in range(0, len(cancerTypeSVs["genes"])):
+			gene = cancerTypeSVs["genes"].keys()[geneInd]
+			
+			matrixGeneInd = geneMap[gene]
+			
+			#get the position of the gene
+			
+			diffusionScore = diffusionScores[gene] ###Here it goes wrong because somehow not all genes overlap with a region which is strange. ??
+			
+			svScoresMatrix[:,matrixGeneInd] = svScoringMatrix[:,matrixGeneInd] * diffusionScore #multiply the entire column for that gene with the diffusion score to get the total heat score
+			
+		return svScoresMatrix
+
+
+	def readHiCDiffusionScores(self, genePositions):
+		"""
+			Read the diffusion scores from a file. We can initialize the scoring matrix here for the genes, containing the diffusion scores at each gene. 
+		"""
+		
+		#get the diffusion scores from the file
+		
+		heatDiffusionFile = settings.files['heatDiffusionFile']
+		diffusionScores = dict()
+		#Read the file into a numpy array, split the regions
+		with open(heatDiffusionFile, 'r') as inFile:
+			
+			for line in inFile:
+				line = line.strip()
+				
+				splitLine = line.split("\t")
+				region = splitLine[0]
+					
+				
+				splitRegion = region.split("_")
+				chrom = splitRegion[0]
+				
+				#Check if this region contains any gene. If true, find which gene it is and get the position in the diffusion matrix. Fill this with the diffusion score.
+				
+				regionStart = int(splitRegion[1])
+				regionEnd = regionStart + 5000 #should be a setting, bin size of HiC data. 
+				
+				#print regionStart
+				#print regionEnd
+				
+				#match only on the right chromosome
+				
+				chrSubset = genePositions[np.where(genePositions[:,0] == chrom)]
+				
+				
+				#Start of the gene should be before the end of the Hi-C region, and the end of the gene should be after the start of the region. 
+				matchingGenesStart = regionStart < chrSubset[:,2]
+				matchingGenesEnd = regionEnd > chrSubset[:,1]
+				
+				matchingGenesInd = matchingGenesStart * matchingGenesEnd
+				
+				matchingGenes = chrSubset[matchingGenesInd]
+				
+				
+				for matchingGene in matchingGenes: #for the genes in the region, get their position in the diffusion matrix and assign the diffusion score.
+					
+					diffusionScores[matchingGene[3]] = splitLine[1]
+		
+		
+		return diffusionScores		
+		
+		
+		
 		
 		
