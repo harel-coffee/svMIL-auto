@@ -33,6 +33,7 @@ perGeneScores = dict()
 perGeneScores["geneScore"] = np.zeros([noOfCausalGenes, noOfPermutations+1])
 perGeneScores["eQTLScore"] = np.zeros([noOfCausalGenes, noOfPermutations+1])
 perGeneScores["tadScore"] = np.zeros([noOfCausalGenes, noOfPermutations+1])
+perGeneScores["interactionScore"] = np.zeros([noOfCausalGenes, noOfPermutations+1])
 
 
 #Make an index for the positions of the genes in the final scoring matrix
@@ -74,7 +75,7 @@ for geneScoreFile in geneScoreFiles:
 		perGeneScores["geneScore"][currentGeneIndex, permutationRound] = geneScores[row][1]
 		perGeneScores["eQTLScore"][currentGeneIndex, permutationRound] = geneScores[row][2]
 		perGeneScores["tadScore"][currentGeneIndex, permutationRound] = geneScores[row][3]
-	
+		perGeneScores["interactionScore"][currentGeneIndex, permutationRound] = geneScores[row][3]
 
 #Extra step:
 
@@ -96,6 +97,8 @@ if not os.path.exists(outputDir + "eQTLScores/"):
 	os.makedirs(outputDir + "eQTLScores/")
 if not os.path.exists(outputDir + "tadScores/"):
 	os.makedirs(outputDir + "tadScores/")
+if not os.path.exists(outputDir + "interactionScores/"):
+	os.makedirs(outputDir + "interactionScores/")
 	
 for row in range(0, perGeneScores["geneScore"].shape[0]):
 	plt.figure()
@@ -105,17 +108,21 @@ for row in range(0, perGeneScores["geneScore"].shape[0]):
 	geneScores = np.array(perGeneScores["geneScore"][geneIndex])
 	eQTLScores = np.array(perGeneScores["eQTLScore"][geneIndex])
 	tadScores = np.array(perGeneScores["tadScore"][geneIndex])
+	interactionScores = np.array(perGeneScores["interactionScore"][geneIndex])
+	# 
+	# plt.hist(geneScores)
+	# plt.savefig(outputDir + "geneScores/" + geneName + "_eneScore.svg")
+	# plt.clf()
+	# plt.hist(eQTLScores)
+	# plt.savefig(outputDir + "eQTLScores/" + geneName + "_eQTLScore.svg")
+	# plt.clf()
+	# plt.hist(tadScores)
+	# plt.savefig(outputDir + "tadScores/" + geneName + "_tadScore.svg")
+	# plt.clf()
+	# plt.hist(interactionScores)
+	# plt.savefig(outputDir + "interactionScores/" + geneName + "_interactionScore.svg")
+	# plt.clf()
 	
-	plt.hist(geneScores)
-	plt.savefig(outputDir + "geneScores/" + geneName + "_eneScore.svg")
-	plt.clf()
-	plt.hist(eQTLScores)
-	plt.savefig(outputDir + "eQTLScores/" + geneName + "_eQTLScore.svg")
-	plt.clf()
-	plt.hist(tadScores)
-	plt.savefig(outputDir + "tadScores/" + geneName + "_tadScore.svg")
-	plt.clf()
-
 #plt.show()
 
 #3. Compute the p-value for each gene
@@ -137,12 +144,14 @@ for row in range(0, nonPermutedScores.shape[0]):
 	geneScore = float(nonPermutedScores[row,1])
 	eQTLScore = float(nonPermutedScores[row,2])
 	tadScore = float(nonPermutedScores[row,3])
+	interactionScore = float(nonPermutedScores[row,4])
 	
 	geneIndex = geneIndexDict[geneName]
 	
 	permutedGeneScores = np.array(perGeneScores["geneScore"][geneIndex])
 	permutedEQTLScores = np.array(perGeneScores["eQTLScore"][geneIndex])
 	permutedTADScores = np.array(perGeneScores["tadScore"][geneIndex])
+	permutedInteractionScores = np.array(perGeneScores["interactionScore"][geneIndex])
 	
 	
 	#First compute the p-value for the gene score layer
@@ -167,6 +176,12 @@ for row in range(0, nonPermutedScores.shape[0]):
 	
 		print "p-value for the TAD layer: ", tadProportion
 	
+	interactionProportion = (np.sum((permutedInteractionScores >= interactionScore).astype(int)) + 1) / float(len(permutedInteractionScores) + 1) 
+	
+	if interactionProportion < 1:
+	
+		print "p-value for the interaction layer: ", interactionProportion
+	
 	
 	cancerTypePValues[row][0] = geneName
 	#cancerTypePValues[row][1] = gene.chromosome
@@ -174,6 +189,7 @@ for row in range(0, nonPermutedScores.shape[0]):
 	cancerTypePValues[row][3] = proportion
 	cancerTypePValues[row][4] = eQTLProportion
 	cancerTypePValues[row][5] = tadProportion
+	cancerTypePValues[row][6] = interactionProportion
 
 	#Compute a total score to sort by. 
 	#totalScore = proportion + eQTLProportion + tadProportion
@@ -187,6 +203,8 @@ for row in range(0, nonPermutedScores.shape[0]):
 	if eQTLProportion < cutoff:
 		totalCutoffMatches += 1	
 	if tadProportion < cutoff:
+		totalCutoffMatches += 1
+	if interactionProportion < cutoff:
 		totalCutoffMatches += 1
 		
 	cancerTypePValues[row][6] = totalCutoffMatches	
