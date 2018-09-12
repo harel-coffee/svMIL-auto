@@ -51,7 +51,7 @@ mode = settings.general['mode'] #Either SV or SNV, then the relevant functions f
 
 #1. Read and parse the causal genes
 
-causalGenes = InputParser().readCausalGeneFile(causalGeneFile)
+causalGenes = InputParser().readCausalGeneFile(settings.files['causalGenesFile'])
 uniqueCancerTypes = []
 
 #The combination of SVs and SNVs will come afterwards, because then we will need to map the names of the cancer types correctly. 
@@ -129,7 +129,7 @@ for cancerType in geneRanking.scores:
 	cancerTypeScores = geneRanking.scores[cancerType]
 	
 	
-	perGeneScores = np.empty([len(causalGenes), 4], dtype="object") #store by gene name because it is easiest to match back later
+	perGeneScores = np.empty([len(causalGenes), 5], dtype="object") #store by gene name because it is easiest to match back later
 	
 	for row in range(0, cancerTypeScores.shape[0]):
 		gene = cancerTypeScores[row][0]
@@ -138,11 +138,13 @@ for cancerType in geneRanking.scores:
 		geneScore = cancerTypeScores[row,1]
 		eQTLScore = cancerTypeScores[row,2]
 		tadScore = cancerTypeScores[row,3]
+		interactionScore = cancerTypeScores[row,4]
 		
 		perGeneScores[row][0] = geneName
 		perGeneScores[row][1] = geneScore
 		perGeneScores[row][2] = eQTLScore
 		perGeneScores[row][3] = tadScore
+		perGeneScores[row][4] = interactionScore
 
 	
 	cancerTypeFolder = rankedGeneScoreDir + "/" + uuid + "/" + cancerType

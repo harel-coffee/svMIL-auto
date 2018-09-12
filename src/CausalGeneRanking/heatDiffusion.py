@@ -116,7 +116,7 @@ print "min: ", min(addedInd)
 
 #2. Do the heat diffusion per chromosome in submatrices
 
-beta = 0.3
+beta = 0.45
 
 
 #delete this file before appending to it, each re-run should be a replacement of the file

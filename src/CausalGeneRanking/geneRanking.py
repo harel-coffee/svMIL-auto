@@ -619,7 +619,8 @@ class GeneRanking:
 
 		diffusionScores = self.readHiCDiffusionScores(genePositions)
 		
-		
+		originalRanking = []
+		diffusionRanking = [] 
 		
 		for geneInd in range(0, len(cancerTypeSVs["genes"])):
 			gene = cancerTypeSVs["genes"].keys()[geneInd]
@@ -627,10 +628,31 @@ class GeneRanking:
 			matrixGeneInd = geneMap[gene]
 			
 			#get the position of the gene
-			if gene in diffusionScores: #not all genes have overlap with a region for some reason
-				diffusionScore = diffusionScores[gene] 
 			
-				svScoresMatrix[:,matrixGeneInd] = svScoringMatrix[:,matrixGeneInd] * diffusionScore #multiply the entire column for that gene with the diffusion score to get the total heat score
+			if gene.name in diffusionScores: #not all genes have overlap with a region for some reason
+				diffusionScore = diffusionScores[gene.name]
+				
+				svScoresMatrix[np.where(svScoresMatrix[:,matrixGeneInd] == 0),matrixGeneInd] = 1
+				
+				originalRanking.append([gene, sum(svScoresMatrix[:,matrixGeneInd])])
+				diffusionRanking.append([gene, sum(svScoresMatrix[:,matrixGeneInd] * diffusionScore)])
+				
+				if sum(svScoresMatrix[:,matrixGeneInd] * diffusionScore) > sum(svScoresMatrix[:,matrixGeneInd]):
+					print "gene ", gene.name, " has a higher diffusion score ", sum(svScoresMatrix[:,matrixGeneInd] * diffusionScore), " vs ", sum(svScoresMatrix[:,matrixGeneInd])
+
+
+				svScoresMatrix[:,matrixGeneInd] = svScoresMatrix[:,matrixGeneInd] * diffusionScore #multiply the entire column for that gene with the diffusion score to get the total heat score
+				
+		
+		originalRanking = np.array(originalRanking)
+		diffusionRanking = np.array(diffusionRanking)
+		
+		sortedOriginalRanking = np.sort(originalRanking)
+		sortedDiffusionRanking = np.sort(diffusionRanking)
+		
+		#print sortedOriginalRanking
+		#print sortedDiffusionRanking
+		#exit()
 			
 		return svScoresMatrix
 
@@ -683,7 +705,7 @@ class GeneRanking:
 				
 				for matchingGene in matchingGenes: #for the genes in the region, get their position in the diffusion matrix and assign the diffusion score.
 					
-					diffusionScores[matchingGene[3]] = splitLine[1]
+					diffusionScores[matchingGene[3]] = float(splitLine[1])
 		
 		
 		return diffusionScores		
