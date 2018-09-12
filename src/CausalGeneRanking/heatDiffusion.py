@@ -50,6 +50,8 @@ for chrom in regions:
 	chromRegions = chromRegions[chromRegions[:,1].argsort()]
 	sortedRegions[chrom] = chromRegions
 	
+
+	
 #Now make the lookup based on the sorted indices
 
 regionsLookup = dict()
@@ -66,13 +68,18 @@ for chrom in sortedRegions:
 		
 		regionsLookup[chrom][regionName] = currentIndex
 		reverseRegionsLookup[chrom][currentIndex] = regionName
-		currentIndex += 1	
+		currentIndex += 1
 
 print "done making lookup"
+
+print "number of regions on chr X: "
+print len(regions['chrX'])
 
 #1.2 Also read the relationships between the regions
 
 regionsRelFile = "../Parsers/HiC/Intrachromosomal/regions_regions_rel.csv"
+
+addedInd = []
 
 with open(regionsRelFile, 'r') as inFile:
 	lineCount = 0
@@ -91,14 +98,27 @@ with open(regionsRelFile, 'r') as inFile:
 		
 		if regionIndex not in relations[chrom]:
 			relations[chrom][regionIndex] = []
-
+		if chrom == 'chrX':
+			addedInd.append(relationIndex)
 		relations[chrom][regionIndex].append(relationIndex)
 
 print "done initializing relations"
 
+print "len: ", len(relations['chrX'])
+print "ind: ", len(addedInd)
+print "max: ", max(addedInd)
+print "min: ", min(addedInd)
+#What are all the indices in relations?
 
 
-#2. Store in an adjacency matrix. How large is this matrix and can we store it in memory?
+
+
+
+#2. Do the heat diffusion per chromosome in submatrices
+
+beta = 0.3
+
+
 #delete this file before appending to it, each re-run should be a replacement of the file
 scoreOutFile = "diffusionScores.txt"
 open(scoreOutFile, 'w').close()
@@ -110,7 +130,7 @@ for chrom in relations:
 	print "processing: ", chrom
 		
 	
-	noOfRegions = max(relations[chrom]) + 3 #I'm not sure about this number, will need to be fixed later but now works to prevent out of bounds. 
+	noOfRegions = len(regions[chrom]) 
 	
 	
 	#Make submatrices for the regions.
@@ -152,9 +172,14 @@ for chrom in relations:
 	print "processing in blocks of size: ", blockSize
 	
 	currentIndex = 0
+	heatPerRegion = dict()
 	for block in range(0, blocksToExplore):
 		currentMax = currentIndex + blockSize
 		currentBlock = mat[currentIndex:currentMax, currentIndex:currentMax]
+		
+		print "exploring block ", currentIndex, " to ", currentMax 
+		#currentIndex += int(blockSize * overlap) #make sure that blocks overlap
+		#continue
 		
 		#This part should ideally be before the block processing, but crashes on chromosome 1, so I will do block processing for this part in block processing as well for all chromosome
 		#First compute the weighted density
@@ -162,8 +187,10 @@ for chrom in relations:
 		
 		#Loop over all regions in this current block
 		for row in range(0, currentBlock.shape[0]):
-			region = reverseRegionsLookup[chrom][row]
+			mappedRow = row + currentIndex
 			
+			region = reverseRegionsLookup[chrom][mappedRow]
+
 			#rowDegree = len(relations[chrom][row]) #The number of interactions each region has
 			rowDegree = sum(currentBlock[row,:])
 			
@@ -172,7 +199,7 @@ for chrom in relations:
 				
 		#print "weighted matrix"
 		#Do computation of 1-B times weightedAdj
-		beta = 0.8
+		
 		#wow why are there no good ways to call this thing I don't know what to call it
 		#print "multiplying with beta"
 		weightedAdjSubmatrix = (1-beta) * weightedAdj
@@ -215,31 +242,43 @@ for chrom in relations:
 		
 		#do a max to compare the two regions of the matrices (the full matrix and the current submatrix)
 		#which values are true should be filled with the current matrix
-		
-		with open(scoreOutFile, 'a') as scoreFile:
+
+			
+		#not sure if there is a faster way
+		subFinalF = finalF[currentIndex:currentMax, currentIndex:currentMax]
+		for row in range(0, invertedMatrix.shape[0]):
+			mappedRow = currentIndex + row
+			for col in range(0, invertedMatrix.shape[1]):
+				if invertedMatrix[row][col] > subFinalF[row][col]:
+					mappedCol = currentIndex + col
+					finalF[mappedRow][mappedCol] = beta * invertedMatrix[row][col]
 				
-			#not sure if there is a faster way
-			subFinalF = finalF[currentIndex:currentMax, currentIndex:currentMax]
-			for row in range(0, invertedMatrix.shape[0]):
-				for col in range(0, invertedMatrix.shape[1]):
-					if invertedMatrix[row][col] > subFinalF[row][col]:
-						mappedRow = currentIndex + row
-						mappedCol = currentIndex + col
-						finalF[mappedRow][mappedCol] = beta * invertedMatrix[row][col]
-					
-				#Get the value of each region	
-				#write this value to a file right away to prevent having to do this loop again.
-				region = reverseRegionsLookup[chrom][row]
+			region = reverseRegionsLookup[chrom][mappedRow]
+			
 				
-				
-				scoreFile.write(region + "\t" + str(finalF[row][row]) + "\n")
-				#print region
-				#print finalF[row][row]
-				#exit()
+			if region not in heatPerRegion:
+				heatPerRegion[region] = 0
+			heatPerRegion[region] = finalF[mappedRow][mappedRow]
+			
+			#print region
+			#print finalF[row][row]
+			#exit()
 			
 		#higherHeatIndices = np.where(invertedMatrix > finalF[currentIndex:currentMax, currentIndex:currentMax])
 		
 		currentIndex += int(blockSize * overlap) #make sure that blocks overlap
+
+	#Write the diffusion values to a file
+	#Get the value of each region	
+	#write this value to a file right away to prevent having to do this loop again.
+	with open(scoreOutFile, 'a') as scoreFile:
+		
+		#for row in range(0, finalF.shape[0]):
+		#	for col in range(0, finalF.shape[1]):
+		for region in heatPerRegion:
+			#region = reverseRegionsLookup[chrom][row]
+			scoreFile.write(region + "\t" + str(heatPerRegion[region]) + "\n")
+				
 
 	#clean up properly
 	del finalF

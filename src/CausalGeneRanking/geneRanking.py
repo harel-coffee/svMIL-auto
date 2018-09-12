@@ -627,10 +627,10 @@ class GeneRanking:
 			matrixGeneInd = geneMap[gene]
 			
 			#get the position of the gene
+			if gene in diffusionScores: #not all genes have overlap with a region for some reason
+				diffusionScore = diffusionScores[gene] 
 			
-			diffusionScore = diffusionScores[gene] ###Here it goes wrong because somehow not all genes overlap with a region which is strange. ??
-			
-			svScoresMatrix[:,matrixGeneInd] = svScoringMatrix[:,matrixGeneInd] * diffusionScore #multiply the entire column for that gene with the diffusion score to get the total heat score
+				svScoresMatrix[:,matrixGeneInd] = svScoringMatrix[:,matrixGeneInd] * diffusionScore #multiply the entire column for that gene with the diffusion score to get the total heat score
 			
 		return svScoresMatrix
 
@@ -641,6 +641,8 @@ class GeneRanking:
 		"""
 		
 		#get the diffusion scores from the file
+		print genePositions
+	
 		
 		heatDiffusionFile = settings.files['heatDiffusionFile']
 		diffusionScores = dict()
@@ -652,8 +654,7 @@ class GeneRanking:
 				
 				splitLine = line.split("\t")
 				region = splitLine[0]
-					
-				
+
 				splitRegion = region.split("_")
 				chrom = splitRegion[0]
 				
@@ -677,6 +678,7 @@ class GeneRanking:
 				matchingGenesInd = matchingGenesStart * matchingGenesEnd
 				
 				matchingGenes = chrSubset[matchingGenesInd]
+				
 				
 				
 				for matchingGene in matchingGenes: #for the genes in the region, get their position in the diffusion matrix and assign the diffusion score.
