@@ -207,10 +207,10 @@ for row in range(0, nonPermutedScores.shape[0]):
 	if interactionProportion < cutoff:
 		totalCutoffMatches += 1
 		
-	cancerTypePValues[row][6] = totalCutoffMatches	
+	cancerTypePValues[row][7] = totalCutoffMatches	
 
 #Rank by the total score and report the genes.
 np.set_printoptions(threshold=np.nan)
-sortedPValues = cancerTypePValues[cancerTypePValues[:,6].argsort()]
+sortedPValues = cancerTypePValues[cancerTypePValues[:,7].argsort()]
 
 print sortedPValues
