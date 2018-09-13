@@ -641,8 +641,9 @@ class GeneRanking:
 					print "gene ", gene.name, " has a higher diffusion score ", sum(svScoresMatrix[:,matrixGeneInd] * diffusionScore), " vs ", sum(svScoresMatrix[:,matrixGeneInd])
 
 
-				svScoresMatrix[:,matrixGeneInd] = svScoresMatrix[:,matrixGeneInd] * diffusionScore #multiply the entire column for that gene with the diffusion score to get the total heat score
-				
+				#svScoresMatrix[:,matrixGeneInd] = svScoresMatrix[:,matrixGeneInd] * diffusionScore #multiply the entire column for that gene with the diffusion score to get the total heat score
+				#temporarily turn off the diffusion scores, to see the influence
+				svScoresMatrix[:,matrixGeneInd] = svScoresMatrix[:,matrixGeneInd]
 		
 		originalRanking = np.array(originalRanking)
 		diffusionRanking = np.array(diffusionRanking)
