@@ -116,7 +116,7 @@ print "min: ", min(addedInd)
 
 #2. Do the heat diffusion per chromosome in submatrices
 
-beta = 0.45
+beta = 0.8
 
 
 #delete this file before appending to it, each re-run should be a replacement of the file
@@ -181,6 +181,11 @@ for chrom in relations:
 		#currentIndex += int(blockSize * overlap) #make sure that blocks overlap
 		#continue
 		
+		#What is the size in Mb of this block?
+		# minSize = reverseRegionsLookup[chrom][currentIndex]
+		# maxSize = reverseRegionsLookup[chrom][currentMax]
+		# print "size of region for chromosome ", chrom, ": ", minSize, " to ", maxSize
+		# exit()
 		#This part should ideally be before the block processing, but crashes on chromosome 1, so I will do block processing for this part in block processing as well for all chromosome
 		#First compute the weighted density
 		weightedAdj = np.zeros([currentBlock.shape[0], currentBlock.shape[0]], dtype=float)

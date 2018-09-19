@@ -12,6 +12,7 @@ from gene import Gene
 from sv import SV
 from snv import SNV
 import numpy as np
+from random import randint
 
 class InputParser:
 	
@@ -182,6 +183,73 @@ class InputParser:
 		cosmicGenesSorted = cosmicGenes[sortedInd]
 	
 		return cosmicGenesSorted
+		
+	def readNonCausalGeneFile(self, nonCausalGeneFile, causalGenes):
+		"""
+			Read the non-causal genes. We currently take a random subset of these genes, and make sure that these are not overlapping with the COSMIC set.
+			We first read all the genes, and then take a subset of the genes and make sure that these are not in cosmic. 
+		"""
+		
+		nonCausalGeneList = []
+		nonCausalGeneNameDict = dict() #dictionary to keep the names of genes that are already in our list and don't need to be sampled again. 
+		
+		with open(nonCausalGeneFile, 'r') as geneFile:
+			
+			lineCount = 0
+			for line in geneFile:
+				line = line.strip()
+				splitLine = line.split("\t")
+				if lineCount < 1:
+					lineCount += 1
+					continue
+				
+				#Obtain the name, chromosome and positions of the gene. 
+				
+				geneID = splitLine[4]
+				chrom = splitLine[0]
+				splitChrom = chrom.split("chr")
+				finalChrom = splitChrom[1]
+
+				start = splitLine[1]
+				end = splitLine[2]
+				
+				geneObj = Gene(geneID, finalChrom, int(start), int(end))
+				
+				nonCausalGeneList.append([finalChrom, start, end, geneID, geneObj])
+				
+		nonCausalGenes = np.array(nonCausalGeneList)
+		
+		causalGeneNames = dict()
+		for gene in causalGenes:
+			causalGeneNames[gene[3].name] = 0
+		
+		
+		randomNonCausalGenes = []
+		#Then go through the list again, but take a random subset. Also make sure that the genes do not overlap with the COSMIC genes.
+		noOfGenesToSample = 700 #there are not more than 700, apparently. 
+		while len(nonCausalGeneNameDict) <= noOfGenesToSample:
+		#while True:
+			
+			randomIndex = randint(0, nonCausalGenes.shape[0]-1)
+			
+			geneName = nonCausalGenes[randomIndex,3]
+			if geneName not in nonCausalGeneNameDict:
+
+				#Add the gene to our list if not in cosmic
+				
+				if geneName in causalGeneNames:
+					
+					randomNonCausalGenes.append([nonCausalGenes[randomIndex][0], nonCausalGenes[randomIndex][1], nonCausalGenes[randomIndex][2], nonCausalGenes[randomIndex][4]])
+					nonCausalGeneNameDict[geneName] = 0
+				
+		
+		randomNonCausalGenes = np.array(randomNonCausalGenes)
+		
+		return randomNonCausalGenes 
+		
+			
+			
+		
 		
 			
 	

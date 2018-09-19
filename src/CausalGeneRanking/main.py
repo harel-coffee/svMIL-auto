@@ -52,7 +52,11 @@ mode = settings.general['mode'] #Either SV or SNV, then the relevant functions f
 #1. Read and parse the causal genes
 
 causalGenes = InputParser().readCausalGeneFile(settings.files['causalGenesFile'])
+nonCausalGenes = InputParser().readNonCausalGeneFile(settings.files['nonCausalGenesFile'], causalGenes) #In the same format as the causal genes. 
 uniqueCancerTypes = []
+
+#Combine the genes for now
+causalGenes = np.concatenate((causalGenes, nonCausalGenes), axis=0)
 
 #The combination of SVs and SNVs will come afterwards, because then we will need to map the names of the cancer types correctly. 
 
@@ -63,6 +67,7 @@ if mode == "SV":
 	print "Reading SV data"
 	svFile = settings.files['svFile']
 	svData = InputParser().getSVsFromFile(svFile)
+	
 
 if mode == "SNV":
 	print "Reading SNV data"

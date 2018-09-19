@@ -15,7 +15,7 @@ with open(knownBreastCancerGenesFile, 'r') as f:
 		
 		genes.append(line)
 		
-toolRankingFile = "RankedGenes/breastCancerRanking.txt"
+toolRankingFile = "RankedGenes/breastCancerRanking_diff0.8.txt"
 
 geneRank = dict()
 significance = dict()
