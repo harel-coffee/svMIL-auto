@@ -12,7 +12,7 @@ general = dict(
 	
 	mode = 'SV', #Options are: SV, SNV or SV+SNV
 	tads = True, #Include TADs in the ranking yes/no
-	eQTLs = False, #Include eQTLs in the ranking yes/no
+	eQTLs = True, #Include eQTLs in the ranking yes/no
 	interactions = False #Include genomic 3D interactions in the ranking yes/no
 )
 
