@@ -213,4 +213,15 @@ for row in range(0, nonPermutedScores.shape[0]):
 np.set_printoptions(threshold=np.nan)
 sortedPValues = cancerTypePValues[cancerTypePValues[:,7].argsort()[::-1]]
 
-print sortedPValues
+outFile = "rankedGenes_test.txt"
+
+with open(outFile, 'w') as out:
+	
+	for gene in sortedPValues:
+		
+		#0 is the gene name, 3 is the gene score, 4 is the eqtl score, 5 is the tad score, 7 the total.
+		newLine = gene[0] + "\t" + gene[3] + "\t" + gene[5] + "\t" + gene[6] + "\t" + gene[7] + "\n"
+		
+	
+
+
