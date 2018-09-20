@@ -4,7 +4,7 @@ files = dict(
 	svFile = '../../data/TPTNTestSet/TP.txt',
 	snvFile = '../../data/SNVs/cosmicNCV.txt',
 	causalGenesFile = '../../data/Genes/Census_allTue Apr 10 14_56_44 2018.tsv',
-	nonCausalGenesFile = '../../data/Genes/allGenesAndIdsHg19.txt',
+	nonCausalGenesFile = '../../data/Genes/nonCosmicSubset.txt',
 	heatDiffusionFile = '../../data/HiC/diffusionScores.txt' #File with the heat diffusion scores for each region in the Hi-C network
 )
 

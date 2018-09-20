@@ -205,48 +205,20 @@ class InputParser:
 				
 				#Obtain the name, chromosome and positions of the gene. 
 				
-				geneID = splitLine[4]
-				chrom = splitLine[0]
-				splitChrom = chrom.split("chr")
-				finalChrom = splitChrom[1]
+				geneID = splitLine[0]
+				chrom = splitLine[1]
 
-				start = splitLine[1]
-				end = splitLine[2]
+				start = splitLine[2]
+				end = splitLine[3]
 				
-				geneObj = Gene(geneID, finalChrom, int(start), int(end))
+				geneObj = Gene(geneID, chrom, int(start), int(end))
 				
-				nonCausalGeneList.append([finalChrom, start, end, geneID, geneObj])
+				nonCausalGeneList.append([chrom, start, end, geneObj])
 				
 		nonCausalGenes = np.array(nonCausalGeneList)
+	
 		
-		causalGeneNames = dict()
-		for gene in causalGenes:
-			causalGeneNames[gene[3].name] = 0
-		
-		
-		randomNonCausalGenes = []
-		
-		#Then go through the list again, but take a random subset. Also make sure that the genes do not overlap with the COSMIC genes.
-		noOfGenesToSample = 700 #there are not more than 700, apparently. 
-		while len(nonCausalGeneNameDict) <= noOfGenesToSample:
-		#while True:
-			
-			randomIndex = randint(0, nonCausalGenes.shape[0]-1)
-			
-			geneName = nonCausalGenes[randomIndex,3]
-			if geneName not in nonCausalGeneNameDict:
-
-				#Add the gene to our list if not in cosmic
-				
-				if geneName not in causalGeneNames:
-					
-					randomNonCausalGenes.append([nonCausalGenes[randomIndex][0], nonCausalGenes[randomIndex][1], nonCausalGenes[randomIndex][2], nonCausalGenes[randomIndex][4]])
-					nonCausalGeneNameDict[geneName] = 0
-				
-		print nonCausalGeneNameDict
-		randomNonCausalGenes = np.array(randomNonCausalGenes)
-		
-		return randomNonCausalGenes 
+		return nonCausalGenes 
 		
 			
 			
