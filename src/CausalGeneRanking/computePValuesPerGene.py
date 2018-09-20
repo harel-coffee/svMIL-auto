@@ -204,8 +204,8 @@ for row in range(0, nonPermutedScores.shape[0]):
 		totalCutoffMatches += 1	
 	if tadProportion < cutoff:
 		totalCutoffMatches += 1
-	if interactionProportion < cutoff:
-		totalCutoffMatches += 1
+	#if interactionProportion < cutoff: #turn off interactions for now. 
+	#	totalCutoffMatches += 1
 		
 	cancerTypePValues[row][7] = totalCutoffMatches	
 
