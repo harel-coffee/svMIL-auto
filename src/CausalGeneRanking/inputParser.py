@@ -225,6 +225,7 @@ class InputParser:
 		
 		
 		randomNonCausalGenes = []
+		
 		#Then go through the list again, but take a random subset. Also make sure that the genes do not overlap with the COSMIC genes.
 		noOfGenesToSample = 700 #there are not more than 700, apparently. 
 		while len(nonCausalGeneNameDict) <= noOfGenesToSample:
@@ -237,12 +238,12 @@ class InputParser:
 
 				#Add the gene to our list if not in cosmic
 				
-				if geneName in causalGeneNames:
+				if geneName not in causalGeneNames:
 					
 					randomNonCausalGenes.append([nonCausalGenes[randomIndex][0], nonCausalGenes[randomIndex][1], nonCausalGenes[randomIndex][2], nonCausalGenes[randomIndex][4]])
 					nonCausalGeneNameDict[geneName] = 0
 				
-		
+		print nonCausalGeneNameDict
 		randomNonCausalGenes = np.array(randomNonCausalGenes)
 		
 		return randomNonCausalGenes 
