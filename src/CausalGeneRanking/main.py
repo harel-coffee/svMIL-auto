@@ -14,12 +14,19 @@
 	- The geneRanking script, which takes annotated neighborhoods of genes as input, and then computes a score for each layer (i.e. genes, TADs, eQTLs)
 	- The above 3 scripts need to be repeated 1000 times (or more) with permutations to compute the scores for genes when the variants are randomly distributed
 	
-	To run these scripts, the starting point in runRankingWithPermutations.sh. It does not require any parameters (set the file locations in settings.py), and will run 1 normal scoring run and 1000 permutations on the HPC.
+	To run these scripts with permutations, the starting point is runRankingWithPermutations.sh. It does not require any parameters (set the file locations in settings.py), and will run 1 normal scoring run and 1000 permutations on the HPC.
 	Then when all permutations are completed, you will need to run computePValuesPerGene.py. This script reads a given output directory containing all gene scores for the normal run and 1000 permutation runs. It will compute
-	a p-value for each layer and rank the causal genes by which have significant p-values in the most layers. 
+	a p-value for each layer and rank the causal genes by which have significant p-values in the most layers.
+	
+	To run without permutations, this script main.py can be run as: main.py "runName" N, so for example "main.py ABC N" will run the code once without permutations, and write output to a folder named ABC in the
+	RankedGenes subfolder. 
 	
 	Using a gene-based approach will likely be quicker than an SV-based approach, and we can get the relevant SVs through the genes. If an SV is never affecting any of our features defined as interesting, there is no
 	need to look at that SV at all. This idea may change along the way.
+	
+	
+	
+	
 	
 
 """
