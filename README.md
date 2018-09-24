@@ -2,7 +2,8 @@
 
 This branch is intended for the code where we rank known causal genes by how likely these were causal for a specific set of SVs and/or SNVs from cancer patients. An idea of the causal SVs and SNVs can then be obtained from the highest ranked genes. 
 
-The currently included datasets are TADs and eQTLs. 
+The currently included datasets are TADs and eQTLs. Hi-C interactions were tested but do not work at the moment. 
+ 
 
 In the settings file the required file paths can be specified. 
 
@@ -12,5 +13,15 @@ The starting script is runRankingWithPermutations.sh. This script does not requi
 
 If these scripts are done, the computePValuesPerGene.py script can be run to do the actual ranking of the genes. As parameters the script requires the output folder containing the scores for the normal run and 1000 permutations, and the number of permutations that were run (+1 because there is currently still a bug :)).
 
-The output is a list of all causal genes that have significant p-values in as much layers as possible. 
+The output is a list of all causal genes that have significant p-values in as much layers as possible.
+
+To test without all permutations and just doing the initial scoring of gnees, run:
+
+main.py "runName" N
+
+For example,
+
+main.py ABC N
+
+will run the code without permutations (N for no) and will write the output to folder ABC. 
 
