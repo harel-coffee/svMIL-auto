@@ -69,7 +69,7 @@ class NeighborhoodDefiner:
 		#3. Map SVs to all neighborhood elements
 		if mode == "SV":
 			print "Mapping SVs to the neighborhood"
-			self.mapSVsToNeighborhood(genes, svData)
+			self.mapSVsToNeighborhood(genes, svData, tadData)
 		if mode == "SNV":
 			print "Mapping SNVs to the neighborhood"
 			self.mapSNVsToNeighborhood(genes, snvData, eQTLData)
@@ -390,7 +390,7 @@ class NeighborhoodDefiner:
 			tad[3].setInteractions(matchingRegionsInteractions)
 			
 		
-		exit()
+		
 		return tadData 
 		
 	def mapSVsToNeighborhood(self, genes, svData, tadData):
@@ -529,6 +529,27 @@ class NeighborhoodDefiner:
 					print sv
 					
 					#Find the TAD where the SV start is larger than the TAD start, but smaller than the TAD end.
+					
+					#First get the right chromosome subset
+					tadChromosomeSubset = np.where(tadData[:,0] == sv[0]) #Limit to intrachromosomal for now for testing purposes
+					
+					print sv[1]
+					print tadData[:,1]
+					
+					
+					tadStartMatches = np.where(sv[1] > tadData[:,1])
+					tadEndMatches = np.where(sv[2] < tadData[:,2])
+					
+					print tadStartMatches
+					print tadEndMatches
+					
+					allMatches = tadStartMatches * tadEndMatches
+					
+					
+					
+					svStartOverlappingTad = tadChromosomeSubset[allMatches,:]
+					print svStartOverlappingTad
+					
 					
 					
 					
