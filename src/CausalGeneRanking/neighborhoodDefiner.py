@@ -237,8 +237,11 @@ class NeighborhoodDefiner:
 				
 				if interactionStart not in interactions:
 					interactions[interactionStart] = []
+				if interactionEnd not in interactions:
+					interactions[interactionEnd] = [] #Some interactions are only in the end region
 				
-				interactions[interactionStart].append(interactionEnd)	
+				interactions[interactionStart].append(interactionEnd)
+				interactions[interactionEnd].append(interactionStart)
 				
 		
 		regions = np.array(regions, dtype="object")
@@ -338,7 +341,8 @@ class NeighborhoodDefiner:
 			Returns the tadData, where the objects now have interactions mapped to them (but these are objects, so by reference this should not be necessary)
 			
 		"""
-		
+		print "Mapping interactions to TADs"
+		previousChromosome = 0
 		for tad in tadData:
 			
 			#Find all interactions taking place within this TAD.
@@ -349,9 +353,10 @@ class NeighborhoodDefiner:
 			#Get all regions that are within the TAD
 			#Find all corresponding interactions between the regions within the TAD (make sure that these do not go outside of the boundary, this may indicate data errors)
 			
-			regionChrSubset = regions[np.where(regions[:,0] == tad[0])] #First get the subset of all regions on the current chromosome, TADs are sorted
-			
-			print regionChrSubset
+			if tad[0] != previousChromosome:
+				previousChromosome = tad[0]
+				regionChrSubset = regions[np.where(regions[:,0] == tad[0])] #First get the subset of all regions on the current chromosome, TADs are sorted
+
 			
 			#Find which regions are within this TAD
 			#All regions must have their start position larger than the TAD start and the end smaller than the TAD end
@@ -364,9 +369,7 @@ class NeighborhoodDefiner:
 			#Get the interactions of these matching regions and ensure that these are within the TAD boundaries
 			
 			#Find all the interactions mapping to this region.
-			
-			print tad
-			
+			 
 			matchingRegionsInteractions = []
 			for region in matchingRegions:
 				regionInteractions = interactions[region[3]] #the interacting regions
@@ -387,7 +390,7 @@ class NeighborhoodDefiner:
 			tad[3].setInteractions(matchingRegionsInteractions)
 			
 		
-		
+		exit()
 		return tadData 
 		
 	def mapSVsToNeighborhood(self, genes, svData, tadData):
@@ -496,7 +499,19 @@ class NeighborhoodDefiner:
 			#Check which SVs overlap with the right/left TAD
 			
 			#For the TAD, we also want to know which interactions are potentially gained.
-			#If the boundary of a TAD is disrupted, we should get the TAD on the left of the SV and the TAD on the right of the SV breakpoint. 
+			#If the boundary of a TAD is disrupted, we should get the TAD on the left of the SV and the TAD on the right of the SV breakpoint.
+			#These are the interactions that may end up in the other TAD.
+			#There are two possibilities:
+			#If this is the left TAD, then either:
+			#1. The left TAD does not overlap with the gene itself, and the left TAD boundary closest to the gene is the end of the left TAD. In this case:
+				#1. The TAD to the right of the left TAD overlaps with the gene. Here we know that the gained interactions can potentially be with this gene.
+				#2. The TAD to the right does not overlap with the gene. We discard this, since we don't know if this is an error in the data, or if this gene is outside of the TAD.
+			#2. The left TAD does overlap with the gene itself. Here the options are:
+				#1. The SV overlaps with the left side of the left TAD. Thus, the possible interactions are between this TAD and the TAD on the left of it
+				#2. The SV overlaps with the right side of the left TAD. Thus, the possible interactions are between this TAD and the TAD on the right of it.
+			#If the SV removes a large part of the genome, there is a chance that multiple TADs are gone. Thus, we need to check what the TADs are on the breakpoints of the SV. 
+			
+			
 			
 			if gene.leftTAD != None:
 				
@@ -509,7 +524,15 @@ class NeighborhoodDefiner:
 				gene.leftTAD.setSVs(svsOverlappingLeftTAD)
 				
 				
-				
+				#For each of the SVs overlapping with the left TAD boundary, get the TADs on the right and on the left of the SV (should be within a TAD)
+				for sv in svsOverlappingLeftTAD:
+					print sv
+					
+					#Find the TAD where the SV start is larger than the TAD start, but smaller than the TAD end.
+					
+					
+					
+					exit()
 				
 				
 				
