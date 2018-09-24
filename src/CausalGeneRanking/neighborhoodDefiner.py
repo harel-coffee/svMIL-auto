@@ -18,6 +18,7 @@ class NeighborhoodDefiner:
 		
 		- nearest TADs on the left and right of the gene
 		- all eQTLs mapped to the gene (and if these are enhancers or not)
+		- Hi-C interactions. These are mapped to the TAD that these are present in. We use this to determine which interactions are potentially gained. 
 		- SVs (and SNVs) overlapping either the gene directly, or other elements in the neighborhood
 	
 	"""
@@ -27,7 +28,7 @@ class NeighborhoodDefiner:
 		
 		#1. Map genes to TADs
 		
-		if settings.general['tads'] == True:
+		if settings.general['tads'] == True or settings.general['gainOfInteractions'] == True: #Gain of interactions is dependent on TADs
 			
 			#Make these pats a setting!
 			tadFile = "../../data/tads/tads.csv" #These files will need to go to the settings!
@@ -35,6 +36,7 @@ class NeighborhoodDefiner:
 			tadData = self.getTADsFromFile(tadFile)
 			print "mapping TADs to genes"
 			self.mapTADsToGenes(genes[:,3], tadData) #only pass the gene objects will suffice
+			
 			
 		#2. Map genes to eQTLs
 		
@@ -46,12 +48,23 @@ class NeighborhoodDefiner:
 		
 		
 		#Add reading/parsing of 3D genome information
-		if settings.general['interactions'] == True: 
+		if settings.general['interactionChains'] == True: 
 			interactionsFile = "../../data/HiC/intrachromosomal_geneNonGeneInteractions.csv" #should be setting!!!!
 			print "Getting interactions"
 			interactionData = self.getInteractionsFromFile(interactionsFile)
 			print "mapping interactions to genes"
 			self.mapInteractionsToGenes(genes[:,3], interactionData)
+			
+		#Read/parse Hi-C interactions (intrachromosomal) to later compute gains of interactions
+		if settings.general['gainOfInteractions'] == True:
+			interactionsFile = settings.files['hiCInteractionsFile']
+			print "Reading all Hi-C interactions"
+			#First get all Hi-C interactions
+			interactions, regions = self.getHiCInteractionsFromFile(interactionsFile)
+			#Map the Hi-C interactions to the respective TADs
+			tadData = self.mapInteractionsToTads(interactions, regions, tadData)
+
+
 		
 		#3. Map SVs to all neighborhood elements
 		if mode == "SV":
@@ -126,6 +139,8 @@ class NeighborhoodDefiner:
 	
 	def getInteractionsFromFile(self, interactionsFile):
 		"""
+			!!! DEPRECATED, Hi-C BASED HEAT DIFFUSION IS NOT WORKING
+		
 			Read the HiC interactions between genes and interaction pairs into numPy array format. Each numpy array will be in the format of:
 			0: chromosome of non-coding interaction
 			1: start of non-coding interaction
@@ -172,7 +187,65 @@ class NeighborhoodDefiner:
 		interactionData = np.array(interactionData, dtype='object')
 
 		return interactionData
+	
+	def getHiCInteractionsFromFile(self, interactionsFile):
+		"""
+			Read all Hi-C interactions from the interactions file
+			
+			- Column 1 is the starting region of the interaction
+			- Column 2 is the ending region of the interaction
+			
+			
+			
+		"""
+		seenRegions = dict() #use a dictionary to quickly determine if we have added this region before to keep the regions unique
+		regions = []
+		interactions = dict() #for now I won't make objects for interactions, do we really need them? 
+		with open(interactionsFile, 'r') as inF:
+			
+			lineCount = 0
+			for line in inF:
+				line = line.strip()
+				
+				if lineCount < 1: #skip header
+					lineCount += 1
+					continue
+				
+				splitLine = line.split(",") #csv format
+
+				interactionStart = splitLine[0]
+				interactionEnd = splitLine[1]
+				
+				#Split the regions into the chromosome and region/bin
+				splitInteractionStart = interactionStart.split("_")
+				splitInteractionEnd = interactionEnd.split("_")
+				
+				chr1 = splitInteractionStart[0]
+				start1 = int(splitInteractionStart[1])
+				end1 = start1 + int(settings.interactions['binSize'])
+				
+				chr2 = splitInteractionEnd[0]
+				start2 = int(splitInteractionEnd[1])
+				end2 = start2 + int(settings.interactions['binSize'])
+				
+				if interactionStart not in seenRegions:
+					regions.append([chr1, start1, end1, interactionStart])
+					seenRegions[interactionStart] = len(regions) #keep the index at which the region is
+				if interactionEnd not in seenRegions:
+					regions.append([chr2, start2, end2, interactionEnd])
+					seenRegions[interactionEnd] = len(regions)
+				
+				if interactionStart not in interactions:
+					interactions[interactionStart] = []
+				
+				interactions[interactionStart].append(interactionEnd)	
+				
 		
+		regions = np.array(regions, dtype="object")
+		#interactions = np.array(interactions, dtype="object")
+
+		return interactions, regions
+	
 	def mapTADsToGenes(self, genes, tadData):
 		"""
 			Adds the left and right TAD to each gene object.
@@ -252,12 +325,80 @@ class NeighborhoodDefiner:
 			#add interaction objects to the genes
 			gene.setInteractions(interactionsSubset)
 			
+	
+	def mapInteractionsToTads(self, interactions, regions, tadData):
+		"""
+			Determine which interactions take place within which TAD.
+			Interactions will be mapped to TAD objects.
+			
+			- For now, I remove all interactions that take place with regions outside of the TAD. For the purpose of this script, we only look at interactions that are gained as a
+			result of disrupted TAD boundaries, so regions that are already outside of TAD boundaries are questionable. Are these errors? Are the TAD boundary definitions not correct?
+			
+			
+			Returns the tadData, where the objects now have interactions mapped to them (but these are objects, so by reference this should not be necessary)
+			
+		"""
 		
-	def mapSVsToNeighborhood(self, genes, svData):
+		for tad in tadData:
+			
+			#Find all interactions taking place within this TAD.
+			
+			#The interactions are currently intrachromosomal, but may later be interchromosomal
+			#Thus for now we can just match on 1 chromosome
+			
+			#Get all regions that are within the TAD
+			#Find all corresponding interactions between the regions within the TAD (make sure that these do not go outside of the boundary, this may indicate data errors)
+			
+			regionChrSubset = regions[np.where(regions[:,0] == tad[0])] #First get the subset of all regions on the current chromosome, TADs are sorted
+			
+			print regionChrSubset
+			
+			#Find which regions are within this TAD
+			#All regions must have their start position larger than the TAD start and the end smaller than the TAD end
+			startMatches = regionChrSubset[:,1] >= tad[1]
+			endMatches = regionChrSubset[:,2] <= tad[2]
+			
+			allMatches = startMatches * endMatches
+			matchingRegions = regionChrSubset[allMatches,:]
+			
+			#Get the interactions of these matching regions and ensure that these are within the TAD boundaries
+			
+			#Find all the interactions mapping to this region.
+			
+			print tad
+			
+			matchingRegionsInteractions = []
+			for region in matchingRegions:
+				regionInteractions = interactions[region[3]] #the interacting regions
+				for interaction in regionInteractions: #make sure that the interacting regions are actually within the TAD
+					
+					splitInteraction = interaction.split("_")
+					interactionChrom = splitInteraction[0]
+					splitInteractionStartRegion = int(splitInteraction[1])
+					splitInteractionEndRegion = splitInteractionStartRegion + settings.interactions['binSize']
+					
+					if splitInteractionStartRegion < tad[2]: #remove the interacting regions where the start of the interaction is outside of the TAD
+						#Make the final format for the interactions and then add them to the TAD
+						markedUpInteraction = [region[0], region[1], region[2], interactionChrom, splitInteractionStartRegion, splitInteractionEndRegion]
+						matchingRegionsInteractions.append(markedUpInteraction)
+						
+						
+			#Add the interactions to this TAD			
+			tad[3].setInteractions(matchingRegionsInteractions)
+			
+		
+		
+		return tadData 
+		
+	def mapSVsToNeighborhood(self, genes, svData, tadData):
 		"""
 			Take as input gene objects with the neighborhood pre-set, and search through the SVs to find which SVs overlap the genes, TADs and eQTLs in the gene neighborhood
 		
-			!!!!!! This function will need to be properly split into multiple functions for the different data types. 
+			The TADs are also parsed as input, because when we compute gained interactions we search through other TADs that are on the other end of the SV breakpoint. This is the TAD from which we can
+			expect interactions in our current TAD. 
+		
+			!!!!!! This function will need to be properly split into multiple functions for the different data types.
+			
 		
 		"""
 		
@@ -354,6 +495,9 @@ class NeighborhoodDefiner:
 			
 			#Check which SVs overlap with the right/left TAD
 			
+			#For the TAD, we also want to know which interactions are potentially gained.
+			#If the boundary of a TAD is disrupted, we should get the TAD on the left of the SV and the TAD on the right of the SV breakpoint. 
+			
 			if gene.leftTAD != None:
 				
 				leftTADStartMatches = gene.leftTAD.start <= svSubset[:,2]
@@ -363,6 +507,12 @@ class NeighborhoodDefiner:
 				
 				svsOverlappingLeftTAD = svSubset[leftTADMatches]
 				gene.leftTAD.setSVs(svsOverlappingLeftTAD)
+				
+				
+				
+				
+				
+				
 			
 			if gene.rightTAD != None:
 				
