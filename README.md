@@ -25,5 +25,5 @@ For example,
 
 main.py ABC N
 
-will run the code without permutations (N for no) and will write the output to folder ABC. 
+will run the code without permutations (N for no) and will write the output to folder ABC within the RankedGenes folder. 
 
