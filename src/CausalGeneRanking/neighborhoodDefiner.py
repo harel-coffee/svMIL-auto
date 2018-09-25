@@ -401,7 +401,9 @@ class NeighborhoodDefiner:
 			expect interactions in our current TAD. 
 		
 			!!!!!! This function will need to be properly split into multiple functions for the different data types.
-			
+			TODO:
+			- Split into multiple functions
+			- Move the gained interactions outside of the left/right TAD check. See comments below. 
 		
 		"""
 		
@@ -511,7 +513,10 @@ class NeighborhoodDefiner:
 				#2. The SV overlaps with the right side of the left TAD. Thus, the possible interactions are between this TAD and the TAD on the right of it.
 			#If the SV removes a large part of the genome, there is a chance that multiple TADs are gone. Thus, we need to check what the TADs are on the breakpoints of the SV. 
 			
-			
+			####! I don't think checking the overlap with the left and right TAD boundaries of genes is the most logical thing to do, it is probably better to separate the gained
+			#interactions from the genes at first, where we go through ALL TAD boundaries with SVs first, obtain the interactions, and THEN link the potentially gained interactions to genes
+			#instead of the other way around that we do now by first mapping TADs to genes, and then looking for disruptions in those TADs. In what we do now it may happen that TADs are
+			#counted twice in the gene scoring because the left/right TAD boundaries may be from the same TAD if it lies across the gene. 
 			
 			if gene.leftTAD != None:
 				
@@ -526,29 +531,51 @@ class NeighborhoodDefiner:
 				
 				#For each of the SVs overlapping with the left TAD boundary, get the TADs on the right and on the left of the SV (should be within a TAD)
 				for sv in svsOverlappingLeftTAD:
-					print sv
+					print "sv: ", sv
 					
 					#Find the TAD where the SV start is larger than the TAD start, but smaller than the TAD end.
 					
 					#First get the right chromosome subset
-					tadChromosomeSubset = np.where(tadData[:,0] == sv[0]) #Limit to intrachromosomal for now for testing purposes
+					tadChromosomeSubset = tadData[np.where(tadData[:,0] == 'chr' + sv[0])] #Limit to intrachromosomal for now for testing purposes
 					
-					print sv[1]
-					print tadData[:,1]
-					
-					
-					tadStartMatches = np.where(sv[1] > tadData[:,1])
-					tadEndMatches = np.where(sv[2] < tadData[:,2])
-					
-					print tadStartMatches
-					print tadEndMatches
+					tadStartMatches = sv[1] >= tadChromosomeSubset[:,1]
+					tadEndMatches = sv[1] <= tadChromosomeSubset[:,2]
 					
 					allMatches = tadStartMatches * tadEndMatches
+
+					svStartOverlappingTads = tadChromosomeSubset[allMatches]
 					
+					#If the SV does not overlap any TAD, we should skip it as we cannot say anything about gained interactions.
+					#There should be only one TAD on each end!! So then we skip it as well
+					if svStartOverlappingTads.shape[0] < 1  or svStartOverlappingTads.shape[0] > 1:
+						continue
 					
+
+					#Find the TAD that is on the end of the SV
+					#The end of the SV should be after the TAD start, and before the TAD end. 
+					tadStartMatches = sv[2] >= tadChromosomeSubset[:,1]
+					tadEndMatches = sv[2] <= tadChromosomeSubset[:,2]
 					
-					svStartOverlappingTad = tadChromosomeSubset[allMatches,:]
-					print svStartOverlappingTad
+					allMatches = tadStartMatches * tadEndMatches
+
+					svEndOverlappingTads = tadChromosomeSubset[allMatches]
+					
+					#If the end of the SV does not overlap any TAD, skip it.
+					#There should be only one TAD on each end!! So then we skip it as well
+					if svEndOverlappingTads.shape[0] < 1 or svEndOverlappingTads.shape[0] > 1:
+						continue
+					
+					#Sometimes the SV is within one TAD. Then we skip it as well as it is not informative for gaining interactions.
+					if svStartOverlappingTads[0][1] == svStartOverlappingTads[0][1]: #we can assume that there is one entry due to checks above
+						continue
+					#There should not be two TADs with the same start coordinate by the way the data was designed, but check for TADs having the same end as well anyway to make sure
+					if svStartOverlappingTads[0][2] == svStartOverlappingTads[0][2]: #we can assume that there is one entry due to checks above
+						continue
+
+					#Otherwise, if both SV ends are within a TAD, and the TAD is not the same at both ends, get the interactions of the TADs on the left and right.
+					print svStartOverlappingTads
+					print svEndOverlappingTads
+					
 					
 					
 					
