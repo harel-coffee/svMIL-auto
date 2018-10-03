@@ -16,6 +16,7 @@ class EQTL:
 		self.enhancerStatus = "N" #y default not an enhancer
 		self.SVs = []
 		self.SNVs = []
+		self.genes = [] #Make sure that we also know which gene(s) the eQTL affects
 		
 	def setSVs(self, SVs):
 		
@@ -27,3 +28,6 @@ class EQTL:
 		
 	def setEnhancerStatus(self, enhancerStatus): #This funcion can later be replaced to include other regulatory element types as well
 		self.enhancerStatus = enhancerStatus
+		
+	def addGene(self, gene):
+		self.genes.append(gene)

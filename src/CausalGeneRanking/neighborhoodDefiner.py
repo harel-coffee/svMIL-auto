@@ -36,33 +36,41 @@ class NeighborhoodDefiner:
 			tadData = self.getTADsFromFile(tadFile)
 			print "mapping TADs to genes"
 			self.mapTADsToGenes(genes[:,3], tadData) #only pass the gene objects will suffice
+		
 			
 			
 		#2. Map genes to eQTLs
 		
 		eQTLData = [] #Keep empty by default
-		if settings.general['eQTLs'] == True:
+		if settings.general['eQTLs'] == True or settings.general['gainOfInteractions'] == True: #Gain of eQTL interactions depends on eQTLs. 
 			eQTLFile = "../../data/eQTLs/eQTLsFilteredForCausalGenes.txt" #These files will need to go to the settings!
 			print "getting eQTLs"
 			eQTLData = self.getEQTLsFromFile(eQTLFile, genes[:,3])
 		
 		
 		#Add reading/parsing of 3D genome information
-		if settings.general['interactionChains'] == True: 
-			interactionsFile = "../../data/HiC/intrachromosomal_geneNonGeneInteractions.csv" #should be setting!!!!
-			print "Getting interactions"
-			interactionData = self.getInteractionsFromFile(interactionsFile)
-			print "mapping interactions to genes"
-			self.mapInteractionsToGenes(genes[:,3], interactionData)
+		#Disable the 3D information for now
+		
+		# if settings.general['interactionChains'] == True: 
+		# 	interactionsFile = "../../data/HiC/intrachromosomal_geneNonGeneInteractions.csv" #should be setting!!!!
+		# 	print "Getting interactions"
+		# 	interactionData = self.getInteractionsFromFile(interactionsFile)
+		# 	print "mapping interactions to genes"
+		# 	self.mapInteractionsToGenes(genes[:,3], interactionData)
 			
 		#Read/parse Hi-C interactions (intrachromosomal) to later compute gains of interactions
+		#We ignore the Hi-C information in this for now, we now only use eQTLs for gains of interactions
+		# if settings.general['gainOfInteractions'] == True:
+		# 	interactionsFile = settings.files['hiCInteractionsFile']
+		# 	print "Reading all Hi-C interactions"
+		# 	#First get all Hi-C interactions
+		# 	interactions, regions = self.getHiCInteractionsFromFile(interactionsFile)
+		# 	#Map the Hi-C interactions to the respective TADs
+		# 	tadData = self.mapInteractionsToTads(interactions, regions, tadData)
+
+		#For now, we use eQTLs for gains of interactions rather than Hi-C.
 		if settings.general['gainOfInteractions'] == True:
-			interactionsFile = settings.files['hiCInteractionsFile']
-			print "Reading all Hi-C interactions"
-			#First get all Hi-C interactions
-			interactions, regions = self.getHiCInteractionsFromFile(interactionsFile)
-			#Map the Hi-C interactions to the respective TADs
-			tadData = self.mapInteractionsToTads(interactions, regions, tadData)
+			tadData = self.mapEQTLInteractionsToTads(eQTLData, tadData)
 
 
 		
@@ -133,9 +141,11 @@ class NeighborhoodDefiner:
 				#The mapping information is in the file, so we can already do it here
 				self.mapEQTLsToGenes(eQTLObject, genes, splitLine[3])
 						
-				eQTLs.append(eQTLObject)				
+				#Add the chr notation for uniformity. 		
+				eQTLs.append(["chr" + splitLine[0], int(splitLine[1]), int(splitLine[2]), eQTLObject]) #Keep the eQTL information raw as well for quick overlapping. 
 		
-		return eQTLs
+		
+		return np.array(eQTLs)
 	
 	def getInteractionsFromFile(self, interactionsFile):
 		"""
@@ -310,6 +320,7 @@ class NeighborhoodDefiner:
 			if gene.name == geneSymbol:
 				
 				gene.addEQTL(eQTL)
+				eQTL.addGene(gene) #Also update the gene object in the eQTL object so that we can find the gene of the eQTL back later by eQTL
 	
 	def mapInteractionsToGenes(self, genes, interactionData):
 		"""
@@ -327,7 +338,41 @@ class NeighborhoodDefiner:
 			
 			#add interaction objects to the genes
 			gene.setInteractions(interactionsSubset)
+	
+	def mapEQTLInteractionsToTads(self, eQTLData, tadData):
+		"""
+			Determine which eQTL interactions take place within which TAD.
+			eQTL interactions will be mapped to TAD objects.
 			
+		"""
+		
+		#Go through each TAD and find which eQTLs are within the TAD.
+		#List these eQTLs as interaction objects in the tAD object.
+		
+		
+		previousChromosome = 0
+		for tad in tadData:
+		
+			if tad[0] != previousChromosome:
+				previousChromosome = tad[0]
+				eQTLChrSubset = eQTLData[np.where(eQTLData[:,0] == tad[0])] #Get all eQTLs that are on this chromosome. All eQTLs are CIS, so intrachromosomal is fine for now
+				
+			print eQTLChrSubset
+			
+			#Find the eQTLs where the start and end of the eQTL are within the start and end of the TAD. 
+			startMatches = eQTLChrSubset[:,1] >= tad[1]
+			endMatches = eQTLChrSubset[:,2] <= tad[2]
+			
+			allMatches = startMatches * endMatches
+			matchingEQTLs = eQTLChrSubset[allMatches,:]
+		
+			#Add these eQTLs to the TADs if any.
+			if matchingEQTLs.shape[0] < 1:
+				continue
+			else:
+				tad[3].setEQTLInteractions(matchingEQTLs[:,3]) #Add the eQTL objects to the TAD objects. 
+				
+		return tadData		
 	
 	def mapInteractionsToTads(self, interactions, regions, tadData):
 		"""
@@ -403,7 +448,7 @@ class NeighborhoodDefiner:
 		#The SVs are sorted per cancer type, so taking chromosome subsets may not gain as much speed
 
 		for sv in svData:
-			print "sv: ", sv
+			#print "sv: ", sv
 			
 			##Here we need to take translocations into account as well.
 			#If the SV is intrachromosomal, we should find the left TAD by chr1, s1 and the right TAD by e2.
@@ -420,80 +465,80 @@ class NeighborhoodDefiner:
 				#First get the right chromosome subset
 				tadChromosomeSubset = tadData[np.where(tadData[:,0] == leftTadChr)] #Limit to intrachromosomal for now for testing purposes
 
-				tadStartMatches = svStart >= tadChromosomeSubset[:,1]
-				tadEndMatches = svStart <= tadChromosomeSubset[:,2]
+				#Find all SVs where the start of the SV is before the TAD end, and the end of SV after the TAD start. These are boundary overlapping SVs.
+				#Then make sure to remove all SVs that are entirely within a TAD, we cannot say anything about the effect of these
 				
-				allMatches = tadStartMatches * tadEndMatches
-	
-				svStartOverlappingTads = tadChromosomeSubset[allMatches]
-				if svStartOverlappingTads.shape[0] < 1  or svStartOverlappingTads.shape[0] > 1:
-					continue
+				startMatches = svStart <= tadChromosomeSubset[:,2]
+				endMatches = svEnd >= tadChromosomeSubset[:,1]
 				
-				#Search for the right TAD on the same chromosome
-				#Find the TAD that is on the end of the SV
-				#The end of the SV should be after the TAD start, and before the TAD end. 
-				tadStartMatches = svEnd >= tadChromosomeSubset[:,1]
-				tadEndMatches = svEnd <= tadChromosomeSubset[:,2]
+				allMatches = startMatches * endMatches
 				
-				allMatches = tadStartMatches * tadEndMatches
-	
-				svEndOverlappingTads = tadChromosomeSubset[allMatches]
+				#Find the SVs that are entirely within TADs
+				withinStartMatches = svStart > tadChromosomeSubset[:,1]
+				withinEndMatches = svEnd < tadChromosomeSubset[:,2]
 				
-				#If the end of the SV does not overlap any TAD, skip it.
-				#There should be only one TAD on each end!! So then we skip it as well
-				if svEndOverlappingTads.shape[0] < 1 or svEndOverlappingTads.shape[0] > 1:
+				withinTadMatches = withinStartMatches * withinEndMatches
+				
+				#Now everything that is true in the within vector should be FALSE in the allMatches vector.
+				#We can make the within vector negative, and then use *. Everything that is false in the previous vector will remain false, but what is true may become false.
+				
+				filteredMatches  = -withinTadMatches * allMatches
+				
+				overlappingTads = tadData[filteredMatches]
+				if overlappingTads.shape[0] < 1:
 					continue
 				
 			if sv[0] != sv[3]: #interchromosomal
 				leftTadChr = 'chr' + sv[0]
 				rightTadChr = 'chr' + sv[3]
-				svStart = sv[1] #s1
-				svEnd = sv[5] #e2
-				
+				svStartLeft = sv[1] #s1
+				svEndLeft = sv[2] #e1
+				svStartRight = sv[4] #s2
+				svEndRight = sv[5] #e2
+
 				#Now search for the matches on the left and right TAD by these coordinates
 				#First get the right chromosome subset
 				tadChromosomeSubset = tadData[np.where(tadData[:,0] == leftTadChr)] #Limit to intrachromosomal for now for testing purposes
 
-				tadStartMatches = svStart >= tadChromosomeSubset[:,1]
-				tadEndMatches = svStart <= tadChromosomeSubset[:,2]
+				#For the interchromosomal case, we match chromosome 1 by all SVs disrupting the TAD boundary with the s1 and e1 coordinates
 				
-				allMatches = tadStartMatches * tadEndMatches
-	
-				svStartOverlappingTads = tadChromosomeSubset[allMatches]
-				if svStartOverlappingTads.shape[0] < 1  or svStartOverlappingTads.shape[0] > 1:
+				startMatches = svStartLeft <= tadChromosomeSubset[:,2]
+				endMatches = svEndLeft >= tadChromosomeSubset[:,1]
+				
+				allMatchesLeft = startMatches * endMatches
+				
+				overlappingTadsLeft = tadChromosomeSubset[allMatchesLeft] #There should be no need to remove intra-TAD SVs in the interchromosomal case. 
+				if overlappingTadsLeft.shape[0] < 1:
 					continue
 				
-				#Search for the right TAD on another chromosome
+				#Repeat for chromosome 2
 				tadChromosomeSubset = tadData[np.where(tadData[:,0] == rightTadChr)] #Limit to intrachromosomal for now for testing purposes
+
+				#For the interchromosomal case, we match chromosome 1 by all SVs disrupting the TAD boundary with the s1 and e1 coordinates
 				
-				#Find the TAD that is on the end of the SV
-				#The end of the SV should be after the TAD start, and before the TAD end. 
-				tadStartMatches = svEnd >= tadChromosomeSubset[:,1]
-				tadEndMatches = svEnd <= tadChromosomeSubset[:,2]
+				startMatches = svStartRight <= tadChromosomeSubset[:,2]
+				endMatches = svEndRight >= tadChromosomeSubset[:,1]
 				
-				allMatches = tadStartMatches * tadEndMatches
-	
-				svEndOverlappingTads = tadChromosomeSubset[allMatches]
+				allMatchesRight = startMatches * endMatches
 				
-				#If the end of the SV does not overlap any TAD, skip it.
-				#There should be only one TAD on each end!! So then we skip it as well
-				if svEndOverlappingTads.shape[0] < 1 or svEndOverlappingTads.shape[0] > 1:
+				overlappingTadsRight = tadChromosomeSubset[allMatchesRight] #There should be no need to remove intra-TAD SVs in the interchromosomal case. 
+				if overlappingTadsRight.shape[0] < 1:
 					continue
 				
-	
+				#Combine the two
+				overlappingTads = np.concatenate((overlappingTadsLeft, overlappingTadsRight), axis=0)
+				
+			#For the overlapping TADs, we can get the TAD on the right and the TAD on the left.
+			#The SV could end on the boundary and then the desired result is not in our match set, so we skip these for now.
 			
-			#Sometimes the SV is within one TAD. Then we skip it as well as it is not informative for gaining interactions.
-			if svStartOverlappingTads[0][1] == svStartOverlappingTads[0][1]: #we can assume that there is one entry due to checks above
-				continue
-			#There should not be two TADs with the same start coordinate by the way the data was designed, but check for TADs having the same end as well anyway to make sure
-			if svStartOverlappingTads[0][2] == svStartOverlappingTads[0][2]: #we can assume that there is one entry due to checks above
-				continue
-
-			#Otherwise, if both SV ends overlap a TAD, and the TAD is not the same at both ends, get the interactions of the TADs on the left and right.
-			print svStartOverlappingTads
-			print svEndOverlappingTads
-
-			exit()	
+			#Get the TADs on the far left and far right of the SV.
+			#These are the TADs that are still in tact.
+			#We get the eQTL interactions that are in these two TADs (have been pre-mapped to the TAD that these take place in)
+			#Then we find the genes that are present within the TAD (has also been pre-mapped to the TAD)
+			#To each gene in one TAD, we add the number of gained interactions equal to the number of eQTL interactions in the other TAD.
+			
+			exit()
+			
 		
 		
 		
