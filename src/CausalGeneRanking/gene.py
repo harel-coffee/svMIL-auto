@@ -18,6 +18,7 @@ class Gene:
 		self.rightTAD = None
 		self.eQTLs = []
 		self.interactions = []
+		self.gainedEQTLs = dict()
 		
 	def setTADs(self, leftTAD, rightTAD):
 		
@@ -47,3 +48,6 @@ class Gene:
 		
 	def addEQTL(self, eQTL):
 		self.eQTLs.append(eQTL)
+		
+	def setGainedEQTLs(self, gainedEQTLs, sample):
+		self.gainedEQTLs[sample] = gainedEQTLs #keep the gained eQTLs separate per patient to later do mutual exclusivity. 

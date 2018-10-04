@@ -64,7 +64,6 @@ uniqueCancerTypes = []
 
 #Combine the genes for now
 causalGenes = np.concatenate((causalGenes, nonCausalGenes), axis=0)
-print nonCausalGenes
 
 #The combination of SVs and SNVs will come afterwards, because then we will need to map the names of the cancer types correctly. 
 

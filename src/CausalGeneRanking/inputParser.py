@@ -53,6 +53,10 @@ class InputParser:
 				#Dirty workaround to make sure that the cancer type names are the same, we only focus on 1 type for this intial run
 				if cancerType == "breast/gastric":
 					cancerType = "breast"
+					
+				#Skip anything that is not breast cancer for now. From here is the easiest way, saves time in processing as well
+				if cancerType != "breast":
+					continue
 				
 				
 				#if cancerType not in uniqueCancerTypes:
@@ -77,9 +81,9 @@ class InputParser:
 				
 				chr1 = splitLine[chr1Index]
 				
-				svObject = SV(chr1, s1, e1, chr2, s2, e2, sampleName, cancerType)
+				svObject = SV('chr' + chr1, s1, e1, 'chr' + chr2, s2, e2, sampleName, cancerType)
 				#chr 1, start, end, chr2, start2, end2
-				variantsList.append([chr1, s1, e1, chr2, s2, e2, cancerType, sampleName, svObject])
+				variantsList.append(['chr' + chr1, s1, e1, 'chr' + chr2, s2, e2, cancerType, sampleName, svObject])
 		
 		regions = np.array(variantsList, dtype='object')
 		
@@ -172,9 +176,9 @@ class InputParser:
 				if start == '' or end == '':
 					continue
 				
-				gene = Gene(geneSymbol, chromosome, int(start), int(end)) #Keep in objects for easy access of properties related to the neighborhood of the gene
+				gene = Gene(geneSymbol, "chr" + chromosome, int(start), int(end)) #Keep in objects for easy access of properties related to the neighborhood of the gene
 				
-				cosmicGenes.append([chromosome, int(start), int(end), gene])
+				cosmicGenes.append(["chr" + chromosome, int(start), int(end), gene])
 				
 		#Sort the genes
 		cosmicGenes = np.array(cosmicGenes, dtype='object')
@@ -211,11 +215,11 @@ class InputParser:
 				start = splitLine[2]
 				end = splitLine[3]
 				
-				geneObj = Gene(geneID, chrom, int(start), int(end))
+				geneObj = Gene(geneID, "chr" + chrom, int(start), int(end))
 				
-				nonCausalGeneList.append([chrom, start, end, geneObj])
+				nonCausalGeneList.append(["chr" + chrom, int(start), int(end), geneObj])
 				
-		nonCausalGenes = np.array(nonCausalGeneList)
+		nonCausalGenes = np.array(nonCausalGeneList, dtype="object")
 	
 		
 		return nonCausalGenes 

@@ -65,8 +65,6 @@ causalGenes = readCausalGeneFile(causalGeneFile)
 
 #2. Read ensembl gene list and make lookup for causal genes only
 
-
-
 def readEnsemblGeneFile(geneListFile, causalGenes):
 
 	ensemblIDLookup = dict()
@@ -83,12 +81,13 @@ def readEnsemblGeneFile(geneListFile, causalGenes):
 			geneId = splitLine[5]
 			geneSymbol = splitLine[6]
 			
-			if geneSymbol in causalGenes:
-				
-				if geneId not in ensemblIDLookup:
-					ensemblIDLookup[geneId] = ""
-				
-				ensemblIDLookup[geneId] = geneSymbol
+			# if geneSymbol in causalGenes:
+			# 	
+			# 	if geneId not in ensemblIDLookup:
+			# 		ensemblIDLookup[geneId] = ""
+			# 	
+			# 	ensemblIDLookup[geneId] = geneSymbol
+			ensemblIDLookup[geneId] = geneSymbol
 	
 	return ensemblIDLookup
 			

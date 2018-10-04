@@ -12,7 +12,8 @@ class TAD:
 		self.SVs = None
 		self.SNVs = None
 		self.interactions = None
-		self.eQTLInteractions = None
+		self.eQTLInteractions = []
+		self.genes = []
 		
 	def setSVs(self, SVs): #All SVs that overlap with this TAD boundary (left or right depending on the gene. Is that safe?)
 		
@@ -26,5 +27,11 @@ class TAD:
 		self.interactions = interactions
 		
 	def setEQTLInteractions(self, eQTLInteractions): #All eQTL interactions that take place within the TAD. 
-		self.eQTLInteractions = eQTLInteractions 
+		self.eQTLInteractions = eQTLInteractions
+		
+	def addGene(self, gene): #Function to add genes that are within the TAD
+		self.genes.append(gene)
+		
+	def setGenes(self, genes):
+		self.genes = genes
 	
