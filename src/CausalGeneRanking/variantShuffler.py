@@ -24,7 +24,7 @@ class VariantShuffler:
 				
 				splitLine = line.split("\t")
 				
-				chromosome = splitLine[0]
+				chromosome = 'chr' + splitLine[0]
 				end = splitLine[3]
 				
 				self.hg19Coordinates[chromosome] = int(end)
