@@ -384,10 +384,14 @@ class NeighborhoodDefiner:
 			if tad[0] != previousChromosome:
 				previousChromosome = tad[0]
 				geneChrSubset = genes[np.where(genes[:,0] == tad[0])] #TADs are intrachromosomal, so looking at 1 chromosome is sufficient
-				
-			#Find all genes that are within the TAD. 
-			startMatches = geneChrSubset[:,1] >= tad[1]
-			endMatches = geneChrSubset[:,2] <= tad[2]
+			
+			
+			#Find all genes that are within the TAD.
+			#Because some genes are in two TADs, and the TAD definition is likely not entirely correct, we will count overlap of TADs with any part of the gene even if it is just 1 bp for now.
+			#So the start of the gene must be before the end of the TAD, and the end of the gene after the start of the TAD. 
+			startMatches = geneChrSubset[:,1] <= tad[2]
+			endMatches = geneChrSubset[:,2] >= tad[1]
+			
 			
 			allMatches = startMatches * endMatches
 			matchingGenes = geneChrSubset[allMatches,:]
@@ -414,7 +418,7 @@ class NeighborhoodDefiner:
 
 					nearestGeneInd = np.argmin(startDistances)
 					nearestGene = geneChrSubset[nearestGeneInd,:]
-					tad[3].addGene(nearestGene[3])
+					#tad[3].addGene(nearestGene[3]) #Check the performance with genes inside TADs only
 					
 				
 				#Repeat but then for the other TAD end. 
@@ -428,13 +432,12 @@ class NeighborhoodDefiner:
 				else:
 					nearestGeneInd = np.argmin(endDistances)
 					nearestGene = geneChrSubset[nearestGeneInd,:]
-					tad[3].addGene(nearestGene[3])
+					#tad[3].addGene(nearestGene[3])
 				
 			else:
+				print "setting gene inside TAD"
 				tad[3].setGenes(matchingGenes[:,3]) #Add the eQTL objects to the TAD objects. 
-			
-			
-				
+	
 		return tadData		
 	
 	def mapEQTLInteractionsToTads(self, eQTLData, tadData):
@@ -650,13 +653,22 @@ class NeighborhoodDefiner:
 				
 			#For every gene in the TAD, add the eQTLs of the other TAD as potentially gained interactions.
 			for gene in farLeftTad[3].genes:
+					
+				if gene.name == "MOG":
+					print "left TAD boundary"
+					print sv
+					print farRightTad
 				
 				gene.setGainedEQTLs(farRightTad[3].eQTLInteractions, sv[7])
 			
 			for gene in farRightTad[3].genes:
+				if gene.name == "MOG":
+					print "Right TAD boundary"
+					print sv
+					print farRightTad
 				
 				gene.setGainedEQTLs(farLeftTad[3].eQTLInteractions, sv[7])
-		
+		exit()
 		
 		return 0
 		
