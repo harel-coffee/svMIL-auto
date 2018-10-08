@@ -200,12 +200,12 @@ for row in range(0, nonPermutedScores.shape[0]):
 	
 	if proportion < cutoff:
 		totalCutoffMatches += 1
-	if eQTLProportion < cutoff:
-		totalCutoffMatches += 1	
-	if tadProportion < cutoff:
+	# if eQTLProportion < cutoff: #I want to rank only by eQTL gains
+	# 	totalCutoffMatches += 1	
+	# if tadProportion < cutoff:
+	# 	totalCutoffMatches += 1
+	if interactionProportion < cutoff: #turn off interactions for now. 
 		totalCutoffMatches += 1
-	#if interactionProportion < cutoff: #turn off interactions for now. 
-	#	totalCutoffMatches += 1
 		
 	cancerTypePValues[row][7] = totalCutoffMatches	
 
