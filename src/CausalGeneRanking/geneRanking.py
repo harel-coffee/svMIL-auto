@@ -313,7 +313,7 @@ class GeneRanking:
 					#print gene.name, gene.chromosome, gene.start, ": ", geneScoresSummed[geneInd], " gene score: ", np.sum(geneXorMatrix[:,geneInd]), " eQTL score: ", np.sum(eQTLXorMatrix[:,geneInd]), " TAD score: ", np.sum(tadXorMatrix[:,geneInd])	
 			
 				
-				geneScores.append([gene, np.sum(geneXorMatrix[:,geneInd]), np.sum(eQTLXorMatrix[:,geneInd]), np.sum(tadXorMatrix[:,geneInd]), np.sum(gainedEQTLsXorMatrix[:,geneInd])])
+				geneScores.append([gene, np.sum(geneScoringMatrix[:,geneInd]), np.sum(eQTLXorMatrix[:,geneInd]), np.sum(tadXorMatrix[:,geneInd]), np.sum(gainedEQTLsXorMatrix[:,geneInd])])
 			
 			
 			geneScores = np.array(geneScores, dtype="object")
@@ -491,8 +491,9 @@ class GeneRanking:
 			#Divide the score at each position in the matrix by the total number of eQTLs mapped to this gene. It would be ideal to do this on the final summed matrix, but is more difficult because of the combination.
 			for row in range(0, scoringMatrix.shape[0]):
 				if scoringMatrix[row][matrixGeneInd] > 0:
-					scoringMatrix[row][matrixGeneInd] = scoringMatrix[row][matrixGeneInd] / len(eQTLs)
-	
+					#scoringMatrix[row][matrixGeneInd] = scoringMatrix[row][matrixGeneInd] / len(eQTLs)
+					#Don't normalize, this should be captured by background in the permutations!
+					scoringMatrix[row][matrixGeneInd] = scoringMatrix[row][matrixGeneInd]
 						
 		return scoringMatrix
 		

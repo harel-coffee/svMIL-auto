@@ -42,30 +42,29 @@ class NeighborhoodDefiner:
 			
 			
 		#2. Map genes to eQTLs
-
+		
+				
 		eQTLData = [] #Keep empty by default
 		if settings.general['eQTLs'] == True or settings.general['gainOfInteractions'] == True: #Gain of eQTL interactions depends on eQTLs. 
 			#Save the processed data, only needs to be done once
 			
 			import os.path
 			
-			if os.path.exists('eQTLData.pkl'):
-				print "loading eQTLs from pkl"
-				#Load the eqtls
-				with open('eQTLData.pkl', 'rb') as h:
-					eQTLData = pkl.load(h)
-			else:
-				print "re-creating eQTLs"
-				#eQTLFile = "../../data/eQTLs/eQTLsFilteredForCausalGenes.txt" #These files will need to go to the settings!
-				eQTLFile = "../../data/eQTLs/unfiltered_eQTLs.txt" #These files will need to go to the settings!
-				
-				print "getting eQTLs"
-				eQTLData = self.getEQTLsFromFile(eQTLFile, genes[:,3])
-				
-				with open('eQTLData.pkl', 'wb') as h:
-					pkl.dump(eQTLData, h, protocol=pkl.HIGHEST_PROTOCOL)
-		
-		
+			# if os.path.exists('eQTLData.pkl'):
+			# 	print "loading eQTLs from pkl"
+			# 	#Load the eqtls
+			# 	with open('eQTLData.pkl', 'rb') as h:
+			# 		eQTLData = pkl.load(h)
+			# else:
+			print "re-creating eQTLs"
+			#eQTLFile = "../../data/eQTLs/eQTLsFilteredForCausalGenes.txt" #These files will need to go to the settings!
+			eQTLFile = "../../data/eQTLs/breast_eQTLs.txt" #These files will need to go to the settings!
+			
+			print "getting eQTLs"
+			eQTLData = self.getEQTLsFromFile(eQTLFile, genes[:,3])
+			
+			with open('eQTLData.pkl', 'wb') as h:
+				pkl.dump(eQTLData, h, protocol=pkl.HIGHEST_PROTOCOL)
 		
 		#Add reading/parsing of 3D genome information
 		#Disable the 3D information for now
@@ -91,9 +90,6 @@ class NeighborhoodDefiner:
 		if settings.general['gainOfInteractions'] == True:
 			tadData = self.mapEQTLInteractionsToTads(eQTLData, tadData)
 			tadData = self.mapGenesToTads(genes, tadData) 
-		
-		
-		
 
 		
 		#3. Map SVs to all neighborhood elements
@@ -150,7 +146,7 @@ class NeighborhoodDefiner:
 		
 		for gene in genes:
 			if gene not in geneDict:
-				geneDict[gene.name] = 0
+				geneDict[gene.name] = gene
 		
 		
 		eQTLs = []
@@ -172,7 +168,7 @@ class NeighborhoodDefiner:
 				eQTLObject = EQTL(splitLine[0], int(splitLine[1]), int(splitLine[2])) #chr, start, end
 				
 				#The mapping information is in the file, so we can already do it here
-				self.mapEQTLsToGenes(eQTLObject, genes, splitLine[3])
+				self.mapEQTLsToGenes(eQTLObject, geneDict, splitLine[3])
 						
 				#Add the chr notation for uniformity. 		
 				eQTLs.append(["chr" + splitLine[0], int(splitLine[1]), int(splitLine[2]), eQTLObject]) #Keep the eQTL information raw as well for quick overlapping. 
@@ -343,17 +339,21 @@ class NeighborhoodDefiner:
 			
 			
 		
-	def mapEQTLsToGenes(self, eQTL, genes, geneSymbol):
+	def mapEQTLsToGenes(self, eQTL, geneDict, geneSymbol):
 		"""
 			Map the right gene object to the eQTL object. 
 		
 		"""
-		for gene in genes:
-			
-			if gene.name == geneSymbol:
-				
-				gene.addEQTL(eQTL)
-				eQTL.addGene(gene) #Also update the gene object in the eQTL object so that we can find the gene of the eQTL back later by eQTL
+		
+		geneDict[geneSymbol].addEQTL(eQTL)
+		eQTL.addGene(geneDict[geneSymbol])
+		# 
+		# for gene in genes:
+		# 	
+		# 	if gene.name == geneSymbol:
+		# 		
+		# 		gene.addEQTL(eQTL)
+		# 		eQTL.addGene(gene) #Also update the gene object in the eQTL object so that we can find the gene of the eQTL back later by eQTL
 	
 	def mapInteractionsToGenes(self, genes, interactionData):
 		"""
@@ -435,7 +435,6 @@ class NeighborhoodDefiner:
 					#tad[3].addGene(nearestGene[3])
 				
 			else:
-				print "setting gene inside TAD"
 				tad[3].setGenes(matchingGenes[:,3]) #Add the eQTL objects to the TAD objects. 
 	
 		return tadData		
@@ -457,9 +456,7 @@ class NeighborhoodDefiner:
 			if tad[0] != previousChromosome:
 				previousChromosome = tad[0]
 				eQTLChrSubset = eQTLData[np.where(eQTLData[:,0] == tad[0])] #Get all eQTLs that are on this chromosome. All eQTLs are CIS, so intrachromosomal is fine for now
-			
-			
-				
+
 			#Find the eQTLs where the start and end of the eQTL are within the start and end of the TAD. 
 			startMatches = eQTLChrSubset[:,1] >= tad[1]
 			endMatches = eQTLChrSubset[:,2] <= tad[2]
@@ -473,8 +470,8 @@ class NeighborhoodDefiner:
 				
 				continue
 			else:
+				
 				tad[3].setEQTLInteractions(matchingEQTLs[:,3]) #Add the eQTL objects to the TAD objects. 
-		
 		return tadData		
 	
 	def mapInteractionsToTads(self, interactions, regions, tadData):
@@ -591,7 +588,7 @@ class NeighborhoodDefiner:
 				filteredMatches  = -withinTadMatches * allMatches
 				#print filteredMatches.shape
 				
-				overlappingTads = tadChromosomeSubset[allMatches]
+				overlappingTads = tadChromosomeSubset[filteredMatches]
 				
 				if overlappingTads.shape[0] < 1:
 					continue
@@ -654,21 +651,13 @@ class NeighborhoodDefiner:
 			#For every gene in the TAD, add the eQTLs of the other TAD as potentially gained interactions.
 			for gene in farLeftTad[3].genes:
 					
-				if gene.name == "MOG":
-					print "left TAD boundary"
-					print sv
-					print farRightTad
 				
 				gene.setGainedEQTLs(farRightTad[3].eQTLInteractions, sv[7])
 			
 			for gene in farRightTad[3].genes:
-				if gene.name == "MOG":
-					print "Right TAD boundary"
-					print sv
-					print farRightTad
 				
+					
 				gene.setGainedEQTLs(farLeftTad[3].eQTLInteractions, sv[7])
-		exit()
 		
 		return 0
 		

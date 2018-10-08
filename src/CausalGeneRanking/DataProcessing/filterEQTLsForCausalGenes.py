@@ -101,10 +101,15 @@ def filterEQTLs(eQTLFile, ensemblIDLookup, filteredEQTLFile):
 	with open(filteredEQTLFile, 'wb') as outFile:
 		with open(eQTLFile, 'r') as f:
 			lineCount = 0
+			header = dict()
 			for line in f:
 				line = line.strip()
 				
 				if lineCount < 1:
+					splitHeader = line.split("\t")
+					for col in range(0, len(splitHeader)):
+						header[splitHeader[col]] = col #keep lookup for specific columns
+						
 					newHeader = "chromosome\tstart\tend\tgene"
 					outFile.write(newHeader)
 					outFile.write("\n")
@@ -112,6 +117,18 @@ def filterEQTLs(eQTLFile, ensemblIDLookup, filteredEQTLFile):
 					continue
 				
 				splitLine = line.split("\t")
+				
+				#Filter by one tissue for now. Is the p-value significant?
+				tissueInd = header['pval_Breast_Mammary_Tissue']
+				
+				if splitLine[tissueInd] == 'NA':
+					continue
+				
+				pval = float(splitLine[tissueInd])
+				if pval > 5e-8:
+					continue
+				
+				
 				geneInfo = splitLine[0]
 				splitGeneInfo = geneInfo.split(",")
 				ensemblID = splitGeneInfo[1]

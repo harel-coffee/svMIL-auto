@@ -203,13 +203,12 @@ class InputParser:
 			for line in geneFile:
 				line = line.strip()
 				splitLine = line.split("\t")
-				if lineCount < 1:
-					lineCount += 1
-					continue
+				
 				
 				#Obtain the name, chromosome and positions of the gene. 
 				
 				geneID = splitLine[0]
+				
 				chrom = splitLine[1]
 
 				start = splitLine[2]
