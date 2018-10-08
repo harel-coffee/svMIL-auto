@@ -160,7 +160,7 @@ with open(outFile, 'w') as out:
 	for gene in sortedPValues:
 		
 		#0 is the gene name, 3 is the gene score, 4 is the eqtl score, 5 is the tad score, 7 the total.
-		newLine = gene[0] + "\t" + str(gene[3]) + "\t" + str(gene[5]) + "\t" + str(gene[5]) + "\t" + str(gene[7]) + "\n"
+		newLine = gene[0] + "\t" + str(gene[3]) + "\t" + str(gene[4]) + "\t" + str(gene[6]) + "\t" + str(gene[7]) + "\n"
 		out.write(newLine)
 	
 
