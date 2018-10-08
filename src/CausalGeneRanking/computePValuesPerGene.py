@@ -83,47 +83,6 @@ for geneScoreFile in geneScoreFiles:
 
 #Normalize this, use a pdf for plotting
 
-print "plotting genes"
-
-#First for the gene scores only
-
-outputDir = "RankedGenes/Results_SNVsSVs/"
-
-if not os.path.exists(outputDir):
-	os.makedirs(outputDir)
-if not os.path.exists(outputDir + "geneScores/"):
-	os.makedirs(outputDir + "geneScores/")
-if not os.path.exists(outputDir + "eQTLScores/"):
-	os.makedirs(outputDir + "eQTLScores/")
-if not os.path.exists(outputDir + "tadScores/"):
-	os.makedirs(outputDir + "tadScores/")
-if not os.path.exists(outputDir + "interactionScores/"):
-	os.makedirs(outputDir + "interactionScores/")
-	
-for row in range(0, perGeneScores["geneScore"].shape[0]):
-	plt.figure()
-	geneName = nonPermutedScores[row][0]
-	geneIndex = geneIndexDict[geneName]
-	
-	geneScores = np.array(perGeneScores["geneScore"][geneIndex])
-	eQTLScores = np.array(perGeneScores["eQTLScore"][geneIndex])
-	tadScores = np.array(perGeneScores["tadScore"][geneIndex])
-	interactionScores = np.array(perGeneScores["interactionScore"][geneIndex])
-	# 
-	# plt.hist(geneScores)
-	# plt.savefig(outputDir + "geneScores/" + geneName + "_eneScore.svg")
-	# plt.clf()
-	# plt.hist(eQTLScores)
-	# plt.savefig(outputDir + "eQTLScores/" + geneName + "_eQTLScore.svg")
-	# plt.clf()
-	# plt.hist(tadScores)
-	# plt.savefig(outputDir + "tadScores/" + geneName + "_tadScore.svg")
-	# plt.clf()
-	# plt.hist(interactionScores)
-	# plt.savefig(outputDir + "interactionScores/" + geneName + "_interactionScore.svg")
-	# plt.clf()
-	
-#plt.show()
 
 #3. Compute the p-value for each gene
 
@@ -157,30 +116,11 @@ for row in range(0, nonPermutedScores.shape[0]):
 	#First compute the p-value for the gene score layer
 	proportion = (np.sum((permutedGeneScores >= geneScore).astype(int)) + 1) / float(len(permutedGeneScores) + 1) #I think we need equals, when the sum is the same, the value should be TRUE and receive a lower p-value. 
 	
-	if proportion < 1:
-	
-		print "gene: ", geneName
-		print "p-value for the gene layer: ", proportion
-	
-		
 	eQTLProportion = (np.sum((permutedEQTLScores >= eQTLScore).astype(int)) + 1) / float(len(permutedEQTLScores) + 1) 
-	
-	if eQTLProportion < 1:
-	
-		print "p-value for the eQTL layer: ", eQTLProportion
-	
 	
 	tadProportion = (np.sum((permutedTADScores >= tadScore).astype(int)) + 1) / float(len(permutedTADScores) + 1) 
 	
-	if tadProportion < 1:
-	
-		print "p-value for the TAD layer: ", tadProportion
-	
 	interactionProportion = (np.sum((permutedInteractionScores >= interactionScore).astype(int)) + 1) / float(len(permutedInteractionScores) + 1) 
-	
-	if interactionProportion < 1:
-	
-		print "p-value for the interaction layer: ", interactionProportion
 	
 	
 	cancerTypePValues[row][0] = geneName
