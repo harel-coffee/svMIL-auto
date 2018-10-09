@@ -45,8 +45,7 @@ for row in range(0, nonPermutedScores.shape[0]):
 	geneIndexDict[gene] = geneIndex
 	geneIndex += 1
 	
-print geneIndexDict
-exit()
+
 
 #list all files in this data folder
 
@@ -80,7 +79,7 @@ for geneScoreFile in geneScoreFiles:
 
 
 geneInd = geneIndexDict['ZFP57']
-print perGeneScores[geneInd, :]
+print perGeneScores["interactionScore"][geneInd, :]
 exit()
 #Extra step:
 
