@@ -75,7 +75,7 @@ for geneScoreFile in geneScoreFiles:
 		perGeneScores["geneScore"][currentGeneIndex, permutationRound] = geneScores[row][1]
 		perGeneScores["eQTLScore"][currentGeneIndex, permutationRound] = geneScores[row][2]
 		perGeneScores["tadScore"][currentGeneIndex, permutationRound] = geneScores[row][3]
-		perGeneScores["interactionScore"][currentGeneIndex, permutationRound] = geneScores[row][3]
+		perGeneScores["interactionScore"][currentGeneIndex, permutationRound] = geneScores[row][4]
 
 #Extra step:
 
