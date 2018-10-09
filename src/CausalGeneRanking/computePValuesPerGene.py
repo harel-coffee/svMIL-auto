@@ -80,7 +80,7 @@ for geneScoreFile in geneScoreFiles:
 
 geneInd = geneIndexDict['ZFP57']
 print perGeneScores[geneInd, :]
-
+exit()
 #Extra step:
 
 #Show the distribution of the permutation scores for each gene
@@ -142,8 +142,8 @@ for row in range(0, nonPermutedScores.shape[0]):
 	cutoff = 0.01
 	totalCutoffMatches = 0
 	
-	if proportion < cutoff:
-		totalCutoffMatches += 1
+	# if proportion < cutoff:
+	# 	totalCutoffMatches += 1
 	# if eQTLProportion < cutoff: #I want to rank only by eQTL gains
 	# 	totalCutoffMatches += 1	
 	# if tadProportion < cutoff:
