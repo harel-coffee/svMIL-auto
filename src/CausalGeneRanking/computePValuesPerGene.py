@@ -77,6 +77,10 @@ for geneScoreFile in geneScoreFiles:
 		perGeneScores["tadScore"][currentGeneIndex, permutationRound] = geneScores[row][3]
 		perGeneScores["interactionScore"][currentGeneIndex, permutationRound] = geneScores[row][4]
 
+
+geneInd = geneIndexDict['ZFP57']
+print perGeneScores[geneInd, :]
+
 #Extra step:
 
 #Show the distribution of the permutation scores for each gene
