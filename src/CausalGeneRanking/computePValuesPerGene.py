@@ -49,6 +49,8 @@ for row in range(0, nonPermutedScores.shape[0]):
 
 #list all files in this data folder
 
+np.set_printoptions(threshold=np.nan)
+
 geneScoreFiles = [f for f in listdir(dataFolder) if isfile(join(dataFolder, f))]
 
 for geneScoreFile in geneScoreFiles:
