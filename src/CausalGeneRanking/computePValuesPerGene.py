@@ -45,7 +45,8 @@ for row in range(0, nonPermutedScores.shape[0]):
 	geneIndexDict[gene] = geneIndex
 	geneIndex += 1
 	
-
+print geneIndexDict
+exit()
 
 #list all files in this data folder
 
