@@ -82,7 +82,7 @@ for geneScoreFile in geneScoreFiles:
 
 geneInd = geneIndexDict['ZFP57']
 print perGeneScores["interactionScore"][geneInd, :]
-exit()
+
 #Extra step:
 
 #Show the distribution of the permutation scores for each gene
@@ -128,6 +128,9 @@ for row in range(0, nonPermutedScores.shape[0]):
 	
 	interactionProportion = (np.sum((permutedInteractionScores >= interactionScore).astype(int)) + 1) / float(len(permutedInteractionScores) + 1) 
 	
+	if geneName == "ZFP57":
+		print interactionProportion
+		exit()	
 	
 	cancerTypePValues[row][0] = geneName
 	#cancerTypePValues[row][1] = gene.chromosome
