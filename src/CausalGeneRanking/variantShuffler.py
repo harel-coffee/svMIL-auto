@@ -46,11 +46,11 @@ class VariantShuffler:
 			chr2Length = self.hg19Coordinates[chromosome2]
 			
 			start1 = int(sv[1])
-			start2 = int(sv[2])
+			start2 = int(sv[4])
 			
 			startDifference = start2 - start1
 			
-			end1 = int(sv[4])
+			end1 = int(sv[2])
 			end2 = int(sv[5])
 			
 			endDifference = end2 - end1
@@ -88,11 +88,40 @@ class VariantShuffler:
 				
 			#Sample name and cancer type can be copied from the other SV. Chromosome information also remains the same.
 			#Keep in mind that the sample name and cancer type are reversed in the SV object beause that order makes more sense. 
-			newSvObj = SV(chromosome1, newStart1, newStart2, chromosome2, newEnd1, newEnd2, sv[7], sv[6])
-			newSv = [chromosome1, newStart1, newStart2, chromosome2, newEnd1, newEnd2, sv[6], sv[7], newSvObj]	
+			newSvObj = SV(chromosome1, newStart1, newEnd1, chromosome2, newStart2, newEnd2, sv[7], sv[6])
+			newSv = [chromosome1, newStart1, newEnd1, chromosome2, newStart2, newEnd2, sv[6], sv[7], newSvObj]	
 			shuffledSvs.append(newSv)	
 		
 		shuffledSvs = np.array(shuffledSvs, dtype="object")	
+		
+		#Temporarily write the shuffled SVs to a VCF file for testing
+		
+		outVcf = "test_shuffledSVs.vcf"
+		with open(outVcf, 'w') as outF:
+			
+			outF.write("##fileformat=VCFv4.0\n")
+			outF.write("#CHROM	POS	ID	REF	ALT	QUAL	FILTER	INFO\n")
+			
+			for sv in shuffledSvs:
+				
+				fullChrom = sv[0]
+				splitChrom = fullChrom.split("chr")
+				chr1 = splitChrom[1]
+				pos = str(sv[1])
+				empty = '.' #same value for ID, ALT, QUAL, FILTER
+				ref = 'A' #does the exact value matter?
+				fullChrom = sv[3]
+				splitChrom = fullChrom.split("chr")
+				chr2 = splitChrom[1]
+				s2 = str(sv[4])
+				e2 = str(sv[5])
+				sample = sv[7].replace(" ", "")
+				info = 'CHR2=' + chr2 + ";S2=" + s2 + ";E2=" + e2 + ";SAMPLE=" + sample + ";END=" + str(sv[2])
+			
+				shuffledSvLine = chr1 + "\t" + pos + "\t" + empty + "\t" + ref + "\t" + empty + "\t" + empty + "\t" + empty + "\t" + info + "\n"
+				outF.write(shuffledSvLine)		
+			
+		exit()
 		
 		return shuffledSvs
 
