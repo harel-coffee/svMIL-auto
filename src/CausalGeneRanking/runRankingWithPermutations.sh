@@ -22,4 +22,4 @@ qsub runRanking.sh "$uuid" "$permutationsYN"
 
 permutationsYN="True"
 
-qsub -t 1-1000:1 -tc 50 runRanking.sh "$uuid" "$permutationsYN" #use job array and inside this script SGE TASK ID to get the run number
+qsub -t 1-100:1 -tc 100 runRanking.sh "$uuid" "$permutationsYN" #use job array and inside this script SGE TASK ID to get the run number
