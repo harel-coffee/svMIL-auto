@@ -98,40 +98,40 @@ class VariantShuffler:
 		shuffledSvs = np.array(shuffledSvs, dtype="object")	
 		
 		#Temporarily write the shuffled SVs to a VCF file for testing
-		
-		outVcf = "test_shuffledSVs.vcf"
-		with open(outVcf, 'w') as outF:
-			
-			outF.write("##fileformat=VCFv4.0\n")
-			outF.write("#CHROM	POS	ID	REF	ALT	QUAL	FILTER	INFO\n")
-			
-			for sv in shuffledSvs:
-				
-				fullChrom = sv[0]
-				splitChrom = fullChrom.split("chr")
-				chr1 = splitChrom[1]
-				pos = str(sv[1])
-				empty = '.' #same value for ID, ALT, QUAL, FILTER
-				ref = 'A' #does the exact value matter?
-				fullChrom = sv[3]
-				splitChrom = fullChrom.split("chr")
-				chr2 = splitChrom[1]
-				s2 = str(sv[4])
-				e1 = str(sv[2])
-				sample = sv[7].replace(" ", "")
-				
-				#If intrachromosomal, report e2 as the end position. Otherwise, show e1 as the end position. 
-				if chr1 == chr2:
-					end = str(sv[5])
-				else:
-					end = str(sv[2])
-
-				info = 'CHR2=' + chr2 + ";S2=" + s2 + ";E1=" + e1 + ";SAMPLE=" + sample + ";END=" + end
-			
-				shuffledSvLine = chr1 + "\t" + pos + "\t" + empty + "\t" + ref + "\t" + empty + "\t" + empty + "\t" + empty + "\t" + info + "\n"
-				outF.write(shuffledSvLine)		
-			
-		exit()
+		# 
+		# outVcf = "test_shuffledSVs.vcf"
+		# with open(outVcf, 'w') as outF:
+		# 	
+		# 	outF.write("##fileformat=VCFv4.0\n")
+		# 	outF.write("#CHROM	POS	ID	REF	ALT	QUAL	FILTER	INFO\n")
+		# 	
+		# 	for sv in shuffledSvs:
+		# 		
+		# 		fullChrom = sv[0]
+		# 		splitChrom = fullChrom.split("chr")
+		# 		chr1 = splitChrom[1]
+		# 		pos = str(sv[1])
+		# 		empty = '.' #same value for ID, ALT, QUAL, FILTER
+		# 		ref = 'A' #does the exact value matter?
+		# 		fullChrom = sv[3]
+		# 		splitChrom = fullChrom.split("chr")
+		# 		chr2 = splitChrom[1]
+		# 		s2 = str(sv[4])
+		# 		e1 = str(sv[2])
+		# 		sample = sv[7].replace(" ", "")
+		# 		
+		# 		#If intrachromosomal, report e2 as the end position. Otherwise, show e1 as the end position. 
+		# 		if chr1 == chr2:
+		# 			end = str(sv[5])
+		# 		else:
+		# 			end = str(sv[2])
+		# 
+		# 		info = 'CHR2=' + chr2 + ";S2=" + s2 + ";E1=" + e1 + ";SAMPLE=" + sample + ";END=" + end
+		# 	
+		# 		shuffledSvLine = chr1 + "\t" + pos + "\t" + empty + "\t" + ref + "\t" + empty + "\t" + empty + "\t" + empty + "\t" + info + "\n"
+		# 		outF.write(shuffledSvLine)		
+		# 	
+		#exit()
 		
 		return shuffledSvs
 
