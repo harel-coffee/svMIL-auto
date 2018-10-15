@@ -46,52 +46,55 @@ class VariantShuffler:
 			chr2Length = self.hg19Coordinates[chromosome2]
 			
 			start1 = int(sv[1])
-			start2 = int(sv[4])
-			
-			startDifference = start2 - start1
-			
 			end1 = int(sv[2])
+			
+			chr1Difference = end1 - start1
+			
+			start2 = int(sv[4])
 			end2 = int(sv[5])
 			
-			endDifference = end2 - end1
+			chr2Difference = end2 - start2
 			
 			minimumStart1 = 1	
-			maximumStart1 = chr1Length - start1
 			
-			#If the start position is after the bounds of the chromosome, the maximum start should be the length of the chromosome - the length of the SV.
-		
-			if maximumStart1 < 0:
-				maximumStart1 = chr1Length - svLength
-		
-			newStart1 = random.randint(minimumStart1, maximumStart1)
-			newStart2 = newStart1 + startDifference
 			
 			#If the chromosomes are the same, use the maximum start for chr1. Otherwise use different chromosomes.
 			if chromosome1 == chromosome2:
-			
-				#difference between end1 and start 1
-				svLength = end1 - start1
-					
-				newEnd1 = newStart1 + svLength
-				newEnd2 = newEnd1 + endDifference
+				
+				svLength = start2 - start1
+				
+				maximumStart1 = chr1Length - svLength #do not use the end here, because that is the end of the original SV. It can be anywhere, depending on the length. 
+
+				newStart1 = random.randint(minimumStart1, maximumStart1)
+				newEnd1 = newStart1 + chr1Difference
+						
+				newStart2 = newStart1 + svLength
+				newEnd2 = newStart2 + chr2Difference
 				
 			else: #If the chromosomes are not the same, the start and end coordinates do not necessarily need to be equidistant. Here we can randomly sample the start on both chromosomes 		
-				maximumStart2 = chr2Length - start2
+
+				maximumStart1 = chr1Length - chr1Difference #use the end on the first chromosome
+				newStart1 = random.randint(minimumStart1, maximumStart1)
 				
-				#If the chr2 start is outside of the bounds, we only need to subtract the difference between the positions on chromosome 2. 
-				if maximumStart2 < 0:
-					maximumStart2 = chr2Length - endDifference
+				maximumStart2 = chr2Length - chr2Difference
 				
 				#The end coordinate here is actually the start coordinate for chromosome 2.
-				newEnd1 = random.randint(minimumStart1, maximumStart2) #chr2 has the same start coordinate as chr 1
-				newEnd2 = newEnd1 + endDifference
+				newStart2 = random.randint(minimumStart1, maximumStart2) #chr2 has the same start coordinate as chr 1
+				
+				#s1 and e1 are the bounds on chromosome 1.
+				#The new e1 needs to have the same difference from s1.
+				newEnd1 = newStart1 + chr1Difference
+				
+				#The same for s2 and e2, on chromosome 2.
+				newEnd2 = newStart2 + chr2Difference
+
 				
 			#Sample name and cancer type can be copied from the other SV. Chromosome information also remains the same.
 			#Keep in mind that the sample name and cancer type are reversed in the SV object beause that order makes more sense. 
 			newSvObj = SV(chromosome1, newStart1, newEnd1, chromosome2, newStart2, newEnd2, sv[7], sv[6])
 			newSv = [chromosome1, newStart1, newEnd1, chromosome2, newStart2, newEnd2, sv[6], sv[7], newSvObj]	
 			shuffledSvs.append(newSv)	
-		
+	
 		shuffledSvs = np.array(shuffledSvs, dtype="object")	
 		
 		#Temporarily write the shuffled SVs to a VCF file for testing
@@ -114,9 +117,16 @@ class VariantShuffler:
 				splitChrom = fullChrom.split("chr")
 				chr2 = splitChrom[1]
 				s2 = str(sv[4])
-				e2 = str(sv[5])
+				e1 = str(sv[2])
 				sample = sv[7].replace(" ", "")
-				info = 'CHR2=' + chr2 + ";S2=" + s2 + ";E2=" + e2 + ";SAMPLE=" + sample + ";END=" + str(sv[2])
+				
+				#If intrachromosomal, report e2 as the end position. Otherwise, show e1 as the end position. 
+				if chr1 == chr2:
+					end = str(sv[5])
+				else:
+					end = str(sv[2])
+
+				info = 'CHR2=' + chr2 + ";S2=" + s2 + ";E1=" + e1 + ";SAMPLE=" + sample + ";END=" + end
 			
 				shuffledSvLine = chr1 + "\t" + pos + "\t" + empty + "\t" + ref + "\t" + empty + "\t" + empty + "\t" + empty + "\t" + info + "\n"
 				outF.write(shuffledSvLine)		
