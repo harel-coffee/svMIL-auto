@@ -564,31 +564,53 @@ class NeighborhoodDefiner:
 				
 				#Now search for the matches on the left and right TAD by these coordinates
 				#First get the right chromosome subset
-				tadChromosomeSubset = tadData[np.where(tadData[:,0] == leftTadChr)] #Limit to intrachromosomal for now for testing purposes
+				tadChromosomeSubset = tadData[np.where(tadData[:,0] == leftTadChr)]
 				
+				#First find all matches overlapping the right side of the TAD
+				startMatches = svStart > tadChromosomeSubset[:,1]
+				endMatches = svStart <= tadChromosomeSubset[:,2]
+				allStartMatches = startMatches * endMatches
+				
+				
+				#Then find the matches overlapping the left side of the TAD
+				startMatches = svEnd < tadChromosomeSubset[:,2]
+				endMatches = svEnd >= tadChromosomeSubset[:,1]
+				allEndMatches = startMatches * endMatches
+				
+				overlappingTADsRight = tadChromosomeSubset[allStartMatches]
+				overlappingTADsLeft = tadChromosomeSubset[allEndMatches]
+				
+				#Both ends should be in a TAD for this approach to work
+				if overlappingTADsRight.shape[0] < 1:
+					continue
+				if overlappingTADsLeft.shape[0] < 1:
+					continue
+
+				#Make the total subset
+				overlappingTads = np.concatenate((overlappingTADsLeft, overlappingTADsRight), axis=0)
 
 				#Find all SVs where the start of the SV is before the TAD end, and the end of SV after the TAD start. These are boundary overlapping SVs.
 				#Then make sure to remove all SVs that are entirely within a TAD, we cannot say anything about the effect of these
 				
-				startMatches = svStart <= tadChromosomeSubset[:,2]
-				endMatches = svEnd >= tadChromosomeSubset[:,1]
-				
-				allMatches = startMatches * endMatches
-				
-				
-				#Find the SVs that are entirely within TADs
-				withinStartMatches = svStart > tadChromosomeSubset[:,1]
-				withinEndMatches = svEnd < tadChromosomeSubset[:,2]
-				
-				withinTadMatches = withinStartMatches * withinEndMatches
-				#print withinTadMatches.shape
-				#Now everything that is true in the within vector should be FALSE in the allMatches vector.
-				#We can make the within vector negative, and then use *. Everything that is false in the previous vector will remain false, but what is true may become false.
-				
-				filteredMatches  = -withinTadMatches * allMatches
-				#print filteredMatches.shape
-				
-				overlappingTads = tadChromosomeSubset[filteredMatches]
+				# startMatches = svStart <= tadChromosomeSubset[:,2]
+				# endMatches = svEnd >= tadChromosomeSubset[:,1]
+				# 
+				# allMatches = startMatches * endMatches
+				# 
+				# 
+				# #Find the SVs that are entirely within TADs
+				# withinStartMatches = svStart > tadChromosomeSubset[:,1]
+				# withinEndMatches = svEnd < tadChromosomeSubset[:,2]
+				# 
+				# withinTadMatches = withinStartMatches * withinEndMatches
+				# #print withinTadMatches.shape
+				# #Now everything that is true in the within vector should be FALSE in the allMatches vector.
+				# #We can make the within vector negative, and then use *. Everything that is false in the previous vector will remain false, but what is true may become false.
+				# 
+				# filteredMatches  = -withinTadMatches * allMatches
+				# #print filteredMatches.shape
+				# 
+				# overlappingTads = tadChromosomeSubset[allMatches]
 				
 				if overlappingTads.shape[0] < 1:
 					continue
@@ -655,7 +677,6 @@ class NeighborhoodDefiner:
 				gene.setGainedEQTLs(farRightTad[3].eQTLInteractions, sv[7])
 			
 			for gene in farRightTad[3].genes:
-				
 					
 				gene.setGainedEQTLs(farLeftTad[3].eQTLInteractions, sv[7])
 		
