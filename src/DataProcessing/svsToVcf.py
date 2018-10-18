@@ -149,7 +149,7 @@ with open(outFile, 'wb') as out:
 		
 		#The REF information should be parsed from the file generated with bedtools containing the reference bases at that position. 
 
-		coordinates = region[0] + ":" + region[1] + "-" + str(int(region[2]))
+		coordinates = region[0] + ":" + region[1] + "-" + str(int(region[2]) + 1)
 		#coordinates = region[0] + ":" + region[1]
 		
 		end = region[5]
