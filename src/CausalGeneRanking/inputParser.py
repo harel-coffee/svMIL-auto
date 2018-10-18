@@ -81,6 +81,28 @@ class InputParser:
 				
 				chr1 = splitLine[chr1Index]
 				
+				#Make sure to switch the positions here as well
+				#Some positions are swapped
+				if int(e2) < int(e1):
+					tmpE1 = e1
+					e1 = e2
+					e2 = tmpE1
+					tmpS1 = s1
+					s1 = s2
+					s2 = tmpS1
+				
+				#Sometimes only the end is swapped.
+				if int(e2) < int(s2):
+					tmpS2 = s2
+					s2 = e2
+					e2 = tmpS2
+					
+				if int(e1) < int(s1):
+					tmpS1 = s1
+					s1 = e1
+					e1 = tmpS1
+				
+				
 				svObject = SV('chr' + chr1, s1, e1, 'chr' + chr2, s2, e2, sampleName, cancerType)
 				#chr 1, start, end, chr2, start2, end2
 				variantsList.append(['chr' + chr1, s1, e1, 'chr' + chr2, s2, e2, cancerType, sampleName, svObject])

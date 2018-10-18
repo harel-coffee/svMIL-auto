@@ -668,16 +668,20 @@ class NeighborhoodDefiner:
 				
 			farLeftTad = overlappingTads[0] #This list is sorted
 			farRightTad = overlappingTads[overlappingTads.shape[0]-1,:]
-			
-				
+	
 			#For every gene in the TAD, add the eQTLs of the other TAD as potentially gained interactions.
 			for gene in farLeftTad[3].genes:
-					
+				# if gene.name == "DDT":
+				# 	print "left tad: ", farLeftTad
+				# 	print "sv: ", sv
 				
 				gene.setGainedEQTLs(farRightTad[3].eQTLInteractions, sv[7])
 			
 			for gene in farRightTad[3].genes:
-					
+				# if gene.name == "DDT":
+				# 	print "right tad: ", farRightTad
+				# 	print "sv: ", sv
+				# 	
 				gene.setGainedEQTLs(farLeftTad[3].eQTLInteractions, sv[7])
 		
 		return 0
