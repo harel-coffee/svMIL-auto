@@ -67,6 +67,14 @@ with open(variantsFile, 'rb') as f:
 			tmpS1 = s1
 			s1 = s2
 			s2 = tmpS1
+		
+		#Sometimes only the end is swapped.
+		if int(e2) < int(s2):
+			tmpS2 = s2
+			s2 = e2
+			e2 = tmpS2
+			
+			
 			
 		#chr 1, start, end, chr2, start2, end2
 		variantsList.append([chr1, s1, e1, chr2, s2, e2, svType, cancerType, sampleName])
