@@ -73,7 +73,8 @@ with open(variantsFile, 'rb') as f:
 			tmpS2 = s2
 			s2 = e2
 			e2 = tmpS2
-			
+			print line
+			print "s2: ", s2, "e2: ", e2
 			
 			
 		#chr 1, start, end, chr2, start2, end2
