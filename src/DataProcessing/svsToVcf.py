@@ -99,37 +99,9 @@ with open(refFile, 'r') as ref:
 	lineCount = 0
 	
 	for line in ref:
-		# 
-		# if lineCount < 2:
-		# 	lineCount += 1
-		# 	continue
-		# 
-		# line = line.strip()
-		# 
-		# splitLine = line.split("\t")
-		# 
-		# #coordinates key is made up out of the chrom:start
-		# chrom = splitLine[0]
-		# 
-		# info = splitLine[7]
-		# splitInfo = info.split(";")
-		# 
-		# e1 = splitInfo[3]
-		# splitE1 = e1.split("=")
-		# endPos = splitE1[1]
-		# 
-		# 
-		# #Here also, if the positions are switched, use the end as pos instead of start.
-		# if int(endPos) < int(splitLine[1]):
-		# 	pos = endPos
-		# else:
-		# 	pos = splitLine[1]
-		# 
-		# coordinates = chrom + ":" + pos
-		# 
-		# refBase = splitLine[3]
-		# 
-		# refBases[coordinates] = refBase
+		line = line.strip()
+		splitLine = line.split("\t")
+		
 		
 		coordinates = splitLine[0]
 		refBase = splitLine[1]
