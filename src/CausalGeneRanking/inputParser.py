@@ -13,6 +13,7 @@ from sv import SV
 from snv import SNV
 import numpy as np
 from random import randint
+import re
 
 class InputParser:
 	
@@ -56,6 +57,14 @@ class InputParser:
 					
 				#Skip anything that is not breast cancer for now. From here is the easiest way, saves time in processing as well
 				if cancerType != "breast":
+					continue
+				
+				svTypeIndex = header.index("sv_type")
+				svType = splitLine[svTypeIndex]
+				
+				#Check if the SV type matches deletions
+				match = re.search("deletion", svType, re.IGNORECASE)
+				if match is None: #only focus on deletions for now
 					continue
 				
 				

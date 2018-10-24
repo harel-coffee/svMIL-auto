@@ -44,9 +44,9 @@ for gene in genes:
 				
 				#obtain the p-value and see if it is significant
 				splitLine = line.split("\t")
-				signCount = splitLine[4]
+				signCount = float(splitLine[3])
 				#print "sign: ", interactionSignificance
-				if signCount > 0:
+				if signCount < 0.05:
 				#	print "True"
 					significance[gene] = 'True'
 					totalSign += 1
@@ -71,6 +71,7 @@ breastCancerGeneScores = dict()
 bcGeneScores = dict()
 bcTadScores = dict()
 bceQTLScores = dict()
+bceQTLGainScores = dict()
 
 for gene in genes:
 	
@@ -89,6 +90,7 @@ for gene in genes:
 				geneScore = float(splitLine[1])
 				tadScore = float(splitLine[2])
 				eQTLScore = float(splitLine[3])
+				eQTLGainScore = float(splitLine[4])
 				
 				
 				bcGeneScores[gene] = geneScore
@@ -97,8 +99,9 @@ for gene in genes:
 				bcTadScores[gene] = tadScore
 				
 				bceQTLScores[gene] = eQTLScore
+				bceQTLGainScores[gene] = eQTLGainScore
 				
-				totalScore = geneScore + tadScore + eQTLScore
+				totalScore = geneScore + eQTLScore + eQTLGainScore
 				
 				
 				breastCancerGeneScores[gene] = totalScore
@@ -133,6 +136,7 @@ cosmicGeneScores = dict()
 cosmicGeneLayerScores = dict()
 cosmicTadScores = dict()
 cosmicEQtlScores = dict()
+cosmicEQtlGainScores = dict()
 
 for gene in cosmicGeneNames:
 	
@@ -151,6 +155,7 @@ for gene in cosmicGeneNames:
 				geneScore = float(splitLine[1])
 				tadScore = float(splitLine[2])
 				eQTLScore = float(splitLine[3])
+				eQTLGainScore = float(splitLine[4])
 				
 				
 				cosmicGeneLayerScores[gene] = geneScore
@@ -158,8 +163,9 @@ for gene in cosmicGeneNames:
 				cosmicTadScores[gene] = tadScore
 				
 				cosmicEQtlScores[gene] = eQTLScore
+				cosmicEQtlGainScores[gene] = eQTLGainScore
 				
-				totalScore = geneScore + tadScore + eQTLScore
+				totalScore = geneScore + eQTLScore + eQTLGainScore
 				
 				cosmicGeneScores[gene] = totalScore
 			
@@ -172,6 +178,9 @@ print "Cosmic gene scores: "
 #print sum(cosmicTadScores.values()) / float(len(cosmicTadScores))
 #print sum(cosmicEQtlScores.values()) / float(len(cosmicEQtlScores))
 
+print cosmicEQtlGainScores.values()
+exit()
+
 #Repeat for the non-cosmic genes
 
 nonCosmicGeneScores = dict()
@@ -179,6 +188,7 @@ nonCosmicGeneScores = dict()
 ncGeneLayerScores = dict()
 ncTadScores = dict()
 nceQTLScores = dict()
+nceQTLGainScores = dict()
 
 with open(finalScoresFile, 'r') as f:
 	
@@ -194,6 +204,7 @@ with open(finalScoresFile, 'r') as f:
 			geneScore = float(splitLine[1])
 			tadScore = float(splitLine[2])
 			eQTLScore = float(splitLine[3])
+			eQTLGainScore = float(splitLine[4])
 			
 			
 			
@@ -204,9 +215,9 @@ with open(finalScoresFile, 'r') as f:
 			
 			nceQTLScores[geneName] = eQTLScore
 			
+			nceQTLGainScores[geneName] = eQTLGainScore
 			
-			
-			totalScore = geneScore + tadScore + eQTLScore
+			totalScore = geneScore + eQTLScore + eQTLGainScore
 			
 			
 			nonCosmicGeneScores[geneName] = totalScore
@@ -375,6 +386,19 @@ plt.ylabel("Gene causality score")
 plt.tight_layout()
 #plt.show()
 plt.savefig("eQTLScores.svg")
+
+
+tadScores = [np.mean(bceQTLGainScores.values()), np.mean(cosmicEQtlGainScores.values()), np.mean(nceQTLGainScores.values())]
+tadScoresStdLower = [np.percentile(bceQTLGainScores.values(), 25), np.percentile(cosmicEQtlGainScores.values(), 25), np.percentile(nceQTLGainScores.values(), 25)]
+tadScoresStdUpper = [np.percentile(bceQTLGainScores.values(), 75), np.percentile(cosmicEQtlGainScores.values(), 75), np.percentile(nceQTLGainScores.values(), 75)]
+
+plt.errorbar([1,1.5,2], tadScores, [tadScoresStdLower, tadScoresStdUpper], linestyle='None', marker='*')
+plt.xlim(0.5,2.5)
+plt.xticks([1,1.5,2], ('Known breast cancer genes', 'COSMIC genes', 'Non-COSMIC genes'), rotation='vertical')
+plt.ylabel("Gene causality score")
+plt.tight_layout()
+#plt.show()
+plt.savefig("eQTLGainScores.svg")
 
 exit()
 #print A
