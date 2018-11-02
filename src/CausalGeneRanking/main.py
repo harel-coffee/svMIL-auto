@@ -41,7 +41,7 @@ import os
 
 
 from neighborhoodDefiner import NeighborhoodDefiner
-from geneRanking import GeneRanking
+from geneRankingAlphaBeta import GeneRanking
 from inputParser import InputParser
 from variantShuffler import VariantShuffler
 import settings
@@ -147,16 +147,16 @@ for cancerType in geneRanking.scores:
 		gene = cancerTypeScores[row][0]
 		geneName = gene.name
 		
-		geneScore = cancerTypeScores[row,1]
-		eQTLScore = cancerTypeScores[row,2]
-		tadScore = cancerTypeScores[row,3]
-		interactionScore = cancerTypeScores[row,4]
+		# geneScore = cancerTypeScores[row,1]
+		eQTLScore = cancerTypeScores[row,1]
+		# tadScore = cancerTypeScores[row,3]
+		# interactionScore = cancerTypeScores[row,4]
 		
 		perGeneScores[row][0] = geneName
-		perGeneScores[row][1] = geneScore
-		perGeneScores[row][2] = eQTLScore
-		perGeneScores[row][3] = tadScore
-		perGeneScores[row][4] = interactionScore
+		perGeneScores[row][1] = eQTLScore
+		# perGeneScores[row][2] = eQTLScore
+		# perGeneScores[row][3] = tadScore
+		# perGeneScores[row][4] = interactionScore
 
 	
 	cancerTypeFolder = rankedGeneScoreDir + "/" + uuid + "/" + cancerType

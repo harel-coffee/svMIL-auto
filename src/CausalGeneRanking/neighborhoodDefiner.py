@@ -30,6 +30,7 @@ class NeighborhoodDefiner:
 		
 		#1. Map genes to TADs
 		
+		tadData = []
 		if settings.general['tads'] == True or settings.general['gainOfInteractions'] == True: #Gain of interactions is dependent on TADs
 			
 			#Make these pats a setting!
@@ -702,7 +703,8 @@ class NeighborhoodDefiner:
 		"""
 		
 		#First map the SVs to TADs to see if we can infer gained interactions
-		self.determineGainedInteractions(svData, tadData)
+		if settings.general['gainOfInteractions'] == True:
+			self.determineGainedInteractions(svData, tadData)
 		
 		
 		previousChr = None
