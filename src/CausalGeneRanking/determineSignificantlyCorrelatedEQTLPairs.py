@@ -30,7 +30,7 @@ with open(countsDir + "/realSVs_counts.txt", 'r') as inF:
 #Read the counts for the shuffled SVs.
 #Determine for each gene pair how often the counts in the real case are higher than in the shuffled cases.
 
-shuffledFiles = glob(countsDir + "/shuffled*")
+shuffledFiles = glob(countsDir + "/shuffledEQTL*")
 #Collect all the files for the shuffled cases
 
 for shuffledFile in shuffledFiles:
@@ -53,10 +53,10 @@ for genePair in pairLargerThanCounts:
 	
 	significance = pairLargerThanCounts[genePair] / float(len(shuffledFiles))
 	if significance < 0.05:
-		significantPairs.append([genePair, pairLargerThanCounts[genePair], significance])
+		significantPairs.append([genePair, pairLargerThanCounts[genePair], significance, genePairScores[genePair]])
 	
 significantPairs = np.array(significantPairs)
 print significantPairs.shape
 print len(genePairScores)
 
-
+np.savetxt(significantPairs, "significantPairs.txt")
