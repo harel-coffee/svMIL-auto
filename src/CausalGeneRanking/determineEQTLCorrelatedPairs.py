@@ -22,6 +22,10 @@ shuffle = sys.argv[1]
 uuid = sys.argv[2]
 permutationInd = sys.argv[3]
 
+if not os.path.exists("./RankedGenes/" + uuid):
+	os.makedirs("./RankedGenes/" + uuid) #this should be unique, so I now avoid checking if the directory exists. Could later be a thing from the sh file 
+
+
 #Read the SV input file
 causalGenes = InputParser().readCausalGeneFile(settings.files['causalGenesFile'])
 nonCausalGenes = InputParser().readNonCausalGeneFile(settings.files['nonCausalGenesFile'], causalGenes) #In the same format as the causal genes. 
