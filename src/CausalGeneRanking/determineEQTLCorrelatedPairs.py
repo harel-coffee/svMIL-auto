@@ -19,8 +19,8 @@ from variantShuffler import VariantShuffler
 
 
 shuffle = sys.argv[1]
-permutationInd = sys.argv[2]
-uuid = sys.argv[3]
+uuid = sys.argv[2]
+permutationInd = sys.argv[3]
 
 #Read the SV input file
 causalGenes = InputParser().readCausalGeneFile(settings.files['causalGenesFile'])
