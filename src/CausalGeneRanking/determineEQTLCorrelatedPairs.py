@@ -18,10 +18,9 @@ from eQTL import EQTL
 from variantShuffler import VariantShuffler
 
 
-shuffle = bool(sys.argv[1])
+shuffle = sys.argv[1]
 permutationInd = sys.argv[2]
 uuid = sys.argv[3]
-
 
 #Read the SV input file
 causalGenes = InputParser().readCausalGeneFile(settings.files['causalGenesFile'])
@@ -92,7 +91,7 @@ svFile = settings.files['svFile']
 svData = InputParser().getSVsFromFile(svFile)
 
 
-if shuffle == True:
+if shuffle == "True":
 	print "shuffling SVs"
 	variantShuffler = VariantShuffler()
 	svData = variantShuffler.shuffleSVs(svData)
@@ -151,7 +150,7 @@ sortedGenesInd = np.argsort(genePairValues)[::-1]
 
 
 fileType = "realSVs_counts.txt"
-if shuffle == True:
+if shuffle == "True":
 	print "writing to the shuffled out file"
 	fileType = "shuffledSVs_counts_" + permutationInd + ".txt"
 outFile = "./RankedGenes/" + uuid + "/" + fileType
