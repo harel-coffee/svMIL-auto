@@ -21,7 +21,7 @@ shuffleEQTLs="False"
 
 qsub determineCorrelatedEQTLPairs.sh "$permutationsYN" "shuffleEQTLs" "$uuid" 0 #dummy value of 0 because we do not use permutation numbers here
 
-permutationsYN="True"
+permutationsYN="False"
 shuffleEQTLs="True"
 
-qsub -t 1-2:1 -tc 2 determineCorrelatedEQTLPairs.sh "$permutationsYN" "shuffleEQTLs" "$uuid" #use job array and inside this script SGE TASK ID to get the run number
+qsub -t 1-100:1 -tc 100 determineCorrelatedEQTLPairs.sh "$permutationsYN" "shuffleEQTLs" "$uuid" #use job array and inside this script SGE TASK ID to get the run number
