@@ -149,11 +149,15 @@ for cancerType in geneRanking.scores:
 		
 		# geneScore = cancerTypeScores[row,1]
 		eQTLScore = cancerTypeScores[row,1]
+		alpha = cancerTypeScores[row,2]
+		beta = cancerTypeScores[row,3]
 		# tadScore = cancerTypeScores[row,3]
 		# interactionScore = cancerTypeScores[row,4]
 		
 		perGeneScores[row][0] = geneName
 		perGeneScores[row][1] = eQTLScore
+		perGeneScores[row][2] = alpha
+		perGeneScores[row][3] = beta
 		# perGeneScores[row][2] = eQTLScore
 		# perGeneScores[row][3] = tadScore
 		# perGeneScores[row][4] = interactionScore

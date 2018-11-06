@@ -48,6 +48,7 @@ class GeneRanking:
 		
 		print "ordering genes by cancer types"
 		for gene in genes:
+			
 			samplesAndSVCounts = dict()
 			if gene not in geneMap:
 				geneMap[gene] = geneIndex
@@ -88,10 +89,14 @@ class GeneRanking:
 					
 					#If the gene is not yet in the list of cancer types, add it
 					if gene not in cancerTypes[cancerType]["genes"]:
+						
+						
+						
 						cancerTypes[cancerType]["genes"][gene] = dict()
 					
 					#Also add all SVs to that gene that are relevant for this cancer type.
 					
+					#Make sure that every variant is counted only once.
 					variantUniqueId = str(variant[0]) + "_" + str(variant[1]) + "_" + str(variant[2]) + "_" + str(variant[3]) + "_" + str(variant[4]) + "_" + str(variant[5])
 					if variantUniqueId not in cancerTypes[cancerType]["genes"][gene]:
 						cancerTypes[cancerType]["genes"][gene][variantUniqueId] = variant
@@ -125,6 +130,9 @@ class GeneRanking:
 						cancerTypes[cancerType]["eQTLs"] = dict()
 					if cancerType not in cancerTypeTotalSVs:
 						cancerTypeTotalSVs[cancerType] = 0
+					
+					if gene not in cancerTypes[cancerType]["genes"]:
+						cancerTypes[cancerType]["genes"][gene] = dict()
 					
 					if eQTL not in cancerTypes[cancerType]["eQTLs"]:
 						cancerTypes[cancerType]["eQTLs"][eQTL] = []	
@@ -166,7 +174,7 @@ class GeneRanking:
 			
 			#Sort by highest final score and report the names of the genes that are involved
 			print "sorting genes by eQTL scores"
-			sortedGenesInd = np.argsort(eQTLBasedGeneScores)[::-1]
+			sortedGenesInd = np.argsort(eQTLBasedGeneScores[:,0])[::-1]
 
 
 			#Now map the indices of the scoring matrix back to the actual genes, and report the scores in the different layers per gene. 
@@ -179,7 +187,7 @@ class GeneRanking:
 				gene = reverseGeneMap[geneInd]
 				
 				
-				geneScores.append([gene, eQTLBasedGeneScores[geneInd]])
+				geneScores.append([gene, eQTLBasedGeneScores[geneInd][0], eQTLBasedGeneScores[geneInd][1], eQTLBasedGeneScores[geneInd][2]])
 			
 			
 			geneScores = np.array(geneScores, dtype="object")
@@ -258,12 +266,10 @@ class GeneRanking:
 		#Then determine the beta based on the number of eQTLs
 		#Finally, determine alpha by counting the number of SVs overlapping the eQTL layer (what about the ones also overlapping the gene? Should we exclude those for now? )
 		allBetas = []
-		geneScores = np.zeros(len(geneMap))
+		geneScores = np.zeros([len(geneMap),3])
 		for geneInd in range(0, len(cancerTypeSVs["genes"])):
 			gene = cancerTypeSVs["genes"].keys()[geneInd]
 			eQTLCount = scaledEQTLCounts[geneInd] #use the counts scaled to a sigmoid range of -10, 10
-			
-			
 			
 			beta = 0
 			alpha = 0
@@ -274,6 +280,9 @@ class GeneRanking:
 			else:
 				allBetas.append(beta)
 				continue #for testing
+			
+			
+
 
 			#Determine alpha
 			#Only increase alpha if the variant has not been seen before, to ensure that we do not rank large SVs affecting many eQTLs highest
@@ -292,10 +301,11 @@ class GeneRanking:
 						
 					
 			
+				
 			
 			geneScore = alpha * beta
 			geneInd = geneMap[gene]
-			geneScores[geneInd] = geneScore
+			geneScores[geneInd] = [geneScore, alpha, beta]
 			
 			print "alpha: ", alpha
 			print "beta: ", beta
@@ -303,9 +313,7 @@ class GeneRanking:
 		
 		
 		#Return a multiplied score for each gene (across all patients). 
-		plt.hist(allBetas)
-		plt.show()
-		exit()
+		
 	
 		return geneScores
 		

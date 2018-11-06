@@ -224,6 +224,10 @@ class InputParser:
 			Read the non-causal genes. We currently take a random subset of these genes, and make sure that these are not overlapping with the COSMIC set.
 			We first read all the genes, and then take a subset of the genes and make sure that these are not in cosmic. 
 		"""
+		causalGeneDict = dict() #for filtering out genes that are already present in the causal gene list
+		for gene in causalGenes:
+			geneObj = gene[3]
+			causalGeneDict[geneObj.name] = 1			
 		
 		nonCausalGeneList = []
 		nonCausalGeneNameDict = dict() #dictionary to keep the names of genes that are already in our list and don't need to be sampled again. 
@@ -247,7 +251,9 @@ class InputParser:
 				
 				geneObj = Gene(geneID, "chr" + chrom, int(start), int(end))
 				
-				nonCausalGeneList.append(["chr" + chrom, int(start), int(end), geneObj])
+				if geneID not in causalGeneDict:
+				
+					nonCausalGeneList.append(["chr" + chrom, int(start), int(end), geneObj])
 				
 		nonCausalGenes = np.array(nonCausalGeneList, dtype="object")
 	
