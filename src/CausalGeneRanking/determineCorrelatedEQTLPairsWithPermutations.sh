@@ -5,7 +5,7 @@
 #$ -m as
 #$ -M m.m.nieboer@umcutrecht.nl
 #$ -l h_vmem=4G
-#$ -l h_rt=00:20:00
+#$ -l h_rt=00:10:00
 #$ -e eQTLCorrelation_err
 #$ -o eQTLCorrelation_out
 
