@@ -11,4 +11,4 @@
 
 #Run 1 normal run without permutations
 
-python determineEQTLCorrelatedPairs.py "$1" "$2" "$SGE_TASK_ID"
+python determineEQTLCorrelatedPairs.py "$1" "$2" "$3" "$SGE_TASK_ID"

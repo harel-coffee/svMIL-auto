@@ -18,9 +18,10 @@ from eQTL import EQTL
 from variantShuffler import VariantShuffler
 
 
-shuffle = sys.argv[1]
-uuid = sys.argv[2]
-permutationInd = sys.argv[3]
+shuffle = sys.argv[1] #Shuffle switch for shuffling the SVs (should be clearer)
+shuffleEQTLs = sys.argv[2] #Shuffle switch for the eQTL labels (gene names)
+uuid = sys.argv[3]
+permutationInd = sys.argv[4]
 
 if not os.path.exists("./RankedGenes/" + uuid):
 	os.makedirs("./RankedGenes/" + uuid) #this should be unique, so I now avoid checking if the directory exists. Could later be a thing from the sh file 
@@ -34,14 +35,6 @@ nonCausalGenes = InputParser().readNonCausalGeneFile(settings.files['nonCausalGe
 allGenes = np.concatenate((causalGenes, nonCausalGenes), axis=0)
 
 #Then read all the eQTLs
-def mapEQTLsToGenes(eQTL, geneDict, geneSymbol):
-		"""
-			Map the right gene object to the eQTL object. 
-		"""
-		
-		geneDict[geneSymbol].addEQTL(eQTL)
-		eQTL.addGene(geneDict[geneSymbol])
-		
 def getEQTLsFromFile(eQTLFile, genes):
 		#Filter the eQTLs that do not have a match
 		geneDict = dict()
@@ -77,6 +70,19 @@ def getEQTLsFromFile(eQTLFile, genes):
 
 eQTLFile = "../../data/eQTLs/breast_eQTLs.txt" #These files will need to go to the settings!
 [eQTLData, eQTLGenes] = getEQTLsFromFile(eQTLFile, allGenes[:,3])
+
+def shuffleEQTLLabels(eQTLs):
+	eQTLGenes = eQTLs[:,3] #all gene names
+	np.random.shuffle(eQTLGenes)
+	eQTLs[:,3] = eQTLGenes
+	
+	return eQTLs
+
+if shuffleEQTLs == "True":
+	print "shuffling eQTL labels"
+	#shuffle the gene names of the eQTLs
+	shuffleEQTLLabels(eQTLData)
+
 
 #Determine all pairs of genes (that have eQTLs)
 genePairs = dict()
@@ -157,6 +163,9 @@ fileType = "realSVs_counts.txt"
 if shuffle == "True":
 	print "writing to the shuffled out file"
 	fileType = "shuffledSVs_counts_" + permutationInd + ".txt"
+if shuffleEQTLs == "True":
+	print "writing to the shuffled eQTL out file"
+	fileType = "shuffledEQTL_counts_" + permutationInd + ".txt"
 outFile = "./RankedGenes/" + uuid + "/" + fileType
 
 
