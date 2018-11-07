@@ -29,7 +29,7 @@ if not os.path.exists("./RankedGenes/" + uuid):
 	print "making folder"
 	os.makedirs("./RankedGenes/" + uuid) #this should be unique, so I now avoid checking if the directory exists. Could later be a thing from the sh file
 else:
-	print "skipping folder ", uuid, shuffle, shuffleEQTLs, permutationId
+	print "skipping folder ", uuid, shuffle, shuffleEQTLs, permutationInd
 exit()
 
 #Read the SV input file
