@@ -59,4 +59,4 @@ significantPairs = np.array(significantPairs)
 print significantPairs.shape
 print len(genePairScores)
 
-np.savetxt(significantPairs, "significantPairs.txt")
+np.savetxt("significantPairs.txt", significantPairs)
