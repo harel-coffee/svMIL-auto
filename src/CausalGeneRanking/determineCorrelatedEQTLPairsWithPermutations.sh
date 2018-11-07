@@ -19,7 +19,7 @@ uuid=$(uuidgen)
 permutationsYN="False"
 shuffleEQTLs="False"
 
-qsub determineCorrelatedEQTLPairs.sh "$permutationsYN" "$shuffleEQTLs" "$uuid" 0 #dummy value of 0 because we do not use permutation numbers here
+sh determineCorrelatedEQTLPairs.sh "$permutationsYN" "$shuffleEQTLs" "$uuid"
 
 permutationsYN="False"
 shuffleEQTLs="True"
