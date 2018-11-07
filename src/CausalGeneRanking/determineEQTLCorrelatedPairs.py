@@ -24,6 +24,7 @@ uuid = sys.argv[3]
 permutationInd = sys.argv[4]
 
 if not os.path.exists("./RankedGenes/" + uuid):
+	print "making folder"
 	os.makedirs("./RankedGenes/" + uuid) #this should be unique, so I now avoid checking if the directory exists. Could later be a thing from the sh file 
 
 
