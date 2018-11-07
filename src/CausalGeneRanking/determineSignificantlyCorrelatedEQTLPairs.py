@@ -48,15 +48,17 @@ for shuffledFile in shuffledFiles:
 			
 
 #Compute the significance
-significantPairs = []
-for genePair in pairLargerThanCounts:
-	
-	significance = pairLargerThanCounts[genePair] / float(len(shuffledFiles))
-	if significance < 0.05:
-		significantPairs.append([genePair, pairLargerThanCounts[genePair], significance, genePairScores[genePair]])
+with open('significantPairs.txt', 'w') as outF:
+	significantPairs = []
+	for genePair in pairLargerThanCounts:
+				
+		significance = pairLargerThanCounts[genePair] / float(len(shuffledFiles))
+		if significance < 0.05:
+			significantPairs.append([genePair, pairLargerThanCounts[genePair], significance, genePairScores[genePair]])
+			outF.write(genePair + "\t" + str(pairLargerThanCounts[genePair]) + "\t" + str(significance) + "\t" + str(genePairScores[genePair]))
+			
 	
 significantPairs = np.array(significantPairs)
 print significantPairs.shape
 print len(genePairScores)
 
-np.savetxt("significantPairs.txt", significantPairs)
