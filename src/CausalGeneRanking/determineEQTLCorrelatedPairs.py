@@ -23,10 +23,14 @@ shuffleEQTLs = sys.argv[2] #Shuffle switch for the eQTL labels (gene names)
 uuid = sys.argv[3]
 permutationInd = sys.argv[4]
 
+print "folder is: ./RankedGenes/", uuid
+
 if not os.path.exists("./RankedGenes/" + uuid):
 	print "making folder"
-	os.makedirs("./RankedGenes/" + uuid) #this should be unique, so I now avoid checking if the directory exists. Could later be a thing from the sh file 
-
+	os.makedirs("./RankedGenes/" + uuid) #this should be unique, so I now avoid checking if the directory exists. Could later be a thing from the sh file
+else:
+	print "skipping folder ", uuid, shuffle, shuffleEQTLs, permutationId
+exit()
 
 #Read the SV input file
 causalGenes = InputParser().readCausalGeneFile(settings.files['causalGenesFile'])
