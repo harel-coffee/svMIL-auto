@@ -59,7 +59,8 @@ mode = settings.general['mode'] #Either SV or SNV, then the relevant functions f
 #1. Read and parse the causal genes
 
 causalGenes = InputParser().readCausalGeneFile(settings.files['causalGenesFile'])
-nonCausalGenes = InputParser().readNonCausalGeneFile(settings.files['nonCausalGenesFile'], causalGenes) #In the same format as the causal genes. 
+nonCausalGenes = InputParser().readNonCausalGeneFile(settings.files['nonCausalGenesFile'], causalGenes) #In the same format as the causal genes.
+
 uniqueCancerTypes = []
 
 #Combine the genes for now
@@ -104,7 +105,10 @@ if permutationYN == "True":
 	if mode == "SV+SNV":
 		svData = variantShuffler.shuffleSVs(svData)
 		snvData = variantShuffler.shuffleSNVs(snvData)
-		
+
+#Number of patients
+#print len(np.unique(svData[:,7]))
+
 		
 #2. Get the neighborhood for these genes
 if mode == "SV":
@@ -151,6 +155,7 @@ for cancerType in geneRanking.scores:
 		eQTLScore = cancerTypeScores[row,1]
 		alpha = cancerTypeScores[row,2]
 		beta = cancerTypeScores[row,3]
+		eQTLCount = cancerTypeScores[row,4]
 		# tadScore = cancerTypeScores[row,3]
 		# interactionScore = cancerTypeScores[row,4]
 		
@@ -158,6 +163,7 @@ for cancerType in geneRanking.scores:
 		perGeneScores[row][1] = eQTLScore
 		perGeneScores[row][2] = alpha
 		perGeneScores[row][3] = beta
+		perGeneScores[row][4] = eQTLCount
 		# perGeneScores[row][2] = eQTLScore
 		# perGeneScores[row][3] = tadScore
 		# perGeneScores[row][4] = interactionScore

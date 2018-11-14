@@ -187,7 +187,7 @@ class GeneRanking:
 				gene = reverseGeneMap[geneInd]
 				
 				
-				geneScores.append([gene, eQTLBasedGeneScores[geneInd][0], eQTLBasedGeneScores[geneInd][1], eQTLBasedGeneScores[geneInd][2]])
+				geneScores.append([gene, eQTLBasedGeneScores[geneInd][0], eQTLBasedGeneScores[geneInd][1], eQTLBasedGeneScores[geneInd][2], eQTLBasedGeneScores[geneInd][3]])
 			
 			
 			geneScores = np.array(geneScores, dtype="object")
@@ -231,12 +231,11 @@ class GeneRanking:
 		#plt.hist(eQTLCounts)
 		#plt.show()
 		
-		
-		scaledEQTLCounts = np.interp(eQTLCounts, (np.min(eQTLCounts), np.max(eQTLCounts)), (-10, +10))
+		#scaledEQTLCounts = np.interp(eQTLCounts, (np.min(eQTLCounts), np.max(eQTLCounts)), (-10, +10))
+		scaledEQTLCounts = np.interp(eQTLCounts, (np.min(eQTLCounts), np.max(eQTLCounts)), (-1, +1))
 
 		#plt.hist(scaledEQTLCounts)
 		#plt.show()
-		
 
 		#Also plot the scaled eQTL counts
 				
@@ -266,24 +265,30 @@ class GeneRanking:
 		#Then determine the beta based on the number of eQTLs
 		#Finally, determine alpha by counting the number of SVs overlapping the eQTL layer (what about the ones also overlapping the gene? Should we exclude those for now? )
 		allBetas = []
-		geneScores = np.zeros([len(geneMap),3])
+		allAlphas = []
+		nonZeroScore = 0
+		noEQTLs = 0
+		zeroBetaSigmoid = 0
+		geneScores = np.zeros([len(geneMap),4])
 		for geneInd in range(0, len(cancerTypeSVs["genes"])):
 			gene = cancerTypeSVs["genes"].keys()[geneInd]
 			eQTLCount = scaledEQTLCounts[geneInd] #use the counts scaled to a sigmoid range of -10, 10
 			
 			beta = 0
 			alpha = 0
-
+			
 			if len(gene.eQTLs) > 0:
 				beta = self.sigmoid(eQTLCount)
+				if beta == 0:
+					zeroBetaSigmoid += 1
+				
 				allBetas.append(beta)
 			else:
+				noEQTLs += 1
 				allBetas.append(beta)
+				
 				continue #for testing
 			
-			
-
-
 			#Determine alpha
 			#Only increase alpha if the variant has not been seen before, to ensure that we do not rank large SVs affecting many eQTLs highest
 			seenVariants = dict()
@@ -298,14 +303,13 @@ class GeneRanking:
 						seenVariants[variantUniqueId] = 1
 						
 						alpha += 1 #only increase alpha when we have not seen the variant before. We count the number of variants in the eQTL layer, not the number of eQTLs with at least 1 SV
-						
-					
 			
-				
 			
 			geneScore = alpha * beta
+			if geneScore > 0:
+				nonZeroScore += 1
 			geneInd = geneMap[gene]
-			geneScores[geneInd] = [geneScore, alpha, beta]
+			geneScores[geneInd] = [geneScore, alpha, beta, len(gene.eQTLs)] #Also add the number of eQTLs
 			
 			print "alpha: ", alpha
 			print "beta: ", beta
@@ -314,6 +318,6 @@ class GeneRanking:
 		
 		#Return a multiplied score for each gene (across all patients). 
 		
-	
+		
 		return geneScores
 		

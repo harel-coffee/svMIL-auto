@@ -2,6 +2,7 @@ files = dict(
 	
 	#In SV mode, snvFile can be left empty. For SNV mode, svFile can be left empty. 
 	svFile = '../../data/TPTNTestSet/TP.txt', #All SVs
+	#svFile = '../../data/TPTNTestSet/tcga_deletions.txt', 
 	snvFile = '../../data/SNVs/cosmicNCV.txt', #all SNVs
 	causalGenesFile = '../../data/Genes/Census_allTue Apr 10 14_56_44 2018.tsv', #file with all causal genes from cosmic. 
 	nonCausalGenesFile = '../../data/Genes/nonCosmicSubset.txt', #File with a subset of non-causal genes that are not in cosmic. 
