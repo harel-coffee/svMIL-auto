@@ -234,8 +234,6 @@ class GeneRanking:
 		#scaledEQTLCounts = np.interp(eQTLCounts, (np.min(eQTLCounts), np.max(eQTLCounts)), (-10, +10))
 		scaledEQTLCounts = np.interp(eQTLCounts, (np.min(eQTLCounts), np.max(eQTLCounts)), (-1, +1))
 
-		#plt.hist(scaledEQTLCounts)
-		#plt.show()
 
 		#Also plot the scaled eQTL counts
 				
@@ -247,7 +245,8 @@ class GeneRanking:
 		
 		#Make a plot
 		# import matplotlib.pyplot as plt
-		# 
+		#
+		# plt.clf()
 		# plt.plot(testX, sigmoidValues)
 		# plt.show()
 		# exit()
@@ -256,6 +255,105 @@ class GeneRanking:
 
 	def scoreBySVsInEQTLs(self, cancerTypeSVs, sampleMap, geneMap, cancerType):
 		
+		#Temporarily do the test with the SOMs here, not sure if there should be another class for this yet
+		
+		#We want a matrix of the distance from each eQTL to all other eQTLs, also to the gene.
+		
+		
+		selectedGene = None
+		
+		for geneInd in range(0, len(cancerTypeSVs["genes"])):
+			gene = cancerTypeSVs["genes"].keys()[geneInd]
+			
+			if len(gene.eQTLs) > 0:
+				selectedGene = cancerTypeSVs["genes"].keys()[geneInd] #take a random gene for now with eQTLs
+				break
+			
+		
+		
+		
+		distMat = np.zeros([len(selectedGene.eQTLs)+1, len(selectedGene.eQTLs) + 1])
+		
+		for eQTLInd in range(0, len(selectedGene.eQTLs)):
+			eQTL1 = selectedGene.eQTLs[eQTLInd]
+			for eQTLInd2 in range(eQTLInd, len(selectedGene.eQTLs)):
+				
+				#Compute distance to this eQTL
+				dist = abs(eQTL1.start - selectedGene.eQTLs[eQTLInd2].start)
+				
+				distMat[eQTLInd][eQTLInd2] = dist
+				distMat[eQTLInd2][eQTLInd] = dist
+				
+			#Also compute the distance to the gene
+			geneDistStart = abs(eQTL1.start - selectedGene.start)
+			geneDistEnd = abs(eQTL1.start - selectedGene.end)
+				
+			if geneDistStart < geneDistEnd:
+				distMat[eQTLInd][len(selectedGene.eQTLs)] = geneDistStart
+				distMat[len(selectedGene.eQTLs)][eQTLInd] = geneDistStart
+			else:
+				distMat[eQTLInd][len(selectedGene.eQTLs)] = geneDistEnd
+				distMat[len(selectedGene.eQTLs)][eQTLInd] = geneDistEnd
+		
+		print distMat.shape
+		
+		#What do the data look like when we simply make a scatterplot?
+		
+		#Should be in 2D right? 
+		
+		#plt.scatter(distMat[:,0], distMat[:,1])
+		#plt.show()
+		
+		#Apply the SOM to the data. What do we see? 
+		
+		# import sompy
+		# mapsize = [20,20]
+		# som = sompy.SOMFactory.build(distMat, mapsize, mask=None, mapshape='planar', lattice='rect', normalization='var', initialization='pca', neighborhood='gaussian', training='batch', name='sompy')  # this will use the default parameters, but i can change the initialization and neighborhood methods
+		# som.train(n_job=1, verbose='info')  # verbose='debug' will print more, and verbose=None wont print anything
+		# v = sompy.mapview.View2DPacked(50, 50, 'test')
+		# v.show(som, what='codebook', which_dim=[0,1], cmap=None, col_sz=6)
+		#
+		
+		exit()
+		
+		
+		
+		#Plot: distance from genes to eQTLs
+		distances = dict()
+		distancesList = []
+		for geneInd in range(0, len(cancerTypeSVs["genes"])):
+			gene = cancerTypeSVs["genes"].keys()[geneInd]
+			
+			start = gene.start
+			end = gene.end
+			for eQTL in gene.eQTLs:
+				eQTLPos = eQTL.start
+				
+				#check for the closest distance
+				#start to eQTL pos
+				#end to eQTL pos
+				
+				startEQTLDist = abs(eQTLPos - start)
+				endEQTLDist = abs(eQTLPos - end)
+				if startEQTLDist < endEQTLDist:
+					#if startEQTLDist not in distances:
+					#	distances[startEQTLDist] = 0
+					#distances[startEQTLDist] += 1
+					if startEQTLDist < 200000:
+						distancesList.append(startEQTLDist)
+				else:
+					#if endEQTLDist not in distances:
+					#	distances[endEQTLDist] = 0
+					#distances[endEQTLDist] += 1
+					if endEQTLDist < 200000:
+						distancesList.append(endEQTLDist)
+		
+		#histogram of the distances
+		distancesList = np.array(distancesList)
+		#plt.hist(np.log(distancesList))
+		plt.hist(distancesList)
+		plt.show()
+		exit()
 		
 		#Define the sigmoid for beta for eQTLs specifically (for now that is just the counts, we can work from there).
 		scaledEQTLCounts = self.computeEQTLBetaSigmoid(cancerTypeSVs["genes"])
@@ -285,7 +383,7 @@ class GeneRanking:
 				allBetas.append(beta)
 			else:
 				noEQTLs += 1
-				allBetas.append(beta)
+				#allBetas.append(beta)
 				
 				continue #for testing
 			
@@ -314,6 +412,10 @@ class GeneRanking:
 			print "alpha: ", alpha
 			print "beta: ", beta
 			print "score: ", geneScore
+		
+		# plt.hist(allBetas)
+		# plt.show()
+		# exit()
 		
 		
 		#Return a multiplied score for each gene (across all patients). 

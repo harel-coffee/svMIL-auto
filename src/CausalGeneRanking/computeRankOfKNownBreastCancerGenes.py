@@ -67,7 +67,7 @@ with open(knownBreastCancerGenesFile, 'r') as f:
 
 #Get the scores of the breast cancer genes
 
-finalScoresFile = "RankedGenes/0/breast/realSVs_geneScores.txt"
+finalScoresFile = "RankedGenes/1/breast/realSVs_geneScores.txt"
 #finalScoresFile = "rankedGenes_test.txt"
 
 breastCancerGeneScores = dict()
