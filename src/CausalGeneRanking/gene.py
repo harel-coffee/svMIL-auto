@@ -1,11 +1,7 @@
 class Gene:
 	"""
 		Class to describe a gene. Will hold all other information related to the neighborhood of the gene as well, like the TADs, eQTLs and SVs. 
-		
 	"""
-	
-	
-	
 	def __init__(self, name, chromosome, start, end):
 		
 		self.name = name
@@ -19,6 +15,7 @@ class Gene:
 		self.eQTLs = []
 		self.interactions = []
 		self.gainedEQTLs = dict()
+		self.lostEQTLs = dict()
 		
 	def setTADs(self, leftTAD, rightTAD):
 		
@@ -50,4 +47,13 @@ class Gene:
 		self.eQTLs.append(eQTL)
 		
 	def setGainedEQTLs(self, gainedEQTLs, sample):
-		self.gainedEQTLs[sample] = gainedEQTLs #keep the gained eQTLs separate per patient to later do mutual exclusivity. 
+		self.gainedEQTLs[sample] = gainedEQTLs #keep the gained eQTLs separate per patient to later do mutual exclusivity.
+		
+	def setLostEQTLs(self, lostEQTLs, sample):
+		self.lostEQTLs[sample] = lostEQTLs
+	
+	def addLostEQTL(self, lostEQTL, sample):
+		if sample not in self.lostEQTLs:
+			self.lostEQTLs[sample] = []	
+		self.lostEQTLs[sample].append(lostEQTL)
+	

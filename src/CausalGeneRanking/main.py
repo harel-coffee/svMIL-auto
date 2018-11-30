@@ -44,6 +44,7 @@ from neighborhoodDefiner import NeighborhoodDefiner
 from geneRankingAlphaBeta import GeneRanking
 from inputParser import InputParser
 from variantShuffler import VariantShuffler
+from channelVisualizer import ChannelVisualizer
 import settings
 
 ###############
@@ -124,7 +125,13 @@ if mode == "SV+SNV":
 	
 #3. Do simple ranking of the genes and report the causal SVs
 print "Ranking the genes for the variants"
-geneRanking = GeneRanking(causalGenes[:,3], mode)
+#geneRanking = GeneRanking(causalGenes[:,3], mode)
+#Skip the ranking for now and instead do exploration
+
+ChannelVisualizer(causalGenes[:,3], mode)
+
+exit()
+
 
 #Output the ranking scores to a file (should probably also be its own class or at least a function)
 

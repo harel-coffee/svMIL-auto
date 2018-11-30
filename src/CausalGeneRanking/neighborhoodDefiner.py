@@ -166,6 +166,7 @@ class NeighborhoodDefiner:
 				if splitLine[3] not in geneDict:
 					continue
 				
+				
 				eQTLObject = EQTL(splitLine[0], int(splitLine[1]), int(splitLine[2])) #chr, start, end
 				
 				#The mapping information is in the file, so we can already do it here
@@ -300,45 +301,49 @@ class NeighborhoodDefiner:
 		previousChr = None
 		for gene in genes:
 			
+			
+			
 			#1. Make a subset of TADs on the right chromosome. There should be only 1 chromosome
 			
-			if "chr" + str(gene.chromosome) != previousChr:
+			if str(gene.chromosome) != previousChr:
 				
 				#Find the two subsets that match on both chromosomes. 
-				matchingChrInd = tadData[:,0] == "chr" + str(gene.chromosome)
+				matchingChrInd = tadData[:,0] == str(gene.chromosome)
 				
 				#It is not even necessary to make 2 lists if both chromosomes are the same, we could use a reference without re-allocating
 				chrSubset = tadData[np.where(matchingChrInd)]
 				
 				#Make sure to update the previous chromosome when it changes
-				previousChr = "chr" + str(gene.chromosome)
+				previousChr = str(gene.chromosome)
 				
 			if np.size(chrSubset) < 1:
 				continue #no need to compute the distance, there are no genes on these chromosomes
 			
 			#Within this subset, check which TADs are on the right and left of the current gene
 			
-			#TADs on the left have an end coordinate smaller than the gene start coordinate. Similar for the right TADs
 			
-			leftTADs = chrSubset[np.where(chrSubset[:,2] <= gene.start)]
-			rightTADs = chrSubset[np.where(chrSubset[:,1] > gene.end)]
+			#TADs on the left have their start position before the gene. But their start must be closest to the gene to be the left TAD. 
+			#TADs on the right have their start after the gene start. 
+			
+			leftTADs = chrSubset[np.where(chrSubset[:,1] <= gene.start)]
+			rightTADs = chrSubset[np.where((chrSubset[:,1] >= gene.start) & (chrSubset[:,2] >= gene.end))] #make sure that the TAD is not entirely within the gene. 
 			
 			#Compute the distance to each of these TADs and take the TADs with the minimum distance
 			if leftTADs.shape[0] > 0:
-				leftTADsDistance = np.abs(leftTADs[:,2] - gene.start)
+				leftTADsDistance = np.abs(leftTADs[:,1] - gene.start)
 				nearestLeftTAD = leftTADs[np.argmin(leftTADsDistance),3]
 				gene.setLeftTAD(nearestLeftTAD)
+				
 			else:
 				gene.setLeftTAD(None)
 			if rightTADs.shape[0] > 0:
-				rightTADsDistance = np.abs(rightTADs[:,1] - gene.end)
+				rightTADsDistance = np.abs(rightTADs[:,1] - gene.start)
 				nearestRightTAD = rightTADs[np.argmin(rightTADsDistance),3]
 				gene.setRightTAD(nearestRightTAD)
+				
 			else:
 				gene.setRightTAD(None)
 
-			
-			
 		
 	def mapEQTLsToGenes(self, eQTL, geneDict, geneSymbol):
 		"""
@@ -567,6 +572,9 @@ class NeighborhoodDefiner:
 				#First get the right chromosome subset
 				tadChromosomeSubset = tadData[np.where(tadData[:,0] == leftTadChr)]
 				
+				#The problem here is that SVs that are entirely within one TAD are also counted, which should not happen.
+				#The SV should end in the left and right TAD, but not be the same TAD. 
+				
 				#First find all matches overlapping the right side of the TAD
 				startMatches = svStart > tadChromosomeSubset[:,1]
 				endMatches = svStart <= tadChromosomeSubset[:,2]
@@ -578,6 +586,9 @@ class NeighborhoodDefiner:
 				endMatches = svEnd >= tadChromosomeSubset[:,1]
 				allEndMatches = startMatches * endMatches
 				
+				#Every TAD that is matched for both the start and end should be excluded
+				allMatches = np.logical_xor(allStartMatches, allEndMatches)
+				
 				overlappingTADsRight = tadChromosomeSubset[allStartMatches]
 				overlappingTADsLeft = tadChromosomeSubset[allEndMatches]
 				
@@ -588,7 +599,8 @@ class NeighborhoodDefiner:
 					continue
 
 				#Make the total subset
-				overlappingTads = np.concatenate((overlappingTADsLeft, overlappingTADsRight), axis=0)
+				#overlappingTads = np.concatenate((overlappingTADsLeft, overlappingTADsRight), axis=0)
+				overlappingTads = tadChromosomeSubset[allMatches]
 
 				#Find all SVs where the start of the SV is before the TAD end, and the end of SV after the TAD start. These are boundary overlapping SVs.
 				#Then make sure to remove all SVs that are entirely within a TAD, we cannot say anything about the effect of these
@@ -669,21 +681,27 @@ class NeighborhoodDefiner:
 				
 			farLeftTad = overlappingTads[0] #This list is sorted
 			farRightTad = overlappingTads[overlappingTads.shape[0]-1,:]
+			
+			
 	
 			#For every gene in the TAD, add the eQTLs of the other TAD as potentially gained interactions.
 			for gene in farLeftTad[3].genes:
-				# if gene.name == "DDT":
-				# 	print "left tad: ", farLeftTad
-				# 	print "sv: ", sv
+				# if gene.name == "SYT14":
+				#  	print "left tad: ", farLeftTad
+				#  	print "sv: ", sv
 				
 				gene.setGainedEQTLs(farRightTad[3].eQTLInteractions, sv[7])
+				
 			
 			for gene in farRightTad[3].genes:
-				# if gene.name == "DDT":
+				# if gene.name == "SYT14":
 				# 	print "right tad: ", farRightTad
 				# 	print "sv: ", sv
-				# 	
+				# 	print "gained eQTLs: ", len(farLeftTad[3].eQTLInteractions)
+				# 	print "gaining from tad: ", farLeftTad
+					
 				gene.setGainedEQTLs(farLeftTad[3].eQTLInteractions, sv[7])
+				
 		
 		return 0
 		
@@ -706,6 +724,8 @@ class NeighborhoodDefiner:
 		if settings.general['gainOfInteractions'] == True:
 			self.determineGainedInteractions(svData, tadData)
 		
+		#The code below is now very specifically for all elements, but I will initially remove the TAD part and focus just on eQTLs.
+		#eQTLs will only be labelled as lost when these are targeted by a deletion, and also when these are within the nearest TAD boundaries of their gene. 
 		
 		previousChr = None
 		for gene in genes[:,3]:
@@ -798,61 +818,65 @@ class NeighborhoodDefiner:
 			#Get the SV objects and link them to the gene
 			gene.setSVs(svsOverlappingGenes)
 			
-			#Check which SVs overlap with the right/left TAD
-			
-			if gene.leftTAD != None:
-				
-				leftTADStartMatches = gene.leftTAD.start <= svSubset[:,2]
-				leftTADEndMatches = gene.leftTAD.end >= svSubset[:,1]
-				
-				leftTADMatches = leftTADStartMatches * leftTADEndMatches
-				
-				svsOverlappingLeftTAD = svSubset[leftTADMatches]
-				gene.leftTAD.setSVs(svsOverlappingLeftTAD)
-	
-			if gene.rightTAD != None:
-				
-				rightTADStartMatches = gene.rightTAD.start <= svSubset[:,2]
-				rightTADEndMatches = gene.rightTAD.end >= svSubset[:,1]
-				
-				rightTADMatches = rightTADStartMatches * rightTADEndMatches
-			
-				svsOverlappingRightTAD = svSubset[rightTADMatches]
-				gene.rightTAD.setSVs(svsOverlappingRightTAD)
-			
 			#Check which SVs overlap with the eQTLs
 			
 			#Repeat for eQTLs. Is the gene on the same chromosome as the eQTL? Then use the above chromosome subset.
+			
+			#In the input parser we already removed all non-deletions. This should be a check around here later on. 
 			
 			geneEQTLs = gene.eQTLs
 			
 			for eQTL in geneEQTLs: #only if the gene has eQTLs
 				
-				
-				
 				startMatches = eQTL.start <= svSubset[:,2]
 				endMatches = eQTL.end >= svSubset[:,1]
 				
 				allMatches = startMatches * endMatches
-				
-				
-				
-				svsOverlappingEQTL = svSubset[allMatches]
 
+				svsOverlappingEQTL = svSubset[allMatches]
+				
+				#Filter the matches further on if these are within the gene's TAD boundary. Position of eQTL > left TAD, < right TAD
+				
+				if gene.leftTAD == None or gene.rightTAD == None or len(svsOverlappingEQTL) == 0: #if there are no TAD boundaries, we cannot check losses
+					continue
+				
+				#Assume that start and end are so small for eQTLs that usig only the start is enough
+				startMatches = eQTL.start >= gene.leftTAD.end
+				endMatches = eQTL.start <= gene.rightTAD.start
+
+				#if this eQTL is within the TAD boundaries of the gene, count the samples in which it is disrupted by an SV. 
+				match = startMatches * endMatches
+				if match == True:
+					
+					samples = np.unique(svsOverlappingEQTL[:,6])
+					
+					#Add the eQTL to the list of lost eQTLs for this gene
+					for sample in samples:
+						if gene.name == "EPS15":
+							print "gene: ", gene.name, " loses eQTL in sample ", sample
+							print gene.leftTAD.start, gene.leftTAD.end
+							print gene.rightTAD.start, gene.rightTAD.end
+							print "eQTL: ", eQTL.start
+						# exit()	
+						gene.addLostEQTL(eQTL, sample)
+				
+				#If there is anything in svsWithinTAD, then we can count ths eQTL as a lost eQTL
 				
 				eQTL.setSVs(svsOverlappingEQTL)
+				
+				
 			
 			#Check which SVs overlap with the interactions.
-			for interaction in gene.interactions:
-				
-				startMatches = interaction.start1 <= svSubset[:,2]
-				endMatches = interaction.end1 >= svSubset[:,1]
-				
-				allMatches = startMatches * endMatches
-				
-				svsOverlappingInteraction = svSubset[allMatches]
-				
-				interaction.setSVs(svsOverlappingInteraction)
+			# for interaction in gene.interactions:
+			# 	
+			# 	startMatches = interaction.start1 <= svSubset[:,2]
+			# 	endMatches = interaction.end1 >= svSubset[:,1]
+			# 	
+			# 	allMatches = startMatches * endMatches
+			# 	
+			# 	svsOverlappingInteraction = svSubset[allMatches]
+			# 	
+			# 	interaction.setSVs(svsOverlappingInteraction)
 		
 		
 		
