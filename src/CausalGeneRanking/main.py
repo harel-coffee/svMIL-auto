@@ -47,6 +47,7 @@ from variantShuffler import VariantShuffler
 from channelVisualizer import ChannelVisualizer
 import settings
 
+
 ###############
 ###Main code###
 
