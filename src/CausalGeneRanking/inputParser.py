@@ -153,7 +153,7 @@ class InputParser:
 				colonSplitPosition = fullPosition.split(":")
 				dashSplitPosition = colonSplitPosition[1].split("-")
 				
-				chromosome = colonSplitPosition[0]
+				chromosome = "chr" + colonSplitPosition[0]
 				start = dashSplitPosition[0]
 				end = dashSplitPosition[1]
 				

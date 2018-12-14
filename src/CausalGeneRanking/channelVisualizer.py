@@ -26,12 +26,14 @@ class ChannelVisualizer:
 		causalGenes = self.loadCausalGenes('../../data/Genes/Census_allTue Apr 10 14_56_44 2018.tsv')
 		
 		#self.reportEQTLChanges(genes, knownBcGenes)
-		self.reportEQTLChanges(genes, causalGenes)
+		#self.reportEQTLChanges(genes, causalGenes)
 		#self.reportSVOverlap(genes, causalGenes)
 		#self.reportSNVOverlap(genes, causalGenes)
 		#self.visualizeReference(genes)
-		self.visualizeDerivative(genes)
-	
+		#self.visualizeDerivative(genes)
+		[channels, labels] = self.makeFeatureMatrix(genes, causalGenes)
+		self.clusterGenes(channels, labels)
+		
 	def loadCausalGenes(self, causalGeneFile):
 		
 		genes = []
@@ -46,13 +48,10 @@ class ChannelVisualizer:
 				line = line.strip()
 				splitLine = line.split("\t")
 				
-				genes.append(splitLine[0])
-				
-			
+				genes.append(splitLine[0])	
 		
 		return genes
-		
-	
+			
 	def loadBCGenes(self, causalGeneFile):
 
 		genes = []
@@ -67,6 +66,164 @@ class ChannelVisualizer:
 
 		return genes
 	
+	def makeFeatureMatrix(self, genes, causalGenes):
+		
+		#For the genes, make the channels with gains. But instead, make 200 bins across which the values are distributed.
+		#As labels, each gene in the COSMIC dataset is positive. Every sample that has gains from this set is also positive.
+		#I think I will limit the negative set to the same size of the positive set. Although that may mean that both sets will be very small and difficult to compare. 
+		
+		noOfBins = 2000
+		windowSize = 40000 #Size of the TADs
+		#Make a map with the indices from the start of the TAD to determine which bin the gains should be stored in.
+		binRange = windowSize / noOfBins #how many positions of the TAD should be in each bin?
+		
+		positionMap = dict()
+		currentBin = 0
+		for pos in range(0, windowSize):
+			
+			if pos % binRange == 0:
+				currentBin += 1
+			
+			positionMap[pos] = currentBin
+		
+		#loss of eQTLs. For each gene, first determine what the nearest TAD from the left is. From there, we count a 40 kb window. We count all TAD losses within this TAD. 
+			
+		
+		channels = []
+		labels = []
+		posCount = 0
+		negCount = 0
+		for gene in genes:
+
+			#The losses and gains are per sample. Do we average across the samples?
+			# if len(gene.gainedEQTLs.keys()) > 0:
+			# 	samples = gene.gainedEQTLs.keys() 
+			# else:
+			# 	continue
+			
+			if len(gene.lostEQTLs.keys()) > 0:
+				samples = gene.lostEQTLs.keys()
+			else:
+				continue
+			
+			leftTAD = gene.leftTAD
+			
+			if leftTAD.end < gene.start:
+				tadStart = leftTAD.end
+				tadEnd = tadStart + 40000
+			else:
+				tadStart = leftTAD.start
+				tadEnd = leftTAD.end
+			
+			#Each sample is a separate feature. 
+			totalGains = []
+			for sample in samples:
+
+				#if sample in gene.gainedEQTLs:
+				if sample in gene.lostEQTLs:
+					
+					if gene.name in causalGenes:
+						posCount += 1
+						labels.append(1)	
+					# elif gene.SNVs is not None and len(gene.SNVs) > 0:
+					# 	posCount += 1
+					# 	labels.append(1)
+					else:
+						negCount += 1
+						labels.append(0)
+
+					channel = np.zeros(noOfBins+1) #will hold a value of 1 if there is an eQTL in that bin
+					
+					#gains = gene.gainedEQTLs[sample][0] #the actual gained eQTLs are in the first array entry, second is the TAD
+					#tad = gene.gainedEQTLs[sample][1]
+					
+					losses = gene.lostEQTLs[sample]
+					
+					for loss in losses:
+						
+						if loss >= tadStart and loss <= tadEnd:
+							inTadPos = loss.start - tadStart
+							
+							binPosition = positionMap[inTadPos]
+							channel[binPosition] = 1
+						
+					
+					#Represent the gains as bins
+					# for gain in gains:
+					# 
+					# 	inTadPos = gain.start - tad.start
+					# 	
+					# 	
+					# 	binPosition = positionMap[inTadPos]
+					# 	channel[binPosition] = 1
+					
+					channels.append(channel)
+		
+		channels = np.array(channels) #genes for every sample. 
+		
+		print "Number of positive genes: ", posCount
+		
+		return channels, labels
+
+	def clusterGenes(self, channels, labelList):
+		
+		#cluster the channels. 
+		
+		from scipy.cluster.hierarchy import dendrogram, linkage  
+		from matplotlib import pyplot as plt
+		
+		#linked = linkage(channels, 'single')
+
+		# plt.figure(figsize=(10, 7))  
+		# dendrogram(linked,  
+		# 			orientation='top',
+		# 			labels=labelList,
+		# 			distance_sort='descending',
+		# 			show_leaf_counts=True)
+		# plt.show()
+		# 
+		# from sklearn.cluster import AgglomerativeClustering
+		# 
+		# cluster = AgglomerativeClustering(n_clusters=2, affinity='euclidean', linkage='ward')  
+		# cluster.fit_predict(channels)
+		# 
+		# print(cluster.labels_)
+		# print(labelList)
+		
+		from sklearn.decomposition import PCA
+		
+		# pca = PCA(n_components=2)
+		# 
+		# projected = pca.fit_transform(channels)
+		# 
+		# colorLabels = []
+		# for label in labelList:
+		# 	if label == 1:
+		# 		colorLabels.append(6)
+		# 	else:
+		# 		colorLabels.append(3)
+		# 
+		# plt.scatter(projected[:, 0], projected[:, 1], c=labelList, edgecolor='none', alpha=1, cmap=plt.cm.get_cmap('jet', 2))
+		# plt.xlabel('component 1')
+		# plt.ylabel('component 2')
+		# plt.colorbar()
+		# plt.show()
+		
+		
+		from tsne import bh_sne
+		
+		vis_data = bh_sne(channels)
+		# plot the result
+		vis_x = vis_data[:, 0]
+		vis_y = vis_data[:, 1]
+		plt.scatter(vis_x, vis_y, c=labelList, edgecolor = 'none', alpha = 0.5, cmap=plt.cm.get_cmap("jet", 2))
+		plt.colorbar()
+		plt.show()
+		
+		return 0
+		
+	
+
 	def reportSVOverlap(self, genes, knownBcGenes):
 		
 		bcGenesWithOverlap = 0

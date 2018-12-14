@@ -12,7 +12,7 @@ files = dict(
 
 general = dict(
 	
-	mode = 'SV', #Options are: SV, SNV or SV+SNV
+	mode = 'SV+SNV', #Options are: SV, SNV or SV+SNV
 	tads = True, #Include TADs in the ranking yes/no, only to rank by how often TAD boundaries themselves are disrupted by SVs. (we are getting very dependent on TADs, so perhaps force this as always required)
 	eQTLs = True, #Include eQTLs in the ranking yes/no
 	interactionChains = False, ##THIS IS FOR HEAT DIFFUSION BUT DOES NOT WORK, SETTING SHOULD HAVE A BETTER NAME #Include genomic 3D interactions in the ranking yes/no
