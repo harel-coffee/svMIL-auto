@@ -72,22 +72,24 @@ class ChannelVisualizer:
 		#As labels, each gene in the COSMIC dataset is positive. Every sample that has gains from this set is also positive.
 		#I think I will limit the negative set to the same size of the positive set. Although that may mean that both sets will be very small and difficult to compare. 
 		
-		noOfBins = 2000
+		noOfBins = 200*2
 		windowSize = 40000 #Size of the TADs
 		#Make a map with the indices from the start of the TAD to determine which bin the gains should be stored in.
-		binRange = windowSize / noOfBins #how many positions of the TAD should be in each bin?
+		binRange = windowSize*2 / noOfBins #how many positions of the TAD should be in each bin?
 		
 		positionMap = dict()
 		currentBin = 0
-		for pos in range(0, windowSize):
+		for pos in range(0, windowSize*2):
 			
 			if pos % binRange == 0:
 				currentBin += 1
 			
 			positionMap[pos] = currentBin
 		
+		
+		
+		
 		#loss of eQTLs. For each gene, first determine what the nearest TAD from the left is. From there, we count a 40 kb window. We count all TAD losses within this TAD. 
-			
 		
 		channels = []
 		labels = []
@@ -95,17 +97,16 @@ class ChannelVisualizer:
 		negCount = 0
 		for gene in genes:
 
-			#The losses and gains are per sample. Do we average across the samples?
-			# if len(gene.gainedEQTLs.keys()) > 0:
-			# 	samples = gene.gainedEQTLs.keys() 
-			# else:
-			# 	continue
-			
-			if len(gene.lostEQTLs.keys()) > 0:
+			if len(gene.lostEQTLs.keys()) < 1 and len(gene.gainedEQTLs.keys()) > 0:
+				samples = gene.gainedEQTLs.keys() 
+			elif len(gene.gainedEQTLs.keys()) < 1 and len(gene.lostEQTLs.keys()) > 0:
 				samples = gene.lostEQTLs.keys()
-			else:
+			else: #combine the samples
+				samples = gene.lostEQTLs.keys() + gene.gainedEQTLs.keys()
+
+
+			if gene.leftTAD is None:
 				continue
-			
 			leftTAD = gene.leftTAD
 			
 			if leftTAD.end < gene.start:
@@ -114,52 +115,76 @@ class ChannelVisualizer:
 			else:
 				tadStart = leftTAD.start
 				tadEnd = leftTAD.end
+				
 			
 			#Each sample is a separate feature. 
 			totalGains = []
+			included = False
 			for sample in samples:
+				
+				
+				channel = np.zeros(noOfBins+1) #will hold a value of 1 if there is an eQTL in that bin. Gains will be after the losses. 
 
 				#if sample in gene.gainedEQTLs:
 				if sample in gene.lostEQTLs:
-					
-					if gene.name in causalGenes:
-						posCount += 1
-						labels.append(1)	
-					# elif gene.SNVs is not None and len(gene.SNVs) > 0:
-					# 	posCount += 1
-					# 	labels.append(1)
-					else:
-						negCount += 1
-						labels.append(0)
-
-					channel = np.zeros(noOfBins+1) #will hold a value of 1 if there is an eQTL in that bin
-					
-					#gains = gene.gainedEQTLs[sample][0] #the actual gained eQTLs are in the first array entry, second is the TAD
-					#tad = gene.gainedEQTLs[sample][1]
+					included = True
 					
 					losses = gene.lostEQTLs[sample]
 					
 					for loss in losses:
 						
-						if loss >= tadStart and loss <= tadEnd:
+						if loss.start >= tadStart and loss.start <= tadEnd:
 							inTadPos = loss.start - tadStart
 							
 							binPosition = positionMap[inTadPos]
 							channel[binPosition] = 1
-						
+				
+				if sample in gene.gainedEQTLs:
+					
+					included = True
+					
+					gains = gene.gainedEQTLs[sample][0] #the actual gained eQTLs are in the first array entry, second is the TAD
+					tad = gene.gainedEQTLs[sample][1]
 					
 					#Represent the gains as bins
-					# for gain in gains:
-					# 
-					# 	inTadPos = gain.start - tad.start
-					# 	
-					# 	
-					# 	binPosition = positionMap[inTadPos]
-					# 	channel[binPosition] = 1
+					for gain in gains:
+					
+						inTadPos = (gain.start - tad.start) + windowSize #this will be in the second TAD
+
+						binPosition = positionMap[inTadPos]
+						channel[binPosition] = 1
+					
+				
+				
+				if included == True:
 					
 					channels.append(channel)
+					
+					if gene.name in causalGenes:
+						posCount += 1
+						labels.append(1)	
+					elif gene.SNVs is not None and len(gene.SNVs) > 0:
+						posCount += 1
+						labels.append(1)
+					else:
+						#if negCount > 200: #skip all negative genes if we have 500, otherwise there will be too many. 
+						#	continue
+						negCount += 1
+						labels.append(0)
+				
+					
+		channels = np.array(channels)
+		print channels.shape
 		
-		channels = np.array(channels) #genes for every sample. 
+		#Combine into a 3D matrix
+		
+		
+		
+		# print channels
+		# print labels
+		# print posCount
+		# print negCount
+		# exit()
 		
 		print "Number of positive genes: ", posCount
 		
@@ -190,8 +215,8 @@ class ChannelVisualizer:
 		# print(cluster.labels_)
 		# print(labelList)
 		
-		from sklearn.decomposition import PCA
-		
+		# from sklearn.decomposition import PCA
+		# 
 		# pca = PCA(n_components=2)
 		# 
 		# projected = pca.fit_transform(channels)

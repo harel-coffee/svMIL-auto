@@ -46,8 +46,8 @@ class Gene:
 	def addEQTL(self, eQTL):
 		self.eQTLs.append(eQTL)
 		
-	def setGainedEQTLs(self, gainedEQTLs, sample):
-		self.gainedEQTLs[sample] = gainedEQTLs #keep the gained eQTLs separate per patient to later do mutual exclusivity.
+	def setGainedEQTLs(self, gainedEQTLs, sample, originalTAD):
+		self.gainedEQTLs[sample] = [gainedEQTLs, originalTAD] #keep the gained eQTLs separate per patient to later do mutual exclusivity.
 		
 	def setLostEQTLs(self, lostEQTLs, sample):
 		self.lostEQTLs[sample] = lostEQTLs

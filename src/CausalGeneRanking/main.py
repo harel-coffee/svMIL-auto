@@ -64,8 +64,8 @@ filehandler = open("GenesAndNeighborhoods.pkl", 'rb')
 causalGenes = pickle.load(filehandler)
 filehandler.close()
 
-# 
-# #1. Read and parse the causal genes
+
+#1. Read and parse the causal genes
 # 
 # causalGenes = InputParser().readCausalGeneFile(settings.files['causalGenesFile'])
 # nonCausalGenes = InputParser().readNonCausalGeneFile(settings.files['nonCausalGenesFile'], causalGenes) #In the same format as the causal genes.
@@ -130,7 +130,7 @@ filehandler.close()
 # 	print "Defining the neighborhood for the causal genes and the SVs and SNVs"
 # 	NeighborhoodDefiner(causalGenes, svData, snvData, mode) #Provide the mode to ensure that the right variant type is used (different positions used in annotation)
 # 	
-	
+# 	
 #3. Do simple ranking of the genes and report the causal SVs
 print "Ranking the genes for the variants"
 #geneRanking = GeneRanking(causalGenes[:,3], mode)
