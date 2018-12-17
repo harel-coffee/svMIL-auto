@@ -72,14 +72,17 @@ class ChannelVisualizer:
 		#As labels, each gene in the COSMIC dataset is positive. Every sample that has gains from this set is also positive.
 		#I think I will limit the negative set to the same size of the positive set. Although that may mean that both sets will be very small and difficult to compare. 
 		
-		noOfBins = 200*2
+		noOfBins = 200
+		#noOfBins = 200*2
 		windowSize = 40000 #Size of the TADs
 		#Make a map with the indices from the start of the TAD to determine which bin the gains should be stored in.
-		binRange = windowSize*2 / noOfBins #how many positions of the TAD should be in each bin?
+		binRange = windowSize / noOfBins #how many positions of the TAD should be in each bin?
+		#binRange = windowSize*2 / noOfBins #how many positions of the TAD should be in each bin?
 		
 		positionMap = dict()
 		currentBin = 0
-		for pos in range(0, windowSize*2):
+		for pos in range(0, windowSize):
+		#for pos in range(0, windowSize*2):	
 			
 			if pos % binRange == 0:
 				currentBin += 1
@@ -92,6 +95,8 @@ class ChannelVisualizer:
 		#loss of eQTLs. For each gene, first determine what the nearest TAD from the left is. From there, we count a 40 kb window. We count all TAD losses within this TAD. 
 		
 		channels = []
+		gainChannels = [] #Make sure that these have the same number of genes and bins
+		lossChannels = []
 		labels = []
 		posCount = 0
 		negCount = 0
@@ -120,14 +125,18 @@ class ChannelVisualizer:
 			#Each sample is a separate feature. 
 			totalGains = []
 			included = False
+			gainIncluded = False
+			lossIncluded = False
 			for sample in samples:
 				
-				
 				channel = np.zeros(noOfBins+1) #will hold a value of 1 if there is an eQTL in that bin. Gains will be after the losses. 
-
+				gainChannel = np.zeros(noOfBins+1)
+				lossChannel = np.zeros(noOfBins+1)
+								
 				#if sample in gene.gainedEQTLs:
 				if sample in gene.lostEQTLs:
 					included = True
+					lossIncluded = True
 					
 					losses = gene.lostEQTLs[sample]
 					
@@ -137,11 +146,14 @@ class ChannelVisualizer:
 							inTadPos = loss.start - tadStart
 							
 							binPosition = positionMap[inTadPos]
-							channel[binPosition] = 1
+							#channel[binPosition] = 1
+							lossChannel[binPosition] = 1
+							
 				
 				if sample in gene.gainedEQTLs:
 					
 					included = True
+					gainIncluded = True
 					
 					gains = gene.gainedEQTLs[sample][0] #the actual gained eQTLs are in the first array entry, second is the TAD
 					tad = gene.gainedEQTLs[sample][1]
@@ -149,32 +161,57 @@ class ChannelVisualizer:
 					#Represent the gains as bins
 					for gain in gains:
 					
-						inTadPos = (gain.start - tad.start) + windowSize #this will be in the second TAD
-
+						#inTadPos = (gain.start - tad.start) + windowSize #this will be in the second TAD
+						inTadPos = gain.start - tad.start
 						binPosition = positionMap[inTadPos]
-						channel[binPosition] = 1
+						#channel[binPosition] = 1
+						gainChannel[binPosition] = 1
 					
 				
+				lossChannels.append(lossChannel)
+				gainChannels.append(gainChannel)
 				
-				if included == True:
-					
-					channels.append(channel)
-					
-					if gene.name in causalGenes:
-						posCount += 1
-						labels.append(1)	
-					elif gene.SNVs is not None and len(gene.SNVs) > 0:
-						posCount += 1
-						labels.append(1)
-					else:
-						#if negCount > 200: #skip all negative genes if we have 500, otherwise there will be too many. 
-						#	continue
-						negCount += 1
-						labels.append(0)
+				if gene.name in causalGenes:
+					posCount += 1
+					labels.append(1)	
+				elif gene.SNVs is not None and len(gene.SNVs) > 0:
+					posCount += 1
+					labels.append(1)
+				else:
+					negCount += 1
+					labels.append(0)	
 				
-					
-		channels = np.array(channels)
-		print channels.shape
+				
+				# if included == True:
+				# 	
+				# 	channels.append(channel)
+				# 	
+				# 	if gene.name in causalGenes:
+				# 		posCount += 1
+				# 		labels.append(1)	
+				# 	elif gene.SNVs is not None and len(gene.SNVs) > 0:
+				# 		posCount += 1
+				# 		labels.append(1)
+				# 	else:
+				# 		#if negCount > 200: #skip all negative genes if we have 500, otherwise there will be too many. 
+				# 		#	continue
+				# 		negCount += 1
+				# 		labels.append(0)
+		
+		lossChannels = np.array(lossChannels)
+		gainChannels = np.array(gainChannels)
+		
+		stackedChannels = np.dstack((lossChannels, gainChannels))
+		
+		print stackedChannels.shape
+		
+		print len(labels)
+		
+		
+				
+		# exit()			
+		# channels = np.array(channels)
+		# print channels.shape
 		
 		#Combine into a 3D matrix
 		
@@ -188,7 +225,7 @@ class ChannelVisualizer:
 		
 		print "Number of positive genes: ", posCount
 		
-		return channels, labels
+		return stackedChannels, labels
 
 	def clusterGenes(self, channels, labelList):
 		
@@ -233,17 +270,141 @@ class ChannelVisualizer:
 		# plt.ylabel('component 2')
 		# plt.colorbar()
 		# plt.show()
+		# 
+		# 
+		# from tsne import bh_sne
+		# 
+		# vis_data = bh_sne(channels)
+		# # plot the result
+		# vis_x = vis_data[:, 0]
+		# vis_y = vis_data[:, 1]
+		# plt.scatter(vis_x, vis_y, c=labelList, edgecolor = 'none', alpha = 0.5, cmap=plt.cm.get_cmap("jet", 2))
+		# plt.colorbar()
+		# plt.show()
+		#
+		
+		# Try some simple classifiers, is there any that can obtain reasonable performance with the current features?
+		
+		from sklearn.model_selection import train_test_split
+		# from sklearn.preprocessing import StandardScaler
+		# from sklearn.datasets import make_moons, make_circles, make_classification
+		# from sklearn.neural_network import MLPClassifier
+		# from sklearn.neighbors import KNeighborsClassifier
+		# from sklearn.svm import SVC
+		# from sklearn.gaussian_process import GaussianProcessClassifier
+		# from sklearn.gaussian_process.kernels import RBF
+		# from sklearn.tree import DecisionTreeClassifier
+		# from sklearn.ensemble import RandomForestClassifier, AdaBoostClassifier
+		# from sklearn.naive_bayes import GaussianNB
+		# from sklearn.discriminant_analysis import QuadraticDiscriminantAnalysis
+		# 
+		# names = ["Nearest Neighbors", "Linear SVM", "RBF SVM", "Gaussian Process",
+		# 		 "Decision Tree", "Random Forest", "Neural Net", "AdaBoost",
+		# 		 "Naive Bayes", "QDA"]
+		# 
+		# classifiers = [
+		# 	KNeighborsClassifier(3),
+		# 	SVC(kernel="linear", C=0.025),
+		# 	SVC(gamma=2, C=1),
+		# 	GaussianProcessClassifier(1.0 * RBF(1.0)),
+		# 	DecisionTreeClassifier(max_depth=5),
+		# 	RandomForestClassifier(max_depth=5, n_estimators=10, max_features=1),
+		# 	MLPClassifier(alpha=1),
+		# 	AdaBoostClassifier(),
+		# 	GaussianNB(),
+		# 	QuadraticDiscriminantAnalysis()]
+		# 
+		# 	
+		# X_train, X_test, y_train, y_test = train_test_split(channels, labelList, test_size=.4, random_state=42)
+		# 
+		# # iterate over classifiers
+		# for name, clf in zip(names, classifiers):
+		# 	
+		# 	clf.fit(X_train, y_train)
+		# 	score = clf.score(X_test, y_test)
+		# 	
+		# 	print "classifier ", name, ": ", score
+	
+		#Try a CNN
+		from mcfly import modelgen, find_architecture, storage
+		from keras.models import load_model
+		import os
+		
+		#use just 1 channel for now, later split into 2 and see if it makes a difference
+		X_train, X_test, y_train_list, y_test_list = train_test_split(channels, labelList, test_size=.4, random_state=42)
+		
+		#the training labels need to be a vector as well. For each gene we have a 1 or 0 for each class. We have 2 classes, so this will be genes * 2
+		
+		y_train = np.zeros([len(y_train_list), 2])
+		for labelInd in range(0, len(y_train_list)):
+			
+			label = y_train_list[labelInd]
+			
+			if label == 1:
+				y_train[labelInd, 0] = 0
+				y_train[labelInd, 1] = 1
+			if label == 0:
+				y_train[labelInd, 0] = 1
+				y_train[labelInd, 1] = 0
+		
+		y_test = np.zeros([len(y_test_list), 2])
+		for labelInd in range(0, len(y_test_list)):
+			
+			label = y_test_list[labelInd]
+			
+			if label == 1:
+				y_test[labelInd, 0] = 0
+				y_test[labelInd, 1] = 1
+			if label == 0:
+				y_test[labelInd, 0] = 1
+				y_test[labelInd, 1] = 0
+			
 		
 		
-		from tsne import bh_sne
+		num_classes = y_train.shape[1]
+		X_train = np.array(X_train)
 		
-		vis_data = bh_sne(channels)
-		# plot the result
-		vis_x = vis_data[:, 0]
-		vis_y = vis_data[:, 1]
-		plt.scatter(vis_x, vis_y, c=labelList, edgecolor = 'none', alpha = 0.5, cmap=plt.cm.get_cmap("jet", 2))
-		plt.colorbar()
-		plt.show()
+		X_test = np.array(X_test)
+		
+		
+		models = modelgen.generate_models(X_train.shape,
+										  number_of_classes=num_classes,
+										  number_of_models = 2)
+		
+
+		models_to_print = range(len(models))
+		for i, item in enumerate(models):
+			if i in models_to_print:
+				model, params, model_types = item
+				print("-------------------------------------------------------------------------------------------------------")
+				print("Model " + str(i))
+				print(" ")
+				print("Hyperparameters:")
+				print(params)
+				print(" ")
+				print("Model description:")
+				model.summary()
+				print(" ")
+				print("Model type:")
+				print(model_types)
+				print(" ")
+
+		# Define directory where the results, e.g. json file, will be stored
+		resultpath = os.path.join('.', 'models')
+		if not os.path.exists(resultpath):
+				os.makedirs(resultpath)
+				
+		outputfile = os.path.join(resultpath, 'modelcomparison.json')
+		histories, val_accuracies, val_losses = find_architecture.train_models_on_samples(X_train, y_train,
+																				   X_test, y_test,
+																				   models,nr_epochs=5,
+																				   subset_size=300,
+																				   verbose=True,
+																				   outputfile=outputfile)
+		print('Details of the training process were stored in ',outputfile)
+
+		
+		
 		
 		return 0
 		
