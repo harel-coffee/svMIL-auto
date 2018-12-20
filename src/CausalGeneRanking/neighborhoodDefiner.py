@@ -8,6 +8,7 @@ from gene import Gene
 from eQTL import EQTL
 from interaction import Interaction
 from snv import SNV
+from derivativeTADMaker import DerivativeTADMaker
 
 
 import settings
@@ -719,6 +720,9 @@ class NeighborhoodDefiner:
 			- Move the gained interactions outside of the left/right TAD check. See comments below. 
 		
 		"""
+		
+		DerivativeTADMaker(svData, genes, tadData)
+		
 		
 		#First map the SVs to TADs to see if we can infer gained interactions
 		if settings.general['gainOfInteractions'] == True:

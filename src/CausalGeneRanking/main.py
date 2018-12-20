@@ -59,78 +59,78 @@ mode = settings.general['mode'] #Either SV or SNV, then the relevant functions f
 #permutationRound is parameter 5, only used when running on the HPC
 
 import pickle
-
-filehandler = open("GenesAndNeighborhoods.pkl", 'rb')
-causalGenes = pickle.load(filehandler)
-filehandler.close()
+# 
+# filehandler = open("GenesAndNeighborhoods.pkl", 'rb')
+# causalGenes = pickle.load(filehandler)
+# filehandler.close()
 
 
 #1. Read and parse the causal genes
-# 
-# causalGenes = InputParser().readCausalGeneFile(settings.files['causalGenesFile'])
-# nonCausalGenes = InputParser().readNonCausalGeneFile(settings.files['nonCausalGenesFile'], causalGenes) #In the same format as the causal genes.
-# 
-# uniqueCancerTypes = []
-# 
-# #Combine the genes for now
-# causalGenes = np.concatenate((causalGenes, nonCausalGenes), axis=0)
-# 
-# #The combination of SVs and SNVs will come afterwards, because then we will need to map the names of the cancer types correctly. 
-# 
-# #2. Read the SVs or SNVs depending on the mode.
-# 
-# variantData = []
-# if mode == "SV":
-# 	print "Reading SV data"
-# 	svFile = settings.files['svFile']
-# 	svData = InputParser().getSVsFromFile(svFile)
-# 	
-# 
-# if mode == "SNV":
-# 	print "Reading SNV data"
-# 	snvFile = settings.files['snvFile']
-# 	snvData = InputParser().getSNVsFromFile(snvFile)
-# 	
-# #This can be done better with an array of parameters,but this is quick and dirty for now	
-# if mode == "SV+SNV":
-# 	print "Reading SV data"
-# 	svFile = settings.files['svFile']
-# 	svData = InputParser().getSVsFromFile(svFile)
-# 	print "Reading SNV data"
-# 	snvFile = settings.files['snvFile']
-# 	snvData = InputParser().getSNVsFromFile(snvFile)
-# 	
-# 	
-# #3. If this is a permutation run, we wish to shuffle these SVs.
-#  #Check if this run is a permutation or not. The output file name depends on this
-# if permutationYN == "True":
-# 	print "Shuffling variants"
-# 	variantShuffler = VariantShuffler()
-# 	#Shuffle the variants, provide the mode such that the function knows how to permute
-# 	if mode == "SV":
-# 		svData = variantShuffler.shuffleSVs(svData)
-# 	if mode == "SNV":
-# 		snvData = variantShuffler.shuffleSNVs(snvData)
-# 	if mode == "SV+SNV":
-# 		svData = variantShuffler.shuffleSVs(svData)
-# 		snvData = variantShuffler.shuffleSNVs(snvData)
-# 
-# #Number of patients
-# #print len(np.unique(svData[:,7]))
-# 
-# 		
-# #2. Get the neighborhood for these genes
-# if mode == "SV":
-# 	print "Defining the neighborhood for the causal genes and the SVs"
-# 	NeighborhoodDefiner(causalGenes, svData, None, mode) #Provide the mode to ensure that the right variant type is used (different positions used in annotation)
-# if mode == "SNV":
-# 	print "Defining the neighborhood for the causal genes and the SNVs"
-# 	NeighborhoodDefiner(causalGenes, None, snvData, mode) #Provide the mode to ensure that the right variant type is used (different positions used in annotation)
-# if mode == "SV+SNV":
-# 	print "Defining the neighborhood for the causal genes and the SVs and SNVs"
-# 	NeighborhoodDefiner(causalGenes, svData, snvData, mode) #Provide the mode to ensure that the right variant type is used (different positions used in annotation)
-# 	
-# 	
+
+causalGenes = InputParser().readCausalGeneFile(settings.files['causalGenesFile'])
+nonCausalGenes = InputParser().readNonCausalGeneFile(settings.files['nonCausalGenesFile'], causalGenes) #In the same format as the causal genes.
+
+uniqueCancerTypes = []
+
+#Combine the genes for now
+causalGenes = np.concatenate((causalGenes, nonCausalGenes), axis=0)
+
+#The combination of SVs and SNVs will come afterwards, because then we will need to map the names of the cancer types correctly. 
+
+#2. Read the SVs or SNVs depending on the mode.
+
+variantData = []
+if mode == "SV":
+	print "Reading SV data"
+	svFile = settings.files['svFile']
+	svData = InputParser().getSVsFromFile(svFile, "all")
+	
+
+if mode == "SNV":
+	print "Reading SNV data"
+	snvFile = settings.files['snvFile']
+	snvData = InputParser().getSNVsFromFile(snvFile)
+	
+#This can be done better with an array of parameters,but this is quick and dirty for now	
+if mode == "SV+SNV":
+	print "Reading SV data"
+	svFile = settings.files['svFile']
+	svData = InputParser().getSVsFromFile(svFile, "deletion")
+	print "Reading SNV data"
+	snvFile = settings.files['snvFile']
+	snvData = InputParser().getSNVsFromFile(snvFile)
+	
+	
+#3. If this is a permutation run, we wish to shuffle these SVs.
+ #Check if this run is a permutation or not. The output file name depends on this
+if permutationYN == "True":
+	print "Shuffling variants"
+	variantShuffler = VariantShuffler()
+	#Shuffle the variants, provide the mode such that the function knows how to permute
+	if mode == "SV":
+		svData = variantShuffler.shuffleSVs(svData)
+	if mode == "SNV":
+		snvData = variantShuffler.shuffleSNVs(snvData)
+	if mode == "SV+SNV":
+		svData = variantShuffler.shuffleSVs(svData)
+		snvData = variantShuffler.shuffleSNVs(snvData)
+
+#Number of patients
+#print len(np.unique(svData[:,7]))
+
+		
+#2. Get the neighborhood for these genes
+if mode == "SV":
+	print "Defining the neighborhood for the causal genes and the SVs"
+	NeighborhoodDefiner(causalGenes, svData, None, mode) #Provide the mode to ensure that the right variant type is used (different positions used in annotation)
+if mode == "SNV":
+	print "Defining the neighborhood for the causal genes and the SNVs"
+	NeighborhoodDefiner(causalGenes, None, snvData, mode) #Provide the mode to ensure that the right variant type is used (different positions used in annotation)
+if mode == "SV+SNV":
+	print "Defining the neighborhood for the causal genes and the SVs and SNVs"
+	NeighborhoodDefiner(causalGenes, svData, snvData, mode) #Provide the mode to ensure that the right variant type is used (different positions used in annotation)
+	
+exit()	
 #3. Do simple ranking of the genes and report the causal SVs
 print "Ranking the genes for the variants"
 #geneRanking = GeneRanking(causalGenes[:,3], mode)

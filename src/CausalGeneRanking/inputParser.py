@@ -17,7 +17,7 @@ import re
 
 class InputParser:
 	
-	def getSVsFromFile(self, svFile):
+	def getSVsFromFile(self, svFile, typeFilter):
 			
 		variantsList = []
 		
@@ -62,10 +62,11 @@ class InputParser:
 				svTypeIndex = header.index("sv_type")
 				svType = splitLine[svTypeIndex]
 				
-				#Check if the SV type matches deletions
-				match = re.search("deletion", svType, re.IGNORECASE)
-				if match is None: #only focus on deletions for now
-					continue
+				if typeFilter != "all":
+					#Check if the SV type matches deletions
+					match = re.search("deletion", svType, re.IGNORECASE)
+					if match is None: #only focus on deletions for now
+						continue
 				
 				
 				#if cancerType not in uniqueCancerTypes:
@@ -112,7 +113,7 @@ class InputParser:
 					e1 = tmpS1
 				
 				
-				svObject = SV('chr' + chr1, s1, e1, 'chr' + chr2, s2, e2, sampleName, cancerType)
+				svObject = SV('chr' + chr1, s1, e1, 'chr' + chr2, s2, e2, sampleName, cancerType, svType)
 				#chr 1, start, end, chr2, start2, end2
 				variantsList.append(['chr' + chr1, s1, e1, 'chr' + chr2, s2, e2, cancerType, sampleName, svObject])
 		

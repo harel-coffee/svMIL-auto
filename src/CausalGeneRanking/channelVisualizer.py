@@ -68,6 +68,8 @@ class ChannelVisualizer:
 	
 	def makeFeatureMatrix(self, genes, causalGenes):
 		
+		print "defining the feature matrix"
+		
 		#For the genes, make the channels with gains. But instead, make 200 bins across which the values are distributed.
 		#As labels, each gene in the COSMIC dataset is positive. Every sample that has gains from this set is also positive.
 		#I think I will limit the negative set to the same size of the positive set. Although that may mean that both sets will be very small and difficult to compare. 
@@ -170,7 +172,7 @@ class ChannelVisualizer:
 				
 				lossChannels.append(lossChannel)
 				gainChannels.append(gainChannel)
-				
+			
 				if gene.name in causalGenes:
 					posCount += 1
 					labels.append(1)	
@@ -180,8 +182,8 @@ class ChannelVisualizer:
 				else:
 					negCount += 1
 					labels.append(0)	
-				
-				
+			
+			
 				# if included == True:
 				# 	
 				# 	channels.append(channel)
@@ -197,6 +199,10 @@ class ChannelVisualizer:
 				# 		#	continue
 				# 		negCount += 1
 				# 		labels.append(0)
+		
+		print posCount
+		print negCount
+		print len(labels)
 		
 		lossChannels = np.array(lossChannels)
 		gainChannels = np.array(gainChannels)
@@ -407,8 +413,6 @@ class ChannelVisualizer:
 		
 		
 		return 0
-		
-	
 
 	def reportSVOverlap(self, genes, knownBcGenes):
 		
