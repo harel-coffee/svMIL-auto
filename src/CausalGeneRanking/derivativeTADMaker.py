@@ -7,6 +7,7 @@
 """
 
 import re
+import numpy as np
 
 class DerivativeTADMaker:
 	
@@ -37,17 +38,17 @@ class DerivativeTADMaker:
 			if typeMatch is None:
 				continue
 			
-			self.determineDerivativeTADs(svs, tadData)
+			self.determineDerivativeTADs(sv, tadData)
 			
 			
-			exit()
+		exit()
 			
 		
 		return 0
 		
 		
 		
-	def determineDerivativeTADs(self, svs, tadData):	
+	def determineDerivativeTADs(self, svData, tadData):	
 	
 		"""
 			Given an SV or a set of SVs, depending on the type of SVs, we compute how the affected region of the genome will look after the SV.
@@ -60,7 +61,40 @@ class DerivativeTADMaker:
 			#- Duplication: Get all TADs that are covered by the duplication. Keep the elements left and right of the boundary within duplication separate. Start from the left TAD. This remains the same. Get the TAD on the right side
 			#  of the duplication.
 			#  Get all the TAD boundaries covered by the duplication. Place them in order. The genomic positions should be correct. So within the right TAD, we take the insert position. We attach everything within the duplication to that.
-			#  Also make sure that all elements are added to the derivative TADs correctly. 
+			#  Also make sure that all elements are added to the derivative TADs correctly.
+			
+			
+		
+		### DUPLICATION ###
+		
+		#1. Determine which TADs are involved in the duplication (only the outmost 2 are affected, the rest can be kept in tact)
+		tadChrSubsetInd = svData[0] == tadData[:,0]
+		tadChrSubset = tadData[tadChrSubsetInd]
+		
+		startMatches = svData[1] < tadChrSubset[:,2]
+		endMatches = svData[2] > tadChrSubset[:,1]
+		
+		matches = startMatches * endMatches
+
+		matchingTads = tadChrSubset[matches]
+		
+		#Remove all matches where the SV is exclusively within a TAD
+		filteredTads = []
+		for tad in matchingTads:
+			
+			if svData[1] > tad[1] and svData[2] < tad[2]:
+				continue
+			filteredTads.append(tad)
+		
+		print np.array(filteredTads)
+		
+		#2. Make the derivative positions for the TAD boundaries
+		
+		#
+		
+		
+		
+		
 		
 		
 	
