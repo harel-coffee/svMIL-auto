@@ -9,6 +9,7 @@ from eQTL import EQTL
 from interaction import Interaction
 from snv import SNV
 from derivativeTADMaker import DerivativeTADMaker
+from genome import Genome
 
 
 import settings
@@ -27,7 +28,7 @@ class NeighborhoodDefiner:
 	"""
 
 	
-	def __init__(self, genes, svData, snvData, mode):
+	def __init__(self, genes, svData, snvData, mode, genome):
 		
 		#1. Map genes to TADs
 		
@@ -93,17 +94,20 @@ class NeighborhoodDefiner:
 			tadData = self.mapEQTLInteractionsToTads(eQTLData, tadData)
 			tadData = self.mapGenesToTads(genes, tadData) 
 
+		#First define the Genome object with all data that we collected to far
+		genome.defineBins(genes, tadData, eQTLData)
+		
 		
 		#3. Map SVs to all neighborhood elements
 		if mode == "SV":
 			print "Mapping SVs to the neighborhood"
-			self.mapSVsToNeighborhood(genes, svData, tadData)
+			self.mapSVsToNeighborhood(genes, svData, tadData, genome)
 		if mode == "SNV":
 			print "Mapping SNVs to the neighborhood"
 			self.mapSNVsToNeighborhood(genes, snvData, eQTLData)
 		if mode == "SV+SNV": #in this case map both
 			print "Mapping SVs to the neighborhood"
-			self.mapSVsToNeighborhood(genes, svData, tadData)
+			self.mapSVsToNeighborhood(genes, svData, tadData, genome)
 			
 			print "Mapping SNVs to the neighborhood"
 			self.mapSNVsToNeighborhood(genes, snvData, eQTLData)
@@ -168,7 +172,7 @@ class NeighborhoodDefiner:
 					continue
 				
 				
-				eQTLObject = EQTL(splitLine[0], int(splitLine[1]), int(splitLine[2])) #chr, start, end
+				eQTLObject = EQTL("chr" + splitLine[0], int(splitLine[1]), int(splitLine[2])) #chr, start, end
 				
 				#The mapping information is in the file, so we can already do it here
 				self.mapEQTLsToGenes(eQTLObject, geneDict, splitLine[3])
@@ -691,8 +695,8 @@ class NeighborhoodDefiner:
 				#  	print "left tad: ", farLeftTad
 				#  	print "sv: ", sv
 				if len(farRightTad[3].eQTLInteractions) > 0:
-					gene.setGainedEQTLs(farRightTad[3].eQTLInteractions, sv[7], farRightTad[3])
-				
+					gene.setGainedEQTLs(farRightTad[3].eQTLInteractions, sv[7])
+					
 			
 			for gene in farRightTad[3].genes:
 				# if gene.name == "SYT14":
@@ -701,13 +705,13 @@ class NeighborhoodDefiner:
 				# 	print "gained eQTLs: ", len(farLeftTad[3].eQTLInteractions)
 				# 	print "gaining from tad: ", farLeftTad
 				if len(farLeftTad[3].eQTLInteractions) > 0:	
-					gene.setGainedEQTLs(farLeftTad[3].eQTLInteractions, sv[7], farLeftTad[3])
+					gene.setGainedEQTLs(farLeftTad[3].eQTLInteractions, sv[7])
 				
 		
 		return 0
 		
 		
-	def mapSVsToNeighborhood(self, genes, svData, tadData):
+	def mapSVsToNeighborhood(self, genes, svData, tadData, genome):
 		"""
 			Take as input gene objects with the neighborhood pre-set, and search through the SVs to find which SVs overlap the genes, TADs and eQTLs in the gene neighborhood
 		
@@ -721,7 +725,7 @@ class NeighborhoodDefiner:
 		
 		"""
 		
-		DerivativeTADMaker(svData, genes, tadData)
+		DerivativeTADMaker(svData, genes, tadData, genome)
 		
 		
 		#First map the SVs to TADs to see if we can infer gained interactions

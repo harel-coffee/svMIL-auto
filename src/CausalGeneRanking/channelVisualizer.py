@@ -13,7 +13,7 @@ class ChannelVisualizer:
 	
 	
 	
-	def __init__(self, genes, mode):
+	def __init__(self, genes, mode, genome):
 		
 		#Load the list of known cancer genes
 		#Then determine if the known cancer genes have losses/gains
@@ -31,7 +31,7 @@ class ChannelVisualizer:
 		#self.reportSNVOverlap(genes, causalGenes)
 		#self.visualizeReference(genes)
 		#self.visualizeDerivative(genes)
-		[channels, labels] = self.makeFeatureMatrix(genes, causalGenes)
+		[channels, labels] = self.makeFeatureMatrix(genes, causalGenes, genome)
 		self.clusterGenes(channels, labels)
 		
 	def loadCausalGenes(self, causalGeneFile):
@@ -66,7 +66,7 @@ class ChannelVisualizer:
 
 		return genes
 	
-	def makeFeatureMatrix(self, genes, causalGenes):
+	def makeFeatureMatrix(self, genes, causalGenes, genome):
 		
 		print "defining the feature matrix"
 		
@@ -157,14 +157,47 @@ class ChannelVisualizer:
 					included = True
 					gainIncluded = True
 					
-					gains = gene.gainedEQTLs[sample][0] #the actual gained eQTLs are in the first array entry, second is the TAD
-					tad = gene.gainedEQTLs[sample][1]
+					gains = gene.gainedEQTLs[sample] #the actual gained eQTLs are in the first array entry, second is the TAD
+					
+					#If we use genome, we can get the bin that the gain is from.
+					#If this is another TAD, we can use the positions in that TAD.
+					#If this is a genomic bin, then we should limit it to the 40kb around the eQTL. But starting from which place?
+					
+					
+					
+					#tad = gene.gainedEQTLs[sample] #how to get this info? 
 					
 					#Represent the gains as bins
 					for gain in gains:
-					
+						
+						#Get the bin in which this
+						genomicBin = genome.collectGenomicBin(gain.chromosome, gain.start, gain.end)
+						#Check the size of the bin. If it is a TAD, no problem
+						
+						#####This is a bug, the position is not correct. We need the right TAD pos
+						
+						if genomicBin[2] - genomicBin[1] == windowSize:
+							inTadPos = gain.start - genomicBin[1]
+						else:
+							
+							#Divide the bin up in bins of 40 KB.
+							boundaries = []
+							for pos in range(genomicBin[1], genomicBin[2]):
+								if pos % windowSize == True:
+									boundaries.append(pos)
+							
+							closestPos = boundaries[0]
+							currentClosest = abs(gain.start - boundaries[0])
+							for boundary in boundaries:
+								if abs(gain.start - boundary) < currentClosest:
+									closestPos = boundary
+							if gain.start > closestPos:
+								inTadPos = gain.start - closestPos
+							else:
+								inTadPos = gain.start - (closestPos - windowSize)
+							
 						#inTadPos = (gain.start - tad.start) + windowSize #this will be in the second TAD
-						inTadPos = gain.start - tad.start
+						#inTadPos = gain.start - tad.start
 						binPosition = positionMap[inTadPos]
 						#channel[binPosition] = 1
 						gainChannel[binPosition] = 1

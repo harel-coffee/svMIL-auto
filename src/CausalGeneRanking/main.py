@@ -45,6 +45,7 @@ from geneRankingAlphaBeta import GeneRanking
 from inputParser import InputParser
 from variantShuffler import VariantShuffler
 from channelVisualizer import ChannelVisualizer
+from genome import Genome
 import settings
 
 
@@ -117,20 +118,20 @@ if permutationYN == "True":
 
 #Number of patients
 #print len(np.unique(svData[:,7]))
-
+genome = Genome()
 		
 #2. Get the neighborhood for these genes
 if mode == "SV":
 	print "Defining the neighborhood for the causal genes and the SVs"
-	NeighborhoodDefiner(causalGenes, svData, None, mode) #Provide the mode to ensure that the right variant type is used (different positions used in annotation)
+	NeighborhoodDefiner(causalGenes, svData, None, mode, genome) #Provide the mode to ensure that the right variant type is used (different positions used in annotation)
 if mode == "SNV":
 	print "Defining the neighborhood for the causal genes and the SNVs"
-	NeighborhoodDefiner(causalGenes, None, snvData, mode) #Provide the mode to ensure that the right variant type is used (different positions used in annotation)
+	NeighborhoodDefiner(causalGenes, None, snvData, mode, genome) #Provide the mode to ensure that the right variant type is used (different positions used in annotation)
 if mode == "SV+SNV":
 	print "Defining the neighborhood for the causal genes and the SVs and SNVs"
-	NeighborhoodDefiner(causalGenes, svData, snvData, mode) #Provide the mode to ensure that the right variant type is used (different positions used in annotation)
+	NeighborhoodDefiner(causalGenes, svData, snvData, mode, genome) #Provide the mode to ensure that the right variant type is used (different positions used in annotation)
 	
-exit()	
+
 #3. Do simple ranking of the genes and report the causal SVs
 print "Ranking the genes for the variants"
 #geneRanking = GeneRanking(causalGenes[:,3], mode)
@@ -144,7 +145,7 @@ print "Ranking the genes for the variants"
 # filehandler.close()
 # exit()
 
-ChannelVisualizer(causalGenes[:,3], mode)
+ChannelVisualizer(causalGenes[:,3], mode, genome)
 
 exit()
 
