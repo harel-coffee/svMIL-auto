@@ -29,22 +29,30 @@ class DerivativeTADMaker:
 			Then after these derivative TADs have been made, we go through the genes that are present within these new TADs, and add the newly gained or remove newly lost genomic elements for these genes.
 			The updated genes are returned and will later be used to determine channels of gains/loss of genomic elements. 
 		"""
-		
+		print "Linking SV effects to genes"
+		invCount = 0
+		dupCount = 0
 		for sv in svData:
 			# 
 			# typeMatch = re.search("intra", sv[8].svType, re.IGNORECASE) #using 'chr' will match intra, inter
 			# if typeMatch is not None: #skip the most complicated kind for now
 			# 	continue
-			
+			# 
 			typeMatch = re.search("dup", sv[8].svType, re.IGNORECASE)
-			if typeMatch is None:
-				continue
-			else;
+			if typeMatch is not None:
 				self.determineDerivativeTADs(sv, tadData, genome, "dup")
+				dupCount += 1
+				print "duplication count: ", dupCount
+			# 
+			typeMatch = re.search("inv", sv[8].svType, re.IGNORECASE)
+			if typeMatch is not None:
+				#self.determineDerivativeTADs(sv, tadData, genome, "inv")
+				invCount += 1
+				print "inversion count: ", invCount
 			
 			
 		
-			
+		print "done making derivative TADs"
 		
 		return 0
 		
@@ -80,10 +88,176 @@ class DerivativeTADMaker:
 		# 
 		# tad1 = ["chr1", 100, 300, TAD("chr1", 100, 300)]
 		# tadData = np.array([tad1], dtype="object")
-		# 
+		
 		# svData = ["chr1", 50, 50, "chr1", 250, 250, "dummy", "protective against cancer yay", SV("chr1", 50, 50, "chr1", 250, 250, "dummy", "protective against cancer yay", "duplication")]
+		# 
+		# tad1 = ["chr1", 1, 100, TAD("chr1", 1, 100)]
+		# tad3 = ["chr1", 200, 300, TAD("chr1", 20, 300)]
+		# 
+		# tadData = np.array([tad1, tad3], dtype="object")
+		# 
+		# svData = ["chr1", 60, 60, "chr1", 210, 210, "dummy", "protective against cancer yay", SV("chr1", 60, 60, "chr1", 210, 210, "dummy", "protective against cancer yay", "inversion")]
+		# 
+		# 
+		
 		# 	
 			
+		### INVERSION ###
+		if svType == "inv":
+			
+			#1. Get the two TADs at the start and end of the inversions (these may be genomic bins)
+			
+			tadChrSubsetInd = svData[0] == tadData[:,0]
+			tadChrSubset = tadData[tadChrSubsetInd]
+			
+			
+			
+			#Get all TADs overlapped by the inversion
+			#First get all TADs overlapped by the start of the inversion
+			startMatches = svData[1] <= tadChrSubset[:,2]
+			endMatches = svData[1] >= tadChrSubset[:,1]
+			
+			invStartMatches = startMatches * endMatches #either the start or end needs to match
+			
+			#Then get the TADs overlapped by the end of the inversion
+			startMatches = svData[5] >= tadChrSubset[:,1]
+			endMatches = svData[5] <= tadChrSubset[:,2]
+			
+			invEndMatches = startMatches * endMatches
+			
+			leftMostTad = tadChrSubset[invStartMatches]
+			rightMostTad = tadChrSubset[invEndMatches]
+			
+			if len(leftMostTad) < 1 or len(rightMostTad) < 1:
+				return #for now skip all inversions that do not end in a TAD on either side. 
+			
+			if len(leftMostTad) > 0 and len(rightMostTad) > 0:
+				
+				leftMostTad = leftMostTad[0]
+				rightMostTad = rightMostTad[0]
+				
+				#2. Collect all elements until the right TAD boundary inside the inversion.
+				
+				leftSideElements = leftMostTad[3].getElementsByRange(svData[1], leftMostTad[2]) #From the start of the inversion until the end of the left most TAD
+				unaffectedElementsLeft = leftMostTad[3].getElementsByRange(leftMostTad[1], svData[1])
+	
+				#Also get the genes
+				leftSideGenes = leftMostTad[3].getGenesByRange(svData[1], leftMostTad[2]) #From the start of the inversion until the end of the left most TAD
+				unaffectedGenesLeft = leftMostTad[3].getGenesByRange(leftMostTad[1], svData[1])
+				
+				#3. Collect all elements from the left TAD boundary until the end of the inversion.
+				
+				rightSideElements = rightMostTad[3].getElementsByRange(rightMostTad[1], svData[5]) #from the start of the rightmost TAD until the end of the inversion
+				unaffectedElementsRight = rightMostTad[3].getElementsByRange(svData[5], rightMostTad[2])
+				
+				rightSideGenes = rightMostTad[3].getGenesByRange(rightMostTad[1], svData[5]) #from the start of the rightmost TAD until the end of the inversion
+				unaffectedGenesRight = rightMostTad[3].getGenesByRange(svData[5], rightMostTad[2])
+				
+				#4. Make two new TAD objects. Assign all elements until the inversion start/from the inversion end to the TADs.
+				
+				#The new end position of the leftmost TAD is the start of the inversion + the length of the inversion part in the right TAD (inversion end - right TAD start)
+				
+				# leftTadNewEnd = svData[1] + (svData[5] - rightMostTad[1])
+				# 
+				# #The new start position of the rightmost TAD is the inversion end - (leftmost TAD end - inversion start)
+				# rightTadNewStart = svData[5] - (leftMostTad[2] - svData[1])
+				# 
+				# newLeftTad = TAD(svData[0], leftMostTad[1], leftTadNewEnd)
+				# newRightTad = TAD(svData[0], rightTadNewStart, rightMostTad[2])
+				
+				#5. Assign the gains and losses to the genes
+				
+				# #All genes that were originally in the left TAD (outisde of the inversion) will gain elements of the right side of the inversion
+				# for gene in unaffectedGenesLeft:
+				# 	gene.addGainedEQTLs(rightSideElements, svData[7])
+				# 
+				# #All genes in the right side of the inversion will gain elements from the original left TAD.
+				# for gene in rightSideGenes:
+				# 	gene.addGainedEQTLs(unaffectedElementsLeft, svData[7])
+				# 
+				# #vice versa but then for the right TAD and right side of the inversion. 
+				# for gene in unaffectedGenesRight:
+				# 	gene.addGainedEQTLs(leftSideElements, svData[7])
+				# 
+				# for gene in leftSideGenes:
+				# 	gene.addGainedEQTLs(unaffectedElementsRight, svData[7])
+			elif len(leftMostTad) < 1 or len(rightMostTad) < 1:
+				
+				#Either the left side of the inversion or the right side is within a TAD, but the other part is within a genomic bin. 
+				#Here make use of genomic bins instead of TADs.
+				
+				#1. First get the genomic bin for the non-TAD end
+				#Case where the inversion ends in a TAD, but the left side is a genomic bin. 
+				if len(leftMostTad) < 1:
+					genomicBin = genome.collectGenomicBin(svData[0], svData[1], svData[2])
+					
+					#Collect the elements and genes that are gained and lost within the TAD or genomic bin
+					
+					leftSideElements = genomicBin[3].getElementsByRange(svData[1], genomicBin[2]) #From the start of the inversion until the end of the left most TAD
+					unaffectedElementsLeft = genomicBin[3].getElementsByRange(genomicBin[1], svData[1])
+		
+					#Also get the genes
+					leftSideGenes = genomicBin[3].getGenesByRange(svData[1], genomicBin[2]) #From the start of the inversion until the end of the left most TAD
+					unaffectedGenesLeft = genomicBin[3].getGenesByRange(genomicBin[1], svData[1])
+					
+					#3. Collect all elements from the left TAD boundary until the end of the inversion.
+					
+					rightSideElements = rightMostTad[3].getElementsByRange(rightMostTad[1], svData[5]) #from the start of the rightmost TAD until the end of the inversion
+					unaffectedElementsRight = rightMostTad[3].getElementsByRange(svData[5], rightMostTad[2])
+					
+					rightSideGenes = rightMostTad[3].getGenesByRange(rightMostTad[1], svData[5]) #from the start of the rightmost TAD until the end of the inversion
+					unaffectedGenesRight = rightMostTad[3].getGenesByRange(svData[5], rightMostTad[2])
+				#Case where the inversion starts in a TAD, but the right side is in a genomic bin.
+				elif len(rightMostTad) < 1:
+					genomicBin = genome.collectGenomicBin(svData[0], svData[4], svData[5])
+					
+					#2. Collect all elements until the right TAD boundary inside the inversion.
+					
+					leftSideElements = leftMostTad[3].getElementsByRange(svData[1], leftMostTad[2]) #From the start of the inversion until the end of the left most TAD
+					unaffectedElementsLeft = leftMostTad[3].getElementsByRange(leftMostTad[1], svData[1])
+		
+					#Also get the genes
+					leftSideGenes = leftMostTad[3].getGenesByRange(svData[1], leftMostTad[2]) #From the start of the inversion until the end of the left most TAD
+					unaffectedGenesLeft = leftMostTad[3].getGenesByRange(leftMostTad[1], svData[1])
+					
+					#3. Collect all elements from the left TAD boundary until the end of the inversion.
+					
+					rightSideElements = genomicBin[3].getElementsByRange(genomicBin[1], svData[5]) #from the start of the rightmost TAD until the end of the inversion
+					unaffectedElementsRight = genomicBin[3].getElementsByRange(svData[5], genomicBin[2])
+					
+					rightSideGenes = genomicBin[3].getGenesByRange(genomicBin[1], svData[5]) #from the start of the rightmost TAD until the end of the inversion
+					unaffectedGenesRight = genomicBin[3].getGenesByRange(svData[5], genomicBin[2])
+						
+			
+			
+			#Assigning the gains and losses to the genes is independent of the type of inversion
+					
+			#All genes that were originally in the left TAD (outisde of the inversion) will gain elements of the right side of the inversion
+			#All unaffected genes on the left will lose the eQTLs that are in the left side of the inversion
+			for gene in unaffectedGenesLeft:
+				gene.addGainedEQTLs(rightSideElements, svData[7])
+				gene.addLostEQTLs(leftSideElements, svData[7])
+			
+			#All genes in the right side of the inversion will gain elements from the original left TAD.
+			#All genes in the right side will lose interactions with eQTLs in the unaffected right TAD. 
+			for gene in rightSideGenes:
+				gene.addGainedEQTLs(unaffectedElementsLeft, svData[7])
+				gene.addLostEQTLs(unaffectedElementsRight, svData[7])
+			
+			#vice versa but then for the right TAD and right side of the inversion.
+			#The lost eQTLs are the ones that are in the right side of the inversion
+			for gene in unaffectedGenesRight:
+				gene.addGainedEQTLs(leftSideElements, svData[7])
+				gene.addLostEQTLs(rightSideElements, svData[7])
+			
+			#The lost eQTLs are the ones that are in the unaffected original left TAD
+			for gene in leftSideGenes:
+				gene.addGainedEQTLs(unaffectedElementsRight, svData[7])
+				gene.addLostEQTLs(unaffectedElementsLeft, svData[7])
+			
+			
+				
+			return
 		
 		### DUPLICATION ###
 		if svType == "dup":
@@ -93,7 +267,7 @@ class DerivativeTADMaker:
 			tadChrSubset = tadData[tadChrSubsetInd]
 			
 			startMatches = svData[1] < tadChrSubset[:,2]
-			endMatches = svData[2] > tadChrSubset[:,1]
+			endMatches = svData[2] > tadChrSubset[:,1]  ##? Is this correct?
 			
 			matches = startMatches + endMatches #either the start or end needs to match
 	

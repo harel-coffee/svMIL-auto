@@ -53,6 +53,11 @@ class Gene:
 		if sample not in self.gainedEQTLs:
 			self.gainedEQTLs[sample] = []
 		self.gainedEQTLs[sample] += gainedEQTLs
+	
+	def addLostEQTLs(self, lostEQTLs, sample):
+		if sample not in self.lostEQTLs:
+			self.lostEQTLs[sample] = []
+		self.lostEQTLs[sample] += lostEQTLs
 		
 		
 		

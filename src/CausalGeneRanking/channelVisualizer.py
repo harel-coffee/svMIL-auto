@@ -21,7 +21,7 @@ class ChannelVisualizer:
 		#for the genes that have losses/gains in the causal gene set, visualize the channels
 		#Does that look different from a random gene?
 		
-		
+		print "loading genes"
 		knownBcGenes = self.loadBCGenes("../../data/Genes/breastCancerCausalGenes.txt")
 		causalGenes = self.loadCausalGenes('../../data/Genes/Census_allTue Apr 10 14_56_44 2018.tsv')
 		
@@ -31,6 +31,7 @@ class ChannelVisualizer:
 		#self.reportSNVOverlap(genes, causalGenes)
 		#self.visualizeReference(genes)
 		#self.visualizeDerivative(genes)
+		
 		[channels, labels] = self.makeFeatureMatrix(genes, causalGenes, genome)
 		self.clusterGenes(channels, labels)
 		
@@ -251,10 +252,10 @@ class ChannelVisualizer:
 		gainChannels = np.array(gainChannels)
 		
 		stackedChannels = np.dstack((lossChannels, gainChannels))
+		#stackedChannels = np.concatenate((lossChannels, gainChannels))
 		
-		print stackedChannels.shape
-		
-		print len(labels)
+		print stackedChannels
+		print labels
 		
 		
 				
@@ -279,27 +280,13 @@ class ChannelVisualizer:
 		
 		#cluster the channels. 
 		
-		from scipy.cluster.hierarchy import dendrogram, linkage  
-		from matplotlib import pyplot as plt
-		
-		#linked = linkage(channels, 'single')
-
-		# plt.figure(figsize=(10, 7))  
-		# dendrogram(linked,  
-		# 			orientation='top',
-		# 			labels=labelList,
-		# 			distance_sort='descending',
-		# 			show_leaf_counts=True)
-		# plt.show()
+		# from scipy.cluster.hierarchy import dendrogram, linkage  
+		# from matplotlib import pyplot as plt
 		# 
-		# from sklearn.cluster import AgglomerativeClustering
+		# print labelList
 		# 
-		# cluster = AgglomerativeClustering(n_clusters=2, affinity='euclidean', linkage='ward')  
-		# cluster.fit_predict(channels)
 		# 
-		# print(cluster.labels_)
-		# print(labelList)
-		
+		# 
 		# from sklearn.decomposition import PCA
 		# 
 		# pca = PCA(n_components=2)
@@ -309,27 +296,39 @@ class ChannelVisualizer:
 		# colorLabels = []
 		# for label in labelList:
 		# 	if label == 1:
-		# 		colorLabels.append(6)
+		# 		colorLabels.append('r')
 		# 	else:
-		# 		colorLabels.append(3)
+		# 		colorLabels.append('b')
 		# 
-		# plt.scatter(projected[:, 0], projected[:, 1], c=labelList, edgecolor='none', alpha=1, cmap=plt.cm.get_cmap('jet', 2))
-		# plt.xlabel('component 1')
-		# plt.ylabel('component 2')
-		# plt.colorbar()
+		# plt.scatter(projected[:, 0], projected[:, 1], c=colorLabels)
 		# plt.show()
+		# # 
+		# # plt.scatter(projected[:, 0], projected[:, 1], c=colorLabels, edgecolor='none', alpha=1, cmap=plt.cm.get_cmap('jet', 2))
+		# # plt.xlabel('component 1')
+		# # plt.ylabel('component 2')
+		# # plt.colorbar()
+		# # plt.show()
 		# 
-		# 
+		# # 
 		# from tsne import bh_sne
 		# 
 		# vis_data = bh_sne(channels)
 		# # plot the result
 		# vis_x = vis_data[:, 0]
 		# vis_y = vis_data[:, 1]
+		# plt.scatter(vis_x, vis_y, c=colorLabels)
+		# plt.show()
+		# exit()
+		
+		# print labelList
+		# exit()
+		# 
 		# plt.scatter(vis_x, vis_y, c=labelList, edgecolor = 'none', alpha = 0.5, cmap=plt.cm.get_cmap("jet", 2))
 		# plt.colorbar()
 		# plt.show()
-		#
+		# 
+		# exit()
+		# 
 		
 		# Try some simple classifiers, is there any that can obtain reasonable performance with the current features?
 		
