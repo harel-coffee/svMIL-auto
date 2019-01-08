@@ -83,7 +83,7 @@ class ChannelVisualizer:
 		
 		positionMap = dict()
 		currentBin = 0
-		for pos in range(0, windowSize):
+		for pos in range(1, windowSize+1):
 		#for pos in range(0, windowSize*2):	
 			
 			if pos % binRange == 0:
@@ -172,25 +172,35 @@ class ChannelVisualizer:
 						
 						#Get the bin in which this
 						genomicBin = genome.collectGenomicBin(gain.chromosome, gain.start, gain.end)
+						
+						if genomicBin == None:
+							continue #skip the eQTL if it does not fit in any genomic bin. 
+						
 						#Check the size of the bin. If it is a TAD, no problem
 						
 						#####This is a bug, the position is not correct. We need the right TAD pos
 						
 						if genomicBin[2] - genomicBin[1] == windowSize:
 							inTadPos = gain.start - genomicBin[1]
+							
 						else:
 							
 							#Divide the bin up in bins of 40 KB.
 							boundaries = []
-							for pos in range(genomicBin[1], genomicBin[2]):
-								if pos % windowSize == True:
-									boundaries.append(pos)
+							bins = (genomicBin[2] - genomicBin[1]) / windowSize
+							genomicInd = genomicBin[1]
+							for binInd in range(0, bins):
+								boundaries.append(genomicInd)
+								genomicInd += windowSize
 							
 							closestPos = boundaries[0]
 							currentClosest = abs(gain.start - boundaries[0])
 							for boundary in boundaries:
 								if abs(gain.start - boundary) < currentClosest:
+									
 									closestPos = boundary
+									currentClosest = abs(gain.start - boundary)
+							
 							if gain.start > closestPos:
 								inTadPos = gain.start - closestPos
 							else:
@@ -263,7 +273,6 @@ class ChannelVisualizer:
 		# exit()
 		
 		print "Number of positive genes: ", posCount
-		
 		return stackedChannels, labels
 
 	def clusterGenes(self, channels, labelList):
