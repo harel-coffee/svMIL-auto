@@ -1,3 +1,5 @@
+from copy import deepcopy
+
 class Gene:
 	"""
 		Class to describe a gene. Will hold all other information related to the neighborhood of the gene as well, like the TADs, eQTLs and SVs. 
@@ -51,8 +53,13 @@ class Gene:
 		
 	def addGainedEQTLs(self, gainedEQTLs, sample):
 		if sample not in self.gainedEQTLs:
-			self.gainedEQTLs[sample] = []
-		self.gainedEQTLs[sample] += gainedEQTLs
+			self.gainedEQTLs[sample] = deepcopy(gainedEQTLs)
+		else:
+			self.gainedEQTLs[sample] += deepcopy(gainedEQTLs)
+		# if len(gainedEQTLs) > 0:
+		# 	print "no of gains: ", len(gainedEQTLs)
+		# 	print "final no of gains: ", len(self.gainedEQTLs[sample])
+		# 
 	
 	def addLostEQTLs(self, lostEQTLs, sample):
 		if sample not in self.lostEQTLs:

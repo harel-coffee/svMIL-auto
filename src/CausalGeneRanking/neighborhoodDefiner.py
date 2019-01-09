@@ -41,8 +41,6 @@ class NeighborhoodDefiner:
 			tadData = self.getTADsFromFile(tadFile)
 			print "mapping TADs to genes"
 			self.mapTADsToGenes(genes[:,3], tadData) #only pass the gene objects will suffice
-		
-			
 			
 		#2. Map genes to eQTLs
 		
@@ -51,8 +49,8 @@ class NeighborhoodDefiner:
 		if settings.general['eQTLs'] == True or settings.general['gainOfInteractions'] == True: #Gain of eQTL interactions depends on eQTLs. 
 			#Save the processed data, only needs to be done once
 			
-			import os.path
-			
+			# import os.path
+			# 
 			# if os.path.exists('eQTLData.pkl'):
 			# 	print "loading eQTLs from pkl"
 			# 	#Load the eqtls
@@ -93,8 +91,9 @@ class NeighborhoodDefiner:
 		if settings.general['gainOfInteractions'] == True:
 			tadData = self.mapEQTLInteractionsToTads(eQTLData, tadData)
 			tadData = self.mapGenesToTads(genes, tadData) 
-
+		
 		#First define the Genome object with all data that we collected to far
+		print "Defining genomic bins"
 		genome.defineBins(genes, tadData, eQTLData)
 		
 		
