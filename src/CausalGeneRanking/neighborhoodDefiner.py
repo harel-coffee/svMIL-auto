@@ -36,7 +36,7 @@ class NeighborhoodDefiner:
 		if settings.general['tads'] == True or settings.general['gainOfInteractions'] == True: #Gain of interactions is dependent on TADs
 			
 			#Make these pats a setting!
-			tadFile = "../../data/tads/tads.csv" #These files will need to go to the settings!
+			tadFile = "../../data/tads/HMEC_Lieberman-raw_TADs.bed" #These files will need to go to the settings!
 			print "Getting TADs"
 			tadData = self.getTADsFromFile(tadFile)
 			print "mapping TADs to genes"
@@ -142,7 +142,19 @@ class NeighborhoodDefiner:
 		#Also convert the other dataset to numpy
 		tadData = np.array(tadData, dtype='object')
 		
-		return tadData
+		#Make sure to sort the tads oer chromosome
+		sortedTads = []
+		chroms = np.unique(tadData[:,0])
+		for chromosome in chroms:
+			tadSubset = tadData[tadData[:,0] == chromosome]
+			
+			sortedSubset = tadSubset[tadSubset[:,1].argsort()]
+			for tad in sortedSubset:
+			
+				sortedTads.append(tad)
+			
+		
+		return np.array(sortedTads)
 		
 		
 	def getEQTLsFromFile(self, eQTLFile, genes):

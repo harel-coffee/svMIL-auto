@@ -121,7 +121,22 @@ if permutationYN == "True":
 
 #Number of patients
 #print len(np.unique(svData[:,7]))
+# 
+# import os.path
+# 
+# if os.path.exists('genome.pkl'):
+# 	print "loading genome bins from pkl"
+# 	
+# 	with open('genome.pkl', 'rb') as h:
+# 		genome = pkl.load(h)
+# else:
+# 	genome = Genome() #pkl this object
+# 
+# 	with open('genome.pkl', 'wb') as h:
+# 		pkl.dump(genome, h, protocol=pkl.HIGHEST_PROTOCOL)
+
 genome = Genome()
+
 		
 #2. Get the neighborhood for these genes
 if mode == "SV":
