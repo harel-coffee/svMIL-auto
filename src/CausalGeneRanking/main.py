@@ -41,7 +41,7 @@ import os
 
 
 from neighborhoodDefiner import NeighborhoodDefiner
-from geneRankingAlphaBeta import GeneRanking
+from geneRanking import GeneRanking
 from inputParser import InputParser
 from variantShuffler import VariantShuffler
 from channelVisualizer import ChannelVisualizer
@@ -152,7 +152,9 @@ if mode == "SV+SNV":
 
 #3. Do simple ranking of the genes and report the causal SVs
 print "Ranking the genes for the variants"
-#geneRanking = GeneRanking(causalGenes[:,3], mode)
+geneRanking = GeneRanking(causalGenes[:,3], mode)
+
+
 #Skip the ranking for now and instead do exploration
 
 #Save the causal genes up until here and load them for faster development
@@ -162,10 +164,10 @@ print "Ranking the genes for the variants"
 # pickle.dump(causalGenes, filehandler)
 # filehandler.close()
 # exit()
-
-ChannelVisualizer(causalGenes[:,3], mode, genome)
-
-exit()
+# 
+# ChannelVisualizer(causalGenes[:,3], mode, genome)
+# 
+# exit()
 
 
 #Output the ranking scores to a file (should probably also be its own class or at least a function)
@@ -193,19 +195,15 @@ for cancerType in geneRanking.scores:
 		gene = cancerTypeScores[row][0]
 		geneName = gene.name
 		
-		# geneScore = cancerTypeScores[row,1]
-		eQTLScore = cancerTypeScores[row,1]
-		alpha = cancerTypeScores[row,2]
-		beta = cancerTypeScores[row,3]
-		eQTLCount = cancerTypeScores[row,4]
+		geneScore = cancerTypeScores[row,1]
+		eQTLScore = cancerTypeScores[row,2]
+		
 		# tadScore = cancerTypeScores[row,3]
 		# interactionScore = cancerTypeScores[row,4]
 		
 		perGeneScores[row][0] = geneName
-		perGeneScores[row][1] = eQTLScore
-		perGeneScores[row][2] = alpha
-		perGeneScores[row][3] = beta
-		perGeneScores[row][4] = eQTLCount
+		perGeneScores[row][1] = geneScore
+		perGeneScores[row][2] = eQTLScore
 		# perGeneScores[row][2] = eQTLScore
 		# perGeneScores[row][3] = tadScore
 		# perGeneScores[row][4] = interactionScore

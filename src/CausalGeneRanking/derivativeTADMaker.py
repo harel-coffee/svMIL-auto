@@ -485,47 +485,30 @@ class DerivativeTADMaker:
 					#So we only need to model the gained interactions in the middle TAD (the new TAD)
 					
 					
+					newTad1Start = filteredTads[0][2]
+					#The end of the new TAD1 is the leftmost TAD (A) end + leftmostTAD (A) end - duplication start
+					newTad1End = filteredTads[0][2] + (filteredTads[0][2] - svData[1])
+					
+					#Get all interactions from the start of the SV until the end of the first TAD (A).
+					svInteractionsFirstTad = filteredTads[0][3].getElementsByRange(svData[1], filteredTads[0][2])
+					svGenesFirstTad = filteredTads[0][3].getGenesByRange(svData[1], filteredTads[0][2])
+					
+					#Get the second TAD (B) and the interactions inside the SV part specifically
+					
+					svInteractionsSecondTad = filteredTads[1][3].getElementsByRange(filteredTads[0][2], svData[5])
+					svGenesSecondTad = filteredTads[1][3].getGenesByRange(filteredTads[0][2], svData[5])
+					
+					#Genes in the sv part of the first TAD will interact with the eQTLs in the SV of the second TAD
 					
 					
-					# 
-					# 
-					# 
-					# 
-					# if svData[1] < filteredTads[0][1] and svData[5] > filteredTads[0][1]:
-					# 	newTad1Start = filteredTads[0][1]
-					# 	newTad1End = filteredTads[0][1] + (filteredTads[0][1] - svData[1])
-					# 	
-					# 	newLastTadStart = newTad1End
-					# 	#The TAD end is the SV end - original TAD start + original TAD end - SV end + the new TAD end
-					# 	newLastTadEnd = (svData[5] - filteredTads[0][1]) + (filteredTads[0][2] - svData[5]) + newTad1End
-					# 	
-					# 	#The first part of the TAD will gain interactions from the SV in the bin on the left.
-					# 	#The genes in the SV from the bin will gain interactions from the first part of the TAD.
-					# 	#The genes in the first part of the TAD will gainn interactions from the SV from the bin. 
-					# 	
-					# 	#The rest of the TAD remains in tact and does not lose anything. 
-					# 	
-					# 	genomicBin = genome.collectGenomicBin(svData[0], svData[5], filteredTads[0][1])
-					# 	
-					# 	svInteractionsBin = genomicBin[3].getElementsByRange(svData[1], filteredTads[0][2])
-					# 	svGenesBin = genomicBin[3].getGenesByRange(svData[1], filteredTads[0][2])
-					# 	
-					# 	svInteractionsFirstTad = filteredTads[0][3].getElementsByRange(filteredTads[0][1], svData[5])
-					# 	svGenesFirstTad = filteredTads[0][3].getGenesByRange(filteredTads[0][1], svData[5])
-					# 	
-					# 	for gene in svGenesBin:
-					# 		#These genes gain interactions from the TAD.
-					# 	#	print "adding gains from left TAD: ", len(svInteractionsFirstTad)
-					# 		gene.addGainedEQTLs(svInteractionsFirstTad, svData[7])
-					# 		
-					# 	
-					# 	for gene in svGenesFirstTad:
-					# 		#These genes gain interactions from the SV part in the bin.
-					# 	#	print "adding gains from bin: ", len(svInteractionsBin)
-					# 		gene.addGainedEQTLs(svInteractionsBin, svData[7])
-					# 
-					# 
-					a = 1
+					for gene in svGenesFirstTad:
+						#Each gene in this bin gets all eQTLs that are within the SV.
+						gene.addGainedEQTLs(svInteractionsSecondTad, svData[7])
+						
+					for gene in svGenesSecondTad:
+						#Each gene here gains eQTLs from outside of the SV in the bin.
+						gene.addGainedEQTLs(svInteractionsFirstTad, svData[7])
+			
 					
 					
 				
