@@ -196,18 +196,23 @@ for cancerType in geneRanking.scores:
 		geneName = gene.name
 		
 		geneScore = cancerTypeScores[row,1]
-		eQTLScore = cancerTypeScores[row,2]
+		eQTLGainScore = cancerTypeScores[row,2]
+		eQTLLossScore = cancerTypeScores[row,3]
 		
 		# tadScore = cancerTypeScores[row,3]
 		# interactionScore = cancerTypeScores[row,4]
 		
 		perGeneScores[row][0] = geneName
 		perGeneScores[row][1] = geneScore
-		perGeneScores[row][2] = eQTLScore
+		perGeneScores[row][2] = eQTLGainScore
+		perGeneScores[row][3] = eQTLLossScore
+		perGeneScores[row][4] = eQTLGainScore + eQTLLossScore
 		# perGeneScores[row][2] = eQTLScore
 		# perGeneScores[row][3] = tadScore
 		# perGeneScores[row][4] = interactionScore
 
+	#Also rank the output by highest total score (recurrence)
+	perGeneScores = perGeneScores[perGeneScores[:,4].argsort()[::-1]]
 	
 	cancerTypeFolder = rankedGeneScoreDir + "/" + uuid + "/" + cancerType
 	if not os.path.exists(cancerTypeFolder):

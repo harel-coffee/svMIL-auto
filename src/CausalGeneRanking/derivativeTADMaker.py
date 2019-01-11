@@ -46,7 +46,7 @@ class DerivativeTADMaker:
 		dupCount = 0
 		
 		
-		
+# 		
 		
 		for sv in svData:
 			# 
@@ -152,12 +152,18 @@ class DerivativeTADMaker:
 			leftMostTad = tadChrSubset[invStartMatches]
 			rightMostTad = tadChrSubset[invEndMatches]
 			
+				
 			if len(leftMostTad) < 1 or len(rightMostTad) < 1:
 				return #for now skip all inversions that do not end in a TAD on either side. 
-			
+
 			#These are only the cases where the inversion ends in a TAD on both sides. 
 			if len(leftMostTad) > 0 and len(rightMostTad) > 0:
 				print "SV ends in two TADs"
+				
+				
+				if leftMostTad[0][1] == rightMostTad[0][1] and leftMostTad[0][2] == rightMostTad[0][2]: #skip if the SV is within a TAD entirely
+					return
+			
 				
 				leftMostTad = leftMostTad[0]
 				rightMostTad = rightMostTad[0]
@@ -272,6 +278,11 @@ class DerivativeTADMaker:
 			#All genes that were originally in the left TAD (outisde of the inversion) will gain elements of the right side of the inversion
 			#All unaffected genes on the left will lose the eQTLs that are in the left side of the inversion
 			for gene in unaffectedGenesLeft:
+				
+				if gene.name == "PDE4DIP":
+					print svData[0], svData[1], svData[5]
+					exit()
+				
 				gene.addGainedEQTLs(rightSideElements, svData[7])
 				gene.addLostEQTLs(leftSideElements, svData[7])
 				#print "Number of gained right side elements: ", len(rightSideElements), " for genes ", len(unaffectedGenesLeft)
@@ -283,6 +294,9 @@ class DerivativeTADMaker:
 			#All genes in the right side of the inversion will gain elements from the original left TAD.
 			#All genes in the right side will lose interactions with eQTLs in the unaffected right TAD. 
 			for gene in rightSideGenes:
+				if gene.name == "ARID1A":
+					print svData[0], svData[1], svData[5]
+					exit()
 				gene.addGainedEQTLs(unaffectedElementsLeft, svData[7])
 				#print "Number of unaffected elements right: ", len(unaffectedElementsRight), " for genes ", len(rightSideGenes)
 				gene.addLostEQTLs(unaffectedElementsRight, svData[7])
@@ -290,12 +304,18 @@ class DerivativeTADMaker:
 			#vice versa but then for the right TAD and right side of the inversion.
 			#The lost eQTLs are the ones that are in the right side of the inversion
 			for gene in unaffectedGenesRight:
+				if gene.name == "ARID1A":
+					print svData[0], svData[1], svData[5]
+					exit()
 				gene.addGainedEQTLs(leftSideElements, svData[7])
 				#print "Number of gained right side elements 2: ", len(rightSideElements), " for genes ", len(unaffectedGenesRight)
 				gene.addLostEQTLs(rightSideElements, svData[7])
 			
 			#The lost eQTLs are the ones that are in the unaffected original left TAD
 			for gene in leftSideGenes:
+				if gene.name == "ARID1A":
+					print svData[0], svData[1], svData[5]
+					exit()
 				gene.addGainedEQTLs(unaffectedElementsRight, svData[7])
 				#print "Number of unaffected left elements: ", len(unaffectedElementsLeft), " for genes ", len(leftSideGenes)
 				gene.addLostEQTLs(unaffectedElementsLeft, svData[7])

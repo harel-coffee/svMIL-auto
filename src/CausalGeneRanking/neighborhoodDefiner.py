@@ -87,10 +87,17 @@ class NeighborhoodDefiner:
 		# 	#Map the Hi-C interactions to the respective TADs
 		# 	tadData = self.mapInteractionsToTads(interactions, regions, tadData)
 
+		#lncRNA data
+		lncRNAData = self.getLncRNAsFromFile(settings.files['lncRNAFile'])
+		eQTLData = lncRNAData #does this work? 
+
 		#For now, we use eQTLs for gains of interactions rather than Hi-C.
 		if settings.general['gainOfInteractions'] == True:
 			tadData = self.mapEQTLInteractionsToTads(eQTLData, tadData)
 			tadData = self.mapGenesToTads(genes, tadData) 
+		
+		
+		
 		
 		#First define the Genome object with all data that we collected to far
 		print "Defining genomic bins"
@@ -194,6 +201,23 @@ class NeighborhoodDefiner:
 		
 		return np.array(eQTLs, dtype='object')
 	
+	def getLncRNAsFromFile(self, lncRNAFile):
+		
+		lncRNAs = []
+		with open(lncRNAFile, 'rb') as f:
+			
+			for line in f:
+				line = line.strip()
+				splitLine = line.split("\t")
+				
+				#Quick and dirty
+				lncRNAObject = EQTL(splitLine[1], int(splitLine[2]), int(splitLine[3]))
+				
+				lncRNAs.append([splitLine[1], int(splitLine[2]), int(splitLine[3]), lncRNAObject])					
+		
+		return np.array(lncRNAs, dtype="object")
+		
+
 	def getInteractionsFromFile(self, interactionsFile):
 		"""
 			!!! DEPRECATED, Hi-C BASED HEAT DIFFUSION IS NOT WORKING
@@ -337,7 +361,6 @@ class NeighborhoodDefiner:
 			
 			#Within this subset, check which TADs are on the right and left of the current gene
 			
-			
 			#TADs on the left have their start position before the gene. But their start must be closest to the gene to be the left TAD. 
 			#TADs on the right have their start after the gene start. 
 			
@@ -359,6 +382,11 @@ class NeighborhoodDefiner:
 				
 			else:
 				gene.setRightTAD(None)
+			# 	
+			# if gene.name == "ARID1A":
+			# 	print nearestRightTAD.start, nearestRightTAD.end
+			# 	print nearestLeftTAD.start, nearestLeftTAD.end
+			# 	exit()
 
 		
 	def mapEQTLsToGenes(self, eQTL, geneDict, geneSymbol):

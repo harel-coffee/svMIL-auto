@@ -160,7 +160,9 @@ class GeneRanking:
 			geneScoringMatrix = self.scoreBySVsInGenes(cancerTypeSVs["genes"], sampleMap, geneMap)
 			print "scoring eQTLs"
 			#eQTLScoringMatrix = self.scoreBySVsInEQTLs(cancerTypeSVs, sampleMap, geneMap, cancerType)
-			eQTLScoringMatrix = self.scoreByEQTLs(cancerTypeSVs, sampleMap, geneMap, cancerType)
+			#eQTLScoringMatrix = self.scoreByEQTLs(cancerTypeSVs, sampleMap, geneMap, cancerType)
+			eQTLGainsScoringMatrix = self.scoreByEQTLGains(cancerTypeSVs, sampleMap, geneMap, cancerType)
+			eQTLLossesScoringMatrix = self.scoreByEQTLLosses(cancerTypeSVs, sampleMap, geneMap, cancerType)
 			
 			# 
 			# print "scoring gained eQTL interactions:"
@@ -173,12 +175,12 @@ class GeneRanking:
 			#The idea is that we end up with one scoring matrix where only the scores remain for the elements in the neighborhood where SVs in those patients do not overlap with the gene itself. 
 			
 			#Filter out all patients in which the SV also disrupts the gene. 
-			eQTLXorMatrix = np.logical_xor(geneScoringMatrix, eQTLScoringMatrix).astype(int)
-			
+			eQTLGainsXorMatrix = np.logical_xor(geneScoringMatrix, eQTLGainsScoringMatrix).astype(int)
+			eQTLLossesXorMatrix = np.logical_xor(geneScoringMatrix, eQTLLossesScoringMatrix).astype(int)
 			
 			
 			#Scoring only by gained interactions
-			scoringMatrix = eQTLScoringMatrix
+			scoringMatrix = eQTLGainsScoringMatrix + eQTLLossesScoringMatrix
 			
 			#Sum the total score per gene and report the genes by which ones are most likely causal.
 
@@ -196,13 +198,19 @@ class GeneRanking:
 				gene = geneMap.keys()[geneMap.values().index(geneInd)] #Isn't this the part that is going wrong? The best index is probably the index in the matrix? 
 				gene = reverseGeneMap[geneInd]
 				
+				if gene.name == "ARID1A":
+					print eQTLGainsScoringMatrix[:,geneInd]
+					print eQTLLossesScoringMatrix[:,geneInd]
+					print geneScoringMatrix[:,geneInd]
+					print sampleMap
+				
 				
 				if geneScoresSummed[geneInd] > 0:
 					geneCount += 1
 					#print gene.name, gene.chromosome, gene.start, ": ", geneScoresSummed[geneInd], " gene score: ", np.sum(geneXorMatrix[:,geneInd]), " eQTL score: ", np.sum(eQTLXorMatrix[:,geneInd]), " TAD score: ", np.sum(tadXorMatrix[:,geneInd])	
 			
 				
-				geneScores.append([gene, np.sum(geneScoringMatrix[:,geneInd]), np.sum(eQTLScoringMatrix[:,geneInd])])
+				geneScores.append([gene, np.sum(geneScoringMatrix[:,geneInd]), np.sum(eQTLGainsScoringMatrix[:,geneInd]), np.sum(eQTLLossesScoringMatrix[:,geneInd])])
 			
 			
 			geneScores = np.array(geneScores, dtype="object")
@@ -350,12 +358,55 @@ class GeneRanking:
 			if len(gene.lostEQTLs) > 0:
 				for sample in gene.lostEQTLs:
 					sampleInd = sampleMap[sample]
-					scoringMatrix[sampleInd][matrixGeneInd] = 1
+					scoringMatrix[sampleInd][matrixGeneInd] += 1
 		
 			if len(gene.gainedEQTLs) > 0:
 				for sample in gene.gainedEQTLs:
 					sampleInd = sampleMap[sample]
-					scoringMatrix[sampleInd][matrixGeneInd] = 1
+					scoringMatrix[sampleInd][matrixGeneInd] += 1
+				
+		
+		return scoringMatrix
+	
+	def scoreByEQTLGains(self, cancerTypeSVs, sampleMap, geneMap, cancerType):
+		"""
+			For every gene, add a score of 1 if an eQTL is either gained or lost. Later separate losses from gains.
+		"""
+		
+		scoringMatrix = np.zeros([len(sampleMap), len(geneMap)])
+		
+		for geneInd in range(0, len(cancerTypeSVs["genes"])):
+			
+			gene = cancerTypeSVs["genes"].keys()[geneInd]
+			
+			matrixGeneInd = geneMap[gene]
+			
+			if len(gene.gainedEQTLs) > 0:
+				for sample in gene.gainedEQTLs:
+					sampleInd = sampleMap[sample]
+					scoringMatrix[sampleInd][matrixGeneInd] += 1
+				
+		
+		return scoringMatrix
+	
+	def scoreByEQTLLosses(self, cancerTypeSVs, sampleMap, geneMap, cancerType):
+		"""
+			For every gene, add a score of 1 if an eQTL is either gained or lost. Later separate losses from gains.
+		"""
+		
+		scoringMatrix = np.zeros([len(sampleMap), len(geneMap)])
+		
+		for geneInd in range(0, len(cancerTypeSVs["genes"])):
+			
+			gene = cancerTypeSVs["genes"].keys()[geneInd]
+			
+			matrixGeneInd = geneMap[gene]
+			
+			if len(gene.lostEQTLs) > 0:
+				for sample in gene.lostEQTLs:
+					sampleInd = sampleMap[sample]
+					scoringMatrix[sampleInd][matrixGeneInd] += 1
+		
 				
 		
 		return scoringMatrix

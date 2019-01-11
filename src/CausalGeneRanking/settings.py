@@ -7,7 +7,8 @@ files = dict(
 	causalGenesFile = '../../data/Genes/Census_allTue Apr 10 14_56_44 2018.tsv', #file with all causal genes from cosmic. 
 	nonCausalGenesFile = '../../data/Genes/hg19_proteinCodingGenes.bed', 
 	heatDiffusionFile = '../../data/HiC/diffusionScores.txt', # HEAT DIFFUSION IS BROKEN File with the heat diffusion scores for each region in the Hi-C network
-	hiCInteractionsFile = '../../data/HiC/regions_regions_rel.csv' #All intrachromosomal regions that interact with each other
+	hiCInteractionsFile = '../../data/HiC/regions_regions_rel.csv', #All intrachromosomal regions that interact with each other
+	lncRNAFile = '../../data/lncRNAs/lncRNA.bed'
 )
 
 general = dict(
