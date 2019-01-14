@@ -211,9 +211,9 @@ class NeighborhoodDefiner:
 				splitLine = line.split("\t")
 				
 				#Quick and dirty
-				lncRNAObject = EQTL(splitLine[1], int(splitLine[2]), int(splitLine[3]))
+				lncRNAObject = EQTL(splitLine[0], int(splitLine[1]), int(splitLine[2]))
 				
-				lncRNAs.append([splitLine[1], int(splitLine[2]), int(splitLine[3]), lncRNAObject])					
+				lncRNAs.append([splitLine[0], int(splitLine[1]), int(splitLine[2]), lncRNAObject])					
 		
 		return np.array(lncRNAs, dtype="object")
 		
@@ -768,8 +768,8 @@ class NeighborhoodDefiner:
 		
 		
 		#First map the SVs to TADs to see if we can infer gained interactions
-		if settings.general['gainOfInteractions'] == True:
-			self.determineGainedInteractions(svData, tadData)
+		# if settings.general['gainOfInteractions'] == True:
+		# 	self.determineGainedInteractions(svData, tadData)
 		
 		#The code below is now very specifically for all elements, but I will initially remove the TAD part and focus just on eQTLs.
 		#eQTLs will only be labelled as lost when these are targeted by a deletion, and also when these are within the nearest TAD boundaries of their gene. 
@@ -898,14 +898,15 @@ class NeighborhoodDefiner:
 					samples = np.unique(svsOverlappingEQTL[:,6])
 					
 					#Add the eQTL to the list of lost eQTLs for this gene
-					for sample in samples:
-						# if gene.name == "EPS15":
-						# 	print "gene: ", gene.name, " loses eQTL in sample ", sample
-						# 	print gene.leftTAD.start, gene.leftTAD.end
-						# 	print gene.rightTAD.start, gene.rightTAD.end
-						# 	print "eQTL: ", eQTL.start
-						# exit()	
-						gene.addLostEQTL(eQTL, sample)
+					####Temporarily turned this off for testing without deletions
+					# for sample in samples:
+					# 	# if gene.name == "EPS15":
+					# 	# 	print "gene: ", gene.name, " loses eQTL in sample ", sample
+					# 	# 	print gene.leftTAD.start, gene.leftTAD.end
+					# 	# 	print gene.rightTAD.start, gene.rightTAD.end
+					# 	# 	print "eQTL: ", eQTL.start
+					# 	# exit()	
+					# 	gene.addLostEQTL(eQTL, sample)
 				
 				#If there is anything in svsWithinTAD, then we can count ths eQTL as a lost eQTL
 				

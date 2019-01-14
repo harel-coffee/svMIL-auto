@@ -56,9 +56,9 @@ class Gene:
 			self.gainedEQTLs[sample] = deepcopy(gainedEQTLs)
 		else:
 			self.gainedEQTLs[sample] += deepcopy(gainedEQTLs)
-		if len(gainedEQTLs) > 0:
-			print "no of gains: ", len(gainedEQTLs)
-			print "final no of gains: ", len(self.gainedEQTLs[sample])
+		# if len(gainedEQTLs) > 0:
+		# 	print "no of gains: ", len(gainedEQTLs)
+		# 	print "final no of gains: ", len(self.gainedEQTLs[sample])
 		
 	
 	def addLostEQTLs(self, lostEQTLs, sample):

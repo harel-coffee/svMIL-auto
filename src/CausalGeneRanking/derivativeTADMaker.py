@@ -46,39 +46,126 @@ class DerivativeTADMaker:
 		dupCount = 0
 		
 		
+# # 		
+# 		
+# 		for sv in svData:
+# 			# 
+# 			# typeMatch = re.search("intra", sv[8].svType, re.IGNORECASE) #using 'chr' will match intra, inter
+# 			# if typeMatch is not None: #skip the most complicated kind for now
+# 			# 	continue
+# 			# 
+# 			
+# 			# 
+# 			
+# 			
+# 			typeMatch = re.search("inv", sv[8].svType, re.IGNORECASE)
+# 			if typeMatch is not None:
+# 				self.determineDerivativeTADs(sv, tadData, genome, "inv")
+# 				invCount += 1
+# 				print "inversion count: ", invCount
 # 		
 		
-		for sv in svData:
-			# 
-			# typeMatch = re.search("intra", sv[8].svType, re.IGNORECASE) #using 'chr' will match intra, inter
-			# if typeMatch is not None: #skip the most complicated kind for now
-			# 	continue
-			# 
-			
-			# 
-			
-			
-			typeMatch = re.search("inv", sv[8].svType, re.IGNORECASE)
-			if typeMatch is not None:
-				self.determineDerivativeTADs(sv, tadData, genome, "inv")
-				invCount += 1
-				print "inversion count: ", invCount
 		
-		for sv in svData:
-			
-			typeMatch = re.search("dup", sv[8].svType, re.IGNORECASE)
-			if typeMatch is not None:
+		# for sv in svData:
+		# 	
+		# 	typeMatch = re.search("dup", sv[8].svType, re.IGNORECASE)
+		# 	if typeMatch is not None:
+		# 		
+		# 		self.determineDerivativeTADs(sv, tadData, genome, "dup")
+		# 		dupCount += 1
+		# 		print "duplication count: ", dupCount
 				
-				self.determineDerivativeTADs(sv, tadData, genome, "dup")
-				dupCount += 1
-				print "duplication count: ", dupCount
-				
+		#For the translocations separately
+		#1. For each SV, determine which TAD the SVs are in
+		tadsPerSV = self.matchTADsWithTranslocations(svData, tadData)
+		self.defineGroupsOfTranslocations(tadsPerSV)
+		
+		#2. Group the SVs that form a 'chain' and have at least 1 TAD in overlap
+		
+		#3. Call the derivative TAD maker on this group of SVs and let it assign the gains/losses to the genes
+		
 		
 		
 		print "done making derivative TADs"
 		
 		return 0
+	
+	def defineGroupsOfTranslocations(self, tadsPerSV):
+		"""
+			Loop through the SVs and determine which SVs form a 'chain' and affect the same TADs
+		"""
 		
+		### TO DO:
+		# - Make sure that the SVs affecting only 1 position are also captured
+		
+		svGroups = dict()
+		tadsPerSVKeys = tadsPerSV.keys()
+		for svInd in range(0, len(tadsPerSV)):
+			sv1 = tadsPerSVKeys[svInd]
+			
+			currentGroup = []
+			currentGroupReversed = []
+			for sv2Ind in range(svInd, len(tadsPerSV)):
+				sv2 = tadsPerSVKeys[sv2Ind]
+				
+				#If the 2nd SV starts in the same TAD as the 1st ends in, and these coordinates are withi 100 bp of each other, cluster them together
+				#Here we then assume that the first SV in the list is actually the smallest SV on the smaller chromosme (the data is sorted so this should work fine)
+				
+				firstTad = tadsPerSV[sv1][1][0][3]
+				secondTad = tadsPerSV[sv2][0][0][3]
+				if firstTad == secondTad:
+				
+					if abs(sv1.e2 - sv2.s1) < 100:
+						currentGroup.append(sv1)
+						currentGroup.append(sv2)
+						currentGroupReversed.append(sv2)
+						currentGroupReversed.append(sv1)
+			
+			if len(currentGroup) > 0:
+				svGroups[sv1] = currentGroup
+				
+				print currentGroup
+				exit()
+			
+		
+		
+		
+		
+		
+		return
+
+	def matchTADsWithTranslocations(self, svData, tadData):
+		
+		tadsPerSV = dict()
+		
+		for sv in svData:
+			
+			#Focus on translocations only
+			typeMatch = re.search("chr", sv[8].svType, re.IGNORECASE)
+			if typeMatch is None:
+				continue
+
+			#1. Check which TADs are affected by the breakpoint (there should be only 1 on each side of the SV)
+			
+			#Check if the SV is intrachromosomal or interchromosomal
+			if sv[0] == sv[3]:
+				tadChrSubset = tadData[tadData[:,0] == sv[0]]
+				
+				startMatches = (sv[1] > tadChrSubset[:,1]) * (sv[1] < tadChrSubset[:,2])
+				matchingTadStart = tadChrSubset[startMatches]
+				
+				if len(matchingTadStart) < 1:
+					continue #if there is no TAD affected, we skip it for now
+			
+				endMatches = (sv[5] > tadChrSubset[:,1]) * (sv[5] < tadChrSubset[:,2])
+				matchingTadEnd = tadChrSubset[endMatches]
+			
+				if len(matchingTadEnd) < 1:
+					continue
+			
+				tadsPerSV[sv[8]] = [matchingTadStart, matchingTadEnd]
+		
+		return tadsPerSV
 		
 		
 	def determineDerivativeTADs(self, svData, tadData, genome, svType):	
@@ -127,7 +214,6 @@ class DerivativeTADMaker:
 			
 		### INVERSION ###
 		if svType == "inv":
-			print "Subsetting TADs"
 			
 			#1. Get the two TADs at the start and end of the inversions (these may be genomic bins)
 			
@@ -158,7 +244,6 @@ class DerivativeTADMaker:
 
 			#These are only the cases where the inversion ends in a TAD on both sides. 
 			if len(leftMostTad) > 0 and len(rightMostTad) > 0:
-				print "SV ends in two TADs"
 				
 				
 				if leftMostTad[0][1] == rightMostTad[0][1] and leftMostTad[0][2] == rightMostTad[0][2]: #skip if the SV is within a TAD entirely
@@ -274,14 +359,14 @@ class DerivativeTADMaker:
 			
 			
 			#Assigning the gains and losses to the genes is independent of the type of inversion
-			print "Copying genes and elements after SV"		
+			#print "Copying genes and elements after SV"		
 			#All genes that were originally in the left TAD (outisde of the inversion) will gain elements of the right side of the inversion
 			#All unaffected genes on the left will lose the eQTLs that are in the left side of the inversion
 			for gene in unaffectedGenesLeft:
 				
 				if gene.name == "PDE4DIP":
 					print svData[0], svData[1], svData[5]
-					exit()
+					#exit()
 				
 				gene.addGainedEQTLs(rightSideElements, svData[7])
 				gene.addLostEQTLs(leftSideElements, svData[7])
@@ -294,9 +379,9 @@ class DerivativeTADMaker:
 			#All genes in the right side of the inversion will gain elements from the original left TAD.
 			#All genes in the right side will lose interactions with eQTLs in the unaffected right TAD. 
 			for gene in rightSideGenes:
-				if gene.name == "ARID1A":
+				if gene.name == "PDE4DIP":
 					print svData[0], svData[1], svData[5]
-					exit()
+					#exit()
 				gene.addGainedEQTLs(unaffectedElementsLeft, svData[7])
 				#print "Number of unaffected elements right: ", len(unaffectedElementsRight), " for genes ", len(rightSideGenes)
 				gene.addLostEQTLs(unaffectedElementsRight, svData[7])
@@ -304,18 +389,18 @@ class DerivativeTADMaker:
 			#vice versa but then for the right TAD and right side of the inversion.
 			#The lost eQTLs are the ones that are in the right side of the inversion
 			for gene in unaffectedGenesRight:
-				if gene.name == "ARID1A":
+				if gene.name == "PDE4DIP":
 					print svData[0], svData[1], svData[5]
-					exit()
+					#exit()
 				gene.addGainedEQTLs(leftSideElements, svData[7])
 				#print "Number of gained right side elements 2: ", len(rightSideElements), " for genes ", len(unaffectedGenesRight)
 				gene.addLostEQTLs(rightSideElements, svData[7])
 			
 			#The lost eQTLs are the ones that are in the unaffected original left TAD
 			for gene in leftSideGenes:
-				if gene.name == "ARID1A":
+				if gene.name == "PDE4DIP":
 					print svData[0], svData[1], svData[5]
-					exit()
+					#exit()
 				gene.addGainedEQTLs(unaffectedElementsRight, svData[7])
 				#print "Number of unaffected left elements: ", len(unaffectedElementsLeft), " for genes ", len(leftSideGenes)
 				gene.addLostEQTLs(unaffectedElementsLeft, svData[7])
@@ -387,6 +472,8 @@ class DerivativeTADMaker:
 					
 				if len(leftMostTad) < 1 or len(rightMostTad) < 1:
 					return #For now here only use cases where the duplication ends in 2 TADs. 
+				
+				
 				
 				#Here we should also distinguish between cases where the duplications are either in a genomic bin or not.
 				#Can this code be simplified? In principle, the ideas are the same, but then with either a TAD or bin. 
@@ -470,10 +557,17 @@ class DerivativeTADMaker:
 					print "Number of genes to add gains: ", len(svGenesFirstTad)
 					for gene in svGenesFirstTad:
 						#print "adding gains from right TAD: ", len(svInteractionsLastTad)
+						if gene.name == "ARHGEF10L":
+							print svData
+						#	exit()
+							
 						gene.addGainedEQTLs(svInteractionsLastTad, svData[7])
 					print "(2) Number of genes to add gains: ", len(svGenesLastTad)
 					for gene in svGenesLastTad:
 						#print "adding gains from left TAD: ", len(svInteractionsFirstTad)
+						if gene.name == "ARHGEF10L":
+							print svData
+							#exit()
 						gene.addGainedEQTLs(svInteractionsFirstTad, svData[7])
 					
 					#The last TAD remains the same overall.
@@ -483,6 +577,9 @@ class DerivativeTADMaker:
 					
 					for tad in followingTads:
 						for gene in tad[3].genes:
+							if gene.name == "ARHGEF10L":
+								print svData
+								#exit()
 							
 							#1. Get all eQTLs within this TAD
 							tadEQTLs = tad[3].eQTLInteractions
@@ -522,10 +619,16 @@ class DerivativeTADMaker:
 					
 					
 					for gene in svGenesFirstTad:
+						if gene.name == "ARHGEF10L":
+							print svData
+							#exit()
 						#Each gene in this bin gets all eQTLs that are within the SV.
 						gene.addGainedEQTLs(svInteractionsSecondTad, svData[7])
 						
 					for gene in svGenesSecondTad:
+						if gene.name == "ARHGEF10L":
+							print svData
+							#exit()
 						#Each gene here gains eQTLs from outside of the SV in the bin.
 						gene.addGainedEQTLs(svInteractionsFirstTad, svData[7])
 			
