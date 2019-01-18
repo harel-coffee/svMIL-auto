@@ -10,6 +10,8 @@ import re
 import numpy as np
 from tad import TAD
 from sv import SV
+from gene import Gene
+from eQTL import EQTL
 
 class DerivativeTADMaker:
 	
@@ -44,47 +46,44 @@ class DerivativeTADMaker:
 		print "Linking SV effects to genes"
 		invCount = 0
 		dupCount = 0
+
+		for sv in svData:
+			# 
+			# typeMatch = re.search("intra", sv[8].svType, re.IGNORECASE) #using 'chr' will match intra, inter
+			# if typeMatch is not None: #skip the most complicated kind for now
+			# 	continue
+			# 
+			
+			# 
+			
+			
+			typeMatch = re.search("inv", sv[8].svType, re.IGNORECASE)
+			if typeMatch is not None:
+				self.determineDerivativeTADs(sv, tadData, genome, "inv")
+				invCount += 1
+				print "inversion count: ", invCount
 		
 		
-# # 		
-# 		
-# 		for sv in svData:
-# 			# 
-# 			# typeMatch = re.search("intra", sv[8].svType, re.IGNORECASE) #using 'chr' will match intra, inter
-# 			# if typeMatch is not None: #skip the most complicated kind for now
-# 			# 	continue
-# 			# 
-# 			
-# 			# 
-# 			
-# 			
-# 			typeMatch = re.search("inv", sv[8].svType, re.IGNORECASE)
-# 			if typeMatch is not None:
-# 				self.determineDerivativeTADs(sv, tadData, genome, "inv")
-# 				invCount += 1
-# 				print "inversion count: ", invCount
-# 		
 		
-		
-		# for sv in svData:
-		# 	
-		# 	typeMatch = re.search("dup", sv[8].svType, re.IGNORECASE)
-		# 	if typeMatch is not None:
-		# 		
-		# 		self.determineDerivativeTADs(sv, tadData, genome, "dup")
-		# 		dupCount += 1
-		# 		print "duplication count: ", dupCount
+		for sv in svData:
+			
+			typeMatch = re.search("dup", sv[8].svType, re.IGNORECASE)
+			if typeMatch is not None:
+				
+				self.determineDerivativeTADs(sv, tadData, genome, "dup")
+				dupCount += 1
+				print "duplication count: ", dupCount
 				
 		#For the translocations separately
 		#1. For each SV, determine which TAD the SVs are in
-		tadsPerSV = self.matchTADsWithTranslocations(svData, tadData)
-		
-		#2. Group the SVs that form a 'chain' and have at least 1 TAD in overlap
-		svGroups = self.defineGroupsOfTranslocations(tadsPerSV)
-		
-		#3. Call the derivative TAD maker on this group of SVs and let it assign the gains/losses to the genes
-		self.determineDerivativeTADs([svGroups, tadsPerSV], tadData, genome, "trans")
-		
+		# tadsPerSV = self.matchTADsWithTranslocations(svData, tadData)
+		# 
+		# #2. Group the SVs that form a 'chain' and have at least 1 TAD in overlap
+		# svGroups = self.defineGroupsOfTranslocations(tadsPerSV)
+		# 
+		# #3. Call the derivative TAD maker on this group of SVs and let it assign the gains/losses to the genes
+		# self.determineDerivativeTADs([svGroups, tadsPerSV], tadData, genome, "trans")
+		# 
 		
 		print "done making derivative TADs"
 		
@@ -244,31 +243,58 @@ class DerivativeTADMaker:
 		
 		#Try a very simple translocation that affects only 2 TADs.
 		
-		tad1 = ["chr1", 100, 300, TAD("chr1", 100, 300)]
-		tad2 = ["chr1", 500, 700, TAD("chr1", 500, 700)]
+		# tad1 = ["chr1", 100, 300, TAD("chr1", 100, 300)]
+		# tad2 = ["chr1", 500, 700, TAD("chr1", 500, 700)]
+		# 
+		# sv1 = ["chr1", 110, 120, "chr1", 550, 600, "sample1", "cancerTypeA", SV("chr1", 110, 120, "chr1", 550, 600, "sample1", "cancerTypeA", "intraChromosomal")]
+		# svGroups = dict()
+		# tadsPerSV = dict()
+		# svGroups[sv1[8]] = [sv1[8]]
+		# tadsPerSV[sv1[8]] = [[tad1], [tad2]]
+		# svData = [svGroups, tadsPerSV]
+		# 
+		# #Assign test genes and eQTLs to the TADs
+		# #A genes eQTLB. A loses eQTL A. 
+		# geneA = Gene("A", "chr1", 100, 105)
+		# geneB = Gene("B", "chr1", 670, 680)
+		# eQTLA = EQTL("chr1", 111, 111)
+		# eQTLB = EQTL("chr1", 610, 610)
+		# tad1[3].genes = [geneA]
+		# tad1[3].eQTLInteractions = [eQTLA]
+		# tad2[3].genes = [geneB]
+		# tad2[3].eQTLInteractions = [eQTLB]
+		# geneA.eQTLs = [eQTLA]
+		# geneB.eQTLs = [eQTLB]
 		
-		sv1 = ["chr1", 110, 120, "chr1", 550, 600, "sample1", "cancerTypeA", SV("chr1", 110, 120, "chr1", 550, 600, "sample1", "cancerTypeA", "intraChromosomal")]
-		svGroups = dict()
-		tadsPerSV = dict()
-		svGroups[sv1[8]] = [sv1[8]]
-		tadsPerSV[sv1[8]] = [[tad1], [tad2]]
-		svData = [svGroups, tadsPerSV]
 		
 		# 2 translocations involving 3 TADs
-		tad1 = ["chr1", 100, 300, TAD("chr1", 100, 300)]
-		tad2 = ["chr1", 500, 700, TAD("chr1", 500, 700)]
-		tad3 = ["chr1", 800, 900, TAD("chr1", 800, 900)]
+		# tad1 = ["chr1", 100, 300, TAD("chr1", 100, 300)]
+		# tad2 = ["chr1", 500, 700, TAD("chr1", 500, 700)]
+		# tad3 = ["chr1", 800, 900, TAD("chr1", 800, 900)]
+		# 
+		# sv1 = ["chr1", 110, 120, "chr1", 550, 600, "sample1", "cancerTypeA", SV("chr1", 110, 120, "chr1", 550, 600, "sample1", "cancerTypeA", "intraChromosomal")]
+		# sv2 = ["chr1", 650, 670, "chr1", 820, 830, "sample1", "cancerTypeA", SV("chr1", 650, 660, "chr1", 820, 830, "sample1", "cancerTypeA", "intraChromosomal")]
+		# svGroups = dict()
+		# tadsPerSV = dict()
+		# svGroups[sv1[8]] = [sv1[8], sv2[8]]
+		# tadsPerSV[sv1[8]] = [[tad1], [tad2]]
+		# tadsPerSV[sv2[8]] = [[tad2], [tad3]]
+		# svData = [svGroups, tadsPerSV]
+		# 
+		# #TAD A and C have a gene before the SV.
+		# #Tad B has 2 eQTLs on either side of the breakpoint. The first will be gained by gene A, the second by gene C. 
+		# geneA = Gene("A", "chr1", 100, 105)
+		# geneC = Gene("C", "chr1", 840, 845)
+		# eQTLA = EQTL("chr1", 601, 601)
+		# eQTLB = EQTL("chr1", 680, 680)
+		# tad1[3].genes = [geneA]
+		# tad3[3].genes = [geneC]
+		# tad2[3].eQTLInteractions = [eQTLA, eQTLB]
 		
-		sv1 = ["chr1", 110, 120, "chr1", 550, 600, "sample1", "cancerTypeA", SV("chr1", 110, 120, "chr1", 550, 600, "sample1", "cancerTypeA", "intraChromosomal")]
-		sv2 = ["chr1", 650, 670, "chr1", 820, 830, "sample1", "cancerTypeA", SV("chr1", 650, 660, "chr1", 820, 830, "sample1", "cancerTypeA", "intraChromosomal")]
-		svGroups = dict()
-		tadsPerSV = dict()
-		svGroups[sv1[8]] = [sv1[8], sv2[8]]
-		tadsPerSV[sv1[8]] = [[tad1], [tad2]]
-		tadsPerSV[sv2[8]] = [[tad2], [tad3]]
-		svData = [svGroups, tadsPerSV]
 		
-		# 2 translocations involving 3 TADs, where the 2nd translocation is in the same TAD as the 2nd
+		
+		# # 2 translocations involving 3 TADs, where the 2nd translocation is in the same TAD as the 2nd
+		#With the first SV, geneA gains an eQTL, but then loses it again after the second SV. 
 		tad1 = ["chr1", 100, 300, TAD("chr1", 100, 300)]
 		tad2 = ["chr1", 500, 700, TAD("chr1", 500, 700)]
 		tad3 = ["chr1", 800, 900, TAD("chr1", 800, 900)]
@@ -282,20 +308,46 @@ class DerivativeTADMaker:
 		tadsPerSV[sv2[8]] = [[tad1], [tad3]]
 		svData = [svGroups, tadsPerSV]
 		
-		# 2 translocations involving 2 TADs, but the 2nd translocation ends before the first translocation
+		geneA = Gene("A", "chr1", 100, 105)
+		eQTLB = EQTL("chr1", 610, 610)
+		tad1[3].genes = [geneA]
+		tad2[3].eQTLInteractions = [eQTLB]
+		
+		# # 2 translocations involving 3 TADs, where the 2nd translocation is in the same TAD as the 2nd
+		#Here in the remaining part, the gene of TAD B can get into contact with the eQTL in TAD C
 		tad1 = ["chr1", 100, 300, TAD("chr1", 100, 300)]
 		tad2 = ["chr1", 500, 700, TAD("chr1", 500, 700)]
 		tad3 = ["chr1", 800, 900, TAD("chr1", 800, 900)]
 		
 		sv1 = ["chr1", 110, 120, "chr1", 550, 600, "sample1", "cancerTypeA", SV("chr1", 110, 120, "chr1", 550, 600, "sample1", "cancerTypeA", "intraChromosomal")]
-		sv2 = ["chr1", 130, 140, "chr1", 510, 520, "sample1", "cancerTypeA", SV("chr1", 130, 140, "chr1", 510, 520, "sample1", "cancerTypeA", "intraChromosomal")]
+		sv2 = ["chr1", 130, 140, "chr1", 820, 830, "sample1", "cancerTypeA", SV("chr1", 130, 140, "chr1", 820, 830, "sample1", "cancerTypeA", "intraChromosomal")]
 		svGroups = dict()
 		tadsPerSV = dict()
 		svGroups[sv1[8]] = [sv1[8], sv2[8]]
 		tadsPerSV[sv1[8]] = [[tad1], [tad2]]
-		tadsPerSV[sv2[8]] = [[tad1], [tad2]]
+		tadsPerSV[sv2[8]] = [[tad1], [tad3]]
 		svData = [svGroups, tadsPerSV]
 		
+		geneB = Gene("B", "chr1", 650, 660)
+		eQTLC = EQTL("chr1", 810, 810)
+		tad2[3].genes = [geneB]
+		tad3[3].eQTLInteractions = [eQTLC]
+		
+		# 
+		# # 2 translocations involving 2 TADs, but the 2nd translocation ends before the first translocation
+		# tad1 = ["chr1", 100, 300, TAD("chr1", 100, 300)]
+		# tad2 = ["chr2", 500, 700, TAD("chr2", 500, 700)]
+		# tad3 = ["chr1", 800, 900, TAD("chr1", 800, 900)]
+		# 
+		# sv1 = ["chr1", 110, 120, "chr2", 550, 600, "sample1", "cancerTypeA", SV("chr1", 110, 120, "chr2", 550, 600, "sample1", "cancerTypeA", "intraChromosomal")]
+		# sv2 = ["chr1", 130, 140, "chr2", 510, 520, "sample1", "cancerTypeA", SV("chr1", 130, 140, "chr2", 510, 520, "sample1", "cancerTypeA", "intraChromosomal")]
+		# svGroups = dict()
+		# tadsPerSV = dict()
+		# svGroups[sv1[8]] = [sv1[8], sv2[8]]
+		# tadsPerSV[sv1[8]] = [[tad1], [tad2]]
+		# tadsPerSV[sv2[8]] = [[tad1], [tad2]]
+		# svData = [svGroups, tadsPerSV]
+		# 
 		### TRANSLOCATIONS ###
 		if svType == "trans":
 			
@@ -314,106 +366,335 @@ class DerivativeTADMaker:
 				gains = dict()
 				losses = dict()
 				
+				#First we need to keep track of all healthy TADs as well that the sv group affects
+				#From this list we then need to later on at the first iteration determine which ones are affected
+				#Then in the code itself we will copy the TADs if these are not affected and will remain as-is. 
+				allInvolvedTads = []
 				for sv in svGroups[group]:
-					print sv.chr1, sv.s1, sv.e1, sv.chr2, sv.s2, sv.e2, sv.sampleName
-					print tadsPerSV[sv]
-					
-					#Get all elements and genes on the left side of the translocation
-					#Get the TAD that the sv is in on the left side
-					leftTad = tadsPerSV[sv][0][0][3]
-					if leftTad not in updatedTadPos:
-						print "Left side gains right side"
-						leftSideElements = leftTad.getElementsByRange(sv.s1, leftTad.start)
-						leftSideGenes = leftTad.getGenesByRange(leftTad.start, sv.s1)
-						updatedTadPos[leftTad] = [[leftTad.start, sv.s1],[sv.s1, leftTad.end]]
-						
-						
-						
-						
-					else: #if the TAD was previously affected by an SV, we should use the start position of the SV, which is the remaining part of the TAD. 
-						print "Left side not intact"
-						#In these specific cases, if the left side combines with the right side, we need to make sure that the right side also gains the updated part, not the entire left side again. 
-						
-						
-						#Check if the SV takes place in the remaining left part or in the right part.
-						if sv.s1 < updatedTadPos[leftTad][0][1] and sv.s1 > updatedTadPos[leftTad][0][0]:
-							print "Left side of previously affected left side gains right side"
-							#if the SV is in the left part of the TAD, update the positions in the left TAD following this SV.
-							
-							#Get the eleemnts using the positions in the already updated TAD
-							leftSideElements = leftTad.getElementsByRange(updatedTadPos[leftTad][0][0], updatedTadPos[leftTad][0][1])
-							leftSideGenes = leftTad.getGenesByRange(updatedTadPos[leftTad][0][0], updatedTadPos[leftTad][0][1])
-							
-							#In this case, the updated positions should be: the previous start, with the new SV end. The right side will not get updated
-							updatedTadPos[leftTad] = [[updatedTadPos[leftTad][0][0], sv.s1],[updatedTadPos[leftTad][1][0], updatedTadPos[leftTad][1][1]]]
-					
-						if sv.s1 < updatedTadPos[leftTad][1][1] and sv.s1 > updatedTadPos[leftTad][1][0]:
-							#if the SV is in the left part of the TAD, update the positions in the left TAD following this SV.
-							print "Right side of previously affected left side gains right side"
-							
-							#Get the eleemnts using the positions in the already updated TAD
-							leftSideElements = leftTad.getElementsByRange(updatedTadPos[leftTad][1][0], updatedTadPos[leftTad][1][1])
-							leftSideGenes = leftTad.getGenesByRange(updatedTadPos[leftTad][1][0], updatedTadPos[leftTad][1][1])
-							
-							#Here update the right side
-							updatedTadPos[leftTad] = [[updatedTadPos[leftTad][0][0], updatedTadPos[leftTad][0][1]],[sv.s1, updatedTadPos[leftTad][1][1]]]
-					
-					#Get all elements and genes on the right side of the translocation
-					rightTad = tadsPerSV[sv][1][0][3]
-					
-					if rightTad not in updatedTadPos:
-						print "Right side gains left side"
-						rightSideElements = rightTad.getElementsByRange(sv.e2, rightTad.end)
-						rightSideGenes = rightTad.getGenesByRange(sv.e2, rightTad.end)
-						
-						updatedTadPos[rightTad] = [[rightTad.start, sv.e2], [sv.e2, rightTad.end]]
-					else: #if the TAD was previously affected by an SV, we should use the start position of the SV, which is the remaining part of the TAD. 
-						
-						#Check if the SV takes place in the remaining left part or in the right part.
-						if sv.e2 < updatedTadPos[rightTad][0][1] and sv.e2 > updatedTadPos[rightTad][0][0]:
-							print "Left side of previously affected right side gains left side"
-							#if the SV is in the left part of the TAD, update the positions in the left TAD following this SV.
-							
-							#Get the eleemnts using the positions in the already updated TAD
-							rightSideElements = rightTad.getElementsByRange(updatedTadPos[rightTad][0][0], updatedTadPos[rightTad][0][1])
-							rightSideGenes = rightTad.getGenesByRange(updatedTadPos[rightTad][0][0], updatedTadPos[rightTad][0][1])
-							
-							#Update the left side
-							updatedTadPos[rightTad] = [[updatedTadPos[rightTad][0][0], sv.e2],[updatedTadPos[rightTad][1][0], updatedTadPos[rightTad][1][1]]]
-					
-						if sv.e2 < updatedTadPos[rightTad][1][1] and sv.e2 > updatedTadPos[rightTad][1][0]:
-							#if the SV is in the left part of the TAD, update the positions in the left TAD following this SV.
-							print "Right side of previously affected right side gains left side"
-							#Get the eleemnts using the positions in the already updated TAD
-							rightSideElements = rightTad.getElementsByRange(updatedTadPos[rightTad][1][0], updatedTadPos[rightTad][1][1])
-							rightSideGenes = rightTad.getGenesByRange(updatedTadPos[rightTad][1][0], updatedTadPos[rightTad][1][1])
-					
-							#Update the right side
-							updatedTadPos[rightTad] = [[updatedTadPos[rightTad][0][0], updatedTadPos[rightTad][0][1]],[sv.e2, updatedTadPos[rightTad][1][1]]]
-					
-					
-					
-					### Needs a better check for gains/losses that are updated in the next iteration
-					
-					#updatedTadPos[leftTad] = [[leftTad.start, sv.s1],[sv.s1, leftTad.end]]
-					#updatedTadPos[rightTad] = [[rightTad.start, sv.e2], [sv.e2, rightTad.end]]
-					
-					
-					#Now every gene on either side gains the elements from the other side.
-					for gene in rightSideGenes:
-						# if gene not in gains:
-						# 	gains[gene] = []
-						#We don't need to check gains, since each breakpoint is in a different TAD.
-						gene.addGainedEQTLs(leftSideElements, sv.sampleName)
-					
-					for gene in leftSideGenes:
-						gene.addGainedEQTLs(rightSideElements, sv.sampleName)
+					for tad in range(0, len(tadsPerSV[sv])):
+						if tadsPerSV[sv][tad][0][3] not in allInvolvedTads:
+							allInvolvedTads.append(tadsPerSV[sv][tad][0][3])
+				filteredInvolvedTads = [] #after we filter out the first TADs that are affected, keep these here
 				
+				updatedTads = []
+				
+				for sv in svGroups[group]:
+					print "SV: ", sv.chr1, sv.s1, sv.e1, sv.chr2, sv.s2, sv.e2, sv.sampleName
 					
-					#Keep the updated positions in the TADs after each SV
-					#Use these positions to determine the gains/losses for each new SV
 					
 					
+					#Failsafe to make sure that we never use the TADs from the previous iteration here
+					rightTad = None
+					leftTad = None
+					
+					#1. Get the affected TADs
+					if len(updatedTads) < 1:
+						leftTad = tadsPerSV[sv][0][0][3]
+						rightTad = tadsPerSV[sv][1][0][3]
+						
+						#Every TAD that is not affected should be removed from the involved TADs. This is to make sure that we later on 
+						for tadInd in range(0, len(allInvolvedTads)):
+							tad = allInvolvedTads[tadInd]
+							if tad != leftTad or tad != rightTad:
+								filteredInvolvedTads.append([tad.chromosome, tad.start, tad.end, tad])
+						
+					else: #get the affected TADs from the updated TADs.
+						#print "SV pos is: ", sv.s1, sv.e2
+						for tad in updatedTads: ###Here this is going wrong because the original TAD is never here, and so the right TAD that we use is from the previous iteratio. 
+							
+							if sv.s1 < tad[2] and sv.s1 > tad[1]:
+								leftTad = tad[3]
+							if sv.e2 < tad[2] and sv.e2 > tad[1]:
+								rightTad = tad[3]
+						#This is the extra check to make sure that we also include TADs that are not affected in the first iteration
+						for tad in filteredInvolvedTads:
+							if sv.s1 < tad[2] and sv.s1 > tad[1]:
+								leftTad = tad[3]
+							if sv.e2 < tad[2] and sv.e2 > tad[1]:
+								rightTad = tad[3]
+					
+						
+					
+					#2. Get the elements on the left of the breakpoint and the right of the breakpoint
+					leftSideElements = leftTad.getElementsByRange(leftTad.start, sv.s1)
+					leftSideGenes = leftTad.getGenesByRange(leftTad.start, sv.s1)
+					
+					rightSideElements = rightTad.getElementsByRange(sv.e2, rightTad.end)
+					rightSideGenes = rightTad.getGenesByRange(sv.e2, rightTad.end)
+					
+					#Also get the elements in the remaining part
+					remainingElementsLeft = leftTad.getElementsByRange(sv.s1, leftTad.end)
+					remainingGenesLeft = leftTad.getGenesByRange(sv.s1, leftTad.end)
+					
+					remainingElementsRight = rightTad.getElementsByRange(rightTad.start, sv.e2)
+					remainingGenesRight = rightTad.getGenesByRange(rightTad.start, sv.e2)
+					
+					#3. Make derivative TADs from the SV and add elements, keeping the reference positions.
+					
+					#The new TADs will be the left part together with the right part, and everything between that remains a separate part (to be determined by another SV)
+					newTad = [leftTad.chromosome, leftTad.start, rightTad.end, TAD(leftTad.chromosome, leftTad.start, rightTad.end)]
+					
+					
+					#add the elements to the TAD
+					newTad[3].setEQTLInteractions(leftSideElements + rightSideElements)
+					newTad[3].setGenes(leftSideGenes + rightSideGenes)
+					
+					#Also set the elements to the remaining parts
+					remainingPart = [leftTad.chromosome, sv.s1, sv.e2, TAD(leftTad.chromosome, sv.s1, sv.e2)]
+					
+					remainingPart[3].setEQTLInteractions(remainingElementsLeft + remainingElementsRight)
+					remainingPart[3].setGenes(remainingGenesLeft + remainingGenesRight)
+					
+					#For interchromosomal translocations, this would mean that we have 2 open ends, or intrachromosomal translocations that does not happen.
+					#How about pieces that are moved to another location? How are these encoded? E.g. s1 - e1 moves to s2 - e2?
+					
+					#4. Store the new TADs.
+					
+					#Copy all TADs but the left and right affected one to a new set of TADs.
+					updatedTads.append(newTad)
+					updatedTads.append(remainingPart)
+					for tad in tadsPerSV[sv]:
+						if tad[0][3] != leftTad and tad[0][3] != rightTad:
+							updatedTads.append(tad[0])
+
+					#5. For the next SV, use the updated TADs to get the elements/positions and continue until the last SV
+					
+				#6. Eventually, check for the genes in the original TADs which elements thesd has, and compare it to the derivative. Use the delta informatin to collect gains and losses
+				
+				#For each of the TADs, see which genes are in them and are affected, and determine their eQTL interactions.
+				
+					print "new SV:"
+				
+					for tad in updatedTads:
+						print "tad: ", tad
+						for gene in tad[3].genes:
+							print gene.name
+							eQTLsInTad = []
+							for eQTL in gene.eQTLs:
+								if eQTL.start > tad[3].start and eQTL.start < tad[3].end:
+									eQTLsInTad.append([eQTL.chromosome, eQTL.start, eQTL])
+							print "original eQTLs:"
+							print eQTLsInTad
+							print "new eQTLs:"
+							for eQTL in tad[3].eQTLInteractions:
+								print eQTL.chromosome, eQTL.start, eQTL
+							#print tad[3].eQTLInteractions
+				exit()
+						
+				
+				#Compare this to the original case and make the derivative. 
+					
+					
+			# 		#Get all elements and genes on the left side of the translocation
+			# 		#Get the TAD that the sv is in on the left side
+			# 		leftTad = tadsPerSV[sv][0][0][3]
+			# 		if leftTad not in updatedTadPos:
+			# 			print "Left side gains right side"
+			# 			leftSideElements = leftTad.getElementsByRange(leftTad.start, sv.s1)
+			# 			leftSideGenes = leftTad.getGenesByRange(leftTad.start, sv.s1)
+			# 			updatedTadPos[leftTad] = [[leftTad.start, sv.s1],[sv.s1, leftTad.end]]
+			# 			
+			# 			
+			# 			
+			# 			#Determine the elements that the left side loses (which is everything in the TAD after the SV breakpoint), reverse for the lost side
+			# 			lostElements = leftTad.getElementsByRange(sv.s1, leftTad.end)
+			# 			lostGenes = leftTad.getGenesByRange(sv.s1, leftTad.end)
+			# 			for gene in leftSideGenes:
+			# 				if gene not in losses:
+			# 					losses[gene] = dict()
+			# 				for element in lostElements:
+			# 					losses[gene][element] = sv.sampleName
+			# 			for gene in lostGenes:
+			# 				if gene not in losses:
+			# 					losses[gene] = dict()
+			# 				for element in leftSideElements:
+			# 					losses[gene][element] = sv.sampleName
+			# 
+			# 		else: #if the TAD was previously affected by an SV, we should use the start position of the SV, which is the remaining part of the TAD. 
+			# 			print "Left side not intact"
+			# 			#In these specific cases, if the left side combines with the right side, we need to make sure that the right side also gains the updated part, not the entire left side again. 
+			# 			
+			# 			
+			# 			#Check if the SV takes place in the remaining left part or in the right part.
+			# 			if sv.s1 < updatedTadPos[leftTad][0][1] and sv.s1 > updatedTadPos[leftTad][0][0]:
+			# 				print "Left side of previously affected left side gains right side"
+			# 				#if the SV is in the left part of the TAD, update the positions in the left TAD following this SV.
+			# 				
+			# 				#Get the elements using the positions in the already updated TAD
+			# 				leftSideElements = leftTad.getElementsByRange(updatedTadPos[leftTad][0][0], sv.s1)
+			# 				leftSideGenes = leftTad.getGenesByRange(updatedTadPos[leftTad][0][0], sv.s1)
+			# 				
+			# 				#In this case, the updated positions should be: the previous start, with the new SV end. The right side will not get updated
+			# 				updatedTadPos[leftTad] = [[updatedTadPos[leftTad][0][0], sv.s1],[updatedTadPos[leftTad][1][0], updatedTadPos[leftTad][1][1]]]
+			# 				
+			# 				#Determine the elements that the left side loses (which is everything in the TAD after the SV breakpoint), reverse for the lost side
+			# 				
+			# 				lostElements = leftTad.getElementsByRange(sv.s1, updatedTadPos[leftTad][0][1])
+			# 				lostGenes = leftTad.getGenesByRange(sv.s1, updatedTadPos[leftTad][0][1])
+			# 				for gene in leftSideGenes:
+			# 					if gene not in losses:
+			# 						losses[gene] = dict()
+			# 					for element in lostElements:
+			# 						losses[gene][element] = sv.sampleName
+			# 				
+			# 
+			# 				for gene in lostGenes:
+			# 					if gene not in losses:
+			# 						losses[gene] = dict()
+			# 					for element in leftSideElements:
+			# 						losses[gene][element] = sv.sampleName
+			# 
+			# 		
+			# 			if sv.s1 < updatedTadPos[leftTad][1][1] and sv.s1 > updatedTadPos[leftTad][1][0]:
+			# 				#if the SV is in the left part of the TAD, update the positions in the left TAD following this SV.
+			# 				print "Right side of previously affected left side gains right side"
+			# 				
+			# 				#Get the eleemnts using the positions in the already updated TAD
+			# 				leftSideElements = leftTad.getElementsByRange(sv.s1, updatedTadPos[leftTad][1][1])
+			# 				leftSideGenes = leftTad.getGenesByRange(sv.s1, updatedTadPos[leftTad][1][1])
+			# 				
+			# 				#Here update the right side
+			# 				updatedTadPos[leftTad] = [[updatedTadPos[leftTad][0][0], updatedTadPos[leftTad][0][1]],[sv.s1, updatedTadPos[leftTad][1][1]]]
+			# 		
+			# 				lostElements = leftTad.getElementsByRange(updatedTadPos[leftTad][1][0], sv.s1)
+			# 				lostGenes = leftTad.getGenesByRange(updatedTadPos[leftTad][1][0], sv.s1)
+			# 				for gene in leftSideGenes:
+			# 					if gene not in losses:
+			# 						losses[gene] = dict()
+			# 					for element in lostElements:
+			# 						losses[gene][element] = sv.sampleName
+			# 				
+			# 
+			# 				for gene in lostGenes:
+			# 					if gene not in losses:
+			# 						losses[gene] = dict()
+			# 					for element in leftSideElements:
+			# 						losses[gene][element] = sv.sampleName
+			# 		
+			# 		
+			# 		#Get all elements and genes on the right side of the translocation
+			# 		rightTad = tadsPerSV[sv][1][0][3]
+			# 		print rightTad
+			# 		if rightTad not in updatedTadPos:
+			# 			print "Right side gains left side"
+			# 			rightSideElements = rightTad.getElementsByRange(sv.e2, rightTad.end)
+			# 			rightSideGenes = rightTad.getGenesByRange(sv.e2, rightTad.end)
+			# 			
+			# 			print "ements"
+			# 			print rightSideElements
+			# 			print rightSideGenes
+			# 			
+			# 			updatedTadPos[rightTad] = [[rightTad.start, sv.e2], [sv.e2, rightTad.end]]
+			# 			
+			# 			#Determine the elements that the left side loses (which is everything in the TAD after the SV breakpoint), reverse for the lost side
+			# 			lostElements = rightTad.getElementsByRange(rightTad.start, sv.e2)
+			# 			lostGenes = rightTad.getGenesByRange(rightTad.end, sv.e2)
+			# 			for gene in rightSideGenes:
+			# 				if gene not in losses:
+			# 					losses[gene] = dict()
+			# 				for element in lostElements:
+			# 					losses[gene][element] = sv.sampleName
+			# 			for gene in lostGenes:
+			# 				if gene not in losses:
+			# 					losses[gene] = dict()
+			# 				for element in rightSideElements:
+			# 					losses[gene][element] = sv.sampleName
+			# 			
+			# 		else: #if the TAD was previously affected by an SV, we should use the start position of the SV, which is the remaining part of the TAD. 
+			# 			
+			# 			#Check if the SV takes place in the remaining left part or in the right part.
+			# 			if sv.e2 < updatedTadPos[rightTad][0][1] and sv.e2 > updatedTadPos[rightTad][0][0]:
+			# 				print "Left side of previously affected right side gains left side"
+			# 				#if the SV is in the left part of the TAD, update the positions in the left TAD following this SV.
+			# 				
+			# 				#Get the eleemnts using the positions in the already updated TAD
+			# 				rightSideElements = rightTad.getElementsByRange(updatedTadPos[rightTad][0][0], sv.e2)
+			# 				rightSideGenes = rightTad.getGenesByRange(updatedTadPos[rightTad][0][0], sv.e2)
+			# 				
+			# 				#Update the left side
+			# 				updatedTadPos[rightTad] = [[updatedTadPos[rightTad][0][0], sv.e2],[updatedTadPos[rightTad][1][0], updatedTadPos[rightTad][1][1]]]
+			# 				
+			# 				lostElements = rightTad.getElementsByRange(sv.e2, updatedTadPos[rightTad][0][1])
+			# 				lostGenes = rightTad.getGenesByRange(sv.e2, updatedTadPos[rightTad][0][1])
+			# 				for gene in rightSideGenes:
+			# 					if gene not in losses:
+			# 						losses[gene] = dict()
+			# 					for element in lostElements:
+			# 						losses[gene][element] = sv.sampleName
+			# 				
+			# 
+			# 				for gene in lostGenes:
+			# 					if gene not in losses:
+			# 						losses[gene] = dict()
+			# 					for element in rightSideElements:
+			# 						losses[gene][element] = sv.sampleName
+			# 				
+			# 		
+			# 			if sv.e2 < updatedTadPos[rightTad][1][1] and sv.e2 > updatedTadPos[rightTad][1][0]:
+			# 				#if the SV is in the left part of the TAD, update the positions in the left TAD following this SV.
+			# 				print "Right side of previously affected right side gains left side"
+			# 				#Get the eleemnts using the positions in the already updated TAD
+			# 				rightSideElements = rightTad.getElementsByRange(sv.e2, updatedTadPos[rightTad][1][0])
+			# 				rightSideGenes = rightTad.getGenesByRange(sv.e2, updatedTadPos[rightTad][1][0])
+			# 		
+			# 				#Update the right side
+			# 				updatedTadPos[rightTad] = [[updatedTadPos[rightTad][0][0], updatedTadPos[rightTad][0][1]],[sv.e2, updatedTadPos[rightTad][1][1]]]
+			# 				
+			# 				lostElements = rightTad.getElementsByRange(updatedTadPos[rightTad][1][0], sv.e2)
+			# 				lostGenes = rightTad.getGenesByRange(updatedTadPos[rightTad][1][0], sv.e2)
+			# 				for gene in rightSideGenes:
+			# 					if gene not in losses:
+			# 						losses[gene] = dict()
+			# 					for element in lostElements:
+			# 						losses[gene][element] = sv.sampleName
+			# 				
+			# 
+			# 				for gene in lostGenes:
+			# 					if gene not in losses:
+			# 						losses[gene] = dict()
+			# 					for element in rightSideElements:
+			# 						losses[gene][element] = sv.sampleName
+			# 		
+			# 		
+			# 		### Needs a better check for gains/losses that are updated in the next iteration
+			# 		
+			# 		#updatedTadPos[leftTad] = [[leftTad.start, sv.s1],[sv.s1, leftTad.end]]
+			# 		#updatedTadPos[rightTad] = [[rightTad.start, sv.e2], [sv.e2, rightTad.end]]
+			# 		
+			# 		
+			# 		#Now every gene on either side gains the elements from the other side.
+			# 		for gene in rightSideGenes:
+			# 			if gene not in gains:
+			# 			 	gains[gene] = dict()
+			# 			for element in leftSideElements:
+			# 				
+			# 				gains[gene][element] = sv.sampleName
+			# 			#gene.addGainedEQTLs(leftSideElements, sv.sampleName)
+			# 		
+			# 		for gene in leftSideGenes:
+			# 			#gene.addGainedEQTLs(rightSideElements, sv.sampleName)
+			# 			if gene not in gains:
+			# 			 	gains[gene] = dict()
+			# 			for element in rightSideElements:
+			# 				
+			# 				gains[gene][element] = sv.sampleName
+			# 		
+			# 		#Keep the updated positions in the TADs after each SV
+			# 		#Use these positions to determine the gains/losses for each new SV
+			# 
+			# print 'Gains:'
+			# for gene in gains:
+			# 	print "gene: ", gene.name
+			# 	for element in gains[gene]:
+			# 		print "element: ", element.start
+			# 
+			# print 'Losses:'
+			# for gene in losses:
+			# 	print "gene: ", gene.name
+			# 	for element in losses[gene]:
+			# 		print "element: ", element.start
+
+			
 			
 		exit()
 		
