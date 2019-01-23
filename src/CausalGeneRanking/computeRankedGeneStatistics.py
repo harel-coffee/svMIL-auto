@@ -58,7 +58,7 @@ with open(rankedGenesFile, 'rb') as f:
 		
 		if float(splitLine[3]) > 0:
 			if splitLine[0] in cosmicGenes:
-				
+				print "COSMIC gene: ", splitLine[0]
 				cosmicCountGoodScore += 1
 			if splitLine[0] in breastCancerGenes:
 				bcCountGoodScore += 1
