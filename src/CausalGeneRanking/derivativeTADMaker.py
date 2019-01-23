@@ -64,7 +64,7 @@ class DerivativeTADMaker:
 				print "inversion count: ", invCount
 		
 		
-		# 
+		
 		for sv in svData:
 			
 			typeMatch = re.search("dup", sv[8].svType, re.IGNORECASE)

@@ -1,6 +1,7 @@
 import numpy as np
 import json
 import pickle as pkl
+import re
 
 from tad import TAD
 from sv import SV
@@ -631,6 +632,12 @@ class NeighborhoodDefiner:
 		#The SVs are sorted per cancer type, so taking chromosome subsets may not gain as much speed
 
 		for sv in svData:
+			
+			#Only focus on deletions
+			typeMatch = re.search("del", sv[8].svType, re.IGNORECASE)
+			if typeMatch is None:
+				continue
+			
 			#print "sv: ", sv
 			
 			##Here we need to take translocations into account as well.
@@ -706,6 +713,7 @@ class NeighborhoodDefiner:
 					continue
 				
 			if sv[0] != sv[3]: #interchromosomal
+				continue #skip these translocations for now
 				leftTadChr = sv[0]
 				rightTadChr = sv[3]
 				svStartLeft = sv[1] #s1
@@ -760,9 +768,17 @@ class NeighborhoodDefiner:
 			farRightTad = overlappingTads[overlappingTads.shape[0]-1,:]
 			
 			
+			
 	
 			#For every gene in the TAD, add the eQTLs of the other TAD as potentially gained interactions.
 			for gene in farLeftTad[3].genes:
+				
+				if gene.name == "PTK6":
+					print "TADs:"
+					print farLeftTad
+					print farRightTad
+					print sv
+				
 				# if gene.name == "SYT14":
 				#  	print "left tad: ", farLeftTad
 				#  	print "sv: ", sv
@@ -771,6 +787,12 @@ class NeighborhoodDefiner:
 					
 			
 			for gene in farRightTad[3].genes:
+				
+				if gene.name == "PTK6":
+					print "TADs:"
+					print farLeftTad
+					print farRightTad
+					print sv
 				# if gene.name == "SYT14":
 				# 	print "right tad: ", farRightTad
 				# 	print "sv: ", sv
