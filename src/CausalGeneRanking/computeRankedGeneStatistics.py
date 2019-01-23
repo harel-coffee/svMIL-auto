@@ -13,6 +13,7 @@ import sys
 
 rankedGenesFile = sys.argv[1]
 cosmicGenesFile = sys.argv[2]
+breastCancerGenesFile = sys.argv[3]
 
 cosmicGenes = []
 with open(cosmicGenesFile, 'rb') as f:
@@ -28,11 +29,25 @@ with open(cosmicGenesFile, 'rb') as f:
 		cosmicGenes.append(geneName)
 
 print "total number of cosmic genes: ", len(cosmicGenes)		
+	
+#Also read the breast cancer genes specifically
+
+breastCancerGenes = []
+with open(breastCancerGenesFile, 'r') as f:
+	
+	for line in f:
+		
+		line = line.strip()
+		
+		breastCancerGenes.append(line)
+
 		
 cosmicCountGoodScore = 0
 cosmicCountBadScore = 0
 allGenesGoodScore = 0
 allGenesBadScore = 0
+bcCountGoodScore = 0
+bcCountBadScore = 0
 genes = dict()
 with open(rankedGenesFile, 'rb') as f:
 	
@@ -41,10 +56,12 @@ with open(rankedGenesFile, 'rb') as f:
 		splitLine = line.split("\t")
 		
 		
-		if float(splitLine[4]) > 0:
+		if float(splitLine[3]) > 0:
 			if splitLine[0] in cosmicGenes:
-				print "gene in COSMIC: ", splitLine[0]
+				
 				cosmicCountGoodScore += 1
+			if splitLine[0] in breastCancerGenes:
+				bcCountGoodScore += 1
 			allGenesGoodScore += 1
 		else:
 			if splitLine[0] in cosmicGenes:
@@ -55,7 +72,12 @@ with open(rankedGenesFile, 'rb') as f:
 				# if genes[splitLine[0]] > 1:
 				# 	print splitLine[0]
 				cosmicCountBadScore += 1
+			if splitLine[0] not in breastCancerGenes:
+				bcCountBadScore += 1
 			allGenesBadScore += 1	
 				
 print cosmicCountGoodScore, " out of ", allGenesGoodScore, " are in COSMIC and score > 0"
 print cosmicCountBadScore, " out of ", allGenesBadScore, " are in COSMIC and score 0"
+
+print bcCountGoodScore, " out of ", allGenesGoodScore, " are known breast cancer genes and score > 0"
+print bcCountBadScore, " out of ", allGenesBadScore, " are known breast cancer genes and score 0"
