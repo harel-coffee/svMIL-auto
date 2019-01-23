@@ -61,6 +61,7 @@ with open(rankedGenesFile, 'rb') as f:
 				print "COSMIC gene: ", splitLine[0]
 				cosmicCountGoodScore += 1
 			if splitLine[0] in breastCancerGenes:
+				print "BC gene: ", splitLine[0]
 				bcCountGoodScore += 1
 			allGenesGoodScore += 1
 		else:
