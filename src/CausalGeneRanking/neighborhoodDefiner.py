@@ -10,6 +10,7 @@ from interaction import Interaction
 from snv import SNV
 from derivativeTADMaker import DerivativeTADMaker
 from genome import Genome
+from genomicShuffler import GenomicShuffler
 
 
 import settings
@@ -39,6 +40,32 @@ class NeighborhoodDefiner:
 			tadFile = "../../data/tads/HMEC_Lieberman-raw_TADs.bed" #These files will need to go to the settings!
 			print "Getting TADs"
 			tadData = self.getTADsFromFile(tadFile)
+			
+			
+			# maxTadLength = 0
+			# largestTad = None
+			# minTadLength = float("inf")
+			# smallestTad = None
+			# for tad in tadData:
+			# 	tadLength = tad[2] - tad[1]
+			# 	if tadLength > maxTadLength:
+			# 		maxTadLength = tadLength
+			# 		largestTad = tad
+			# 	if tadLength < minTadLength:
+			# 		minTadLength = tadLength
+			# 		smallestTad = tad
+			# 
+			# print largestTad, largestTad[2] - largestTad[1]
+			# print smallestTad, smallestTad[2] - smallestTad[1]
+			# exit()
+			
+			if settings.general['shuffleTads'] == True:
+				genomicShuffler = GenomicShuffler()
+				#Shuffle the TADs. Assign random genomic positions to the TADs, but keep the same length. 
+				tadData = genomicShuffler.shuffleTADs(tadData)
+
+				
+			
 			print "mapping TADs to genes"
 			self.mapTADsToGenes(genes[:,3], tadData) #only pass the gene objects will suffice
 			
@@ -63,6 +90,7 @@ class NeighborhoodDefiner:
 			
 			print "getting eQTLs"
 			eQTLData = self.getEQTLsFromFile(eQTLFile, genes[:,3])
+		
 			
 			with open('eQTLData.pkl', 'wb') as h:
 				pkl.dump(eQTLData, h, protocol=pkl.HIGHEST_PROTOCOL)
@@ -88,8 +116,9 @@ class NeighborhoodDefiner:
 		# 	tadData = self.mapInteractionsToTads(interactions, regions, tadData)
 
 		#lncRNA data
-		lncRNAData = self.getLncRNAsFromFile(settings.files['lncRNAFile'])
-		eQTLData = lncRNAData #does this work? 
+		if settings.general['lncRNA'] == True:
+			lncRNAData = self.getLncRNAsFromFile(settings.files['lncRNAFile'])
+			eQTLData = lncRNAData 
 
 		#For now, we use eQTLs for gains of interactions rather than Hi-C.
 		if settings.general['gainOfInteractions'] == True:
@@ -502,10 +531,13 @@ class NeighborhoodDefiner:
 		
 		previousChromosome = 0
 		for tad in tadData:
+			
 		
 			if tad[0] != previousChromosome:
 				previousChromosome = tad[0]
 				eQTLChrSubset = eQTLData[np.where(eQTLData[:,0] == tad[0])] #Get all eQTLs that are on this chromosome. All eQTLs are CIS, so intrachromosomal is fine for now
+
+
 
 			#Find the eQTLs where the start and end of the eQTL are within the start and end of the TAD. 
 			startMatches = eQTLChrSubset[:,1] >= tad[1]
@@ -513,7 +545,6 @@ class NeighborhoodDefiner:
 			
 			allMatches = startMatches * endMatches
 			matchingEQTLs = eQTLChrSubset[allMatches,:]
-		
 			
 			#Add these eQTLs to the TADs if any.
 			if matchingEQTLs.shape[0] < 1:
@@ -521,7 +552,8 @@ class NeighborhoodDefiner:
 				continue
 			else:
 				
-				tad[3].setEQTLInteractions(matchingEQTLs[:,3]) #Add the eQTL objects to the TAD objects. 
+				tad[3].setEQTLInteractions(matchingEQTLs[:,3]) #Add the eQTL objects to the TAD objects.
+			
 		return tadData		
 	
 	def mapInteractionsToTads(self, interactions, regions, tadData):
@@ -768,8 +800,8 @@ class NeighborhoodDefiner:
 		
 		
 		#First map the SVs to TADs to see if we can infer gained interactions
-		# if settings.general['gainOfInteractions'] == True:
-		# 	self.determineGainedInteractions(svData, tadData)
+		if settings.general['gainOfInteractions'] == True:
+			self.determineGainedInteractions(svData, tadData)
 		
 		#The code below is now very specifically for all elements, but I will initially remove the TAD part and focus just on eQTLs.
 		#eQTLs will only be labelled as lost when these are targeted by a deletion, and also when these are within the nearest TAD boundaries of their gene. 
@@ -893,12 +925,22 @@ class NeighborhoodDefiner:
 
 				#if this eQTL is within the TAD boundaries of the gene, count the samples in which it is disrupted by an SV. 
 				match = startMatches * endMatches
+				
+				
 				if match == True:
 					
-					samples = np.unique(svsOverlappingEQTL[:,6])
+					#Make sure that the SVs that overlap the gene as well are not counted
+					for sv in svsOverlappingEQTL:
+						for sv2 in svsOverlappingGenes:
+							#if sv not in svsOverlappingGenes:
+							if sv[0] != sv2[0] and sv[1] != sv2[1] and sv[5] != sv2[5]:
+								gene.addLostEQTL(eQTL, sv[6])
 					
-					#Add the eQTL to the list of lost eQTLs for this gene
-					####Temporarily turned this off for testing without deletions
+					# 
+					# samples = np.unique(svsOverlappingEQTL[:,6])
+					# 
+					# #Add the eQTL to the list of lost eQTLs for this gene
+					# ##Temporarily turned this off for testing without deletions
 					# for sample in samples:
 					# 	# if gene.name == "EPS15":
 					# 	# 	print "gene: ", gene.name, " loses eQTL in sample ", sample

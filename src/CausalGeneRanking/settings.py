@@ -17,7 +17,9 @@ general = dict(
 	tads = True, #Include TADs in the ranking yes/no, only to rank by how often TAD boundaries themselves are disrupted by SVs. (we are getting very dependent on TADs, so perhaps force this as always required)
 	eQTLs = True, #Include eQTLs in the ranking yes/no
 	interactionChains = False, ##THIS IS FOR HEAT DIFFUSION BUT DOES NOT WORK, SETTING SHOULD HAVE A BETTER NAME #Include genomic 3D interactions in the ranking yes/no
-	gainOfInteractions = True #This depends on TADs and interactions. 
+	gainOfInteractions = True, #This depends on TADs and interactions.
+	shuffleTads = False,
+	lncRNA = False #use lncRNAs instead of eQTLs
 )
 
 interactions = dict( #settings specific for Hi-C interaction data

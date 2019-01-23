@@ -176,11 +176,21 @@ class GeneRanking:
 			
 			#Filter out all patients in which the SV also disrupts the gene. 
 			eQTLGainsXorMatrix = np.logical_xor(geneScoringMatrix, eQTLGainsScoringMatrix).astype(int)
-			eQTLLossesXorMatrix = np.logical_xor(geneScoringMatrix, eQTLLossesScoringMatrix).astype(int)
+			
+			#Actually we don't want to use XOR, we only want a score of 1 if the losses are 1, not if the genes are 1 but the losses are 0
+			eQTLLossesXorMatrix = np.zeros(eQTLLossesScoringMatrix.shape)
+			for row in range(0, eQTLLossesScoringMatrix.shape[0]):
+				for col in range(0, eQTLLossesScoringMatrix.shape[1]):
+					
+					if eQTLLossesScoringMatrix[row][col] == 1:
+						if geneScoringMatrix[row][col] == 0:
+							eQTLLossesXorMatrix[row][col] = 1
+					
+			#eQTLLossesXorMatrix = np.logical_xor(eQTLLossesScoringMatrix, geneScoringMatrix).astype(int)
 			
 			
-			#Scoring only by gained interactions
-			scoringMatrix = eQTLGainsScoringMatrix + eQTLLossesScoringMatrix
+			#Scoring only by lost interactions
+			scoringMatrix = eQTLLossesScoringMatrix
 			
 			#Sum the total score per gene and report the genes by which ones are most likely causal.
 
@@ -198,11 +208,13 @@ class GeneRanking:
 				gene = geneMap.keys()[geneMap.values().index(geneInd)] #Isn't this the part that is going wrong? The best index is probably the index in the matrix? 
 				gene = reverseGeneMap[geneInd]
 				
-				if gene.name == "ARID1A":
+				if gene.name == "BRCA1":
 					print eQTLGainsScoringMatrix[:,geneInd]
 					print eQTLLossesScoringMatrix[:,geneInd]
+					print eQTLLossesXorMatrix[:,geneInd]
 					print geneScoringMatrix[:,geneInd]
 					print sampleMap
+					
 				
 				
 				if geneScoresSummed[geneInd] > 0:
@@ -392,6 +404,8 @@ class GeneRanking:
 	def scoreByEQTLLosses(self, cancerTypeSVs, sampleMap, geneMap, cancerType):
 		"""
 			For every gene, add a score of 1 if an eQTL is either gained or lost. Later separate losses from gains.
+			
+			Instead of counting the number of losses, normalize for the number of losses compared to the total. 
 		"""
 		
 		scoringMatrix = np.zeros([len(sampleMap), len(geneMap)])
@@ -402,12 +416,20 @@ class GeneRanking:
 			
 			matrixGeneInd = geneMap[gene]
 			
+			if gene.name == "BRCA1":
+				print "Lost eQTLs of brca1: ", len(gene.lostEQTLs)
+				for eQTL in gene.lostEQTLs:
+					print eQTL
+		
 			if len(gene.lostEQTLs) > 0:
 				for sample in gene.lostEQTLs:
+					delta = len(gene.eQTLs)
 					sampleInd = sampleMap[sample]
+					for eQTL in gene.lostEQTLs:
+						delta -= 1
+					#scoringMatrix[sampleInd][matrixGeneInd] = delta
 					scoringMatrix[sampleInd][matrixGeneInd] += 1
-		
-				
+
 		
 		return scoringMatrix
 

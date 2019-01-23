@@ -1,5 +1,7 @@
 from copy import deepcopy
 
+import settings
+
 class Gene:
 	"""
 		Class to describe a gene. Will hold all other information related to the neighborhood of the gene as well, like the TADs, eQTLs and SVs. 
@@ -52,27 +54,52 @@ class Gene:
 		self.gainedEQTLs[sample] = gainedEQTLs #keep the gained eQTLs separate per patient to later do mutual exclusivity.
 		
 	def addGainedEQTLs(self, gainedEQTLs, sample):
-		if sample not in self.gainedEQTLs:
-			self.gainedEQTLs[sample] = deepcopy(gainedEQTLs)
-		else:
-			self.gainedEQTLs[sample] += deepcopy(gainedEQTLs)
+
+			#print "final no of gains: ", len(self.gainedEQTLs[sample])
+		
+		if len(gainedEQTLs) > 0:
+			if sample not in self.gainedEQTLs:
+				self.gainedEQTLs[sample] = [gainedEQTLs[0]]
+			else:
+				self.gainedEQTLs[sample].append(gainedEQTLs[0])
+		# if sample not in self.gainedEQTLs:
+		# 	self.gainedEQTLs[sample] = deepcopy(gainedEQTLs)
+		# else:
+		# 	self.gainedEQTLs[sample] += deepcopy(gainedEQTLs)
 		# if len(gainedEQTLs) > 0:
-		# 	print "no of gains: ", len(gainedEQTLs)
-		# 	print "final no of gains: ", len(self.gainedEQTLs[sample])
+		if sample in self.gainedEQTLs:
+			print "no of gains: ", len(gainedEQTLs)
+			print "final no of gains: ", len(self.gainedEQTLs[sample])
 		
 	
 	def addLostEQTLs(self, lostEQTLs, sample):
-		if sample not in self.lostEQTLs:
-			self.lostEQTLs[sample] = []
-		self.lostEQTLs[sample] += lostEQTLs
 		
-		
+			
+		#An eQTL can only be lost if it is associated with that specific gene. 	
+		for lostEQTL in lostEQTLs:
+			if lostEQTL in self.eQTLs:
+				self.addLostEQTL(lostEQTL, sample)
+		#self.lostEQTLs[sample] += lostEQTLs
 		
 	def setLostEQTLs(self, lostEQTLs, sample):
-		self.lostEQTLs[sample] = lostEQTLs
+		for lostEQTL in lostEQTLs:
+			if lostEQTL in self.eQTLs:
+				self.addLostEQTL(lostEQTL, sample)
+		#self.lostEQTLs[sample] = lostEQTLs
 	
 	def addLostEQTL(self, lostEQTL, sample):
-		if sample not in self.lostEQTLs:
-			self.lostEQTLs[sample] = []	
-		self.lostEQTLs[sample].append(lostEQTL)
 	
+		if settings.general['lncRNA'] == True:
+			
+			if sample not in self.lostEQTLs:
+				self.lostEQTLs[sample] = []
+			
+			self.lostEQTLs[sample].append(lostEQTL)
+	
+		else:	
+			if lostEQTL in self.eQTLs:
+				if sample not in self.lostEQTLs:
+					self.lostEQTLs[sample] = []
+				
+				self.lostEQTLs[sample].append(lostEQTL)
+		

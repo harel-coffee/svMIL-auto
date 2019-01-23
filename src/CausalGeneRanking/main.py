@@ -43,7 +43,7 @@ import os
 from neighborhoodDefiner import NeighborhoodDefiner
 from geneRanking import GeneRanking
 from inputParser import InputParser
-from variantShuffler import VariantShuffler
+from genomicShuffler import GenomicShuffler
 from channelVisualizer import ChannelVisualizer
 from genome import Genome
 import settings
@@ -78,7 +78,6 @@ uniqueCancerTypes = []
 causalGenes = np.concatenate((causalGenes, nonCausalGenes), axis=0)
 
 
-
 #The combination of SVs and SNVs will come afterwards, because then we will need to map the names of the cancer types correctly. 
 
 #2. Read the SVs or SNVs depending on the mode.
@@ -109,15 +108,17 @@ if mode == "SV+SNV":
  #Check if this run is a permutation or not. The output file name depends on this
 if permutationYN == "True":
 	print "Shuffling variants"
-	variantShuffler = VariantShuffler()
+	genomicShuffler = GenomicShuffler()
 	#Shuffle the variants, provide the mode such that the function knows how to permute
 	if mode == "SV":
-		svData = variantShuffler.shuffleSVs(svData)
+		svData = genomicShuffler.shuffleSVs(svData)
 	if mode == "SNV":
-		snvData = variantShuffler.shuffleSNVs(snvData)
+		snvData = genomicShuffler.shuffleSNVs(snvData)
 	if mode == "SV+SNV":
-		svData = variantShuffler.shuffleSVs(svData)
-		snvData = variantShuffler.shuffleSNVs(snvData)
+		svData = genomicShuffler.shuffleSVs(svData)
+		snvData = genomicShuffler.shuffleSNVs(snvData)
+
+
 
 #Number of patients
 #print len(np.unique(svData[:,7]))
@@ -206,13 +207,13 @@ for cancerType in geneRanking.scores:
 		perGeneScores[row][1] = geneScore
 		perGeneScores[row][2] = eQTLGainScore
 		perGeneScores[row][3] = eQTLLossScore
-		perGeneScores[row][4] = eQTLGainScore + eQTLLossScore
+		perGeneScores[row][4] = eQTLLossScore + eQTLGainScore #focus only on losses for now
 		# perGeneScores[row][2] = eQTLScore
 		# perGeneScores[row][3] = tadScore
 		# perGeneScores[row][4] = interactionScore
 
 	#Also rank the output by highest total score (recurrence)
-	perGeneScores = perGeneScores[perGeneScores[:,4].argsort()[::-1]]
+	perGeneScores = perGeneScores[perGeneScores[:,2].argsort()[::-1]]
 	
 	cancerTypeFolder = rankedGeneScoreDir + "/" + uuid + "/" + cancerType
 	if not os.path.exists(cancerTypeFolder):

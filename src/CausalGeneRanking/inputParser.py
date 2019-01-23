@@ -243,18 +243,18 @@ class InputParser:
 				
 				#Obtain the name, chromosome and positions of the gene. 
 				
-				geneID = splitLine[0]
+				geneID = splitLine[3]
 				
-				chrom = splitLine[1]
+				chrom = splitLine[0]
 
-				start = splitLine[2]
-				end = splitLine[3]
+				start = splitLine[1]
+				end = splitLine[2]
 				
-				geneObj = Gene(geneID, "chr" + chrom, int(start), int(end))
+				geneObj = Gene(geneID, chrom, int(start), int(end))
 				
 				if geneID not in causalGeneDict:
 				
-					nonCausalGeneList.append(["chr" + chrom, int(start), int(end), geneObj])
+					nonCausalGeneList.append([chrom, int(start), int(end), geneObj])
 				
 		nonCausalGenes = np.array(nonCausalGeneList, dtype="object")
 	

@@ -18,12 +18,12 @@ class DerivativeTADMaker:
 	
 	def __init__(self, svData, genes, tadData, genome):
 		
-		allBins = genome.getAllBinsInTADFormat()
-		#Combine the TADs with the bins
-		combinedData = np.concatenate((tadData, allBins))
-		#Should the combined data be sorted?
-		print combinedData.shape
-		print combinedData
+		# allBins = genome.getAllBinsInTADFormat()
+		# #Combine the TADs with the bins
+		# combinedData = np.concatenate((tadData, allBins))
+		# #Should the combined data be sorted?
+		# print combinedData.shape
+		# print combinedData
 		
 		#Not sure if sorting here is useful, since the data would need to be sorted by chromosome as well, but since we take subsets later, it is easier to sort at that point. 
 		#combinedData = combinedData[combinedData[:,1].argsort()]
@@ -295,43 +295,43 @@ class DerivativeTADMaker:
 		
 		# # 2 translocations involving 3 TADs, where the 2nd translocation is in the same TAD as the 2nd
 		#With the first SV, geneA gains an eQTL, but then loses it again after the second SV. 
-		tad1 = ["chr1", 100, 300, TAD("chr1", 100, 300)]
-		tad2 = ["chr1", 500, 700, TAD("chr1", 500, 700)]
-		tad3 = ["chr1", 800, 900, TAD("chr1", 800, 900)]
-		
-		sv1 = ["chr1", 110, 120, "chr1", 550, 600, "sample1", "cancerTypeA", SV("chr1", 110, 120, "chr1", 550, 600, "sample1", "cancerTypeA", "intraChromosomal")]
-		sv2 = ["chr1", 130, 140, "chr1", 820, 830, "sample1", "cancerTypeA", SV("chr1", 130, 140, "chr1", 820, 830, "sample1", "cancerTypeA", "intraChromosomal")]
-		svGroups = dict()
-		tadsPerSV = dict()
-		svGroups[sv1[8]] = [sv1[8], sv2[8]]
-		tadsPerSV[sv1[8]] = [[tad1], [tad2]]
-		tadsPerSV[sv2[8]] = [[tad1], [tad3]]
-		svData = [svGroups, tadsPerSV]
-		
-		geneA = Gene("A", "chr1", 100, 105)
-		eQTLB = EQTL("chr1", 610, 610)
-		tad1[3].genes = [geneA]
-		tad2[3].eQTLInteractions = [eQTLB]
-		
-		# # 2 translocations involving 3 TADs, where the 2nd translocation is in the same TAD as the 2nd
-		#Here in the remaining part, the gene of TAD B can get into contact with the eQTL in TAD C
-		tad1 = ["chr1", 100, 300, TAD("chr1", 100, 300)]
-		tad2 = ["chr1", 500, 700, TAD("chr1", 500, 700)]
-		tad3 = ["chr1", 800, 900, TAD("chr1", 800, 900)]
-		
-		sv1 = ["chr1", 110, 120, "chr1", 550, 600, "sample1", "cancerTypeA", SV("chr1", 110, 120, "chr1", 550, 600, "sample1", "cancerTypeA", "intraChromosomal")]
-		sv2 = ["chr1", 130, 140, "chr1", 820, 830, "sample1", "cancerTypeA", SV("chr1", 130, 140, "chr1", 820, 830, "sample1", "cancerTypeA", "intraChromosomal")]
-		svGroups = dict()
-		tadsPerSV = dict()
-		svGroups[sv1[8]] = [sv1[8], sv2[8]]
-		tadsPerSV[sv1[8]] = [[tad1], [tad2]]
-		tadsPerSV[sv2[8]] = [[tad1], [tad3]]
-		svData = [svGroups, tadsPerSV]
-		
-		geneB = Gene("B", "chr1", 650, 660)
-		eQTLC = EQTL("chr1", 810, 810)
-		tad2[3].genes = [geneB]
-		tad3[3].eQTLInteractions = [eQTLC]
+		# tad1 = ["chr1", 100, 300, TAD("chr1", 100, 300)]
+		# tad2 = ["chr1", 500, 700, TAD("chr1", 500, 700)]
+		# tad3 = ["chr1", 800, 900, TAD("chr1", 800, 900)]
+		# 
+		# sv1 = ["chr1", 110, 120, "chr1", 550, 600, "sample1", "cancerTypeA", SV("chr1", 110, 120, "chr1", 550, 600, "sample1", "cancerTypeA", "intraChromosomal")]
+		# sv2 = ["chr1", 130, 140, "chr1", 820, 830, "sample1", "cancerTypeA", SV("chr1", 130, 140, "chr1", 820, 830, "sample1", "cancerTypeA", "intraChromosomal")]
+		# svGroups = dict()
+		# tadsPerSV = dict()
+		# svGroups[sv1[8]] = [sv1[8], sv2[8]]
+		# tadsPerSV[sv1[8]] = [[tad1], [tad2]]
+		# tadsPerSV[sv2[8]] = [[tad1], [tad3]]
+		# svData = [svGroups, tadsPerSV]
+		# 
+		# geneA = Gene("A", "chr1", 100, 105)
+		# eQTLB = EQTL("chr1", 610, 610)
+		# tad1[3].genes = [geneA]
+		# tad2[3].eQTLInteractions = [eQTLB]
+		# 
+		# # # 2 translocations involving 3 TADs, where the 2nd translocation is in the same TAD as the 2nd
+		# #Here in the remaining part, the gene of TAD B can get into contact with the eQTL in TAD C
+		# tad1 = ["chr1", 100, 300, TAD("chr1", 100, 300)]
+		# tad2 = ["chr1", 500, 700, TAD("chr1", 500, 700)]
+		# tad3 = ["chr1", 800, 900, TAD("chr1", 800, 900)]
+		# 
+		# sv1 = ["chr1", 110, 120, "chr1", 550, 600, "sample1", "cancerTypeA", SV("chr1", 110, 120, "chr1", 550, 600, "sample1", "cancerTypeA", "intraChromosomal")]
+		# sv2 = ["chr1", 130, 140, "chr1", 820, 830, "sample1", "cancerTypeA", SV("chr1", 130, 140, "chr1", 820, 830, "sample1", "cancerTypeA", "intraChromosomal")]
+		# svGroups = dict()
+		# tadsPerSV = dict()
+		# svGroups[sv1[8]] = [sv1[8], sv2[8]]
+		# tadsPerSV[sv1[8]] = [[tad1], [tad2]]
+		# tadsPerSV[sv2[8]] = [[tad1], [tad3]]
+		# svData = [svGroups, tadsPerSV]
+		# 
+		# geneB = Gene("B", "chr1", 650, 660)
+		# eQTLC = EQTL("chr1", 810, 810)
+		# tad2[3].genes = [geneB]
+		# tad3[3].eQTLInteractions = [eQTLC]
 		
 		# 
 		# # 2 translocations involving 2 TADs, but the 2nd translocation ends before the first translocation
@@ -696,7 +696,7 @@ class DerivativeTADMaker:
 
 			
 			
-		exit()
+		
 		
 		
 		
@@ -788,63 +788,63 @@ class DerivativeTADMaker:
 				# 
 				# for gene in leftSideGenes:
 				# 	gene.addGainedEQTLs(unaffectedElementsRight, svData[7])
-			elif len(leftMostTad) < 1 or len(rightMostTad) < 1:
-				print "SV ends in one TAD"
-				
-				
-				
-				#Either the left side of the inversion or the right side is within a TAD, but the other part is within a genomic bin. 
-				#Here make use of genomic bins instead of TADs.
-				
-				#1. First get the genomic bin for the non-TAD end
-				#Case where the inversion ends in a TAD, but the left side is a genomic bin. 
-				if len(leftMostTad) < 1:
-					rightMostTad = rightMostTad[0]
-					genomicBin = genome.collectGenomicBin(svData[0], svData[1], svData[2])
-					
-					if genomicBin == None:
-						return
-					
-					#Collect the elements and genes that are gained and lost within the TAD or genomic bin
-					
-					leftSideElements = genomicBin[3].getElementsByRange(svData[1], genomicBin[2]) #From the start of the inversion until the end of the left most TAD
-					unaffectedElementsLeft = genomicBin[3].getElementsByRange(genomicBin[1], svData[1])
-			
-					#Also get the genes
-					leftSideGenes = genomicBin[3].getGenesByRange(svData[1], genomicBin[2]) #From the start of the inversion until the end of the left most TAD
-					unaffectedGenesLeft = genomicBin[3].getGenesByRange(genomicBin[1], svData[1])
-					
-					#3. Collect all elements from the left TAD boundary until the end of the inversion.
-					
-					rightSideElements = rightMostTad[3].getElementsByRange(rightMostTad[1], svData[5]) #from the start of the rightmost TAD until the end of the inversion
-					unaffectedElementsRight = rightMostTad[3].getElementsByRange(svData[5], rightMostTad[2])
-					
-					rightSideGenes = rightMostTad[3].getGenesByRange(rightMostTad[1], svData[5]) #from the start of the rightmost TAD until the end of the inversion
-					unaffectedGenesRight = rightMostTad[3].getGenesByRange(svData[5], rightMostTad[2])
-				#Case where the inversion starts in a TAD, but the right side is in a genomic bin.
-				elif len(rightMostTad) < 1:
-					leftMostTad = leftMostTad[0]
-					genomicBin = genome.collectGenomicBin(svData[0], svData[4], svData[5])
-					if genomicBin == None:
-						return
-					
-					#2. Collect all elements until the right TAD boundary inside the inversion.
-					
-					leftSideElements = leftMostTad[3].getElementsByRange(svData[1], leftMostTad[2]) #From the start of the inversion until the end of the left most TAD
-					unaffectedElementsLeft = leftMostTad[3].getElementsByRange(leftMostTad[1], svData[1])
-			
-					#Also get the genes
-					leftSideGenes = leftMostTad[3].getGenesByRange(svData[1], leftMostTad[2]) #From the start of the inversion until the end of the left most TAD
-					unaffectedGenesLeft = leftMostTad[3].getGenesByRange(leftMostTad[1], svData[1])
-					
-					#3. Collect all elements from the left TAD boundary until the end of the inversion.
-					
-					rightSideElements = genomicBin[3].getElementsByRange(genomicBin[1], svData[5]) #from the start of the rightmost TAD until the end of the inversion
-					unaffectedElementsRight = genomicBin[3].getElementsByRange(svData[5], genomicBin[2])
-					
-					rightSideGenes = genomicBin[3].getGenesByRange(genomicBin[1], svData[5]) #from the start of the rightmost TAD until the end of the inversion
-					unaffectedGenesRight = genomicBin[3].getGenesByRange(svData[5], genomicBin[2])
-						
+			# elif len(leftMostTad) < 1 or len(rightMostTad) < 1:
+			# 	print "SV ends in one TAD"
+			# 	
+			# 	
+			# 	
+			# 	#Either the left side of the inversion or the right side is within a TAD, but the other part is within a genomic bin. 
+			# 	#Here make use of genomic bins instead of TADs.
+			# 	
+			# 	#1. First get the genomic bin for the non-TAD end
+			# 	#Case where the inversion ends in a TAD, but the left side is a genomic bin. 
+			# 	if len(leftMostTad) < 1:
+			# 		rightMostTad = rightMostTad[0]
+			# 		genomicBin = genome.collectGenomicBin(svData[0], svData[1], svData[2])
+			# 		
+			# 		if genomicBin == None:
+			# 			return
+			# 		
+			# 		#Collect the elements and genes that are gained and lost within the TAD or genomic bin
+			# 		
+			# 		leftSideElements = genomicBin[3].getElementsByRange(svData[1], genomicBin[2]) #From the start of the inversion until the end of the left most TAD
+			# 		unaffectedElementsLeft = genomicBin[3].getElementsByRange(genomicBin[1], svData[1])
+			# 
+			# 		#Also get the genes
+			# 		leftSideGenes = genomicBin[3].getGenesByRange(svData[1], genomicBin[2]) #From the start of the inversion until the end of the left most TAD
+			# 		unaffectedGenesLeft = genomicBin[3].getGenesByRange(genomicBin[1], svData[1])
+			# 		
+			# 		#3. Collect all elements from the left TAD boundary until the end of the inversion.
+			# 		
+			# 		rightSideElements = rightMostTad[3].getElementsByRange(rightMostTad[1], svData[5]) #from the start of the rightmost TAD until the end of the inversion
+			# 		unaffectedElementsRight = rightMostTad[3].getElementsByRange(svData[5], rightMostTad[2])
+			# 		
+			# 		rightSideGenes = rightMostTad[3].getGenesByRange(rightMostTad[1], svData[5]) #from the start of the rightmost TAD until the end of the inversion
+			# 		unaffectedGenesRight = rightMostTad[3].getGenesByRange(svData[5], rightMostTad[2])
+			# 	#Case where the inversion starts in a TAD, but the right side is in a genomic bin.
+			# 	elif len(rightMostTad) < 1:
+			# 		leftMostTad = leftMostTad[0]
+			# 		genomicBin = genome.collectGenomicBin(svData[0], svData[4], svData[5])
+			# 		if genomicBin == None:
+			# 			return
+			# 		
+			# 		#2. Collect all elements until the right TAD boundary inside the inversion.
+			# 		
+			# 		leftSideElements = leftMostTad[3].getElementsByRange(svData[1], leftMostTad[2]) #From the start of the inversion until the end of the left most TAD
+			# 		unaffectedElementsLeft = leftMostTad[3].getElementsByRange(leftMostTad[1], svData[1])
+			# 
+			# 		#Also get the genes
+			# 		leftSideGenes = leftMostTad[3].getGenesByRange(svData[1], leftMostTad[2]) #From the start of the inversion until the end of the left most TAD
+			# 		unaffectedGenesLeft = leftMostTad[3].getGenesByRange(leftMostTad[1], svData[1])
+			# 		
+			# 		#3. Collect all elements from the left TAD boundary until the end of the inversion.
+			# 		
+			# 		rightSideElements = genomicBin[3].getElementsByRange(genomicBin[1], svData[5]) #from the start of the rightmost TAD until the end of the inversion
+			# 		unaffectedElementsRight = genomicBin[3].getElementsByRange(svData[5], genomicBin[2])
+			# 		
+			# 		rightSideGenes = genomicBin[3].getGenesByRange(genomicBin[1], svData[5]) #from the start of the rightmost TAD until the end of the inversion
+			# 		unaffectedGenesRight = genomicBin[3].getGenesByRange(svData[5], genomicBin[2])
+			# 			
 			
 			
 			#Assigning the gains and losses to the genes is independent of the type of inversion
@@ -852,10 +852,6 @@ class DerivativeTADMaker:
 			#All genes that were originally in the left TAD (outisde of the inversion) will gain elements of the right side of the inversion
 			#All unaffected genes on the left will lose the eQTLs that are in the left side of the inversion
 			for gene in unaffectedGenesLeft:
-				
-				if gene.name == "PDE4DIP":
-					print svData[0], svData[1], svData[5]
-					#exit()
 				
 				gene.addGainedEQTLs(rightSideElements, svData[7])
 				gene.addLostEQTLs(leftSideElements, svData[7])
@@ -868,9 +864,7 @@ class DerivativeTADMaker:
 			#All genes in the right side of the inversion will gain elements from the original left TAD.
 			#All genes in the right side will lose interactions with eQTLs in the unaffected right TAD. 
 			for gene in rightSideGenes:
-				if gene.name == "PDE4DIP":
-					print svData[0], svData[1], svData[5]
-					#exit()
+				
 				gene.addGainedEQTLs(unaffectedElementsLeft, svData[7])
 				#print "Number of unaffected elements right: ", len(unaffectedElementsRight), " for genes ", len(rightSideGenes)
 				gene.addLostEQTLs(unaffectedElementsRight, svData[7])
@@ -878,18 +872,14 @@ class DerivativeTADMaker:
 			#vice versa but then for the right TAD and right side of the inversion.
 			#The lost eQTLs are the ones that are in the right side of the inversion
 			for gene in unaffectedGenesRight:
-				if gene.name == "PDE4DIP":
-					print svData[0], svData[1], svData[5]
-					#exit()
+				
 				gene.addGainedEQTLs(leftSideElements, svData[7])
 				#print "Number of gained right side elements 2: ", len(rightSideElements), " for genes ", len(unaffectedGenesRight)
 				gene.addLostEQTLs(rightSideElements, svData[7])
 			
 			#The lost eQTLs are the ones that are in the unaffected original left TAD
 			for gene in leftSideGenes:
-				if gene.name == "PDE4DIP":
-					print svData[0], svData[1], svData[5]
-					#exit()
+				
 				gene.addGainedEQTLs(unaffectedElementsRight, svData[7])
 				#print "Number of unaffected left elements: ", len(unaffectedElementsLeft), " for genes ", len(leftSideGenes)
 				gene.addLostEQTLs(unaffectedElementsLeft, svData[7])
