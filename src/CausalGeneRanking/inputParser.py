@@ -17,7 +17,7 @@ import re
 
 class InputParser:
 	
-	def getSVsFromFile(self, svFile):
+	def getSVsFromFile(self, svFile, typeFilter):
 			
 		variantsList = []
 		
@@ -62,10 +62,11 @@ class InputParser:
 				svTypeIndex = header.index("sv_type")
 				svType = splitLine[svTypeIndex]
 				
-				#Check if the SV type matches deletions
-				match = re.search("deletion", svType, re.IGNORECASE)
-				if match is None: #only focus on deletions for now
-					continue
+				if typeFilter != "all":
+					#Check if the SV type matches deletions
+					match = re.search("deletion", svType, re.IGNORECASE)
+					if match is None: #only focus on deletions for now
+						continue
 				
 				
 				#if cancerType not in uniqueCancerTypes:
@@ -112,7 +113,7 @@ class InputParser:
 					e1 = tmpS1
 				
 				
-				svObject = SV('chr' + chr1, s1, e1, 'chr' + chr2, s2, e2, sampleName, cancerType)
+				svObject = SV('chr' + chr1, s1, e1, 'chr' + chr2, s2, e2, sampleName, cancerType, svType)
 				#chr 1, start, end, chr2, start2, end2
 				variantsList.append(['chr' + chr1, s1, e1, 'chr' + chr2, s2, e2, cancerType, sampleName, svObject])
 		
@@ -153,7 +154,7 @@ class InputParser:
 				colonSplitPosition = fullPosition.split(":")
 				dashSplitPosition = colonSplitPosition[1].split("-")
 				
-				chromosome = colonSplitPosition[0]
+				chromosome = "chr" + colonSplitPosition[0]
 				start = dashSplitPosition[0]
 				end = dashSplitPosition[1]
 				
@@ -242,18 +243,18 @@ class InputParser:
 				
 				#Obtain the name, chromosome and positions of the gene. 
 				
-				geneID = splitLine[0]
+				geneID = splitLine[3]
 				
-				chrom = splitLine[1]
+				chrom = splitLine[0]
 
-				start = splitLine[2]
-				end = splitLine[3]
+				start = splitLine[1]
+				end = splitLine[2]
 				
-				geneObj = Gene(geneID, "chr" + chrom, int(start), int(end))
+				geneObj = Gene(geneID, chrom, int(start), int(end))
 				
 				if geneID not in causalGeneDict:
 				
-					nonCausalGeneList.append(["chr" + chrom, int(start), int(end), geneObj])
+					nonCausalGeneList.append([chrom, int(start), int(end), geneObj])
 				
 		nonCausalGenes = np.array(nonCausalGeneList, dtype="object")
 	

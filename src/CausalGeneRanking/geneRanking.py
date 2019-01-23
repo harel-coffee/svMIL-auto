@@ -80,9 +80,7 @@ class GeneRanking:
 					if cancerType not in cancerTypes:
 						cancerTypes[cancerType] = dict()
 						cancerTypes[cancerType]["genes"] = dict()
-						cancerTypes[cancerType]["TADs"] = dict()
 						cancerTypes[cancerType]["eQTLs"] = dict()
-						cancerTypes[cancerType]["interactions"] = dict()
 					if cancerType not in cancerTypeTotalSVs:
 						cancerTypeTotalSVs[cancerType] = 0 #counting of SVs, not used anymore
 					
@@ -97,75 +95,6 @@ class GeneRanking:
 				
 			#Also add the SVs affecting TADs to the total list of SVs and the SV map
 			
-			#print "mapping left TAD SVs to cancer type"
-			
-			#Get the left TAD
-			leftTAD = gene.leftTAD
-			
-			leftTADVariants = [] #have one big list of SVs and SNVs that affect the TAD, easier to search through at once
-			if leftTAD is not None:
-				if leftTAD.SVs is not None:
-					leftTADVariants += list(leftTAD.SVs)
-				if leftTAD.SNVs is not None:
-					leftTADVariants += list(leftTAD.SNVs)
-				
-			
-			if len(leftTADVariants) > 0:
-				for variant in leftTADVariants:
-					if variant[6] not in sampleMap:
-						sampleMap[variant[6]] = sampleIndex
-						sampleIndex += 1
-					cancerType = variant[7]
-					#Now this is a bit weird, becauseif we don't see a variant with a specific cancer type for this type of data, we need to do the same thing again later for the next data type.
-					#Can be done earlier on I think
-					if cancerType not in cancerTypes:
-						cancerTypes[cancerType] = dict()
-						cancerTypes[cancerType]["genes"] = dict()
-						cancerTypes[cancerType]["TADs"] = dict()
-						cancerTypes[cancerType]["eQTLs"] = dict()
-						cancerTypes[cancerType]["interactions"] = dict()
-					if cancerType not in cancerTypeTotalSVs:
-						cancerTypeTotalSVs[cancerType] = 0
-					
-					if leftTAD not in cancerTypes[cancerType]["TADs"]:
-						cancerTypes[cancerType]["TADs"][leftTAD] = []	
-					
-					cancerTypes[cancerType]["TADs"][leftTAD].append(variant)
-					cancerTypeTotalSVs[cancerType] += 1
-			
-			#print "mapping right tad svs to cancer types"
-				
-			rightTAD = gene.rightTAD
-			rightTADVariants = [] #have one big list of objects
-			if rightTAD is not None:
-				
-				if rightTAD.SVs is not None:
-					rightTADVariants += list(rightTAD.SVs)
-				if rightTAD.SNVs is not None:
-					rightTADVariants += list(rightTAD.SNVs)
-				
-			if len(rightTADVariants) > 0:
-				
-				for variant in rightTADVariants:
-					if variant[6] not in sampleMap:
-						sampleMap[variant[6]] = sampleIndex
-						sampleIndex += 1
-					cancerType = variant[7]
-					if cancerType not in cancerTypes:
-						cancerTypes[cancerType] = dict()
-						cancerTypes[cancerType]["genes"] = dict()
-						cancerTypes[cancerType]["TADs"] = dict()
-						cancerTypes[cancerType]["eQTLs"] = dict()
-						cancerTypes[cancerType]["interactions"] = dict()
-					if cancerType not in cancerTypeTotalSVs:
-						cancerTypeTotalSVs[cancerType] = 0
-					
-					if rightTAD not in cancerTypes[cancerType]["TADs"]:
-						cancerTypes[cancerType]["TADs"][rightTAD] = []	
-					
-					cancerTypes[cancerType]["TADs"][rightTAD].append(variant)
-					cancerTypeTotalSVs[cancerType] += 1
-		
 			#Get the eQTLs and add the SVs to the right cancer type
 			
 			#print "mapping eQTLs to cancer type"
@@ -192,9 +121,7 @@ class GeneRanking:
 					if cancerType not in cancerTypes:
 						cancerTypes[cancerType] = dict()
 						cancerTypes[cancerType]["genes"] = dict()
-						cancerTypes[cancerType]["TADs"] = dict()
 						cancerTypes[cancerType]["eQTLs"] = dict()
-						cancerTypes[cancerType]["interactions"] = dict()
 					if cancerType not in cancerTypeTotalSVs:
 						cancerTypeTotalSVs[cancerType] = 0
 					
@@ -204,39 +131,6 @@ class GeneRanking:
 					cancerTypes[cancerType]["eQTLs"][eQTL].append(variant)
 					cancerTypeTotalSVs[cancerType] += 1
 
-			#print "mapping interactions to cancer types"
-			
-			# for interaction in gene.interactions:
-			# 	
-			# 	#Collect all variants of this eQTL	
-			# 	interactionVariants = [] #have one big list of objects
-			# 	if interaction.SVs is not None:
-			# 		interactionVariants += list(interaction.SVs)
-			# 	if interaction.SNVs is not None:
-			# 		interactionVariants += list(interaction.SNVs)
-			# 		
-			# 	
-			# 	for variant in interactionVariants:
-			# 		if variant[6] not in sampleMap:
-			# 			sampleMap[variant[6]] = sampleIndex
-			# 			sampleIndex += 1
-			# 			
-			# 		cancerType = variant[7]
-			# 		if cancerType not in cancerTypes:
-			# 			cancerTypes[cancerType] = dict()
-			# 			cancerTypes[cancerType]["genes"] = dict()
-			# 			cancerTypes[cancerType]["TADs"] = dict()
-			# 			cancerTypes[cancerType]["eQTLs"] = dict()
-			# 			cancerTypes[cancerType]["interactions"] = dict()
-			# 		if cancerType not in cancerTypeTotalSVs:
-			# 			cancerTypeTotalSVs[cancerType] = 0
-			# 		
-			# 		if interaction not in cancerTypes[cancerType]["interactions"]:
-			# 			cancerTypes[cancerType]["interactions"][interaction] = []	
-			# 		
-			# 		cancerTypes[cancerType]["interactions"][interaction].append(variant)
-			# 		cancerTypeTotalSVs[cancerType] += 1
-			# 
 		for gene in geneMap:
 			index = geneMap[gene]
 			reverseGeneMap[index] = gene
@@ -265,31 +159,38 @@ class GeneRanking:
 			print "scoring genes:"
 			geneScoringMatrix = self.scoreBySVsInGenes(cancerTypeSVs["genes"], sampleMap, geneMap)
 			print "scoring eQTLs"
-			eQTLScoringMatrix = self.scoreBySVsInEQTLs(cancerTypeSVs, sampleMap, geneMap, cancerType)
-			print "scoring TADs:"
-			tadScoringMatrix = self.scoreBySVsInTADs(cancerTypeSVs, sampleMap, geneMap, cancerType)
-			print "scoring gained eQTL interactions:"
-			eQTLGainedInteractionScoringMatrix = self.scoreByGainedEQTLInteractions(cancerTypeSVs["genes"], sampleMap, geneMap)
+			#eQTLScoringMatrix = self.scoreBySVsInEQTLs(cancerTypeSVs, sampleMap, geneMap, cancerType)
+			#eQTLScoringMatrix = self.scoreByEQTLs(cancerTypeSVs, sampleMap, geneMap, cancerType)
+			eQTLGainsScoringMatrix = self.scoreByEQTLGains(cancerTypeSVs, sampleMap, geneMap, cancerType)
+			eQTLLossesScoringMatrix = self.scoreByEQTLLosses(cancerTypeSVs, sampleMap, geneMap, cancerType)
+			
+			# 
+			# print "scoring gained eQTL interactions:"
+			# eQTLGainedInteractionScoringMatrix = self.scoreByGainedEQTLInteractions(cancerTypeSVs["genes"], sampleMap, geneMap)
 			
 			#interactionScoringMatrix = self.scoreBySVsInInteractions(cancerTypeSVs, sampleMap, geneMap, cancerType)
 
 			#? Does this part make sense, to first xor with eQtls and then again later?
 			#I think we need to do this for all data types right? Because all of them need to be exclusive? 
 			#The idea is that we end up with one scoring matrix where only the scores remain for the elements in the neighborhood where SVs in those patients do not overlap with the gene itself. 
-			xorMatrix = np.logical_xor(geneScoringMatrix, eQTLScoringMatrix).astype(int)
-			geneXorMatrix = geneScoringMatrix * xorMatrix
-			eQTLXorMatrix = eQTLScoringMatrix * xorMatrix
-			tadXorMatrix = tadScoringMatrix * xorMatrix
-			#Filter out all patients in which the SV also disrupts the gene. 
-			gainedEQTLsMatrix = np.logical_xor(geneScoringMatrix, eQTLGainedInteractionScoringMatrix).astype(int)
-			gainedEQTLsXorMatrix = eQTLGainedInteractionScoringMatrix * gainedEQTLsMatrix
-			#interactionXorMatrix = interactionScoringMatrix * xorMatrix
 			
-			#Repeat mutual exclusivity for the gains of interactions
-
-			#scoringMatrix = geneXorMatrix + eQTLXorMatrix + tadXorMatrix
-			#Scoring only by gained interactions
-			scoringMatrix = gainedEQTLsXorMatrix
+			#Filter out all patients in which the SV also disrupts the gene. 
+			eQTLGainsXorMatrix = np.logical_xor(geneScoringMatrix, eQTLGainsScoringMatrix).astype(int)
+			
+			#Actually we don't want to use XOR, we only want a score of 1 if the losses are 1, not if the genes are 1 but the losses are 0
+			eQTLLossesXorMatrix = np.zeros(eQTLLossesScoringMatrix.shape)
+			for row in range(0, eQTLLossesScoringMatrix.shape[0]):
+				for col in range(0, eQTLLossesScoringMatrix.shape[1]):
+					
+					if eQTLLossesScoringMatrix[row][col] == 1:
+						if geneScoringMatrix[row][col] == 0:
+							eQTLLossesXorMatrix[row][col] = 1
+					
+			#eQTLLossesXorMatrix = np.logical_xor(eQTLLossesScoringMatrix, geneScoringMatrix).astype(int)
+			
+			
+			#Scoring only by lost interactions
+			scoringMatrix = eQTLLossesScoringMatrix
 			
 			#Sum the total score per gene and report the genes by which ones are most likely causal.
 
@@ -307,13 +208,21 @@ class GeneRanking:
 				gene = geneMap.keys()[geneMap.values().index(geneInd)] #Isn't this the part that is going wrong? The best index is probably the index in the matrix? 
 				gene = reverseGeneMap[geneInd]
 				
+				if gene.name == "BRCA1":
+					print eQTLGainsScoringMatrix[:,geneInd]
+					print eQTLLossesScoringMatrix[:,geneInd]
+					print eQTLLossesXorMatrix[:,geneInd]
+					print geneScoringMatrix[:,geneInd]
+					print sampleMap
+					
+				
 				
 				if geneScoresSummed[geneInd] > 0:
 					geneCount += 1
 					#print gene.name, gene.chromosome, gene.start, ": ", geneScoresSummed[geneInd], " gene score: ", np.sum(geneXorMatrix[:,geneInd]), " eQTL score: ", np.sum(eQTLXorMatrix[:,geneInd]), " TAD score: ", np.sum(tadXorMatrix[:,geneInd])	
 			
 				
-				geneScores.append([gene, np.sum(geneScoringMatrix[:,geneInd]), np.sum(eQTLXorMatrix[:,geneInd]), np.sum(tadXorMatrix[:,geneInd]), np.sum(gainedEQTLsXorMatrix[:,geneInd])])
+				geneScores.append([gene, np.sum(geneScoringMatrix[:,geneInd]), np.sum(eQTLGainsScoringMatrix[:,geneInd]), np.sum(eQTLLossesScoringMatrix[:,geneInd])])
 			
 			
 			geneScores = np.array(geneScores, dtype="object")
@@ -442,6 +351,85 @@ class GeneRanking:
 					if sv[7] == cancerType:
 					
 						scoringMatrix[sampleInd][matrixGeneInd] += 1
+		
+		return scoringMatrix
+
+	def scoreByEQTLs(self, cancerTypeSVs, sampleMap, geneMap, cancerType):
+		"""
+			For every gene, add a score of 1 if an eQTL is either gained or lost. Later separate losses from gains.
+		"""
+		
+		scoringMatrix = np.zeros([len(sampleMap), len(geneMap)])
+		
+		for geneInd in range(0, len(cancerTypeSVs["genes"])):
+			
+			gene = cancerTypeSVs["genes"].keys()[geneInd]
+			
+			matrixGeneInd = geneMap[gene]
+			
+			if len(gene.lostEQTLs) > 0:
+				for sample in gene.lostEQTLs:
+					sampleInd = sampleMap[sample]
+					scoringMatrix[sampleInd][matrixGeneInd] += 1
+		
+			if len(gene.gainedEQTLs) > 0:
+				for sample in gene.gainedEQTLs:
+					sampleInd = sampleMap[sample]
+					scoringMatrix[sampleInd][matrixGeneInd] += 1
+				
+		
+		return scoringMatrix
+	
+	def scoreByEQTLGains(self, cancerTypeSVs, sampleMap, geneMap, cancerType):
+		"""
+			For every gene, add a score of 1 if an eQTL is either gained or lost. Later separate losses from gains.
+		"""
+		
+		scoringMatrix = np.zeros([len(sampleMap), len(geneMap)])
+		
+		for geneInd in range(0, len(cancerTypeSVs["genes"])):
+			
+			gene = cancerTypeSVs["genes"].keys()[geneInd]
+			
+			matrixGeneInd = geneMap[gene]
+			
+			if len(gene.gainedEQTLs) > 0:
+				for sample in gene.gainedEQTLs:
+					sampleInd = sampleMap[sample]
+					scoringMatrix[sampleInd][matrixGeneInd] += 1
+				
+		
+		return scoringMatrix
+	
+	def scoreByEQTLLosses(self, cancerTypeSVs, sampleMap, geneMap, cancerType):
+		"""
+			For every gene, add a score of 1 if an eQTL is either gained or lost. Later separate losses from gains.
+			
+			Instead of counting the number of losses, normalize for the number of losses compared to the total. 
+		"""
+		
+		scoringMatrix = np.zeros([len(sampleMap), len(geneMap)])
+		
+		for geneInd in range(0, len(cancerTypeSVs["genes"])):
+			
+			gene = cancerTypeSVs["genes"].keys()[geneInd]
+			
+			matrixGeneInd = geneMap[gene]
+			
+			if gene.name == "BRCA1":
+				print "Lost eQTLs of brca1: ", len(gene.lostEQTLs)
+				for eQTL in gene.lostEQTLs:
+					print eQTL
+		
+			if len(gene.lostEQTLs) > 0:
+				for sample in gene.lostEQTLs:
+					delta = len(gene.eQTLs)
+					sampleInd = sampleMap[sample]
+					for eQTL in gene.lostEQTLs:
+						delta -= 1
+					#scoringMatrix[sampleInd][matrixGeneInd] = delta
+					scoringMatrix[sampleInd][matrixGeneInd] += 1
+
 		
 		return scoringMatrix
 

@@ -41,10 +41,13 @@ import os
 
 
 from neighborhoodDefiner import NeighborhoodDefiner
-from geneRankingAlphaBeta import GeneRanking
+from geneRanking import GeneRanking
 from inputParser import InputParser
-from variantShuffler import VariantShuffler
+from genomicShuffler import GenomicShuffler
+from channelVisualizer import ChannelVisualizer
+from genome import Genome
 import settings
+
 
 ###############
 ###Main code###
@@ -56,14 +59,24 @@ permutationYN = sys.argv[2] #True or False depending on if we want to permute or
 mode = settings.general['mode'] #Either SV or SNV, then the relevant functions for this data type will be called. For now, a combination of data types is not yet implemented. 
 #permutationRound is parameter 5, only used when running on the HPC
 
+import pickle
+# 
+# filehandler = open("GenesAndNeighborhoods.pkl", 'rb')
+# causalGenes = pickle.load(filehandler)
+# filehandler.close()
+
+
 #1. Read and parse the causal genes
 
 causalGenes = InputParser().readCausalGeneFile(settings.files['causalGenesFile'])
-nonCausalGenes = InputParser().readNonCausalGeneFile(settings.files['nonCausalGenesFile'], causalGenes) #In the same format as the causal genes. 
+nonCausalGenes = InputParser().readNonCausalGeneFile(settings.files['nonCausalGenesFile'], causalGenes) #In the same format as the causal genes.
+
+
 uniqueCancerTypes = []
 
 #Combine the genes for now
 causalGenes = np.concatenate((causalGenes, nonCausalGenes), axis=0)
+
 
 #The combination of SVs and SNVs will come afterwards, because then we will need to map the names of the cancer types correctly. 
 
@@ -73,8 +86,8 @@ variantData = []
 if mode == "SV":
 	print "Reading SV data"
 	svFile = settings.files['svFile']
-	svData = InputParser().getSVsFromFile(svFile)
-	
+	svData = InputParser().getSVsFromFile(svFile, "all")
+
 
 if mode == "SNV":
 	print "Reading SNV data"
@@ -85,7 +98,7 @@ if mode == "SNV":
 if mode == "SV+SNV":
 	print "Reading SV data"
 	svFile = settings.files['svFile']
-	svData = InputParser().getSVsFromFile(svFile)
+	svData = InputParser().getSVsFromFile(svFile, "deletion")
 	print "Reading SNV data"
 	snvFile = settings.files['snvFile']
 	snvData = InputParser().getSNVsFromFile(snvFile)
@@ -95,32 +108,68 @@ if mode == "SV+SNV":
  #Check if this run is a permutation or not. The output file name depends on this
 if permutationYN == "True":
 	print "Shuffling variants"
-	variantShuffler = VariantShuffler()
+	genomicShuffler = GenomicShuffler()
 	#Shuffle the variants, provide the mode such that the function knows how to permute
 	if mode == "SV":
-		svData = variantShuffler.shuffleSVs(svData)
+		svData = genomicShuffler.shuffleSVs(svData)
 	if mode == "SNV":
-		snvData = variantShuffler.shuffleSNVs(snvData)
+		snvData = genomicShuffler.shuffleSNVs(snvData)
 	if mode == "SV+SNV":
-		svData = variantShuffler.shuffleSVs(svData)
-		snvData = variantShuffler.shuffleSNVs(snvData)
-		
+		svData = genomicShuffler.shuffleSVs(svData)
+		snvData = genomicShuffler.shuffleSNVs(snvData)
+
+
+
+#Number of patients
+#print len(np.unique(svData[:,7]))
+# 
+# import os.path
+# 
+# if os.path.exists('genome.pkl'):
+# 	print "loading genome bins from pkl"
+# 	
+# 	with open('genome.pkl', 'rb') as h:
+# 		genome = pkl.load(h)
+# else:
+# 	genome = Genome() #pkl this object
+# 
+# 	with open('genome.pkl', 'wb') as h:
+# 		pkl.dump(genome, h, protocol=pkl.HIGHEST_PROTOCOL)
+
+genome = Genome()
+
 		
 #2. Get the neighborhood for these genes
 if mode == "SV":
 	print "Defining the neighborhood for the causal genes and the SVs"
-	NeighborhoodDefiner(causalGenes, svData, None, mode) #Provide the mode to ensure that the right variant type is used (different positions used in annotation)
+	NeighborhoodDefiner(causalGenes, svData, None, mode, genome) #Provide the mode to ensure that the right variant type is used (different positions used in annotation)
 if mode == "SNV":
 	print "Defining the neighborhood for the causal genes and the SNVs"
-	NeighborhoodDefiner(causalGenes, None, snvData, mode) #Provide the mode to ensure that the right variant type is used (different positions used in annotation)
+	NeighborhoodDefiner(causalGenes, None, snvData, mode, genome) #Provide the mode to ensure that the right variant type is used (different positions used in annotation)
 if mode == "SV+SNV":
 	print "Defining the neighborhood for the causal genes and the SVs and SNVs"
-	NeighborhoodDefiner(causalGenes, svData, snvData, mode) #Provide the mode to ensure that the right variant type is used (different positions used in annotation)
+	NeighborhoodDefiner(causalGenes, svData, snvData, mode, genome) #Provide the mode to ensure that the right variant type is used (different positions used in annotation)
 	
-	
+
 #3. Do simple ranking of the genes and report the causal SVs
 print "Ranking the genes for the variants"
 geneRanking = GeneRanking(causalGenes[:,3], mode)
+
+
+#Skip the ranking for now and instead do exploration
+
+#Save the causal genes up until here and load them for faster development
+# import pickle
+# 
+# filehandler = open("GenesAndNeighborhoods.pkl", 'wb')
+# pickle.dump(causalGenes, filehandler)
+# filehandler.close()
+# exit()
+# 
+# ChannelVisualizer(causalGenes[:,3], mode, genome)
+# 
+# exit()
+
 
 #Output the ranking scores to a file (should probably also be its own class or at least a function)
 
@@ -147,21 +196,24 @@ for cancerType in geneRanking.scores:
 		gene = cancerTypeScores[row][0]
 		geneName = gene.name
 		
-		# geneScore = cancerTypeScores[row,1]
-		eQTLScore = cancerTypeScores[row,1]
-		alpha = cancerTypeScores[row,2]
-		beta = cancerTypeScores[row,3]
+		geneScore = cancerTypeScores[row,1]
+		eQTLGainScore = cancerTypeScores[row,2]
+		eQTLLossScore = cancerTypeScores[row,3]
+		
 		# tadScore = cancerTypeScores[row,3]
 		# interactionScore = cancerTypeScores[row,4]
 		
 		perGeneScores[row][0] = geneName
-		perGeneScores[row][1] = eQTLScore
-		perGeneScores[row][2] = alpha
-		perGeneScores[row][3] = beta
+		perGeneScores[row][1] = geneScore
+		perGeneScores[row][2] = eQTLGainScore
+		perGeneScores[row][3] = eQTLLossScore
+		perGeneScores[row][4] = eQTLLossScore + eQTLGainScore #focus only on losses for now
 		# perGeneScores[row][2] = eQTLScore
 		# perGeneScores[row][3] = tadScore
 		# perGeneScores[row][4] = interactionScore
 
+	#Also rank the output by highest total score (recurrence)
+	perGeneScores = perGeneScores[perGeneScores[:,2].argsort()[::-1]]
 	
 	cancerTypeFolder = rankedGeneScoreDir + "/" + uuid + "/" + cancerType
 	if not os.path.exists(cancerTypeFolder):

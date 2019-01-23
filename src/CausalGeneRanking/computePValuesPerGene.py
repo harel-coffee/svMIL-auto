@@ -31,9 +31,8 @@ noOfCausalGenes = len(nonPermutedScores[:,0])
 
 perGeneScores = dict()
 perGeneScores["geneScore"] = np.zeros([noOfCausalGenes, noOfPermutations+1])
-perGeneScores["eQTLScore"] = np.zeros([noOfCausalGenes, noOfPermutations+1])
-perGeneScores["tadScore"] = np.zeros([noOfCausalGenes, noOfPermutations+1])
-perGeneScores["interactionScore"] = np.zeros([noOfCausalGenes, noOfPermutations+1])
+perGeneScores["eQTLGainScore"] = np.zeros([noOfCausalGenes, noOfPermutations+1])
+perGeneScores["eQTLLossScore"] = np.zeros([noOfCausalGenes, noOfPermutations+1])
 
 
 #Make an index for the positions of the genes in the final scoring matrix
@@ -75,13 +74,12 @@ for geneScoreFile in geneScoreFiles:
 		
 		
 		perGeneScores["geneScore"][currentGeneIndex, permutationRound] = geneScores[row][1]
-		perGeneScores["eQTLScore"][currentGeneIndex, permutationRound] = geneScores[row][2]
-		perGeneScores["tadScore"][currentGeneIndex, permutationRound] = geneScores[row][3]
-		perGeneScores["interactionScore"][currentGeneIndex, permutationRound] = geneScores[row][4]
+		perGeneScores["eQTLGainScore"][currentGeneIndex, permutationRound] = geneScores[row][2]
+		perGeneScores["eQTLLossScore"][currentGeneIndex, permutationRound] = geneScores[row][3]
 
 
-geneInd = geneIndexDict['ZFP57']
-print perGeneScores["interactionScore"][geneInd, :]
+# geneInd = geneIndexDict['ZFP57']
+# print perGeneScores["interactionScore"][geneInd, :]
 
 #Extra step:
 
@@ -107,16 +105,16 @@ for row in range(0, nonPermutedScores.shape[0]):
 	geneName = nonPermutedScores[row][0]
 	
 	geneScore = float(nonPermutedScores[row,1])
-	eQTLScore = float(nonPermutedScores[row,2])
-	tadScore = float(nonPermutedScores[row,3])
-	interactionScore = float(nonPermutedScores[row,4])
+	eQTLGainScore = float(nonPermutedScores[row,2])
+	eQTLLossScore = float(nonPermutedScores[row,3])
+	eQTLScore = eQTLGainScore + eQTLLossScore
 	
 	geneIndex = geneIndexDict[geneName]
 	
 	permutedGeneScores = np.array(perGeneScores["geneScore"][geneIndex])
-	permutedEQTLScores = np.array(perGeneScores["eQTLScore"][geneIndex])
-	permutedTADScores = np.array(perGeneScores["tadScore"][geneIndex])
-	permutedInteractionScores = np.array(perGeneScores["interactionScore"][geneIndex])
+	permutedEQTLGainScores = np.array(perGeneScores["eQTLGainScore"][geneIndex])
+	permutedEQTLLossScores = np.array(perGeneScores["eQTLLossScore"][geneIndex])
+	permutedEQTLScores = permutedEQTLGainScores + permutedEQTLLossScores
 	
 	
 	#First compute the p-value for the gene score layer
@@ -124,17 +122,12 @@ for row in range(0, nonPermutedScores.shape[0]):
 	
 	eQTLProportion = (np.sum((permutedEQTLScores >= eQTLScore).astype(int)) + 1) / float(len(permutedEQTLScores) + 1) 
 	
-	tadProportion = (np.sum((permutedTADScores >= tadScore).astype(int)) + 1) / float(len(permutedTADScores) + 1) 
-	
-	interactionProportion = (np.sum((permutedInteractionScores >= interactionScore).astype(int)) + 1) / float(len(permutedInteractionScores) + 1) 
-	
 	cancerTypePValues[row][0] = geneName
 	#cancerTypePValues[row][1] = gene.chromosome
 	#cancerTypePValues[row][2] = gene.start
-	cancerTypePValues[row][3] = proportion
-	cancerTypePValues[row][4] = eQTLProportion
-	cancerTypePValues[row][5] = tadProportion
-	cancerTypePValues[row][6] = interactionProportion
+	cancerTypePValues[row][1] = proportion
+	cancerTypePValues[row][2] = eQTLProportion
+	
 
 	#Compute a total score to sort by. 
 	#totalScore = proportion + eQTLProportion + tadProportion
@@ -145,18 +138,17 @@ for row in range(0, nonPermutedScores.shape[0]):
 	
 	# if proportion < cutoff:
 	# 	totalCutoffMatches += 1
-	# if eQTLProportion < cutoff: #I want to rank only by eQTL gains
-	# 	totalCutoffMatches += 1	
+	if eQTLProportion < cutoff: #I want to rank only by eQTL scores
+		totalCutoffMatches += 1	
 	# if tadProportion < cutoff:
 	# 	totalCutoffMatches += 1
-	if interactionProportion < cutoff: #turn off interactions for now. 
-		totalCutoffMatches += 1
+
 		
-	cancerTypePValues[row][7] = totalCutoffMatches	
+	cancerTypePValues[row][3] = totalCutoffMatches	
 
 #Rank by the total score and report the genes.
 np.set_printoptions(threshold=np.nan)
-sortedPValues = cancerTypePValues[cancerTypePValues[:,7].argsort()[::-1]]
+sortedPValues = cancerTypePValues[cancerTypePValues[:,3].argsort()[::-1]]
 
 outFile = "rankedGenes_test.txt"
 
@@ -165,7 +157,7 @@ with open(outFile, 'w') as out:
 	for gene in sortedPValues:
 		
 		#0 is the gene name, 3 is the gene score, 4 is the eqtl score, 5 is the tad score, 7 the total.
-		newLine = gene[0] + "\t" + str(gene[3]) + "\t" + str(gene[4]) + "\t" + str(gene[6]) + "\t" + str(gene[7]) + "\n"
+		newLine = gene[0] + "\t" + str(gene[1]) + "\t" + str(gene[2]) + "\t" + str(gene[3]) + "\n"
 		out.write(newLine)
 	
 

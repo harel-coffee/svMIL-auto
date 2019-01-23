@@ -86,7 +86,7 @@ class SVShuffler:
 				
 			#Sample name and cancer type can be copied from the other SV. Chromosome information also remains the same.
 			#Keep in mind that the sample name and cancer type are reversed in the SV object beause that order makes more sense. 
-			newSvObj = SV(chromosome1, newStart1, newStart2, chromosome2, newEnd1, newEnd2, sv[7], sv[6])
+			newSvObj = SV(chromosome1, newStart1, newStart2, chromosome2, newEnd1, newEnd2, sv[7], sv[6], sv[8].svType)
 			newSv = [chromosome1, newStart1, newStart2, chromosome2, newEnd1, newEnd2, sv[6], sv[7], newSvObj]	
 			shuffledSvs.append(newSv)	
 		
