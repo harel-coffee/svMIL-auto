@@ -38,6 +38,7 @@ class NeighborhoodDefiner:
 			
 			#Make these pats a setting!
 			tadFile = "../../data/tads/HMEC_Lieberman-raw_TADs.bed" #These files will need to go to the settings!
+			#tadFile = "../../data/tads/tadsNoCellType.bed"
 			print "Getting TADs"
 			tadData = self.getTADsFromFile(tadFile)
 			

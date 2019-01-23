@@ -46,7 +46,7 @@ class DerivativeTADMaker:
 		print "Linking SV effects to genes"
 		invCount = 0
 		dupCount = 0
-
+		
 		for sv in svData:
 			# 
 			# typeMatch = re.search("intra", sv[8].svType, re.IGNORECASE) #using 'chr' will match intra, inter
@@ -64,7 +64,7 @@ class DerivativeTADMaker:
 				print "inversion count: ", invCount
 		
 		
-		
+		# 
 		for sv in svData:
 			
 			typeMatch = re.search("dup", sv[8].svType, re.IGNORECASE)

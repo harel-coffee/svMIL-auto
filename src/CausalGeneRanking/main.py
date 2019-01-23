@@ -166,8 +166,8 @@ geneRanking = GeneRanking(causalGenes[:,3], mode)
 # filehandler.close()
 # exit()
 # 
-# ChannelVisualizer(causalGenes[:,3], mode, genome)
-# 
+#ChannelVisualizer(causalGenes[:,3], mode, genome)
+
 # exit()
 
 
@@ -219,7 +219,7 @@ for cancerType in geneRanking.scores:
 	if not os.path.exists(cancerTypeFolder):
 		os.makedirs(cancerTypeFolder)
 
-	if permutationYN == "True":
+	if permutationYN == "True" or settings.general['shuffleTads'] == True:
 		permutationRound = sys.argv[3]	
 		outfileName = cancerTypeFolder + "/permutedSVs_" + permutationRound + "_geneScores.txt"
 	else:

@@ -57,16 +57,21 @@ class Gene:
 
 			#print "final no of gains: ", len(self.gainedEQTLs[sample])
 		
+		#For the recurrence ranking, speed up code by adding only 1 per sample. More is not necessary. 
 		if len(gainedEQTLs) > 0:
 			if sample not in self.gainedEQTLs:
 				self.gainedEQTLs[sample] = [gainedEQTLs[0]]
 			else:
 				self.gainedEQTLs[sample].append(gainedEQTLs[0])
-		# if sample not in self.gainedEQTLs:
-		# 	self.gainedEQTLs[sample] = deepcopy(gainedEQTLs)
-		# else:
-		# 	self.gainedEQTLs[sample] += deepcopy(gainedEQTLs)
+		
+		#Use this part for when we need all eQTLs in a list
 		# if len(gainedEQTLs) > 0:
+		# 	if sample not in self.gainedEQTLs:
+		# 		self.gainedEQTLs[sample] = gainedEQTLs
+		# 	else:
+		# 		self.gainedEQTLs[sample] += gainedEQTLs
+		# 
+		
 		if sample in self.gainedEQTLs:
 			print "no of gains: ", len(gainedEQTLs)
 			print "final no of gains: ", len(self.gainedEQTLs[sample])
