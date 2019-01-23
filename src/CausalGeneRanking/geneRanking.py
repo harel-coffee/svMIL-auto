@@ -391,10 +391,17 @@ class GeneRanking:
 			
 			gene = cancerTypeSVs["genes"].keys()[geneInd]
 			
+			if gene.name == "PTK6":
+				print "Gained eQTLs of PTK6: ", len(gene.gainedEQTLs)
+			
 			matrixGeneInd = geneMap[gene]
 			
 			if len(gene.gainedEQTLs) > 0:
 				for sample in gene.gainedEQTLs:
+					if gene.name == "PTK6":
+						print "sample: ", sample
+						for eQTL in gene.gainedEQTLs[sample]:
+							print eQTL.start
 					sampleInd = sampleMap[sample]
 					scoringMatrix[sampleInd][matrixGeneInd] += 1
 				
@@ -416,8 +423,8 @@ class GeneRanking:
 			
 			matrixGeneInd = geneMap[gene]
 			
-			if gene.name == "BRCA1":
-				print "Lost eQTLs of brca1: ", len(gene.lostEQTLs)
+			if gene.name == "PTK6":
+				print "Lost eQTLs of PTK6: ", len(gene.lostEQTLs)
 				for eQTL in gene.lostEQTLs:
 					print eQTL
 		
