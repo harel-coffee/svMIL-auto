@@ -119,7 +119,9 @@ def filterEQTLs(eQTLFile, ensemblIDLookup, filteredEQTLFile):
 				splitLine = line.split("\t")
 				
 				#Filter by one tissue for now. Is the p-value significant?
-				tissueInd = header['pval_Breast_Mammary_Tissue']
+				#pval_Breast_Mammary_Tissue for breast tissue
+				#pval_Ovary for ovary
+				tissueInd = header['pval_Prostate']
 				
 				if splitLine[tissueInd] == 'NA':
 					continue
@@ -149,7 +151,7 @@ def filterEQTLs(eQTLFile, ensemblIDLookup, filteredEQTLFile):
 				
 				if ensemblGeneID in ensemblIDLookup:
 					
-					newLine = chromosome + "\t" + start + "\t" + end + "\t" + ensemblIDLookup[ensemblGeneID]
+					newLine = "chr" + chromosome + "\t" + start + "\t" + end + "\t" + ensemblIDLookup[ensemblGeneID]
 					outFile.write(newLine)
 					outFile.write("\n")
 				

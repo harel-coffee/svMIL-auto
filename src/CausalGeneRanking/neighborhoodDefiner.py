@@ -38,7 +38,8 @@ class NeighborhoodDefiner:
 		if settings.general['tads'] == True or settings.general['gainOfInteractions'] == True: #Gain of interactions is dependent on TADs
 			
 			#Make these pats a setting!
-			tadFile = "../../data/tads/HMEC_Lieberman-raw_TADs.bed" #These files will need to go to the settings!
+			#tadFile = "../../data/tads/HMEC_Lieberman-raw_TADs.bed" #These files will need to go to the settings!
+			tadFile = "../../data/tads/prostate_tads.txt"
 			#tadFile = "../../data/tads/tadsNoCellType.bed"
 			print "Getting TADs"
 			tadData = self.getTADsFromFile(tadFile)
@@ -88,7 +89,8 @@ class NeighborhoodDefiner:
 			# else:
 			print "re-creating eQTLs"
 			#eQTLFile = "../../data/eQTLs/eQTLsFilteredForCausalGenes.txt" #These files will need to go to the settings!
-			eQTLFile = "../../data/eQTLs/breast_eQTLs.txt" #These files will need to go to the settings!
+			#eQTLFile = "../../data/eQTLs/breast_eQTLs.txt" #These files will need to go to the settings!
+			eQTLFile = "../../data/eQTLs/prostate_eQTLs.txt"
 			
 			print "getting eQTLs"
 			eQTLData = self.getEQTLsFromFile(eQTLFile, genes[:,3])

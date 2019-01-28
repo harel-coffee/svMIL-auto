@@ -11,6 +11,8 @@ rankingFile = sys.argv[1]
 expressionFile = sys.argv[2]
 
 geneExpression = dict()
+diffExprCount = 0
+geneCount = 0
 with open(expressionFile, 'r') as exprF:
 	lineCount = 0
 	for line in exprF:
@@ -28,14 +30,23 @@ with open(expressionFile, 'r') as exprF:
 		
 		#The rest is samples.
 		sampleValues = []
+		geneDiffCount = 0
 		for colInd in range(2, len(splitLine)):
 			#print splitLine[colInd]
 			if splitLine[colInd] != "NA":
 				sampleValues.append(float(splitLine[colInd]))
-				
+				if abs(float(splitLine[colInd])) >= 1.96:
+					geneDiffCount += 1
+		if geneDiffCount > 0:
+			diffExprCount += 1
+		geneCount += 1
 		#Take the median for now across the samples
 		medianZScore = np.median(sampleValues)
 		geneExpression[hugoGeneName] = np.abs(medianZScore) #does the absolute help for correlation?
+
+print diffExprCount
+print geneCount
+exit()
 
 
 #Read the ranking file

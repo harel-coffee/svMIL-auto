@@ -103,6 +103,11 @@ class ChannelVisualizer:
 		labels = []
 		posCount = 0
 		negCount = 0
+		skippedGenes = 0
+		samples = []
+		noSamples = 0
+		noTad = 0
+		noOfSamples = []
 		for gene in genes:
 
 			if len(gene.lostEQTLs.keys()) < 1 and len(gene.gainedEQTLs.keys()) > 0:
@@ -112,8 +117,47 @@ class ChannelVisualizer:
 			else: #combine the samples
 				samples = gene.lostEQTLs.keys() + gene.gainedEQTLs.keys()
 
+			if len(samples) < 1:
+				gainChannel = np.zeros(noOfBins+1)
+				lossChannel = np.zeros(noOfBins+1)
+				lossChannels.append(lossChannel)
+				gainChannels.append(gainChannel)
+				
+				if gene.name in causalGenes:
+					noSamples += 1
+					posCount += 1
+					labels.append(1)	
+				elif gene.SNVs is not None and len(gene.SNVs) > 0:
+					posCount += 1
+					labels.append(1)
+				else:
+					#negCount += 1
+					labels.append(0)	
+				
+				
+				continue
+
 
 			if gene.leftTAD is None:
+				
+				
+				#In this case, the gene will not have gains and losses, so a feature vector of 0.
+				gainChannel = np.zeros(noOfBins+1)
+				lossChannel = np.zeros(noOfBins+1)
+				lossChannels.append(lossChannel)
+				gainChannels.append(gainChannel)
+				
+				if gene.name in causalGenes:
+					noTad += 1
+					posCount += 1
+					labels.append(1)	
+				elif gene.SNVs is not None and len(gene.SNVs) > 0:
+					posCount += 1
+					labels.append(1)
+				else:
+					#negCount += 1
+					labels.append(0)	
+				
 				continue
 			leftTAD = gene.leftTAD
 			
@@ -124,6 +168,8 @@ class ChannelVisualizer:
 				tadStart = leftTAD.start
 				tadEnd = leftTAD.end
 				
+			
+			
 			
 			#Each sample is a separate feature. 
 			totalGains = []
@@ -218,6 +264,7 @@ class ChannelVisualizer:
 				gainChannels.append(gainChannel)
 			
 				if gene.name in causalGenes:
+					noOfSamples.append(len(samples))
 					posCount += 1
 					labels.append(1)	
 				elif gene.SNVs is not None and len(gene.SNVs) > 0:
@@ -244,6 +291,12 @@ class ChannelVisualizer:
 				# 		negCount += 1
 				# 		labels.append(0)
 		
+		print "no samples: ", noSamples
+		print "no tad: ", noTad
+		print "no of samples: ", noOfSamples
+		print "neg count with gains/losses: ", negCount
+		exit()
+		
 		print posCount
 		print negCount
 		print len(labels)
@@ -251,12 +304,17 @@ class ChannelVisualizer:
 		lossChannels = np.array(lossChannels)
 		gainChannels = np.array(gainChannels)
 		
+		#Deep learning
 		stackedChannels = np.dstack((lossChannels, gainChannels))
-		#stackedChannels = np.concatenate((lossChannels, gainChannels))
+		#Simple classifiers
+		#stackedChannels = np.concatenate((lossChannels, gainChannels), axis=1)
 		
 		print stackedChannels
 		print labels
 		
+		print "data shapes: "
+		print stackedChannels.shape
+		print len(labels)
 		
 				
 		# exit()			
@@ -344,6 +402,8 @@ class ChannelVisualizer:
 		# from sklearn.ensemble import RandomForestClassifier, AdaBoostClassifier
 		# from sklearn.naive_bayes import GaussianNB
 		# from sklearn.discriminant_analysis import QuadraticDiscriminantAnalysis
+		# from sklearn.model_selection import cross_val_score
+		# 
 		# 
 		# names = ["Nearest Neighbors", "Linear SVM", "RBF SVM", "Gaussian Process",
 		# 		 "Decision Tree", "Random Forest", "Neural Net", "AdaBoost",
@@ -353,7 +413,7 @@ class ChannelVisualizer:
 		# 	KNeighborsClassifier(3),
 		# 	SVC(kernel="linear", C=0.025),
 		# 	SVC(gamma=2, C=1),
-		# 	GaussianProcessClassifier(1.0 * RBF(1.0)),
+		# 	#GaussianProcessClassifier(1.0 * RBF(1.0)),
 		# 	DecisionTreeClassifier(max_depth=5),
 		# 	RandomForestClassifier(max_depth=5, n_estimators=10, max_features=1),
 		# 	MLPClassifier(alpha=1),
@@ -364,13 +424,18 @@ class ChannelVisualizer:
 		# 	
 		# X_train, X_test, y_train, y_test = train_test_split(channels, labelList, test_size=.4, random_state=42)
 		# 
+		# #Combine this with cross validation!
+		# 
 		# # iterate over classifiers
 		# for name, clf in zip(names, classifiers):
 		# 	
-		# 	clf.fit(X_train, y_train)
-		# 	score = clf.score(X_test, y_test)
+		# 	scores = cross_val_score(clf, channels, labelList, cv=10)
+		# 	#clf.fit(X_train, y_train)
+		# 	#score = clf.score(X_test, y_test)
 		# 	
-		# 	print "classifier ", name, ": ", score
+		# 	print "classifier ", name, ": ", scores.mean()
+		# 
+		# exit()
 	
 		#Try a CNN
 		from mcfly import modelgen, find_architecture, storage

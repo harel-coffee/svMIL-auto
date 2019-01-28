@@ -413,51 +413,164 @@ class DerivativeTADMaker:
 							if sv.e2 < tad[2] and sv.e2 > tad[1]:
 								rightTad = tad[3]
 					
-						
-					
-					#2. Get the elements on the left of the breakpoint and the right of the breakpoint
-					leftSideElements = leftTad.getElementsByRange(leftTad.start, sv.s1)
-					leftSideGenes = leftTad.getGenesByRange(leftTad.start, sv.s1)
-					
-					rightSideElements = rightTad.getElementsByRange(sv.e2, rightTad.end)
-					rightSideGenes = rightTad.getGenesByRange(sv.e2, rightTad.end)
-					
-					#Also get the elements in the remaining part
-					remainingElementsLeft = leftTad.getElementsByRange(sv.s1, leftTad.end)
-					remainingGenesLeft = leftTad.getGenesByRange(sv.s1, leftTad.end)
-					
-					remainingElementsRight = rightTad.getElementsByRange(rightTad.start, sv.e2)
-					remainingGenesRight = rightTad.getGenesByRange(rightTad.start, sv.e2)
-					
-					#3. Make derivative TADs from the SV and add elements, keeping the reference positions.
-					
-					#The new TADs will be the left part together with the right part, and everything between that remains a separate part (to be determined by another SV)
-					newTad = [leftTad.chromosome, leftTad.start, rightTad.end, TAD(leftTad.chromosome, leftTad.start, rightTad.end)]
-					
-					
-					#add the elements to the TAD
-					newTad[3].setEQTLInteractions(leftSideElements + rightSideElements)
-					newTad[3].setGenes(leftSideGenes + rightSideGenes)
-					
-					#Also set the elements to the remaining parts
-					remainingPart = [leftTad.chromosome, sv.s1, sv.e2, TAD(leftTad.chromosome, sv.s1, sv.e2)]
-					
-					remainingPart[3].setEQTLInteractions(remainingElementsLeft + remainingElementsRight)
-					remainingPart[3].setGenes(remainingGenesLeft + remainingGenesRight)
-					
-					#For interchromosomal translocations, this would mean that we have 2 open ends, or intrachromosomal translocations that does not happen.
-					#How about pieces that are moved to another location? How are these encoded? E.g. s1 - e1 moves to s2 - e2?
-					
-					#4. Store the new TADs.
-					
-					#Copy all TADs but the left and right affected one to a new set of TADs.
-					updatedTads.append(newTad)
-					updatedTads.append(remainingPart)
-					for tad in tadsPerSV[sv]:
-						if tad[0][3] != leftTad and tad[0][3] != rightTad:
-							updatedTads.append(tad[0])
+					#These are the scenarios that we need to incorporate for translocations:
+					#For +-, genes in the left side of chr1 gain eQTLs from the right side of chr2, and vice versa. 
+					#For -+, genes in the left side of chr2 gain eQTLs from the right side of chr1, and vice versa. 
+					#For ++, genes in the left side of chr1 gain eQTLs from the inverted left side of chr2, so starting from the breakpoint until the TAD start. Vice versa for the genes in the other part. 
+					#For --, genes in the right side of chr1 gain eQTLs from the inverted right side of chr2, so starting from the breakpoint until the TAD end. Vice versa for the genes in the other part.
 
-					#5. For the next SV, use the updated TADs to get the elements/positions and continue until the last SV
+					if sv.o1 == "+" and sv.o2 == "-" or sv.o1 == "-" and sv.o2 == "+": #These are the same scenarios, but with the cases above we have already determined the correct TADs. 
+
+						#2. Get the elements on the left of the breakpoint and the right of the breakpoint
+						leftSideElements = leftTad.getElementsByRange(leftTad.start, sv.s1)
+						leftSideGenes = leftTad.getGenesByRange(leftTad.start, sv.s1)
+						
+						rightSideElements = rightTad.getElementsByRange(sv.e2, rightTad.end)
+						rightSideGenes = rightTad.getGenesByRange(sv.e2, rightTad.end)
+						
+						# #Also get the elements in the remaining part
+						remainingElementsLeft = leftTad.getElementsByRange(sv.s1, leftTad.end)
+						remainingGenesLeft = leftTad.getGenesByRange(sv.s1, leftTad.end)
+						
+						remainingElementsRight = rightTad.getElementsByRange(rightTad.start, sv.e2)
+						remainingGenesRight = rightTad.getGenesByRange(rightTad.start, sv.e2)
+						
+						#3. Make derivative TADs from the SV and add elements, keeping the reference positions.
+					
+						#The new TADs will be the left part together with the right part, and everything between that remains a separate part (to be determined by another SV)
+						newTad = [leftTad.chromosome, leftTad.start, rightTad.end, TAD(leftTad.chromosome, leftTad.start, rightTad.end)]
+						
+						
+						#add the elements to the TAD
+						newTad[3].setEQTLInteractions(leftSideElements + rightSideElements)
+						newTad[3].setGenes(leftSideGenes + rightSideGenes)
+						
+						#Also set the elements to the remaining parts
+						
+						#There are always 2 remaining parts, on both ends (in case of interchromosomal translocations)
+						
+						#The right part of the first chromosome
+						remainingPart1 = [leftTad.chromosome, sv.s1, leftTad.end, TAD(leftTad.chromosome, sv.s1, leftTad.end)]
+						remainingPart1[3].setEQTLInteractions(remainingElementsLeft)
+						remainingPart1[3].setGenes(remainingGenesLeft)
+						
+						remainingPart2 = [rightTad.chromosome, rightTad.start, sv.e2, TAD(rightTad.chromosome, rightTad.start, sv.e2)]
+						remainingPart2[3].setEQTLInteractions(remainingElementsRight)
+						remainingPart2[3].setGenes(remainingGenesRight)
+						
+						#4. Store the new TADs.
+					
+						#Copy all TADs but the left and right affected one to a new set of TADs.
+						updatedTads.append(newTad)
+						updatedTads.append(remainingPart1)
+						updatedTads.append(remainingPart2)
+						for tad in tadsPerSV[sv]:
+							if tad[0][3] != leftTad and tad[0][3] != rightTad:
+								updatedTads.append(tad[0])
+					
+					if sv.o1 == "+" and sv.o2 == "+": 
+						leftSideElements = leftTad.getElementsByRange(leftTad.start, sv.s1)
+						leftSideGenes = leftTad.getGenesByRange(leftTad.start, sv.s1)
+						
+						#This part is inverted, so we start from the SV until the TAD start
+						rightSideElements = rightTad.getElementsByRange(rightTad.start, sv.e2)
+						rightSideGenes = rightTad.getGenesByRange(rightTad.start, sv.e2)
+						
+						#3. Make derivative TADs from the SV and add elements, keeping the reference positions.
+					
+						#The new TAD is here the left part until the SV, and the right TAD from the start until the SV.
+						
+						newTad1 = [leftTad.chromosome, leftTad.start, sv.s1, TAD(leftTad.chromosome, leftTad.start, sv.s1)]
+						
+						#add the elements to the TAD
+						newTad1[3].setEQTLInteractions(leftSideElements + rightSideElements)
+						newTad1[3].setGenes(leftSideGenes + rightSideGenes)
+						
+						#Because I cannot set the TAD boundaries correctly in this case since one comes before the other, I make two TADs until the SV, but do set their elements as interacting
+						newTad2 = [rightTad.chromosome, rightTad.start, sv.e2, TAD(rightTad.chromosome, rightTad.start, sv.e2)]
+						
+						#add the elements to the TAD
+						newTad2[3].setEQTLInteractions(leftSideElements + rightSideElements)
+						newTad2[3].setGenes(leftSideGenes + rightSideGenes)
+						
+						#Also set the elements to the remaining parts
+						
+						#There are always 2 remaining parts, on both ends (in case of interchromosomal translocations)
+						
+						#The right part of the first chromosome
+						remainingPart1 = [leftTad.chromosome, sv.s1, leftTad.end, TAD(leftTad.chromosome, sv.s1, leftTad.end)]
+						remainingPart1[3].setEQTLInteractions(remainingElementsLeft)
+						remainingPart1[3].setGenes(remainingGenesLeft)
+						
+						remainingPart2 = [rightTad.chromosome, rightTad.start, sv.s1, TAD(rightTad.chromosome, rightTad.start, sv.s1)]
+						remainingPart2[3].setEQTLInteractions(remainingElementsRight)
+						remainingPart2[3].setGenes(remainingGenesRight)
+						
+						#4. Store the new TADs.
+					
+						#Copy all TADs but the left and right affected one to a new set of TADs.
+						updatedTads.append(newTad1)
+						updatedTads.append(newTad2)
+						updatedTads.append(remainingPart1)
+						updatedTads.append(remainingPart2)
+						for tad in tadsPerSV[sv]:
+							if tad[0][3] != leftTad and tad[0][3] != rightTad:
+								updatedTads.append(tad[0])
+						
+					if sv.o1 == "-" and sv.o2 == "-":
+						#This is the left part of chr1
+						leftSideElements = leftTad.getElementsByRange(sv.s1, leftTad.end)
+						leftSideGenes = leftTad.getGenesByRange(sv.s1, leftTad.end)
+						
+						#This part is inverted, so we start SV until the TAD end
+						rightSideElements = rightTad.getElementsByRange(sv.e2, rightTad.end)
+						rightSideGenes = rightTad.getGenesByRange(sv.e2, rightTad.end)
+						
+						#3. Make derivative TADs from the SV and add elements, keeping the reference positions.
+					
+						#The new TAD is here the left part until the SV, and the right TAD from the start until the SV.
+						
+						newTad1 = [leftTad.chromosome, sv.s1, leftTad.end, TAD(leftTad.chromosome, sv.s1, leftTad.end)]
+						
+						#add the elements to the TAD
+						newTad1[3].setEQTLInteractions(leftSideElements + rightSideElements)
+						newTad1[3].setGenes(leftSideGenes + rightSideGenes)
+						
+						#Because I cannot set the TAD boundaries correctly in this case since one comes before the other, I make two TADs until the SV, but do set their elements as interacting
+						newTad2 = [rightTad.chromosome, sv.e2, rightTad.end, TAD(rightTad.chromosome, sv.e2, rightTad.end)]
+						
+						#add the elements to the TAD
+						newTad2[3].setEQTLInteractions(leftSideElements + rightSideElements)
+						newTad2[3].setGenes(leftSideGenes + rightSideGenes)
+						
+						#Also set the elements to the remaining parts
+						
+						#There are always 2 remaining parts, on both ends (in case of interchromosomal translocations)
+						
+						#The left part of the first chromosome
+						remainingPart1 = [leftTad.chromosome, leftTad.start, sv.s1, TAD(leftTad.chromosome, leftTad.start, sv.s1)]
+						remainingPart1[3].setEQTLInteractions(remainingElementsLeft)
+						remainingPart1[3].setGenes(remainingGenesLeft)
+						
+						#The left part of the second chromsome
+						remainingPart2 = [rightTad.chromosome, rightTad.start, sv.e2, TAD(rightTad.chromosome, rightTad.start, sv.e2)]
+						remainingPart2[3].setEQTLInteractions(remainingElementsRight)
+						remainingPart2[3].setGenes(remainingGenesRight)
+							
+						#4. Store the new TADs.
+					
+						#Copy all TADs but the left and right affected one to a new set of TADs.
+						updatedTads.append(newTad1)
+						updatedTads.append(newTad2)
+						updatedTads.append(remainingPart1)
+						updatedTads.append(remainingPart2)
+						for tad in tadsPerSV[sv]:
+							if tad[0][3] != leftTad and tad[0][3] != rightTad:
+								updatedTads.append(tad[0])
+						
+				
+
+				#5. For the next SV, use the updated TADs to get the elements/positions and continue until the last SV
 					
 				#6. Eventually, check for the genes in the original TADs which elements thesd has, and compare it to the derivative. Use the delta informatin to collect gains and losses
 				

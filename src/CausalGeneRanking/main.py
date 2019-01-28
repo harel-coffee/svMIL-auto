@@ -87,7 +87,7 @@ if mode == "SV":
 	print "Reading SV data"
 	svFile = settings.files['svFile']
 	svData = InputParser().getSVsFromFile(svFile, "all")
-
+	
 
 if mode == "SNV":
 	print "Reading SNV data"
@@ -166,8 +166,8 @@ geneRanking = GeneRanking(causalGenes[:,3], mode)
 # filehandler.close()
 # exit()
 # 
-#ChannelVisualizer(causalGenes[:,3], mode, genome)
-
+# ChannelVisualizer(causalGenes[:,3], mode, genome)
+# 
 # exit()
 
 

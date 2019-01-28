@@ -146,9 +146,6 @@ class GeneRanking:
 			print "current cancer type: ", cancerType
 			
 			
-			if cancerType != "breast": #focus on one cancer type for now, will later be a setting and we need to make sure to filter the variants early on if we restrict to cancer types. 
-				continue
-			
 			print "cancer type: ", cancerType
 			cancerTypeSVs = cancerTypes[cancerType] #Get all variants (not just SVs anymore!!! update naming) found overlapping with a neighborhood element in this cancer type. 
 			

@@ -40,10 +40,12 @@ class InputParser:
 				chr1Index = header.index("chr1")
 				s1Index = header.index("s1")
 				e1Index = header.index("e1")
+				o1Index = header.index("o1")
 		
 				chr2Index = header.index("chr2")
 				s2Index = header.index("s2")
 				e2Index = header.index("e2")
+				o2Index = header.index("o2")
 		
 				cancerTypeIndex = header.index("cancer_type")
 				sampleNameIndex = header.index("sample_name")
@@ -51,13 +53,17 @@ class InputParser:
 				cancerType = splitLine[cancerTypeIndex]
 				sampleName = splitLine[sampleNameIndex]
 				
-				#Dirty workaround to make sure that the cancer type names are the same, we only focus on 1 type for this intial run
-				if cancerType == "breast/gastric":
-					cancerType = "breast"
-					
-				#Skip anything that is not breast cancer for now. From here is the easiest way, saves time in processing as well
-				if cancerType != "breast":
+				# #Dirty workaround to make sure that the cancer type names are the same, we only focus on 1 type for this intial run
+				# if cancerType == "breast/gastric":
+				# 	cancerType = "breast"
+				# 	
+				# #Skip anything that is not breast cancer for now. From here is the easiest way, saves time in processing as well
+				# if cancerType != "breast":
+				# 	continue
+				
+				if cancerType != "prostate cancer":
 					continue
+				
 				
 				svTypeIndex = header.index("sv_type")
 				svType = splitLine[svTypeIndex]
@@ -90,6 +96,8 @@ class InputParser:
 				chr2 = splitLine[chr2Index]
 				
 				chr1 = splitLine[chr1Index]
+				o1 = splitLine[o1Index]
+				o2 = splitLine[o2Index]
 				
 				#Make sure to switch the positions here as well
 				#Some positions are swapped
@@ -113,7 +121,7 @@ class InputParser:
 					e1 = tmpS1
 				
 				
-				svObject = SV('chr' + chr1, s1, e1, 'chr' + chr2, s2, e2, sampleName, cancerType, svType)
+				svObject = SV('chr' + chr1, s1, e1, o1, 'chr' + chr2, s2, e2, o2, sampleName, cancerType, svType)
 				#chr 1, start, end, chr2, start2, end2
 				variantsList.append(['chr' + chr1, s1, e1, 'chr' + chr2, s2, e2, cancerType, sampleName, svObject])
 		

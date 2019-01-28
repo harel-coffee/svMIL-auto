@@ -1,7 +1,7 @@
 class SV:
 	
 	
-	def __init__(self, chr1, s1, e1, chr2, s2, e2, sampleName, cancerType, svType):
+	def __init__(self, chr1, s1, e1, o1, chr2, s2, e2, o2, sampleName, cancerType, svType):
 		
 		self.chr1 = chr1
 		self.s1 = s1
@@ -12,4 +12,6 @@ class SV:
 		self.sampleName = sampleName
 		self.cancerType = cancerType
 		self.svType = svType
+		self.o1 = o1
+		self.o2 = o2
 	
