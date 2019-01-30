@@ -88,6 +88,7 @@ if mode == "SV":
 	svFile = settings.files['svFile']
 	svData = InputParser().getSVsFromFile(svFile, "all")
 	
+	
 
 if mode == "SNV":
 	print "Reading SNV data"

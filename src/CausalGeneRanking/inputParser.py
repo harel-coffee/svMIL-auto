@@ -54,15 +54,15 @@ class InputParser:
 				sampleName = splitLine[sampleNameIndex]
 				
 				# #Dirty workaround to make sure that the cancer type names are the same, we only focus on 1 type for this intial run
-				# if cancerType == "breast/gastric":
-				# 	cancerType = "breast"
-				# 	
-				# #Skip anything that is not breast cancer for now. From here is the easiest way, saves time in processing as well
-				# if cancerType != "breast":
-				# 	continue
-				
-				if cancerType != "prostate cancer":
+				if cancerType == "breast/gastric":
+					cancerType = "breast"
+					
+				#Skip anything that is not breast cancer for now. From here is the easiest way, saves time in processing as well
+				if cancerType != "breast":
 					continue
+				
+				# if cancerType != "prostate cancer":
+				# 	continue
 				
 				
 				svTypeIndex = header.index("sv_type")
