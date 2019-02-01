@@ -67,7 +67,7 @@ with open(knownBreastCancerGenesFile, 'r') as f:
 
 #Get the scores of the breast cancer genes
 
-finalScoresFile = "RankedGenes/1/breast/realSVs_geneScores.txt"
+finalScoresFile = "RankedGenes/0/breast/realSVs_geneScores.txt"
 #finalScoresFile = "rankedGenes_test.txt"
 
 breastCancerGeneScores = dict()
@@ -95,23 +95,10 @@ for gene in genes:
 				
 				#obtain the p-value and see if it is significant
 
-				eQTLScore = float(splitLine[1])
+				eQTLScore = float(splitLine[3])
 				print "gene: ", gene
 				print "current eQTLScore: ", eQTLScore
-				alpha = float(splitLine[2])
-				beta = float(splitLine[3])
-				
-				if alpha > 0:
-					bcNonZeroAlpha += 1
-				if beta > 0 :
-					bcNonZeroBeta += 1
-					
-				if alpha > 0 and beta == 0:
-					bcNonZeroAlphaZeroBeta += 1
-				if beta > 0 and alpha == 0:
-					bcNonZeroBetaZeroAlpha += 1
-					
-
+			
 				bceQTLScores[gene] = eQTLScore
 				
 				breastCancerGeneScores[gene] = eQTLScore
@@ -185,26 +172,8 @@ for gene in cosmicGeneNames:
 				
 				#obtain the p-value and see if it is significant
 				
-				eQTLScore = float(splitLine[1])
+				eQTLScore = float(splitLine[3])
 				
-				alpha = float(splitLine[2])
-				beta = float(splitLine[3])
-				if alpha > 0:
-					cosmicNonZeroAlpha += 1
-				if beta > 0 :
-					cosmicNonZeroBeta += 1
-					
-				
-				if alpha > 0 and beta == 0:
-					cosmicNonZeroAlphaZeroBeta += 1
-				if beta > 0 and alpha == 0:
-					cosmicNonZeroBetaZeroAlpha += 1
-				
-				if eQTLScore > 0:
-					print "gene with eQTL score > 0: ", gene
-					higherThanZeroCount += 1
-					
-
 				cosmicGeneScores[gene] = eQTLScore
 				
 			
@@ -244,25 +213,9 @@ with open(finalScoresFile, 'r') as f:
 		
 		if geneName not in cosmicGeneNames and geneName not in genes: #check if it is not in cosmic or in the set of breast cancer genes
 			
-			eQTLScore = float(splitLine[1])
+			eQTLScore = float(splitLine[3])
 			
 			nceQTLScores[geneName] = eQTLScore
-			
-			alpha = float(splitLine[2])
-			beta = float(splitLine[3])
-			if alpha > 0:
-				nonCosmicNonZeroAlpha += 1
-			if beta > 0 :
-				nonCosmicNonZeroBeta += 1
-
-			
-			if alpha > 0 and beta == 0:
-				nonCosmicNonZeroAlphaZeroBeta += 1
-			if beta > 0 and alpha == 0:
-				nonCosmicNonZeroBetaZeroAlpha += 1
-			
-			if eQTLScore > 0:
-				higherThanZeroCount += 1
 			
 			nonCosmicGeneScores[geneName] = eQTLScore
 			
