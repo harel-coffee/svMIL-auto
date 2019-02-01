@@ -249,9 +249,11 @@ class InputParser:
 				splitLine = line.split("\t")
 				
 				
+				
 				#Obtain the name, chromosome and positions of the gene. 
 				
 				geneID = splitLine[3]
+				
 				
 				chrom = splitLine[0]
 

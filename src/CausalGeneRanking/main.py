@@ -23,11 +23,7 @@
 	
 	Using a gene-based approach will likely be quicker than an SV-based approach, and we can get the relevant SVs through the genes. If an SV is never affecting any of our features defined as interesting, there is no
 	need to look at that SV at all. This idea may change along the way.
-	
-	
-	
-	
-	
+
 
 """
 #############
@@ -76,7 +72,6 @@ uniqueCancerTypes = []
 
 #Combine the genes for now
 causalGenes = np.concatenate((causalGenes, nonCausalGenes), axis=0)
-
 
 #The combination of SVs and SNVs will come afterwards, because then we will need to map the names of the cancer types correctly. 
 

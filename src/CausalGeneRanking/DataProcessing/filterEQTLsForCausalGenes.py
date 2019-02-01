@@ -128,7 +128,8 @@ def filterEQTLs(eQTLFile, ensemblIDLookup, filteredEQTLFile):
 				
 				pval = float(splitLine[tissueInd])
 				if pval > 5e-8:
-					continue
+					if pval != 0:
+						continue
 				
 				
 				geneInfo = splitLine[0]

@@ -45,12 +45,27 @@ with open(inFile) as inF:
 				splitSplitLocusId = splitLocusId[0].split("_")
 				
 				#Now replace all 0s in the second part
-				chromId = splitSplitLocusId[1].replace("0", "")
+				#But make sure that numbers such as 10 or 20 are not removed
+				#chromId = splitSplitLocusId[1].replace("0", "")
+				# print splitSplitLocusId[1]
+				chromId = list(splitSplitLocusId[1])
+				
+				numberFound = False
+				chromNumber = ""
+				for char in chromId:
+					if char != "0":
+						numberFound = True
+					if numberFound == True:	
+						chromNumber += char	
+					
+				
+				# print chromId
+				# print chromNumber
+				# exit()
 				
 				
 				
-				
-				genes[fieldDict["Name"]].append([fieldDict["Name"], 'chr' + chromId, splitLine[3], splitLine[4]])
+				genes[fieldDict["Name"]].append([fieldDict["Name"], 'chr' + chromNumber, splitLine[3], splitLine[4]])
 				
 			
 		

@@ -72,9 +72,9 @@ class Gene:
 		# 		self.gainedEQTLs[sample] += gainedEQTLs
 		# 
 		# 
-		if sample in self.gainedEQTLs:
-			print "no of gains: ", len(gainedEQTLs)
-			print "final no of gains: ", len(self.gainedEQTLs[sample])
+		# if sample in self.gainedEQTLs:
+		# 	print "no of gains: ", len(gainedEQTLs)
+		# 	print "final no of gains: ", len(self.gainedEQTLs[sample])
 		
 	
 	def addLostEQTLs(self, lostEQTLs, sample):

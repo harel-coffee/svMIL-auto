@@ -47,33 +47,25 @@ class DerivativeTADMaker:
 		invCount = 0
 		dupCount = 0
 		
-		# for sv in svData:
-		# 	# 
-		# 	# typeMatch = re.search("intra", sv[8].svType, re.IGNORECASE) #using 'chr' will match intra, inter
-		# 	# if typeMatch is not None: #skip the most complicated kind for now
-		# 	# 	continue
-		# 	# 
-		# 	
-		# 	# 
-		# 	
-		# 	
-		# 	typeMatch = re.search("inv", sv[8].svType, re.IGNORECASE)
-		# 	if typeMatch is not None:
-		# 		self.determineDerivativeTADs(sv, tadData, genome, "inv")
-		# 		invCount += 1
-		# 		print "inversion count: ", invCount
-		# 
-		# 
-		# 
-		# for sv in svData:
-		# 	
-		# 	typeMatch = re.search("dup", sv[8].svType, re.IGNORECASE)
-		# 	if typeMatch is not None:
-		# 		
-		# 		self.determineDerivativeTADs(sv, tadData, genome, "dup")
-		# 		dupCount += 1
-		# 		print "duplication count: ", dupCount
-		# 		
+		for sv in svData:
+			
+			typeMatch = re.search("inv", sv[8].svType, re.IGNORECASE)
+			if typeMatch is not None:
+				self.determineDerivativeTADs(sv, tadData, genome, "inv")
+				invCount += 1
+				print "inversion count: ", invCount
+		
+		
+		
+		for sv in svData:
+			
+			typeMatch = re.search("dup", sv[8].svType, re.IGNORECASE)
+			if typeMatch is not None:
+				
+				self.determineDerivativeTADs(sv, tadData, genome, "dup")
+				dupCount += 1
+				print "duplication count: ", dupCount
+				
 		#For the translocations separately
 		# 1. For each SV, determine which TAD the SVs are in
 		tadsPerSV = self.matchTADsWithTranslocations(svData, tadData)
@@ -581,8 +573,8 @@ class DerivativeTADMaker:
 						if rightTad is None or leftTad is None:
 							continue
 					
-					print "right tad: ", rightTad.chromosome, rightTad.start, rightTad.end
-					print "left tad: ", leftTad.chromosome, leftTad.start, leftTad.end
+					# print "right tad: ", rightTad.chromosome, rightTad.start, rightTad.end
+					# print "left tad: ", leftTad.chromosome, leftTad.start, leftTad.end
 					
 					#These are the scenarios that we need to incorporate for translocations:
 					#For +-, genes in the left side of chr1 gain eQTLs from the right side of chr2, and vice versa. 
@@ -955,16 +947,25 @@ class DerivativeTADMaker:
 						
 						for gene in tad[3].genes:
 							
+								
 							eQTLsInTad = []
 							for eQTL in gene.eQTLs:
 								#if eQTL.start > tad[3].start and eQTL.start < tad[3].end:
 								#	eQTLsInTad.append([eQTL.chromosome, eQTL.start, eQTL])
+								
 								eQTLsInTad.append([eQTL.chromosome, eQTL.start, eQTL])
+							
+							
+							
+							
 							
 							newEQTLs = []
 							for eQTL in tad[3].eQTLInteractions:
-								
-								newEQTLs.append([eQTL.chromosome, eQTL.start, eQTL])
+								#if eQTL not in gene.leftTAD.eQTLInteractions:
+								newEQTLs.append(eQTL)
+							
+							originalTadEQTLs = gene.leftTAD.eQTLInteractions
+							filteredNewEQTLs = np.setdiff1d(newEQTLs, originalTadEQTLs)
 								
 							#Make the derivative, determine which eQTLs are gained and lost for this gene.
 							lostEQTLs = []
@@ -973,14 +974,34 @@ class DerivativeTADMaker:
 									lostEQTLs.append(eQTL[2])
 							
 							gainedEQTLs = []
-							for eQTL in newEQTLs:
-								if eQTL not in eQTLsInTad:
-									gainedEQTLs.append(eQTL[2])
+							for eQTL in filteredNewEQTLs:
+								if [eQTL.chromosome, eQTL.start, eQTL] not in eQTLsInTad:
+									#if eQTL[2] not in gene.leftTAD.eQTLInteractions: #Also do this check to make sure that we do not add eQTLs that were in the oroginal TAD of the gene, which are simply not associated to the gene. 
+									gainedEQTLs.append(eQTL)
+							
+							# if gene.name == "ZMYND8":
+							# 	print gene.name, gene.chromosome, gene.start
+							# 	print sv.chr1, sv.s1, sv.chr2, sv.e2, sv.sampleName, sv.o1, sv.o2
+							# 	
+							# 	for eQTL in gainedEQTLs:
+							# 		print "gained eQTL: ", eQTL.chromosome, eQTL.start
+							
+							# if gene.name == "ZMYND8":
+							# 	print gene.name, gene.chromosome, gene.start
+							# 	print "original TAD left: ", gene.leftTAD.chromosome, gene.leftTAD.start, gene.leftTAD.end
+							# 	print "original TAD right: ", gene.rightTAD.chromosome, gene.rightTAD.start, gene.rightTAD.end
+							# 	print sv.chr1, sv.s1, sv.chr2, sv.e2, sv.sampleName, sv.o1, sv.o2
+							# 	
+							# 	for eQTL in eQTLsInTad:
+							# 		print "Gene has eQTLs: ", eQTL.chromosome, eQTL.start
+							# 	
+							# 	for eQTL in gainedEQTLs:
+							# 		print "gained eQTL: ", eQTL.chromosome, eQTL.start
+							# 		
 							
 							gene.addGainedEQTLs(gainedEQTLs, sv.sampleName)
 							gene.addLostEQTLs(lostEQTLs, sv.sampleName)
-								
-	
+		
 		### INVERSION ###
 		if svType == "inv":
 			
