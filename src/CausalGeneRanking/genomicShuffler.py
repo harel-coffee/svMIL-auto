@@ -37,6 +37,9 @@ class GenomicShuffler:
 	
 		shuffledTads = []
 		
+		#Instead of assigning random positions to the TADs, use an offset. At the end of the genome, start again at the beginning (cicular shuffling)
+		offset = 100000 #Use a 1 mb offset.
+	
 		for tad in tadData:
 			
 			chrom = tad[0]
@@ -44,15 +47,55 @@ class GenomicShuffler:
 			
 			tadLength = tad[2] - tad[1]
 			
-			minimumStart = 1
-			maximumStart = chrLength - tadLength #Make sure that the tad does not go outside of the chromosome
 			
-			newStart = random.randint(minimumStart, maximumStart)
-			newEnd = newStart + tadLength
 			
-			newTadObj = TAD(chrom, newStart, newEnd)
-			shuffledTads.append([chrom, newStart, newEnd, newTadObj])
+			offsetStart = tad[1] + offset
+			offsetEnd = tad[2] + offset
+			
+			
+			
+			if offsetStart > chrLength: #In this case, start from the beginning of the chromosome. 
+				overhang = chrLength - offsetStart
+				newStart = overhang #simply count from 1 here
+				newEnd = newStart + tadLength
+			
+				newTadObj = TAD(chrom, newStart, newEnd)
+				shuffledTads.append([chrom, newStart, newEnd, newTadObj])
+				continue
+			
+			if offsetEnd > chrLength: #In this case, split the TAD in 2 TADs.
+				newTadObj = TAD(chrom, offsetStart, chrLength)
+				shuffledTads.append([chrom, offsetStart, chrLength, newTadObj])
+				
+				overhang = chrLength - offsetStart
+				newStart = 1
+				newEnd = overhang #the remaining part of the TAD
+			
+				newTadObj = TAD(chrom, newStart, newEnd)
+				shuffledTads.append([chrom, newStart, newEnd, newTadObj])
+				continue
+			
+			newTadObj = TAD(chrom, offsetStart, offsetEnd)
+			shuffledTads.append([chrom, offsetStart, offsetEnd, newTadObj])
+				
+				
 		
+		# for tad in tadData:
+		# 	
+		# 	chrom = tad[0]
+		# 	chrLength = self.hg19Coordinates[chrom]
+		# 	
+		# 	tadLength = tad[2] - tad[1]
+		# 	
+		# 	minimumStart = 1
+		# 	maximumStart = chrLength - tadLength #Make sure that the tad does not go outside of the chromosome
+		# 	
+		# 	newStart = random.randint(minimumStart, maximumStart)
+		# 	newEnd = newStart + tadLength
+		# 	
+		# 	newTadObj = TAD(chrom, newStart, newEnd)
+		# 	shuffledTads.append([chrom, newStart, newEnd, newTadObj])
+		# 
 		#Sort the TADs
 		shuffledTads = np.array(shuffledTads, dtype="object")
 		ind = np.lexsort((shuffledTads[:,1], shuffledTads[:,0]))
