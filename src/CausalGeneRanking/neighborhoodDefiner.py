@@ -38,8 +38,9 @@ class NeighborhoodDefiner:
 		if settings.general['tads'] == True or settings.general['gainOfInteractions'] == True: #Gain of interactions is dependent on TADs
 			
 			#Make these pats a setting!
-			tadFile = "../../data/tads/HMEC_Lieberman-raw_TADs.bed" #These files will need to go to the settings!
+			#tadFile = "../../data/tads/HMEC_Lieberman-raw_TADs.bed" #These files will need to go to the settings!
 			#tadFile = "../../data/tads/prostate_tads.txt"
+			tadFile = "../../data/tads/ovary_hg38_liftover.bed"
 			#tadFile = "../../data/tads/tadsNoCellType.bed"
 			print "Getting TADs"
 			tadData = self.getTADsFromFile(tadFile)
@@ -89,8 +90,9 @@ class NeighborhoodDefiner:
 			# else:
 			print "re-creating eQTLs"
 			#eQTLFile = "../../data/eQTLs/eQTLsFilteredForCausalGenes.txt" #These files will need to go to the settings!
-			eQTLFile = "../../data/eQTLs/breast_eQTLs.txt" #These files will need to go to the settings!
+			#eQTLFile = "../../data/eQTLs/breast_eQTLs.txt" #These files will need to go to the settings!
 			#eQTLFile = "../../data/eQTLs/prostate_eQTLs.txt"
+			eQTLFile = "../../data/eQTLs/ovarian_eQTLs.txt"
 			
 			print "getting eQTLs"
 			eQTLData = self.getEQTLsFromFile(eQTLFile, genes[:,3])
@@ -98,6 +100,8 @@ class NeighborhoodDefiner:
 			
 			with open('eQTLData.pkl', 'wb') as h:
 				pkl.dump(eQTLData, h, protocol=pkl.HIGHEST_PROTOCOL)
+		
+	
 		
 		#Add reading/parsing of 3D genome information
 		#Disable the 3D information for now
@@ -222,14 +226,20 @@ class NeighborhoodDefiner:
 				if splitLine[3] not in geneDict:
 					continue
 				
-				
-				eQTLObject = EQTL("chr" + splitLine[0], int(splitLine[1]), int(splitLine[2])) #chr, start, end
+				#Add the chr notation for uniformity. 		
+				chrMatch = re.search("chr", splitLine[0], re.IGNORECASE)
+				chrName = ""
+				if chrMatch is None:
+					chrName = "chr" + splitLine[0]
+				else:
+					chrName = splitLine[0]
+				eQTLObject = EQTL(chrName, int(splitLine[1]), int(splitLine[2])) #chr, start, end
 				
 				#The mapping information is in the file, so we can already do it here
 				self.mapEQTLsToGenes(eQTLObject, geneDict, splitLine[3])
 						
-				#Add the chr notation for uniformity. 		
-				eQTLs.append(["chr" + splitLine[0], int(splitLine[1]), int(splitLine[2]), eQTLObject]) #Keep the eQTL information raw as well for quick overlapping. 
+				
+				eQTLs.append([chrName, int(splitLine[1]), int(splitLine[2]), eQTLObject]) #Keep the eQTL information raw as well for quick overlapping. 
 		
 		
 		return np.array(eQTLs, dtype='object')

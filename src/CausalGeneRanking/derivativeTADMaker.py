@@ -502,7 +502,7 @@ class DerivativeTADMaker:
 			updatedTadPos = dict() #keep the TADs and the new start/ends after 
 			
 			for group in svGroups:
-				print "new group:"
+				
 				
 				gains = dict()
 				losses = dict()
@@ -521,7 +521,7 @@ class DerivativeTADMaker:
 				fullNewTads = [] #Keep the TADs as a result of one translocation separate. This is a test for now, assuming that there are not more than 1 translocations re-affecting these TADs
 				previousPieces = [] #Keep all previously remaining parts, to check if a previous SV already put these back together or not. 
 				for sv in svGroups[group]:
-					print "SV: ", sv.chr1, sv.s1, sv.e1, sv.chr2, sv.s2, sv.e2, sv.sampleName, sv.o1, sv.o2
+					#print "SV: ", sv.chr1, sv.s1, sv.e1, sv.chr2, sv.s2, sv.e2, sv.sampleName, sv.o1, sv.o2
 					
 					#Failsafe to make sure that we never use the TADs from the previous iteration here
 					rightTad = None
@@ -1336,6 +1336,9 @@ class DerivativeTADMaker:
 					#
 					print "Number of genes to add gains: ", len(svGenesFirstTad)
 					for gene in svGenesFirstTad:
+						print "gene: ", gene.name, " gains ", len(svInteractionsLastTad)
+						
+						
 						#print "adding gains from right TAD: ", len(svInteractionsLastTad)
 						if gene.name == "ARHGEF10L":
 							print svData

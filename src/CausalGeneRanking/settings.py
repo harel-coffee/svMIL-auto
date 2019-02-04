@@ -18,7 +18,7 @@ general = dict(
 	eQTLs = True, #Include eQTLs in the ranking yes/no
 	interactionChains = False, ##THIS IS FOR HEAT DIFFUSION BUT DOES NOT WORK, SETTING SHOULD HAVE A BETTER NAME #Include genomic 3D interactions in the ranking yes/no
 	gainOfInteractions = True, #This depends on TADs and interactions.
-	shuffleTads = True,
+	shuffleTads = False,
 	lncRNA = False #use lncRNAs instead of eQTLs ()
 )
 
