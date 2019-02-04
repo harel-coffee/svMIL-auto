@@ -58,12 +58,12 @@ class InputParser:
 					cancerType = "breast"
 					
 				#Skip anything that is not breast cancer for now. From here is the easiest way, saves time in processing as well
-				# if cancerType != "breast":
-				# 	continue
-				
-				if cancerType != "prostate cancer":
+				if cancerType != "breast":
 					continue
 				
+				# if cancerType != "prostate cancer":
+				# 	continue
+				# 
 				# if cancerType != "ovarian cancer":
 				# 	continue
 				
