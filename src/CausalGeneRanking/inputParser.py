@@ -61,11 +61,11 @@ class InputParser:
 				# if cancerType != "breast":
 				# 	continue
 				
-				# if cancerType != "prostate cancer":
-				# 	continue
-				
-				if cancerType != "ovarian cancer":
+				if cancerType != "prostate cancer":
 					continue
+				
+				# if cancerType != "ovarian cancer":
+				# 	continue
 				
 				svTypeIndex = header.index("sv_type")
 				svType = splitLine[svTypeIndex]
