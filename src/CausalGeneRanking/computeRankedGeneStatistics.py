@@ -56,7 +56,7 @@ with open(rankedGenesFile, 'rb') as f:
 		splitLine = line.split("\t")
 		
 		
-		if float(splitLine[3]) > 0:
+		if float(splitLine[3]) == 0:
 			if splitLine[0] in cosmicGenes:
 				print "COSMIC gene: ", splitLine[0]
 				cosmicCountGoodScore += 1
@@ -77,8 +77,8 @@ with open(rankedGenesFile, 'rb') as f:
 				bcCountBadScore += 1
 			allGenesBadScore += 1	
 				
-print cosmicCountGoodScore, " out of ", allGenesGoodScore, " are in COSMIC and score > 0"
-print cosmicCountBadScore, " out of ", allGenesBadScore, " are in COSMIC and score 0"
+print cosmicCountGoodScore, " out of ", allGenesGoodScore, " are in COSMIC and score 0"
+print cosmicCountBadScore, " out of ", allGenesBadScore, " are in COSMIC and score > 0"
 
-print bcCountGoodScore, " out of ", allGenesGoodScore, " are known breast cancer genes and score > 0"
-print bcCountBadScore, " out of ", allGenesBadScore, " are known breast cancer genes and score 0"
+print bcCountGoodScore, " out of ", allGenesGoodScore, " are known breast cancer genes and score 0"
+print bcCountBadScore, " out of ", allGenesBadScore, " are known breast cancer genes and score > 0"
