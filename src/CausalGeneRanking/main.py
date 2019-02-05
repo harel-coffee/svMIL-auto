@@ -76,12 +76,48 @@ causalGenes = np.concatenate((causalGenes, nonCausalGenes), axis=0)
 #The combination of SVs and SNVs will come afterwards, because then we will need to map the names of the cancer types correctly. 
 
 #2. Read the SVs or SNVs depending on the mode.
+import re
 
 variantData = []
 if mode == "SV":
 	print "Reading SV data"
 	svFile = settings.files['svFile']
 	svData = InputParser().getSVsFromFile(svFile, "all")
+	
+	
+	# 
+	# dels = 0
+	# inv = 0
+	# dup = 0
+	# trans = 0
+	# types = []
+	# patients = []
+	# for sv in svData:
+	# 	if sv[8].svType not in types:
+	# 		types.append(sv[8].svType)
+	# 	if sv[7] not in patients:
+	# 		patients.append(sv[7])
+	# 	if re.search("del", sv[8].svType, re.IGNORECASE) is not None:
+	# 		dels += 1
+	# 	if re.search("inv", sv[8].svType, re.IGNORECASE) is not None:
+	# 		inv += 1
+	# 	if re.search("dup", sv[8].svType, re.IGNORECASE) is not None:
+	# 		dup += 1
+	# 	if re.search("chr", sv[8].svType, re.IGNORECASE) is not None:
+	# 		trans += 1
+	# 	if re.search("trans", sv[8].svType, re.IGNORECASE) is not None:
+	# 		trans += 1
+	# 	if re.search("range", sv[8].svType, re.IGNORECASE) is not None:
+	# 		trans += 1
+	# print types
+	# print patients
+	# print "patients: ", len(patients)
+	# print "dels: ", dels
+	# print "inv: ", inv
+	# print "dup: ", dup
+	# print "trans: ", trans
+	# 
+	# exit()
 	
 
 if mode == "SNV":
