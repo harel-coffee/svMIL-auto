@@ -43,6 +43,11 @@ class GenomicShuffler:
 		for tad in tadData:
 			
 			chrom = tad[0]
+			
+			if chrom not in self.hg19Coordinates:
+				continue
+			
+			
 			chrLength = self.hg19Coordinates[chrom]
 			
 			tadLength = tad[2] - tad[1]
@@ -125,6 +130,11 @@ class GenomicShuffler:
 			
 			chromosome1 = sv[0]
 			chromosome2 = sv[3]
+			
+			if chromosome1 not in self.hg19Coordinates:
+				continue
+			if chromosome2 not in self.hg19Coordinates:
+				continue
 			
 			chr1Length = self.hg19Coordinates[chromosome1]
 			chr2Length = self.hg19Coordinates[chromosome2]
