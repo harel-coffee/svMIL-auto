@@ -58,15 +58,15 @@ class InputParser:
 					cancerType = "breast"
 					
 				#Skip anything that is not breast cancer for now. From here is the easiest way, saves time in processing as well
-				if cancerType != "breast":
+				if cancerType != "BRCA":
 					continue
 				
 				# if cancerType != "prostate cancer":
 				# 	continue
-				# 
+				
 				# if cancerType != "ovarian cancer":
 				# 	continue
-				
+				# 
 				svTypeIndex = header.index("sv_type")
 				svType = splitLine[svTypeIndex]
 				
