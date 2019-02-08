@@ -5,8 +5,8 @@ import sys
 import numpy as np
 
 variantsFile = sys.argv[1]
-outFile = sys.argv[3]
-refFile = sys.argv[2] #breastGastricSvs.vcf
+outFile = sys.argv[2]
+#refFile = sys.argv[2] #breastGastricSvs.vcf
 
 variantsList = []
 
@@ -85,27 +85,27 @@ with open(variantsFile, 'rb') as f:
 
 regions = np.array(variantsList, dtype='object')
 
-#Filter by cancer type
-cancerType = "breast/gastric"
-filteredRegions = regions[np.where(regions[:,7] == cancerType),:][0]
+# #Filter by cancer type
+# cancerType = "breast/gastric"
+# filteredRegions = regions[np.where(regions[:,7] == cancerType),:][0]
 
 #Read the REF information by coordinate
 #This is a vcf file
-
-refBases = dict()
-
-with open(refFile, 'r') as ref:
-	
-	lineCount = 0
-	
-	for line in ref:
-		line = line.strip()
-		splitLine = line.split("\t")
-		
-		
-		coordinates = splitLine[0]
-		refBase = splitLine[1]
-		refBases[coordinates] = refBase
+# 
+# refBases = dict()
+# 
+# with open(refFile, 'r') as ref:
+# 	
+# 	lineCount = 0
+# 	
+# 	for line in ref:
+# 		line = line.strip()
+# 		splitLine = line.split("\t")
+# 		
+# 		
+# 		coordinates = splitLine[0]
+# 		refBase = splitLine[1]
+# 		refBases[coordinates] = refBase
 
 
 #Write all these to a VCF file, add the sample name
@@ -115,7 +115,7 @@ with open(outFile, 'wb') as out:
 	out.write("##fileformat=VCFv4.0\n")
 	out.write("#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\n")
 	
-	for region in filteredRegions:
+	for region in regions:
 		#CHROM POS ID REF ALT QUAL FILTER INFO FORMAT
 		#INFO field should contain the SVTYPE, and also the chr2 information for translocations
 		
@@ -128,12 +128,13 @@ with open(outFile, 'wb') as out:
 		if region[0] != region[3]:
 			end = region[2]
 		
-		refBase = refBases[coordinates][0] #only show the first base, otherwise there is way too much data to show in IGV, some SVs are very long
+		#refBase = refBases[coordinates][0] #only show the first base, otherwise there is way too much data to show in IGV, some SVs are very long
+		refBase = "A"
 		#refBase = refBases[coordinates]
 		
 		sampleName = region[8].replace(" ", "")
 		info = "SVTYPE=" + region[6] + ";CHR2=" + region[3] + ";S2=" + region[4] + ";E1=" + region[2] + ";SAMPLE=" + sampleName + ";END=" + end #IGV uses 'END' for plotting, so don't use the e2 coordinate if translocation
-		
+		info = info.replace(" ", "_")
 		line = region[0] + "\t" + region[1] + "\t.\t" + refBase + "\t.\t.\t.\t" + info + "\n"
 		
 		out.write(line)

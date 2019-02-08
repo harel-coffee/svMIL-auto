@@ -1227,5 +1227,21 @@ class NeighborhoodDefiner:
 			# 	
 			# 	eQTL.setSNVs(snvsOverlappingEQTL)
 			# 	
-				
+		#Quick test to get all genes with SNVs
+		# dummyOut = '../../data/Genes/genesWithSNVs.txt'
+		# with open(dummyOut, 'w') as outF:
+		# 	
+		# 	for gene in genes[:,3]:
+		# 		if gene.SNVs is not None and len(gene.SNVs) > 0:
+		# 			outF.write(gene.name)
+		# 			outF.write("\n")
+		# exit()
+		dummyOut = '../../data/Genes/genesWithSNVs_counts.txt'
+		with open(dummyOut, 'w') as outF:
+			
+			for gene in genes[:,3]:
+				if gene.SNVs is not None and len(gene.SNVs) > 0:
+					outF.write(gene.name + "\t" + len(gene.SNVs))
+					outF.write("\n")
+		exit()			
 			#Interactions have not been implemented for SNVs
