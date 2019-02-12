@@ -9,6 +9,21 @@ import matplotlib.pyplot as plt
 
 rankingFile = sys.argv[1]
 snvFile = sys.argv[2]
+cosmicGenesFile = sys.argv[3]
+
+
+cosmicGenes = []
+with open(cosmicGenesFile, 'rb') as f:
+	lineCount = 0
+	for line in f:
+		if lineCount == 0:
+			lineCount += 1
+			continue
+		
+		splitLine = line.split("\t")
+		
+		geneName = splitLine[0]
+		cosmicGenes.append(geneName)
 
 geneSnvCount = dict()
 with open(snvFile, 'r') as snvF:
@@ -48,9 +63,16 @@ for gene in geneScores:
 	
 	snvCount = geneSnvCount[gene]
 	
+	if snvCount > 2000:
+		print gene
+		print snvCount
+		print geneScore
+		if gene in cosmicGenes:
+			print "gene in COSMIC"
+	
 	scoresAndSnvCounts.append([geneScore, snvCount])
 
-
+exit()
 
 scoresAndSnvCounts = np.array(scoresAndSnvCounts)
 print scoresAndSnvCounts

@@ -1241,7 +1241,7 @@ class NeighborhoodDefiner:
 			
 			for gene in genes[:,3]:
 				if gene.SNVs is not None and len(gene.SNVs) > 0:
-					outF.write(gene.name + "\t" + len(gene.SNVs))
+					outF.write(gene.name + "\t" + str(len(gene.SNVs)))
 					outF.write("\n")
 		exit()			
 			#Interactions have not been implemented for SNVs
