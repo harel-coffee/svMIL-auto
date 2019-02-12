@@ -117,7 +117,6 @@ realGeneScores = np.loadtxt(permutationDataFolder + "/" + rankedGenesFile, dtype
 
 
 #4. Compute the values at each threshold and add them to the plot
-print "computing intersects for real data"
 # realScoreCountsCosmic = dict() #keep per threshold what the scores are
 # realScoreCountsSNVs = dict()
 # realScoreCountsDEGS = dict()

@@ -1,3 +1,115 @@
+
+#1. Read the data from the folder with real and permuted intersect values
+import sys
+import numpy as np
+import matplotlib.pyplot as plt
+import os
+from os import listdir
+from os.path import isfile, join
+
+permutationDataFolder = sys.argv[1]
+realScoreCountsCosmic = dict() #keep per threshold what the scores are
+realScoreCountsSNVs = dict()
+realScoreCountsDEGS = dict()
+realScoreCountsCosmicSNVs = dict()
+realScoreCountsCosmicDEGs = dict()
+realScoreCountsSNVDEGs = dict()
+realScoreCountsAll = dict()
+maxScore = 0
+geneScoreFiles = [f for f in listdir(permutationDataFolder) if isfile(join(permutationDataFolder, f))]
+for geneScoreFile in geneScoreFiles:
+	
+	if geneScoreFile == 'realSVs_geneScores.txt':
+		#Read the file
+		geneScores = np.loadtxt(permutationDataFolder + "/" + geneScoreFile, dtype="object")
+		
+		#Go through the same thresholds
+		for row in range(0, geneScores.shape[0]):
+			print geneScores[row]
+			print geneScores[row][0]
+			print int(geneScores[row][0])
+			print "f: ", len(geneScores[row])
+			threshold = int(geneScores[row][0])
+			cosmic = int(geneScores[row][1])
+			snvs = int(geneScores[row][2])
+			cosmicSNVs = int(geneScores[row][3])
+			degs = int(geneScores[row][4])
+			cosmicDEGs = int(geneScores[row][5])
+			snvDEGs = int(geneScores[row][6])
+			allCriteria = int(geneScores[row][7])
+			#[cosmic, snvs, cosmicSNVs, degs, cosmicDEGs, snvDEGs, allCriteria] = computeCategoryMatches(geneScores, threshold)
+			if threshold > maxScore:
+				maxScore = threshold
+	
+			realScoreCountsCosmic[threshold] = cosmic
+			realScoreCountsSNVs[threshold] = snvs
+			realScoreCountsDEGS[threshold] = degs
+			realScoreCountsCosmicSNVs[threshold] = cosmicSNVs
+			realScoreCountsCosmicDEGs[threshold] = cosmicDEGs
+			realScoreCountsSNVDEGs[threshold] = snvDEGs
+			realScoreCountsAll[threshold] = allCriteria
+	
+
+
+permutedScoreCountsCosmic = dict() #keep per threshold what the scores are
+permutedScoreCountsSNVs = dict()
+permutedScoreCountsDEGS = dict()
+permutedScoreCountsCosmicSNVs = dict()
+permutedScoreCountsCosmicDEGs = dict()
+permutedScoreCountsSNVDEGs = dict()
+permutedScoreCountsAll = dict()
+for threshold in range(0, maxScore): #prepare dictionaries
+	permutedScoreCountsCosmic[threshold] = []
+	permutedScoreCountsSNVs[threshold] = []
+	permutedScoreCountsDEGS[threshold] = []
+	permutedScoreCountsCosmicSNVs[threshold] = []
+	permutedScoreCountsCosmicDEGs[threshold] = []
+	permutedScoreCountsSNVDEGs[threshold] = []
+	permutedScoreCountsAll[threshold] = []
+
+
+
+for geneScoreFile in geneScoreFiles:
+	
+	if geneScoreFile == 'realSVs_geneScores.txt':
+		continue
+	else:
+		#Read the file
+		geneScores = np.loadtxt(permutationDataFolder + "/" + geneScoreFile, dtype="object")
+		
+		#Go through the same thresholds
+		for row in range(0, geneScores.shape[0]):
+			
+			
+			if len(geneScores[row]) > 8: #if there is something wird in the file
+				continue
+			
+			threshold = int(geneScores[row][0])
+			if threshold >= maxScore:
+				continue
+			cosmic = int(geneScores[row][1])
+			snvs = int(geneScores[row][2])
+			cosmicSNVs = int(geneScores[row][3])
+			degs = int(geneScores[row][4])
+			cosmicDEGs = int(geneScores[row][5])
+			snvDEGs = int(geneScores[row][6])
+			allCriteria = int(geneScores[row][7])
+			#[cosmic, snvs, cosmicSNVs, degs, cosmicDEGs, snvDEGs, allCriteria] = computeCategoryMatches(geneScores, threshold)
+			
+	
+			permutedScoreCountsCosmic[threshold].append(cosmic)
+			permutedScoreCountsSNVs[threshold].append(snvs)
+			permutedScoreCountsDEGS[threshold].append(degs)
+			permutedScoreCountsCosmicSNVs[threshold].append(cosmicSNVs)
+			permutedScoreCountsCosmicDEGs[threshold].append(cosmicDEGs)
+			permutedScoreCountsSNVDEGs[threshold].append(snvDEGs)
+			permutedScoreCountsAll[threshold].append(allCriteria)
+			#if threshold not in permutedScoreCounts:
+			#	permutedScoreCounts[threshold] = []	
+			#permutedScoreCounts[threshold].append([cosmic, snvs, cosmicSNVs, degs, cosmicDEGs, snvDEGs, allCriteria])
+
+#2. Make the plots
+
 	
 #Add the points to the plots, make seprate plots
 #The y axis is the number in the overlap, the x axis the threshold
@@ -43,7 +155,7 @@ def plotThresholdEnrichment(realScores, permutedScores, maxScore):
 	ax = plt.subplot(1,1,1)
 	for threshold in range(0, maxScore):
 		zScore = (realScores[threshold] - np.mean(permutedScores[threshold])) / np.std(permutedScores[threshold])
-		ax.plot(threshold. zScore, 'bo')
+		ax.plot(threshold, zScore, 'bo')
 
 # plotThresholdEnrichment(realScoreCountsCosmic, permutedScoreCountsCosmic, 3)
 # plt.savefig("cosmic_enrichtment.svg")
