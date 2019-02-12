@@ -263,7 +263,7 @@ class GeneRanking:
 				sampleInd = sampleMap[sampleName]
 				
 				
-				scoringMatrix[sampleInd][matrixGeneInd] += 1
+				scoringMatrix[sampleInd][matrixGeneInd] = 1
 	
 		return scoringMatrix
 	

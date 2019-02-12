@@ -125,6 +125,8 @@ if mode == "SNV":
 	snvFile = settings.files['snvFile']
 	snvData = InputParser().getSNVsFromFile(snvFile)
 	
+	
+	
 #This can be done better with an array of parameters,but this is quick and dirty for now	
 if mode == "SV+SNV":
 	print "Reading SV data"

@@ -9,45 +9,35 @@ import matplotlib.pyplot as plt
 
 rankingFile = sys.argv[1]
 expressionFile = sys.argv[2]
+cosmicGenesFile = sys.argv[3]
+
+
+cosmicGenes = []
+with open(cosmicGenesFile, 'rb') as f:
+	lineCount = 0
+	for line in f:
+		if lineCount == 0:
+			lineCount += 1
+			continue
+		
+		splitLine = line.split("\t")
+		
+		geneName = splitLine[0]
+		cosmicGenes.append(geneName)
 
 geneExpression = dict()
 diffExprCount = 0
 geneCount = 0
 with open(expressionFile, 'r') as exprF:
-	lineCount = 0
 	for line in exprF:
-		
-		if lineCount < 1:
-			lineCount += 1
-			continue
-		
-		#First get the median z-score for the gene
 		line = line.strip()
+		
 		splitLine = line.split("\t")
-		
-		hugoGeneName = splitLine[0]
-		entrezGeneName = splitLine[1]
-		
-		#The rest is samples.
-		sampleValues = []
-		geneDiffCount = 0
-		for colInd in range(2, len(splitLine)):
-			#print splitLine[colInd]
-			if splitLine[colInd] != "NA":
-				sampleValues.append(float(splitLine[colInd]))
-				if abs(float(splitLine[colInd])) >= 1.96:
-					geneDiffCount += 1
-		if geneDiffCount > 0:
-			diffExprCount += 1
-		geneCount += 1
-		#Take the median for now across the samples
-		medianZScore = np.median(sampleValues)
-		geneExpression[hugoGeneName] = np.abs(medianZScore) #does the absolute help for correlation?
+		geneName = splitLine[0].replace(" ", "")
+		zScore = splitLine[1].replace(" ", "")
 
-print diffExprCount
-print geneCount
-exit()
-
+		geneExpression[geneName] = float(zScore) #does the absolute help for correlation?
+	
 
 #Read the ranking file
 geneScores = dict()
@@ -58,32 +48,40 @@ with open(rankingFile, 'r') as rankF:
 		splitLine = line.split()
 		
 		geneName = splitLine[0]
-		geneScore = float(splitLine[1])
+		geneScore = float(splitLine[1]) + float(splitLine[4])
 		
 		geneScores[geneName] = geneScore
-		
+	
 #Plot correlation
 #Convert dictionaries to same order of genes
 
 scoresAndExpression = []
 for gene in geneScores:
-	
+
 	geneScore = geneScores[gene]
 	if gene not in geneExpression: #many of the RNA genes won't be in the list. 
 		continue
-	
+
 	
 	expression = geneExpression[gene]
 	
+	if geneScore > 300:
+		if gene in cosmicGenes:
+			print "gene in COSMIC:"
+		print gene
+		print expression
+		print geneScore
+	
 	scoresAndExpression.append([geneScore, expression])
 
-
+exit()
 
 scoresAndExpression = np.array(scoresAndExpression)
+print scoresAndExpression
 
 plt.scatter(scoresAndExpression[:,0], scoresAndExpression[:,1])
 plt.xlabel("Gene ranking scores")
-plt.ylabel("Absolute median expression z-score")
+plt.ylabel("Log fold change")
 plt.show()
 
 
