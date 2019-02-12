@@ -18,6 +18,8 @@ permutationDataFolder = sys.argv[5]
 
 #Get the files in the folder
 geneScoreFiles = [f for f in listdir(permutationDataFolder) if isfile(join(permutationDataFolder, f))]
+
+
 rankedGenesFile = geneScoreFiles[rankedGenesFileNum]
 
 #1. Get the ranked genes 
@@ -139,7 +141,7 @@ with open(outFile, 'w') as outF:
 		# realScoreCountsSNVDEGs[threshold] = snvDEGs
 		# realScoreCountsAll[threshold] = allCriteria
 		# 
-		outF.write(str(threshold) + "\t" + str(cosmic) + "\t" + str(snvs) + "\t" + str(cosmicSNVs) + "\t" + str(degs) + "\t" + str(snvDEGs) + "\t" + str(allCriteria) + "\n")
+		outF.write(str(threshold) + "\t" + str(cosmic) + "\t" + str(snvs) + "\t" + str(cosmicSNVs) + "\t" + str(degs) + "\t" + str(cosmicDEGs) + "\t" + str(snvDEGs) + "\t" + str(allCriteria) + "\n")
 	
 	#realScoreCounts[threshold] = [[cosmic, snvs, cosmicSNVs, degs, cosmicDEGs, snvDEGs, allCriteria]]
 	# ax.plot(threshold, cosmic, 'bo')
