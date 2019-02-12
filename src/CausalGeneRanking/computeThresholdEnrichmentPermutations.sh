@@ -13,4 +13,4 @@
 
 fileNum="$SGE_TASK_ID"
 
-python computeThresholdEnrichment.py "$fileNum" "../../data/Genes/Census_allTue\ Apr\ 10\ 14_56_44\ 2018.tsv" "../../data/Genes/genesWithSNVs.txt" "../../data/DEG/BRCA.txt" "RankedGenes/69d48943-7dca-4df1-b6a6-13f6f78e83bc/BRCA/"
+python computeThresholdEnrichment.py "$fileNum" "../../data/Genes/CCGC.tsv" "../../data/Genes/genesWithSNVs.txt" "../../data/DEG/BRCA.txt" "RankedGenes/69d48943-7dca-4df1-b6a6-13f6f78e83bc/BRCA/"
