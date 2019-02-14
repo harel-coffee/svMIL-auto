@@ -15,6 +15,9 @@ cosmicGenesFile = sys.argv[2]
 snvFile = sys.argv[3]
 degFile = sys.argv[4]
 permutationDataFolder = sys.argv[5]
+random = sys.argv[6] #Should we use random distributions of DEGs, COSMIC genes and SNV genes, true/false. 
+if random == "True":
+	permutationNum = sys.argv[7]
 
 #Get the files in the folder
 geneScoreFiles = [f for f in listdir(permutationDataFolder) if isfile(join(permutationDataFolder, f))]
@@ -33,7 +36,7 @@ with open(permutationDataFolder + "/" + rankedGenesFile, 'r') as rankF:
 		splitLine = line.split()
 		
 		geneName = splitLine[0]
-		geneScore = int(float(splitLine[4]))
+		geneScore = int(float(splitLine[1]))
 		if geneScore > maxScore: 
 			maxScore = geneScore
 		
@@ -67,9 +70,23 @@ with open(snvFile, 'r') as inf:
 		line = line.strip()
 		snvGenes.append(line)
 
+#Should we use a random set of DEGs, SNV genes and COSMIC genes?
+randomCosmicGenes = []
+randomDEGs = []
+randomSNVGenes = []
+if random == "True":
+	
+	#1. For all genes, randomly select a subset that fall into either of the 3 categories, but keep the sizes the same. 
+	randomCosmicGenes = np.random.choice(geneScores.keys(), len(cosmicGenes), replace=False)
+	randomDEGs = np.random.choice(geneScores.keys(), len(degGenes), replace=False)
+	randomSNVGenes = np.random.choice(geneScores.keys(), len(snvGenes), replace=False)
+
+
 #3. At every threshold, compute how many genes are in the 3 categories (also overlapping)
 
-
+cosmicGenes = randomCosmicGenes
+degGenes = randomDEGs
+snvGenes = randomSNVGenes
 
 #Compute the intersects
 def computeCategoryMatches(realGeneScores, threshold):
@@ -83,7 +100,7 @@ def computeCategoryMatches(realGeneScores, threshold):
 	
 	for gene in realGeneScores:
 		
-		if float(gene[4]) > threshold:
+		if float(gene[1]) > threshold:
 			if gene[0] in degGenes:
 				degGenesPos.append(gene[0])
 			if gene[0] in cosmicGenes:
@@ -128,7 +145,10 @@ realGeneScores = np.loadtxt(permutationDataFolder + "/" + rankedGenesFile, dtype
 #output this to a new file
 #if not os.path.exists('ThresholdEnrichment'):
 #    os.makedirs('ThresholdEnrichment')
-outFile = "ThresholdEnrichment/" + rankedGenesFile
+if random == "True":
+	outFile = "ThresholdEnrichment/" + rankedGenesFile + "_" + permutationNum
+else:
+	outFile = "ThresholdEnrichment/" + rankedGenesFile
 with open(outFile, 'w') as outF:
 	for threshold in range(0, maxScore):
 		[cosmic, snvs, cosmicSNVs, degs, cosmicDEGs, snvDEGs, allCriteria] = computeCategoryMatches(realGeneScores, threshold)
