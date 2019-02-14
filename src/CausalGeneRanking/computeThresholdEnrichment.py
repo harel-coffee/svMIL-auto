@@ -126,8 +126,8 @@ realGeneScores = np.loadtxt(permutationDataFolder + "/" + rankedGenesFile, dtype
 # realScoreCountsAll = dict()
 
 #output this to a new file
-if not os.path.exists('ThresholdEnrichment'):
-    os.makedirs('ThresholdEnrichment')
+#if not os.path.exists('ThresholdEnrichment'):
+#    os.makedirs('ThresholdEnrichment')
 outFile = "ThresholdEnrichment/" + rankedGenesFile
 with open(outFile, 'w') as outF:
 	for threshold in range(0, maxScore):
