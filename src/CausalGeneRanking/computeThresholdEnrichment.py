@@ -81,12 +81,13 @@ if random == "True":
 	randomDEGs = np.random.choice(geneScores.keys(), len(degGenes), replace=False)
 	randomSNVGenes = np.random.choice(geneScores.keys(), len(snvGenes), replace=False)
 
+	cosmicGenes = randomCosmicGenes
+	degGenes = randomDEGs
+	snvGenes = randomSNVGenes
 
 #3. At every threshold, compute how many genes are in the 3 categories (also overlapping)
 
-cosmicGenes = randomCosmicGenes
-degGenes = randomDEGs
-snvGenes = randomSNVGenes
+
 
 #Compute the intersects
 def computeCategoryMatches(realGeneScores, threshold):
