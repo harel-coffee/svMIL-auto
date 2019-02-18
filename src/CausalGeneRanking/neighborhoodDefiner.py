@@ -77,7 +77,7 @@ class NeighborhoodDefiner:
 		
 				
 		eQTLData = [] #Keep empty by default
-		if settings.general['eQTLs'] == True or settings.general['gainOfInteractions'] == True: #Gain of eQTL interactions depends on eQTLs. 
+		if settings.general['eQTLs'] == True:
 			#Save the processed data, only needs to be done once
 			
 			# import os.path
@@ -90,16 +90,20 @@ class NeighborhoodDefiner:
 			# else:
 			print "re-creating eQTLs"
 			#eQTLFile = "../../data/eQTLs/eQTLsFilteredForCausalGenes.txt" #These files will need to go to the settings!
-			eQTLFile = "../../data/eQTLs/breast_eQTLs.txt" #These files will need to go to the settings!
+			#eQTLFile = "../../data/eQTLs/breast_eQTLs.txt" #These files will need to go to the settings!
+			eQTLFile = settings.files['eQTLFile']
 			#eQTLFile = "../../data/eQTLs/prostate_eQTLs.txt"
 			#eQTLFile = "../../data/eQTLs/ovarian_eQTLs.txt"
 			
+			#Better to move this to a generic function that can also deal with other types, part of the input parser
+			#These types of functions do not really belong here
 			print "getting eQTLs"
 			eQTLData = self.getEQTLsFromFile(eQTLFile, genes[:,3])
 		
 			
 			with open('eQTLData.pkl', 'wb') as h:
 				pkl.dump(eQTLData, h, protocol=pkl.HIGHEST_PROTOCOL)
+		
 		
 	
 		
@@ -129,16 +133,21 @@ class NeighborhoodDefiner:
 			eQTLData = lncRNAData 
 
 		#For now, we use eQTLs for gains of interactions rather than Hi-C.
-		if settings.general['gainOfInteractions'] == True:
-			tadData = self.mapEQTLInteractionsToTads(eQTLData, tadData)
-			tadData = self.mapGenesToTads(genes, tadData) 
+		tadData = self.mapElementsToTads(eQTLData, tadData)
+		tadData = self.mapGenesToTads(genes, tadData) 
+		
+		#3. Get enhancers
+		print "getting enhancers"
+		if settings.general['enhancers'] == True:
+			enhancerData = self.getEnhancersFromFile(settings.files['enhancerFile'], genes[:,3])
+		
+		#Add the enhancers to TADs & genes as well	
+		tadData = self.mapElementsToTads(enhancerData, tadData)	
 		
 		
-		
-		
-		#First define the Genome object with all data that we collected to far
-		print "Defining genomic bins"
-		genome.defineBins(genes, tadData, eQTLData)
+		# #First define the Genome object with all data that we collected to far
+		# print "Defining genomic bins"
+		# genome.defineBins(genes, tadData, eQTLData)
 		
 		
 		#3. Map SVs to all neighborhood elements
@@ -236,10 +245,10 @@ class NeighborhoodDefiner:
 				eQTLObject = EQTL(chrName, int(splitLine[1]), int(splitLine[2])) #chr, start, end
 				
 				#The mapping information is in the file, so we can already do it here
-				self.mapEQTLsToGenes(eQTLObject, geneDict, splitLine[3])
+				self.mapElementsToGenes(eQTLObject, geneDict, splitLine[3])
 						
 				
-				eQTLs.append([chrName, int(splitLine[1]), int(splitLine[2]), eQTLObject]) #Keep the eQTL information raw as well for quick overlapping. 
+				eQTLs.append([chrName, int(splitLine[1]), int(splitLine[2]), eQTLObject, "eQTL"]) #Keep the eQTL information raw as well for quick overlapping. 
 		
 		
 		return np.array(eQTLs, dtype='object')
@@ -259,6 +268,69 @@ class NeighborhoodDefiner:
 				lncRNAs.append([splitLine[0], int(splitLine[1]), int(splitLine[2]), lncRNAObject])					
 		
 		return np.array(lncRNAs, dtype="object")
+	
+	def getEnhancersFromFile(self, enhancerFile, genes):
+		"""
+			We re-use the eQTL object for now, but it is better if this would be a generic type of object not called eQTL but e.g. element
+		
+		"""
+		
+		
+		geneDict = dict()
+		
+		for gene in genes:
+			if gene not in geneDict:
+				geneDict[gene.name] = gene
+		
+		
+		enhancers = []
+		with open(enhancerFile, 'rb') as f:
+			
+			lineCount = 0
+			for line in f:
+				if lineCount < 1:
+					lineCount += 1
+					continue
+				
+				line = line.strip()
+				splitLine = line.split("\t")
+				
+				interaction = splitLine[0]
+				splitInteraction = interaction.split("_") #first part is the enhancer, 2nd part the gene
+				
+				enhancerInfo = splitInteraction[0]
+				splitEnhancerInfo = enhancerInfo.split(":")
+				#Add the chr notation for uniformity. 		
+				chrMatch = re.search("chr", splitEnhancerInfo[0], re.IGNORECASE)
+				chrName = ""
+				if chrMatch is None:
+					chrName = "chr" + splitEnhancerInfo[0]
+				else:
+					chrName = splitEnhancerInfo[0]
+				splitPosInfo = splitEnhancerInfo[1].split("-") #get the positions
+				start = int(splitPosInfo[0])
+				end = int(splitPosInfo[1])
+				
+				#Get the gene name
+				splitGeneInfo = splitInteraction[1].split("$")
+				geneName = splitGeneInfo[1]
+				
+				if geneName not in geneDict:
+					continue
+				
+				
+				eQTLObject = EQTL(chrName, start, end)
+				eQTLObject.type = "enhancer"
+				
+				#The mapping information is in the file, so we can already do it here
+				self.mapElementsToGenes(eQTLObject, geneDict, geneName)
+						
+				
+				enhancers.append([chrName, start, end, eQTLObject, "enhancer"]) #Keep the eQTL information raw as well for quick overlapping. 
+		
+		
+		return np.array(enhancers, dtype='object')
+		
 		
 
 	def getInteractionsFromFile(self, interactionsFile):
@@ -432,14 +504,14 @@ class NeighborhoodDefiner:
 			# 	exit()
 
 		
-	def mapEQTLsToGenes(self, eQTL, geneDict, geneSymbol):
+	def mapElementsToGenes(self, element, geneDict, geneSymbol):
 		"""
 			Map the right gene object to the eQTL object. 
 		
 		"""
 		
-		geneDict[geneSymbol].addEQTL(eQTL)
-		eQTL.addGene(geneDict[geneSymbol])
+		geneDict[geneSymbol].addElement(element)
+		element.addGene(geneDict[geneSymbol])
 		# 
 		# for gene in genes:
 		# 	
@@ -532,7 +604,7 @@ class NeighborhoodDefiner:
 	
 		return tadData		
 	
-	def mapEQTLInteractionsToTads(self, eQTLData, tadData):
+	def mapElementsToTads(self, elementData, tadData):
 		"""
 			Determine which eQTL interactions take place within which TAD.
 			eQTL interactions will be mapped to TAD objects.
@@ -549,24 +621,25 @@ class NeighborhoodDefiner:
 		
 			if tad[0] != previousChromosome:
 				previousChromosome = tad[0]
-				eQTLChrSubset = eQTLData[np.where(eQTLData[:,0] == tad[0])] #Get all eQTLs that are on this chromosome. All eQTLs are CIS, so intrachromosomal is fine for now
-
-
+				elementChrSubset = elementData[np.where(elementData[:,0] == tad[0])] #Get all eQTLs that are on this chromosome. All eQTLs are CIS, so intrachromosomal is fine for now
 
 			#Find the eQTLs where the start and end of the eQTL are within the start and end of the TAD. 
-			startMatches = eQTLChrSubset[:,1] >= tad[1]
-			endMatches = eQTLChrSubset[:,2] <= tad[2]
+			startMatches = elementChrSubset[:,1] >= tad[1]
+			endMatches = elementChrSubset[:,2] <= tad[2]
 			
 			allMatches = startMatches * endMatches
-			matchingEQTLs = eQTLChrSubset[allMatches,:]
+			matchingElements = elementChrSubset[allMatches,:]
+			
+			
+			
 			
 			#Add these eQTLs to the TADs if any.
-			if matchingEQTLs.shape[0] < 1:
+			if matchingElements.shape[0] < 1:
 				
 				continue
 			else:
 				
-				tad[3].setEQTLInteractions(matchingEQTLs[:,3]) #Add the eQTL objects to the TAD objects.
+				tad[3].addElements(matchingElements[:,3]) #Add the eQTL objects to the TAD objects.
 			
 		return tadData		
 	
@@ -794,8 +867,8 @@ class NeighborhoodDefiner:
 				# if gene.name == "SYT14":
 				#  	print "left tad: ", farLeftTad
 				#  	print "sv: ", sv
-				if len(farRightTad[3].eQTLInteractions) > 0:
-					gene.setGainedEQTLs(farRightTad[3].eQTLInteractions, sv[7])
+				if len(farRightTad[3].elements) > 0:
+					gene.setGainedElements(farRightTad[3].elements, sv[7])
 					
 			
 			for gene in farRightTad[3].genes:
@@ -810,8 +883,8 @@ class NeighborhoodDefiner:
 				# 	print "sv: ", sv
 				# 	print "gained eQTLs: ", len(farLeftTad[3].eQTLInteractions)
 				# 	print "gaining from tad: ", farLeftTad
-				if len(farLeftTad[3].eQTLInteractions) > 0:	
-					gene.setGainedEQTLs(farLeftTad[3].eQTLInteractions, sv[7])
+				if len(farLeftTad[3].elements) > 0:	
+					gene.setGainedElements(farLeftTad[3].elements, sv[7])
 				
 		
 		return 0
@@ -938,9 +1011,9 @@ class NeighborhoodDefiner:
 			
 			#In the input parser we already removed all non-deletions. This should be a check around here later on. 
 			
-			geneEQTLs = gene.eQTLs
+			geneElements = gene.elements
 			
-			for eQTL in geneEQTLs: #only if the gene has eQTLs
+			for eQTL in geneElements: #only if the gene has eQTLs
 				
 				startMatches = eQTL.start <= svSubset[:,2]
 				endMatches = eQTL.end >= svSubset[:,1]
@@ -969,7 +1042,7 @@ class NeighborhoodDefiner:
 						for sv2 in svsOverlappingGenes:
 							#if sv not in svsOverlappingGenes:
 							if sv[0] != sv2[0] and sv[1] != sv2[1] and sv[5] != sv2[5]:
-								gene.addLostEQTL(eQTL, sv[6])
+								gene.addLostElement(eQTL, sv[6])
 					
 					# 
 					# samples = np.unique(svsOverlappingEQTL[:,6])

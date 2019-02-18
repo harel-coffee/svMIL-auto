@@ -5,11 +5,13 @@ files = dict(
 	svFile = '../../data/TPTNTestSet/brca_tcga_parsed_05022019.txt', #TCGA BRCA SVs
 	#svFile = '../../data/TPTNTestSet/tcga_deletions.txt', 
 	snvFile = '../../data/SNVs/cosmicNCV.txt', #all SNVs
-	causalGenesFile = '../../data/Genes/Census_allTue Apr 10 14_56_44 2018.tsv', #file with all causal genes from cosmic. 
+	causalGenesFile = '../../data/Genes/CCGC.tsv', #file with all causal genes from cosmic. 
 	nonCausalGenesFile = '../../data/Genes/hg19_proteinCodingGenes.bed', 
 	heatDiffusionFile = '../../data/HiC/diffusionScores.txt', # HEAT DIFFUSION IS BROKEN File with the heat diffusion scores for each region in the Hi-C network
 	hiCInteractionsFile = '../../data/HiC/regions_regions_rel.csv', #All intrachromosomal regions that interact with each other
-	lncRNAFile = '../../data/lncRNAs/lncRNA.bed'
+	lncRNAFile = '../../data/lncRNAs/lncRNA.bed',
+	eQTLFile = '../../data/eQTLs/breast_eQTLs.txt',
+	enhancerFile = '../../data/enhancers/enhancer_gene_GM12878.txt'
 )
 
 general = dict(
@@ -17,6 +19,7 @@ general = dict(
 	mode = 'SV', #Options are: SV, SNV or SV+SNV
 	tads = True, #Include TADs in the ranking yes/no, only to rank by how often TAD boundaries themselves are disrupted by SVs. (we are getting very dependent on TADs, so perhaps force this as always required)
 	eQTLs = True, #Include eQTLs in the ranking yes/no
+	enhancers = True,
 	interactionChains = False, ##THIS IS FOR HEAT DIFFUSION BUT DOES NOT WORK, SETTING SHOULD HAVE A BETTER NAME #Include genomic 3D interactions in the ranking yes/no
 	gainOfInteractions = True, #This depends on TADs and interactions.
 	shuffleTads = False,

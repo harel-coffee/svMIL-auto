@@ -605,7 +605,7 @@ class DerivativeTADMaker:
 						
 						
 						#add the elements to the TAD
-						newTad[3].setEQTLInteractions(leftSideElements + rightSideElements)
+						newTad[3].setElements(leftSideElements + rightSideElements)
 						newTad[3].setGenes(leftSideGenes + rightSideGenes)
 						
 						#Also set the elements to the remaining parts
@@ -615,7 +615,7 @@ class DerivativeTADMaker:
 						
 						#The right part of the first chromosome
 						remainingPart1 = [leftTad.chromosome, sv.s1, leftTad.end, TAD(leftTad.chromosome, sv.s1, leftTad.end)]
-						remainingPart1[3].setEQTLInteractions(remainingElementsLeft)
+						remainingPart1[3].setElements(remainingElementsLeft)
 						remainingPart1[3].setGenes(remainingGenesLeft)
 						
 						if [leftTad.chromosome, leftTad.start, leftTad.end, leftTad] in updatedTads:
@@ -632,7 +632,7 @@ class DerivativeTADMaker:
 						
 						
 						remainingPart2 = [rightTad.chromosome, rightTad.start, sv.e2, TAD(rightTad.chromosome, rightTad.start, sv.e2)]
-						remainingPart2[3].setEQTLInteractions(remainingElementsRight)
+						remainingPart2[3].setElements(remainingElementsRight)
 						remainingPart2[3].setGenes(remainingGenesRight)
 						
 						#Also remove the old TADs if necessary
@@ -687,7 +687,7 @@ class DerivativeTADMaker:
 						
 						
 						#add the elements to the TAD
-						newTad[3].setEQTLInteractions(leftSideElements + rightSideElements)
+						newTad[3].setElements(leftSideElements + rightSideElements)
 						newTad[3].setGenes(leftSideGenes + rightSideGenes)
 						
 						#Also set the elements to the remaining parts
@@ -701,7 +701,7 @@ class DerivativeTADMaker:
 						
 						#The left part of the first chromosome
 						remainingPart1 = [leftTad.chromosome, leftTad.start, sv.s1, TAD(leftTad.chromosome, leftTad.start, sv.s1)]
-						remainingPart1[3].setEQTLInteractions(remainingElementsLeft)
+						remainingPart1[3].setElements(remainingElementsLeft)
 						remainingPart1[3].setGenes(remainingGenesLeft)
 						
 						if [leftTad.chromosome, leftTad.start, leftTad.end, leftTad] in updatedTads:
@@ -715,7 +715,7 @@ class DerivativeTADMaker:
 							updatedTads.append(remainingPart1)
 							
 						remainingPart2 = [rightTad.chromosome, sv.e2, rightTad.end, TAD(rightTad.chromosome, sv.e2, rightTad.end)]
-						remainingPart2[3].setEQTLInteractions(remainingElementsRight)
+						remainingPart2[3].setElements(remainingElementsRight)
 						remainingPart2[3].setGenes(remainingGenesRight)
 						
 						#Also remove the old TADs if necessary
@@ -768,7 +768,7 @@ class DerivativeTADMaker:
 						newTad1 = [leftTad.chromosome, leftTad.start, rightTad.start, TAD(leftTad.chromosome, leftTad.start, rightTad.start)]
 						
 						#add the elements to the TAD
-						newTad1[3].setEQTLInteractions(leftSideElements + rightSideElements)
+						newTad1[3].setElements(leftSideElements + rightSideElements)
 						newTad1[3].setGenes(leftSideGenes + rightSideGenes)
 						
 						#Because I cannot set the TAD boundaries correctly in this case since one comes before the other, I make two TADs until the SV, but do set their elements as interacting
@@ -783,7 +783,7 @@ class DerivativeTADMaker:
 						#There are always 2 remaining parts, on both ends (in case of interchromosomal translocations)
 						
 						remainingPart1 = [leftTad.chromosome, sv.s1, leftTad.end, TAD(leftTad.chromosome, sv.s1, leftTad.end)]
-						remainingPart1[3].setEQTLInteractions(remainingElementsLeft)
+						remainingPart1[3].setElements(remainingElementsLeft)
 						remainingPart1[3].setGenes(remainingGenesLeft)
 						
 						if [leftTad.chromosome, leftTad.start, leftTad.end, leftTad] in updatedTads:
@@ -797,7 +797,7 @@ class DerivativeTADMaker:
 							updatedTads.append(remainingPart1)
 							
 						remainingPart2 = [rightTad.chromosome, sv.e2, rightTad.end, TAD(rightTad.chromosome, sv.e2, rightTad.end)]
-						remainingPart2[3].setEQTLInteractions(remainingElementsRight)
+						remainingPart2[3].setElements(remainingElementsRight)
 						remainingPart2[3].setGenes(remainingGenesRight)
 						
 						#Also remove the old TADs if necessary
@@ -855,7 +855,7 @@ class DerivativeTADMaker:
 						newTad1 = [leftTad.chromosome, rightTad.end, leftTad.end, TAD(leftTad.chromosome, rightTad.end, leftTad.end)]
 						
 						#add the elements to the TAD
-						newTad1[3].setEQTLInteractions(leftSideElements + rightSideElements)
+						newTad1[3].setElements(leftSideElements + rightSideElements)
 						newTad1[3].setGenes(leftSideGenes + rightSideGenes)
 						
 						#Because I cannot set the TAD boundaries correctly in this case since one comes before the other, I make two TADs until the SV, but do set their elements as interacting
@@ -870,7 +870,7 @@ class DerivativeTADMaker:
 						#There are always 2 remaining parts, on both ends (in case of interchromosomal translocations)
 						
 						remainingPart1 = [leftTad.chromosome, leftTad.start, sv.s1, TAD(leftTad.chromosome, leftTad.start, sv.s1)]
-						remainingPart1[3].setEQTLInteractions(remainingElementsLeft)
+						remainingPart1[3].setElements(remainingElementsLeft)
 						remainingPart1[3].setGenes(remainingGenesLeft)
 						
 						if [leftTad.chromosome, leftTad.start, leftTad.end, leftTad] in updatedTads:
@@ -887,7 +887,7 @@ class DerivativeTADMaker:
 						# 	updatedTads.append(remainingPart1)
 							
 						remainingPart2 = [rightTad.chromosome, rightTad.start, sv.e2, TAD(rightTad.chromosome, rightTad.start, sv.e2)]
-						remainingPart2[3].setEQTLInteractions(remainingElementsRight)
+						remainingPart2[3].setElements(remainingElementsRight)
 						remainingPart2[3].setGenes(remainingGenesRight)
 						
 						#Also remove the old TADs if necessary
@@ -949,7 +949,7 @@ class DerivativeTADMaker:
 							
 								
 							eQTLsInTad = []
-							for eQTL in gene.eQTLs:
+							for eQTL in gene.elements:
 								#if eQTL.start > tad[3].start and eQTL.start < tad[3].end:
 								#	eQTLsInTad.append([eQTL.chromosome, eQTL.start, eQTL])
 								
@@ -960,11 +960,11 @@ class DerivativeTADMaker:
 							
 							
 							newEQTLs = []
-							for eQTL in tad[3].eQTLInteractions:
+							for eQTL in tad[3].elements:
 								#if eQTL not in gene.leftTAD.eQTLInteractions:
 								newEQTLs.append(eQTL)
 							
-							originalTadEQTLs = gene.leftTAD.eQTLInteractions
+							originalTadEQTLs = gene.leftTAD.elements
 							filteredNewEQTLs = np.setdiff1d(newEQTLs, originalTadEQTLs)
 								
 							#Make the derivative, determine which eQTLs are gained and lost for this gene.
@@ -999,8 +999,8 @@ class DerivativeTADMaker:
 							# 		print "gained eQTL: ", eQTL.chromosome, eQTL.start
 							# 		
 							
-							gene.addGainedEQTLs(gainedEQTLs, sv.sampleName)
-							gene.addLostEQTLs(lostEQTLs, sv.sampleName)
+							gene.addGainedElements(gainedEQTLs, sv.sampleName)
+							gene.addLostElements(lostEQTLs, sv.sampleName)
 		
 		### INVERSION ###
 		if svType == "inv":
@@ -1154,8 +1154,9 @@ class DerivativeTADMaker:
 			#All unaffected genes on the left will lose the eQTLs that are in the left side of the inversion
 			for gene in unaffectedGenesLeft:
 				
-				gene.addGainedEQTLs(rightSideElements, svData[7])
-				gene.addLostEQTLs(leftSideElements, svData[7])
+				gene.addGainedElements(rightSideElements, svData[7])
+				
+				gene.addLostElements(leftSideElements, svData[7])
 				#print "Number of gained right side elements: ", len(rightSideElements), " for genes ", len(unaffectedGenesLeft)
 				
 				#if svData[7] in gene.gainedEQTLs:
@@ -1166,24 +1167,24 @@ class DerivativeTADMaker:
 			#All genes in the right side will lose interactions with eQTLs in the unaffected right TAD. 
 			for gene in rightSideGenes:
 				
-				gene.addGainedEQTLs(unaffectedElementsLeft, svData[7])
+				gene.addGainedElements(unaffectedElementsLeft, svData[7])
 				#print "Number of unaffected elements right: ", len(unaffectedElementsRight), " for genes ", len(rightSideGenes)
-				gene.addLostEQTLs(unaffectedElementsRight, svData[7])
+				gene.addLostElements(unaffectedElementsRight, svData[7])
 			
 			#vice versa but then for the right TAD and right side of the inversion.
 			#The lost eQTLs are the ones that are in the right side of the inversion
 			for gene in unaffectedGenesRight:
 				
-				gene.addGainedEQTLs(leftSideElements, svData[7])
+				gene.addGainedElements(leftSideElements, svData[7])
 				#print "Number of gained right side elements 2: ", len(rightSideElements), " for genes ", len(unaffectedGenesRight)
-				gene.addLostEQTLs(rightSideElements, svData[7])
+				gene.addLostElements(rightSideElements, svData[7])
 			
 			#The lost eQTLs are the ones that are in the unaffected original left TAD
 			for gene in leftSideGenes:
 				
-				gene.addGainedEQTLs(unaffectedElementsRight, svData[7])
+				gene.addGainedElements(unaffectedElementsRight, svData[7])
 				#print "Number of unaffected left elements: ", len(unaffectedElementsLeft), " for genes ", len(leftSideGenes)
-				gene.addLostEQTLs(unaffectedElementsLeft, svData[7])
+				gene.addLostElements(unaffectedElementsLeft, svData[7])
 			
 			
 				
@@ -1344,14 +1345,14 @@ class DerivativeTADMaker:
 							print svData
 						#	exit()
 							
-						gene.addGainedEQTLs(svInteractionsLastTad, svData[7])
+						gene.addGainedElements(svInteractionsLastTad, svData[7])
 					print "(2) Number of genes to add gains: ", len(svGenesLastTad)
 					for gene in svGenesLastTad:
 						#print "adding gains from left TAD: ", len(svInteractionsFirstTad)
 						if gene.name == "ARHGEF10L":
 							print svData
 							#exit()
-						gene.addGainedEQTLs(svInteractionsFirstTad, svData[7])
+						gene.addGainedElements(svInteractionsFirstTad, svData[7])
 					
 					#The last TAD remains the same overall.
 					#Only the TADs in the middle are duplicated.
@@ -1365,7 +1366,7 @@ class DerivativeTADMaker:
 								#exit()
 							
 							#1. Get all eQTLs within this TAD
-							tadEQTLs = tad[3].eQTLInteractions
+							tadEQTLs = tad[3].elements
 							
 								
 							#2. Filter these for the eQTLs of the gene
@@ -1374,7 +1375,7 @@ class DerivativeTADMaker:
 								if gene in eQTL.genes:
 									gainedEQTLs.append(eQTL)
 							#3. Add the eQTLs to the gene for the current sample
-							gene.addGainedEQTLs(gainedEQTLs, svData[7])
+							gene.addGainedElements(gainedEQTLs, svData[7])
 							if len(gainedEQTLs) > 0:
 								print "adding gains from unaffected region: ", len(gainedEQTLs)
 				else: #Case where the duplication crosses 1 boundary
@@ -1406,14 +1407,14 @@ class DerivativeTADMaker:
 							print svData
 							#exit()
 						#Each gene in this bin gets all eQTLs that are within the SV.
-						gene.addGainedEQTLs(svInteractionsSecondTad, svData[7])
+						gene.addGainedElements(svInteractionsSecondTad, svData[7])
 						
 					for gene in svGenesSecondTad:
 						if gene.name == "ARHGEF10L":
 							print svData
 							#exit()
 						#Each gene here gains eQTLs from outside of the SV in the bin.
-						gene.addGainedEQTLs(svInteractionsFirstTad, svData[7])
+						gene.addGainedElements(svInteractionsFirstTad, svData[7])
 			
 					
 					

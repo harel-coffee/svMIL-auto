@@ -99,7 +99,7 @@ class GeneRanking:
 			
 			#print "mapping eQTLs to cancer type"
 			
-			eQTLs = gene.eQTLs
+			eQTLs = gene.elements
 			
 			
 			for eQTL in eQTLs:
@@ -160,6 +160,8 @@ class GeneRanking:
 			#eQTLScoringMatrix = self.scoreByEQTLs(cancerTypeSVs, sampleMap, geneMap, cancerType)
 			eQTLGainsScoringMatrix = self.scoreByEQTLGains(cancerTypeSVs, sampleMap, geneMap, cancerType)
 			eQTLLossesScoringMatrix = self.scoreByEQTLLosses(cancerTypeSVs, sampleMap, geneMap, cancerType)
+			enhancerGainsScoringMatrix = self.scoreByEnhancerGains(cancerTypeSVs, sampleMap, geneMap, cancerType)
+			enhancerLossesScoringMatrix = self.scoreByEnhancerLosses(cancerTypeSVs, sampleMap, geneMap, cancerType)
 			
 			# 
 			# print "scoring gained eQTL interactions:"
@@ -187,7 +189,7 @@ class GeneRanking:
 			
 			
 			#Scoring only by lost interactions
-			scoringMatrix = eQTLLossesScoringMatrix
+			scoringMatrix = enhancerGainsScoringMatrix
 			
 			#Sum the total score per gene and report the genes by which ones are most likely causal.
 
@@ -219,7 +221,7 @@ class GeneRanking:
 					#print gene.name, gene.chromosome, gene.start, ": ", geneScoresSummed[geneInd], " gene score: ", np.sum(geneXorMatrix[:,geneInd]), " eQTL score: ", np.sum(eQTLXorMatrix[:,geneInd]), " TAD score: ", np.sum(tadXorMatrix[:,geneInd])	
 			
 				
-				geneScores.append([gene, np.sum(geneScoringMatrix[:,geneInd]), np.sum(eQTLGainsScoringMatrix[:,geneInd]), np.sum(eQTLLossesScoringMatrix[:,geneInd])])
+				geneScores.append([gene, np.sum(geneScoringMatrix[:,geneInd]), np.sum(eQTLGainsScoringMatrix[:,geneInd]), np.sum(eQTLLossesScoringMatrix[:,geneInd]), np.sum(enhancerGainsScoringMatrix[:,geneInd]), np.sum(enhancerLossesScoringMatrix[:,geneInd])])
 			
 			
 			geneScores = np.array(geneScores, dtype="object")
@@ -388,19 +390,19 @@ class GeneRanking:
 			
 			gene = cancerTypeSVs["genes"].keys()[geneInd]
 			
-			if gene.name == "PTK6":
-				print "Gained eQTLs of PTK6: ", len(gene.gainedEQTLs)
+	
 			
 			matrixGeneInd = geneMap[gene]
 			
-			if len(gene.gainedEQTLs) > 0:
-				for sample in gene.gainedEQTLs:
-					if gene.name == "PTK6":
-						print "sample: ", sample
-						for eQTL in gene.gainedEQTLs[sample]:
-							print eQTL.start
-					sampleInd = sampleMap[sample]
-					scoringMatrix[sampleInd][matrixGeneInd] += 1
+			if len(gene.gainedElements) > 0:
+				for sample in gene.gainedElements:
+					gain = False
+					for element in gene.gainedElements[sample]:
+						if element == "eQTL":
+							gain = True
+					if gain == True:	#Make sure that we only count every sample once	
+						sampleInd = sampleMap[sample]
+						scoringMatrix[sampleInd][matrixGeneInd] += 1
 				
 		
 		return scoringMatrix
@@ -420,22 +422,79 @@ class GeneRanking:
 			
 			matrixGeneInd = geneMap[gene]
 			
-			if gene.name == "PTK6":
-				print "Lost eQTLs of PTK6: ", len(gene.lostEQTLs)
-				for eQTL in gene.lostEQTLs:
-					print eQTL
-		
-			if len(gene.lostEQTLs) > 0:
-				for sample in gene.lostEQTLs:
-					delta = len(gene.eQTLs)
-					sampleInd = sampleMap[sample]
-					for eQTL in gene.lostEQTLs:
-						delta -= 1
-					#scoringMatrix[sampleInd][matrixGeneInd] = delta
-					scoringMatrix[sampleInd][matrixGeneInd] += 1
-
+			
+			if len(gene.lostElements) > 0:
+				for sample in gene.lostElements:
+					
+					loss = False
+					for element in gene.lostElements[sample]:
+						if element == "eQTL":
+							loss = True
+					if loss == True:	#Make sure that we only count every sample once	
+						sampleInd = sampleMap[sample]
+						scoringMatrix[sampleInd][matrixGeneInd] += 1
+					
 		
 		return scoringMatrix
+	
+	def scoreByEnhancerGains(self, cancerTypeSVs, sampleMap, geneMap, cancerType):
+		"""
+			For every gene, add a score of 1 if an eQTL is either gained or lost. Later separate losses from gains.
+		"""
+		
+		scoringMatrix = np.zeros([len(sampleMap), len(geneMap)])
+		
+		for geneInd in range(0, len(cancerTypeSVs["genes"])):
+			
+			gene = cancerTypeSVs["genes"].keys()[geneInd]
+			
+	
+			
+			matrixGeneInd = geneMap[gene]
+			
+			if len(gene.gainedElements) > 0:
+				for sample in gene.gainedElements:
+					gain = False
+					for element in gene.gainedElements[sample]:
+						if element == "enhancer":
+							gain = True
+					if gain == True:	#Make sure that we only count every sample once	
+						sampleInd = sampleMap[sample]
+						scoringMatrix[sampleInd][matrixGeneInd] += 1
+				
+		
+		return scoringMatrix
+	
+	def scoreByEnhancerLosses(self, cancerTypeSVs, sampleMap, geneMap, cancerType):
+		"""
+			For every gene, add a score of 1 if an eQTL is either gained or lost. Later separate losses from gains.
+			
+			Instead of counting the number of losses, normalize for the number of losses compared to the total. 
+		"""
+		
+		scoringMatrix = np.zeros([len(sampleMap), len(geneMap)])
+		
+		for geneInd in range(0, len(cancerTypeSVs["genes"])):
+			
+			gene = cancerTypeSVs["genes"].keys()[geneInd]
+			
+			matrixGeneInd = geneMap[gene]
+			
+			
+			if len(gene.lostElements) > 0:
+				for sample in gene.lostElements:
+					
+					loss = False
+					for element in gene.lostElements[sample]:
+						if element == "enhancer":
+							loss = True
+					if loss == True:	#Make sure that we only count every sample once	
+						sampleInd = sampleMap[sample]
+						scoringMatrix[sampleInd][matrixGeneInd] += 1
+					
+		
+		return scoringMatrix
+
 
 	def scoreBySVsInEQTLs(self, cancerTypeSVs, sampleMap, geneMap, cancerType):
 		

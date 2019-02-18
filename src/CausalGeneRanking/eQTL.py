@@ -17,6 +17,7 @@ class EQTL:
 		self.SVs = []
 		self.SNVs = []
 		self.genes = [] #Make sure that we also know which gene(s) the eQTL affects
+		self.type = "eQTL"
 		
 	def setSVs(self, SVs):
 		

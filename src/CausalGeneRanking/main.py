@@ -223,7 +223,7 @@ for cancerType in geneRanking.scores:
 	cancerTypeScores = geneRanking.scores[cancerType]
 	
 	
-	perGeneScores = np.empty([len(causalGenes), 5], dtype="object") #store by gene name because it is easiest to match back later
+	perGeneScores = np.empty([len(causalGenes), 7], dtype="object") #store by gene name because it is easiest to match back later
 	
 	for row in range(0, cancerTypeScores.shape[0]):
 		gene = cancerTypeScores[row][0]
@@ -232,6 +232,8 @@ for cancerType in geneRanking.scores:
 		geneScore = cancerTypeScores[row,1]
 		eQTLGainScore = cancerTypeScores[row,2]
 		eQTLLossScore = cancerTypeScores[row,3]
+		enhancerGainScore = cancerTypeScores[row,4]
+		enhancerLossScore = cancerTypeScores[row,5]
 		
 		# tadScore = cancerTypeScores[row,3]
 		# interactionScore = cancerTypeScores[row,4]
@@ -240,13 +242,15 @@ for cancerType in geneRanking.scores:
 		perGeneScores[row][1] = geneScore
 		perGeneScores[row][2] = eQTLGainScore
 		perGeneScores[row][3] = eQTLLossScore
-		perGeneScores[row][4] = eQTLLossScore + eQTLGainScore #focus only on losses for now
+		perGeneScores[row][4] = enhancerGainScore
+		perGeneScores[row][5] = enhancerLossScore
+		perGeneScores[row][6] = enhancerGainScore #focus only on losses for now
 		# perGeneScores[row][2] = eQTLScore
 		# perGeneScores[row][3] = tadScore
 		# perGeneScores[row][4] = interactionScore
 
 	#Also rank the output by highest total score (recurrence)
-	perGeneScores = perGeneScores[perGeneScores[:,2].argsort()[::-1]]
+	perGeneScores = perGeneScores[perGeneScores[:,6].argsort()[::-1]]
 	
 	cancerTypeFolder = rankedGeneScoreDir + "/" + uuid + "/" + cancerType
 	if not os.path.exists(cancerTypeFolder):
