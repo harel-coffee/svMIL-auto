@@ -56,11 +56,6 @@ mode = settings.general['mode'] #Either SV or SNV, then the relevant functions f
 #permutationRound is parameter 5, only used when running on the HPC
 
 import pickle
-# 
-# filehandler = open("GenesAndNeighborhoods.pkl", 'rb')
-# causalGenes = pickle.load(filehandler)
-# filehandler.close()
-
 
 #1. Read and parse the causal genes
 
@@ -84,40 +79,6 @@ if mode == "SV":
 	svFile = settings.files['svFile']
 	svData = InputParser().getSVsFromFile(svFile, "all")
 	
-	
-	# 
-	# dels = 0
-	# inv = 0
-	# dup = 0
-	# trans = 0
-	# types = []
-	# patients = []
-	# for sv in svData:
-	# 	if sv[8].svType not in types:
-	# 		types.append(sv[8].svType)
-	# 	if sv[7] not in patients:
-	# 		patients.append(sv[7])
-	# 	if re.search("del", sv[8].svType, re.IGNORECASE) is not None:
-	# 		dels += 1
-	# 	if re.search("inv", sv[8].svType, re.IGNORECASE) is not None:
-	# 		inv += 1
-	# 	if re.search("dup", sv[8].svType, re.IGNORECASE) is not None:
-	# 		dup += 1
-	# 	if re.search("chr", sv[8].svType, re.IGNORECASE) is not None:
-	# 		trans += 1
-	# 	if re.search("trans", sv[8].svType, re.IGNORECASE) is not None:
-	# 		trans += 1
-	# 	if re.search("range", sv[8].svType, re.IGNORECASE) is not None:
-	# 		trans += 1
-	# print types
-	# print patients
-	# print "patients: ", len(patients)
-	# print "dels: ", dels
-	# print "inv: ", inv
-	# print "dup: ", dup
-	# print "trans: ", trans
-	# 
-	# exit()
 	
 
 if mode == "SNV":

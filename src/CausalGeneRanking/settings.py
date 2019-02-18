@@ -11,7 +11,8 @@ files = dict(
 	hiCInteractionsFile = '../../data/HiC/regions_regions_rel.csv', #All intrachromosomal regions that interact with each other
 	lncRNAFile = '../../data/lncRNAs/lncRNA.bed',
 	eQTLFile = '../../data/eQTLs/breast_eQTLs.txt',
-	enhancerFile = '../../data/enhancers/enhancer_gene_GM12878.txt'
+	enhancerFile = '../../data/enhancers/enhancer_gene_GM12878.txt',
+	tadFile = "../../data/tads/HMEC_Lieberman-raw_TADs.bed"
 )
 
 general = dict(
