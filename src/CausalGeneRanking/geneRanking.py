@@ -34,7 +34,7 @@ class GeneRanking:
 		sampleMap = dict() #samples and their index in the final scoring matrix. 
 		geneMap = dict() #genes adn their index
 		reverseGeneMap = dict() #also keep a map where we can search by index to later obtain back the gene from the matrix. 
-		
+		scores = dict()
 		#1. Get all unique cancer types and map the gene objects to the right cancer type
 		cancerTypes = np.unique(svData[:,6])
 		#2. Make the sample map
@@ -43,6 +43,7 @@ class GeneRanking:
 			sampleMap[samples[sampleInd]] = sampleInd
 		
 		#Make the gene maps
+		geneIndex = 0
 		for gene in genes:
 			if gene not in geneMap:
 				geneMap[gene] = geneIndex
