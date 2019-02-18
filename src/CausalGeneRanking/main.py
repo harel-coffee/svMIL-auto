@@ -186,7 +186,7 @@ if mode == "SV+SNV":
 
 #3. Do simple ranking of the genes and report the causal SVs
 print "Ranking the genes for the variants"
-geneRanking = GeneRanking(causalGenes[:,3], mode)
+geneRanking = GeneRanking(causalGenes[:,3], svData, mode)
 
 
 #Skip the ranking for now and instead do exploration
