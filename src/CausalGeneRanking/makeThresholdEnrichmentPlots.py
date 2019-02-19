@@ -124,6 +124,9 @@ def plotData(realScores, permutedScores, maxScore):
 		#Take mean and std of permuted scores and plot
 		#ax.plot(threshold, np.mean(permutedScores[threshold]), 'ko')
 		thrSum = np.sum(permutedScores[threshold])
+		print thrSum
+		print len(permutedScores[threshold])
+		
 		thrMean = 0
 		if thrSum > 0:
 			thrMean = np.mean(permutedScores[threshold])
