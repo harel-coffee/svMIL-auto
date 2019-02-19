@@ -16,12 +16,12 @@ from element import Element
 class DerivativeTADMaker:
 	
 	
-	def __init__(self, svData, genes, tadData, genome):
+	def __init__(self, svData, genes, tadData):
 		
-		self.linkSVEffectsToGenes(svData, genes, tadData, genome)
+		self.linkSVEffectsToGenes(svData, genes, tadData)
 		
 	
-	def linkSVEffectsToGenes(self, svData, genes, tadData, genome):
+	def linkSVEffectsToGenes(self, svData, genes, tadData):
 		
 		"""
 			For every SV, determine the type. If this is an inversion or duplication, we only need this particular SV.
@@ -38,7 +38,7 @@ class DerivativeTADMaker:
 			
 			typeMatch = re.search("inv", sv[8].svType, re.IGNORECASE)
 			if typeMatch is not None:
-				self.determineDerivativeTADs(sv, tadData, genome, "inv")
+				self.determineDerivativeTADs(sv, tadData, "inv")
 				invCount += 1
 				print "inversion count: ", invCount
 		
@@ -49,7 +49,7 @@ class DerivativeTADMaker:
 			typeMatch = re.search("dup", sv[8].svType, re.IGNORECASE)
 			if typeMatch is not None:
 				
-				self.determineDerivativeTADs(sv, tadData, genome, "dup")
+				self.determineDerivativeTADs(sv, tadData, "dup")
 				dupCount += 1
 				print "duplication count: ", dupCount
 				
@@ -62,7 +62,7 @@ class DerivativeTADMaker:
 		
 		
 		#3. Call the derivative TAD maker on this group of SVs and let it assign the gains/losses to the genes
-		self.determineDerivativeTADs([svGroups, tadsPerSV], tadData, genome, "trans")
+		self.determineDerivativeTADs([svGroups, tadsPerSV], tadData, "trans")
 		
 		
 		print "done making derivative TADs"
@@ -190,7 +190,7 @@ class DerivativeTADMaker:
 		return tadsPerSV
 		
 		
-	def determineDerivativeTADs(self, svData, tadData, genome, svType):	
+	def determineDerivativeTADs(self, svData, tadData, svType):	
 	
 		"""
 			Given an SV or a set of SVs, depending on the type of SVs, we compute how the affected region of the genome will look after the SV.

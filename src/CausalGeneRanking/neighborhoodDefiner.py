@@ -31,38 +31,35 @@ class NeighborhoodDefiner:
 		
 	"""
 
-	def __init__(self, genes, svData, snvData, mode, genome):
+	def __init__(self, genes, svData, snvData, mode):
 		"""
 			Initialize the neighborhood defining. This involves gathering all required data types, mapping these to TADs/genes, and associating the effects of SVs to genes. 
 
+			genes: (numpy array) array with the genes and their information. chr, start, end, geneObject
+			svData: (numpy array) array with the SVs and their information. chr1, s1, e1, chr2, s2, e2, cancerType, sampleName, svObject. Can be empty in SNV mode. 
+			snvData: (numpy array) array with the SNVs and their information. chr, start, end, None, None, None, sampleName, cancerType. Can be empty in SV mode (NOT WORKING ATM)
+			mode: (string) SV, SNV or SV+SNV.
 		"""
 
-		#1. Map genes to TADs
-		
+		#1. Get TADs from the TAD file, and then map TADs to genes (left/right TAD).
 		tadData = []
 		if settings.general['tads'] == True or settings.general['gainOfInteractions'] == True: #Gain of interactions is dependent on TADs
-			
-			
 			tadFile = settings.files['tadFile']
 			
 			print "Getting TADs"
 			tadData = InputParser().getTADsFromFile(tadFile)
-			
-			
+
 			if settings.general['shuffleTads'] == True:
-				genomicShuffler = GenomicShuffler()
 				#Shuffle the TADs. Assign random genomic positions to the TADs, but keep the same length. 
+				genomicShuffler = GenomicShuffler()
 				tadData = genomicShuffler.shuffleTADs(tadData)
 
-				
-			
 			print "mapping TADs to genes"
-			self.mapTADsToGenes(genes[:,3], tadData) #only pass the gene objects will suffice
+			self.mapTADsToGenes(genes[:,3], tadData)
 			
-		#2. Map genes to eQTLs
-			
-		eQTLData = [] #Keep empty by default
-		if settings.general['eQTLs'] == True:
+		#2. Get eQTLs from the eQTL file, and map eQTLs to genes. 
+		eQTLData = [] #Keep empty by default in case we do not use eQTLs
+		if settings.general['eQTLs'] == True: #Always check if eQTLs are enabled in the settings
 			#Save the processed data, only needs to be done once
 			
 			# import os.path
@@ -72,27 +69,20 @@ class NeighborhoodDefiner:
 			# 	#Load the eqtls
 			# 	with open('eQTLData.pkl', 'rb') as h:
 			# 		eQTLData = pkl.load(h)
-			# else:
-			print "re-creating eQTLs"
 			
 			eQTLFile = settings.files['eQTLFile']
-			
-			
-			#Better to move this to a generic function that can also deal with other types, part of the input parser
-			#These types of functions do not really belong here
 			print "getting eQTLs"
 			eQTLData = InputParser().getEQTLsFromFile(eQTLFile, genes[:,3], self)
-		
-			
+
 			with open('eQTLData.pkl', 'wb') as h:
 				pkl.dump(eQTLData, h, protocol=pkl.HIGHEST_PROTOCOL)
 		
-		#lncRNA data
+		#Read the lncRNA data. If we enable lncRNAs, for now we switch that for eQTLs. Will be fixed in a later version. 
 		if settings.general['lncRNA'] == True:
 			lncRNAData = InputParser().getLncRNAsFromFile(settings.files['lncRNAFile'])
 			eQTLData = lncRNAData 
 
-		#For now, we use eQTLs for gains of interactions rather than Hi-C.
+		#Map the elements to the TADs, and map the genes to the TADs. 
 		tadData = self.mapElementsToTads(eQTLData, tadData)
 		tadData = self.mapGenesToTads(genes, tadData) 
 		
@@ -123,6 +113,10 @@ class NeighborhoodDefiner:
 	def mapTADsToGenes(self, genes, tadData):
 		"""
 			Adds the left and right TAD to each gene object.
+			
+			TO DO:
+			- This function may be deprecated, I don't really use it anymore in the code but leave it here in case it is useful at a later point. 
+			
 		"""
 		print tadData
 		#For each gene, check which TADs are on the correct chromosome.
@@ -176,7 +170,11 @@ class NeighborhoodDefiner:
 		
 	def mapElementsToGenes(self, element, geneDict, geneSymbol):
 		"""
-			Map the right gene object to the eQTL object. 
+			Map the right gene object to the eQTL object.
+			
+			element (object): Element object to which we add the gene that the element regulates.
+			geneDict (dictionary): Dictionary with gene names and gene objects in the values.
+			geneSymbol (string): Name of the gene that we want to map the element to
 		
 		"""
 		
@@ -185,7 +183,10 @@ class NeighborhoodDefiner:
 		
 	def mapInteractionsToGenes(self, genes, interactionData):
 		"""
-			Take Hi-C interactions as input (see getInteractionsFromFile for the format) and link these to the causal genes. 
+			Take Hi-C interactions as input (see getInteractionsFromFile for the format) and link these to the causal genes.
+			
+			TO DO:
+			- Deprecated function, may be removed or re-added later. 
 		
 		"""
 		
@@ -202,9 +203,12 @@ class NeighborhoodDefiner:
 	
 	def mapGenesToTads(self, genes, tadData):
 		"""
-			For computing effects of disruptions on genes, it is convenient to know which genes are located in which TADs. 
-		"""
+			For computing effects of disruptions on genes, it is convenient to know which genes are located in which TADs.
+			Find out for every TAD which genes are located inside of these, and map them to the TADs. 
 		
+			genes: (numpy array) array with the genes and their information. chr, start, end, geneObject
+			tadData: (numpy array) array with the TADs and their information. chr, start, end, tadObject
+		"""
 		
 		previousChromosome = 0
 		for tad in tadData:
@@ -219,7 +223,6 @@ class NeighborhoodDefiner:
 			#So the start of the gene must be before the end of the TAD, and the end of the gene after the start of the TAD. 
 			startMatches = geneChrSubset[:,1] <= tad[2]
 			endMatches = geneChrSubset[:,2] >= tad[1]
-			
 			
 			allMatches = startMatches * endMatches
 			matchingGenes = geneChrSubset[allMatches,:]
@@ -240,15 +243,8 @@ class NeighborhoodDefiner:
 
 				startDistances[negativeElements] = float("inf") #skip the ones that are on the wrong side of the TAD boundary, so set them to inf and they will never be selected. 
 				if startDistances[negativeElements].shape[0] == startDistances.shape[0]: #but if everything is inf, we skip this TAD.
-					
 					continue
-				else:
-
-					nearestGeneInd = np.argmin(startDistances)
-					nearestGene = geneChrSubset[nearestGeneInd,:]
-					#tad[3].addGene(nearestGene[3]) #Check the performance with genes inside TADs only
-					
-				
+								
 				#Repeat but then for the other TAD end. 
 				endDistances = geneChrSubset[:,1] - tad[2]
 				#Exclude all negative elements
@@ -257,10 +253,6 @@ class NeighborhoodDefiner:
 				endDistances[negativeElements] = float("inf") #skip the ones that are on the wrong side of the TAD boundary, so set them to inf and they will never be selected. 
 				if endDistances[negativeElements].shape[0] == endDistances.shape[0]: #but if everything is inf, we skip this TAD.
 					continue
-				else:
-					nearestGeneInd = np.argmin(endDistances)
-					nearestGene = geneChrSubset[nearestGeneInd,:]
-					#tad[3].addGene(nearestGene[3])
 				
 			else:
 				tad[3].setGenes(matchingGenes[:,3]) #Add the eQTL objects to the TAD objects. 
@@ -272,19 +264,17 @@ class NeighborhoodDefiner:
 			Determine which eQTL interactions take place within which TAD.
 			eQTL interactions will be mapped to TAD objects.
 			
+			elementData: (numpy array) array with elements. chr, start, end, ElementObject
+			
 		"""
 		
-		#Go through each TAD and find which eQTLs are within the TAD.
-		#List these eQTLs as interaction objects in the tAD object.
-		
-		
+		#Go through each TAD and find which elements are within the TAD.
+		#List these elements as interaction objects in the tAD object.
 		previousChromosome = 0
 		for tad in tadData:
-			
-		
 			if tad[0] != previousChromosome:
 				previousChromosome = tad[0]
-				elementChrSubset = elementData[np.where(elementData[:,0] == tad[0])] #Get all eQTLs that are on this chromosome. All eQTLs are CIS, so intrachromosomal is fine for now
+				elementChrSubset = elementData[np.where(elementData[:,0] == tad[0])] #Get all elements that are on this chromosome. All eQTLs are CIS, so intrachromosomal is fine for now
 
 			#Find the eQTLs where the start and end of the eQTL are within the start and end of the TAD. 
 			startMatches = elementChrSubset[:,1] >= tad[1]
@@ -292,17 +282,14 @@ class NeighborhoodDefiner:
 			
 			allMatches = startMatches * endMatches
 			matchingElements = elementChrSubset[allMatches,:]
-			
-			
-			
-			
-			#Add these eQTLs to the TADs if any.
+
+			#Add these elements to the TADs if any.
 			if matchingElements.shape[0] < 1:
 				
 				continue
 			else:
 				
-				tad[3].addElements(matchingElements[:,3]) #Add the eQTL objects to the TAD objects.
+				tad[3].addElements(matchingElements[:,3]) #Add the elements objects to the TAD objects.
 			
 		return tadData		
 	
@@ -316,6 +303,9 @@ class NeighborhoodDefiner:
 			
 			
 			Returns the tadData, where the objects now have interactions mapped to them (but these are objects, so by reference this should not be necessary)
+			
+			TO DO:
+			-	deprecated function, may be removed later
 			
 		"""
 		print "Mapping interactions to TADs"
@@ -365,15 +355,19 @@ class NeighborhoodDefiner:
 						
 			#Add the interactions to this TAD			
 			tad[3].setInteractions(matchingRegionsInteractions)
-			
-		
-		
+
 		return tadData 
 		
 	def determineGainedInteractions(self, svData, tadData):
 		"""
-			- Function name??
-			- Split better into respective parts
+			Determine for each SV what the TADs are that the SV ends in on the left or the right. Determine which elements are gained as a result of a deletion and assign these to the genes in the respective TADs. 
+			
+			svData: (numpy array) array with the SVs and their information. chr1, s1, e1, chr2, s2, e2, cancerType, sampleName, svObject.
+			tadData: (numpy array) array with the TADs and their information. chr, start, end, tadObject
+			
+			TO DO:
+			- Move function to derivative TAD function
+			
 		"""
 		
 		#Loop through all SVs and see which ones have overlap with any TAD.
@@ -386,15 +380,11 @@ class NeighborhoodDefiner:
 			if typeMatch is None:
 				continue
 			
-			#print "sv: ", sv
-			
 			##Here we need to take translocations into account as well.
 			#If the SV is intrachromosomal, we should find the left TAD by chr1, s1 and the right TAD by e2.
 			#if the SV is interchromosomal, we should find the left TAD by chr1, s1 and the right TAD by chr2 and e2. 
 			#We may slightly overshoot TADs if there is a difference in the start and end coordinates, but this may do for now.
-			
-			
-			
+
 			if sv[0] == sv[3]: #intrachromosomal
 				leftTadChr = sv[0]
 				svStart = sv[1] #s1
@@ -469,7 +459,7 @@ class NeighborhoodDefiner:
 		return 0
 		
 		
-	def mapSVsToNeighborhood(self, genes, svData, tadData, genome):
+	def mapSVsToNeighborhood(self, genes, svData, tadData):
 		"""
 			Take as input gene objects with the neighborhood pre-set, and search through the SVs to find which SVs overlap the genes, TADs and eQTLs in the gene neighborhood
 		
@@ -479,11 +469,16 @@ class NeighborhoodDefiner:
 			!!!!!! This function will need to be properly split into multiple functions for the different data types.
 			TODO:
 			- Split into multiple functions
+			Move to derivative TAD maker for deletions as well. Here we now only look at losses, and gains are in a separate function. This should be moved to the derivative TAD class and do everything for all SVs at once. 
 			- Move the gained interactions outside of the left/right TAD check. See comments below. 
+		
+			genes: (numpy array) array with the genes and their information. chr, start, end, geneObject
+			svData: (numpy array) array with the SVs and their information. chr1, s1, e1, chr2, s2, e2, cancerType, sampleName, svObject.
+			tadData: (numpy array) array with the TADs and their information. chr, start, end, tadObject
 		
 		"""
 		
-		DerivativeTADMaker(svData, genes, tadData, genome)
+		DerivativeTADMaker(svData, genes, tadData)
 		
 		
 		#First map the SVs to TADs to see if we can infer gained interactions
@@ -636,6 +631,7 @@ class NeighborhoodDefiner:
 			TODO:
 			- update the documentation in this code
 			- Split into functions, re-use code for the SVs
+			- SNVs are currently not functional, this entire function needs to be re-written when we add the SNVs again at a later stage
 		
 		"""
 		import time
