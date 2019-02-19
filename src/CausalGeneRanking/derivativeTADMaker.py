@@ -1,7 +1,14 @@
 """
-	The goal of this script is to take a set of SVs as input, and then for each of these determine what the derivate TADs are on the part of the genome that they disrupt.
+	The goal of this class is to take a set of SVs as input, and then for each of these determine what the derivate TADs are on the part of the genome that they disrupt.
+	In the derivative TADs, we re-assign gains and losses of genomic elements to the genes that are affected when the derivative TADs are made. 
 	
-	For duplications, inversions, and translocations. 
+	For duplications, inversions, and (intra & interchromosomal) translocations.
+	
+	TO DO:
+	- Add deletions
+	- Make sure that the effects of SVs are not counted more than once. Currently, since translocations and e.g. inversions are considered separately, we do not consider effects caused by e.g. first a translocation, and then an inversion
+	that will un-do the gains/losses of the translocation.
+	- finish documentation
 
 
 """
@@ -28,14 +35,19 @@ class DerivativeTADMaker:
 			If the SV is a translocation, we collect a set of SVs that 'work together'. Based on a window around their start/end positions.
 			For the collected SV or SVs, we first make derivative TADs. 
 			Then after these derivative TADs have been made, we go through the genes that are present within these new TADs, and add the newly gained or remove newly lost genomic elements for these genes.
-			The updated genes are returned and will later be used to determine channels of gains/loss of genomic elements. 
+			
+			genes: (numpy array) array with the genes and their information. chr, start, end, geneObject
+			svData: (numpy array) array with the SVs and their information. chr1, s1, e1, chr2, s2, e2, cancerType, sampleName, svObject.
+			tadData: (numpy array) array with the TADs and their information. chr, start, end, tadObject
+			
+			
 		"""
 		print "Linking SV effects to genes"
 		invCount = 0
 		dupCount = 0
 		
+		#Inversions
 		for sv in svData:
-			
 			typeMatch = re.search("inv", sv[8].svType, re.IGNORECASE)
 			if typeMatch is not None:
 				self.determineDerivativeTADs(sv, tadData, "inv")
@@ -43,9 +55,8 @@ class DerivativeTADMaker:
 				print "inversion count: ", invCount
 		
 		
-		
+		#Duplications
 		for sv in svData:
-			
 			typeMatch = re.search("dup", sv[8].svType, re.IGNORECASE)
 			if typeMatch is not None:
 				
@@ -66,17 +77,21 @@ class DerivativeTADMaker:
 		
 		
 		print "done making derivative TADs"
-		
-		return 0
 	
 	def defineGroupsOfTranslocations(self, tadsPerSV):
 		"""
-			Loop through the SVs and determine which SVs form a 'chain' and affect the same TADs
+			Loop through the SVs and determine which SVs form a 'chain' and affect the same TADs.
+			For every SV, we first get the TAD that it ends in and that the next SV in the group starts in. If this is true, we group them together on the 'chain'. 
+			
+			TO DO:
+			- Make sure that the SVs affecting only 1 position are also captured
+			
+			tadsPerSV: (dictionary) the keys of this dictionary are an SV object, the values are lists with the TADs that are affected by this SV. Output from matchTADsWithTranslocations()
+			
+			return
+			svGroups: (dictionary) the keys are the first SV object that is part of the chain of SVs. The values are the SV objects that are part of this group. 
 		"""
-		
-		### TO DO:
-		# - Make sure that the SVs affecting only 1 position are also captured
-		
+
 		svGroups = dict()
 		tadsPerSVKeys = tadsPerSV.keys()
 		for svInd in range(0, len(tadsPerSV)):
@@ -96,7 +111,7 @@ class DerivativeTADMaker:
 				if sv1.sampleName != sv2.sampleName:
 					continue
 				
-				#If the 2nd SV starts in the same TAD as the 1st ends in, and these coordinates are withi 100 bp of each other, cluster them together
+				#If the 2nd SV starts in the same TAD as the 1st ends in, cluster them together
 				#Here we then assume that the first SV in the list is actually the smallest SV on the smaller chromosme (the data is sorted so this should work fine)
 				
 				#Make sure that neither of the SVs starts and ends entirely within the same TAD.
@@ -109,12 +124,10 @@ class DerivativeTADMaker:
 				if firstTad == secondTad:
 					
 					if sv1 not in uniqueSVs:
-						#print "adding SV: ", sv1, sv1.chr1, sv1.s1, sv1.chr2, sv1.e2, sv1.sampleName
 						currentGroup.append([sv1.s1, sv1])
 						currentGroupReversed.append(sv1)
 						uniqueSVs.append(sv1)
 					if sv2 not in uniqueSVs:
-						#print "adding SV: ", sv2, sv2.chr1, sv2.s1, sv2.chr2, sv2.e2, sv2.sampleName
 						currentGroup.append([sv2.s1, sv2])
 						currentGroupReversed.append(sv2)
 						uniqueSVs.append(sv2)
@@ -184,9 +197,7 @@ class DerivativeTADMaker:
 					continue
 			
 				tadsPerSV[sv[8]] = [matchingTadStart, matchingTadEnd]
-				
-				
-		
+	
 		return tadsPerSV
 		
 		

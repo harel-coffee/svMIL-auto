@@ -72,7 +72,7 @@ class OutputWriter:
 				perGeneScores[row][3] = eQTLLossScore
 				perGeneScores[row][4] = enhancerGainScore
 				perGeneScores[row][5] = enhancerLossScore
-				perGeneScores[row][6] = enhancerGainScore #data type to rank by. 
+				perGeneScores[row][6] = enhancerGainScore + enhancerLossScore #data type to rank by. 
 
 		
 			#Also rank the output by highest total score (recurrence)
