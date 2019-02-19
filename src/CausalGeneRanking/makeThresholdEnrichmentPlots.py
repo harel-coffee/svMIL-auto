@@ -17,6 +17,7 @@ realScoreCountsSNVDEGs = dict()
 realScoreCountsAll = dict()
 maxScore = 0
 geneScoreFiles = [f for f in listdir(permutationDataFolder) if isfile(join(permutationDataFolder, f))]
+print geneScoreFiles
 for geneScoreFile in geneScoreFiles:
 	
 	if geneScoreFile == 'realSVs_geneScores.txt':
@@ -115,9 +116,6 @@ for geneScoreFile in geneScoreFiles:
 #The y axis is the number in the overlap, the x axis the threshold
 #All intersection values are individual points in the plot
 def plotData(realScores, permutedScores, maxScore):
-	print realScores
-	print permutedScores
-	print maxScore
 	plt.clf()
 	ax = plt.subplot(1,1,1)
 	for threshold in range(0, maxScore):
@@ -127,9 +125,6 @@ def plotData(realScores, permutedScores, maxScore):
 		#Take mean and std of permuted scores and plot
 		#ax.plot(threshold, np.mean(permutedScores[threshold]), 'ko')
 		thrSum = np.sum(permutedScores[threshold])
-		print thrSum
-		print len(permutedScores[threshold])
-		
 		
 		thrMean = 0
 		if thrSum > 0:
