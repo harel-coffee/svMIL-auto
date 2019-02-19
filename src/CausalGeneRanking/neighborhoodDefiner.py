@@ -6,7 +6,7 @@ import re
 from tad import TAD
 from sv import SV
 from gene import Gene
-from eQTL import EQTL
+from element import Element
 from interaction import Interaction
 from snv import SNV
 from derivativeTADMaker import DerivativeTADMaker
@@ -18,19 +18,24 @@ import settings
 
 class NeighborhoodDefiner:
 	"""
-		Class responsible for defining the neighborhood of causal genes.
+		Class responsible for defining the neighborhood of genes.
 		
 		Currently, the neighborhood consists of:
 		
+		- All TADs in the genome
 		- nearest TADs on the left and right of the gene
-		- all eQTLs mapped to the gene (and if these are enhancers or not)
-		- Hi-C interactions. These are mapped to the TAD that these are present in. We use this to determine which interactions are potentially gained. 
+		- all eQTLs mapped to the gene and TADs (can be switched for lncRNAs)
+		- all enhancers mapped to the gene and TADs
 		- SVs (and SNVs) overlapping either the gene directly, or other elements in the neighborhood
-	
+		- Genes, with gains and losses of specific elements annotated as a result of SVs
+		
 	"""
 
-	
 	def __init__(self, genes, svData, snvData, mode, genome):
+		"""
+			Initialize the neighborhood defining. This involves gathering all required data types, mapping these to TADs/genes, and associating the effects of SVs to genes. 
+
+		"""
 
 		#1. Map genes to TADs
 		
@@ -167,11 +172,6 @@ class NeighborhoodDefiner:
 				
 			else:
 				gene.setRightTAD(None)
-			# 	
-			# if gene.name == "ARID1A":
-			# 	print nearestRightTAD.start, nearestRightTAD.end
-			# 	print nearestLeftTAD.start, nearestLeftTAD.end
-			# 	exit()
 
 		
 	def mapElementsToGenes(self, element, geneDict, geneSymbol):
@@ -437,7 +437,8 @@ class NeighborhoodDefiner:
 				
 				if overlappingTads.shape[0] < 1:
 					continue
-				
+			else:
+				continue
 			
 			#For the overlapping TADs, we can get the TAD on the right and the TAD on the left.
 			#The SV could end on the boundary and then the desired result is not in our match set, so we skip these for now.
@@ -591,23 +592,23 @@ class NeighborhoodDefiner:
 			
 			geneElements = gene.elements
 			
-			for eQTL in geneElements: #only if the gene has eQTLs
+			for element in geneElements: #only if the gene has eQTLs
 				
-				startMatches = eQTL.start <= svSubset[:,2]
-				endMatches = eQTL.end >= svSubset[:,1]
+				startMatches = element.start <= svSubset[:,2]
+				endMatches = element.end >= svSubset[:,1]
 				
 				allMatches = startMatches * endMatches
 
-				svsOverlappingEQTL = svSubset[allMatches]
+				svsOverlappingElement = svSubset[allMatches]
 				
 				#Filter the matches further on if these are within the gene's TAD boundary. Position of eQTL > left TAD, < right TAD
 				
-				if gene.leftTAD == None or gene.rightTAD == None or len(svsOverlappingEQTL) == 0: #if there are no TAD boundaries, we cannot check losses
+				if gene.leftTAD == None or gene.rightTAD == None or len(svsOverlappingElement) == 0: #if there are no TAD boundaries, we cannot check losses
 					continue
 				
 				#Assume that start and end are so small for eQTLs that usig only the start is enough
-				startMatches = eQTL.start >= gene.leftTAD.end
-				endMatches = eQTL.start <= gene.rightTAD.start
+				startMatches = element.start >= gene.leftTAD.end
+				endMatches = element.start <= gene.rightTAD.start
 
 				#if this eQTL is within the TAD boundaries of the gene, count the samples in which it is disrupted by an SV. 
 				match = startMatches * endMatches
@@ -616,47 +617,18 @@ class NeighborhoodDefiner:
 				if match == True:
 					
 					#Make sure that the SVs that overlap the gene as well are not counted
-					for sv in svsOverlappingEQTL:
+					for sv in svsOverlappingElement:
 						for sv2 in svsOverlappingGenes:
 							#if sv not in svsOverlappingGenes:
 							if sv[0] != sv2[0] and sv[1] != sv2[1] and sv[5] != sv2[5]:
-								gene.addLostElement(eQTL, sv[6])
+								gene.addLostElement(element, sv[6])
 					
-					# 
-					# samples = np.unique(svsOverlappingEQTL[:,6])
-					# 
-					# #Add the eQTL to the list of lost eQTLs for this gene
-					# ##Temporarily turned this off for testing without deletions
-					# for sample in samples:
-					# 	# if gene.name == "EPS15":
-					# 	# 	print "gene: ", gene.name, " loses eQTL in sample ", sample
-					# 	# 	print gene.leftTAD.start, gene.leftTAD.end
-					# 	# 	print gene.rightTAD.start, gene.rightTAD.end
-					# 	# 	print "eQTL: ", eQTL.start
-					# 	# exit()	
-					# 	gene.addLostEQTL(eQTL, sample)
-				
 				#If there is anything in svsWithinTAD, then we can count ths eQTL as a lost eQTL
 				
-				eQTL.setSVs(svsOverlappingEQTL)
-				
-				
+				element.setSVs(svsOverlappingElement)
 			
-			#Check which SVs overlap with the interactions.
-			# for interaction in gene.interactions:
-			# 	
-			# 	startMatches = interaction.start1 <= svSubset[:,2]
-			# 	endMatches = interaction.end1 >= svSubset[:,1]
-			# 	
-			# 	allMatches = startMatches * endMatches
-			# 	
-			# 	svsOverlappingInteraction = svSubset[allMatches]
-			# 	
-			# 	interaction.setSVs(svsOverlappingInteraction)
 		
-		
-		
-	def mapSNVsToNeighborhood(self, genes, snvData, eQTLData):
+	def mapSNVsToNeighborhood(self, genes, snvData, elementData):
 		"""
 			Same as the function for mapping SVs to the neighborhood, but then for SNVs.
 			!!!!!  Will also need to be properly split into multiple functions, many pieces of code can be re-used. 

@@ -4,6 +4,7 @@
 	- Read SV files
 	- Read SNV files
 	- Read gene files
+	- Read all the individual data types (e.g. eQTLs, enhancers, Hi-C data)
 	
 	Each of these input files will require a specific format with at least some required fields. 
 
@@ -12,10 +13,11 @@ from gene import Gene
 from sv import SV
 from snv import SNV
 from tad import TAD
-from eQTL import EQTL
+from element import Element
 import numpy as np
 from random import randint
 import re
+import settings
 
 class InputParser:
 	
@@ -38,7 +40,7 @@ class InputParser:
 					lineCount += 1
 					continue
 				
-				#Now extract the chromosome, start and end (there are multiple)
+				#Now extract the chromosome, start and end (there are multiple, 2 for an SV)
 				chr1Index = header.index("chr1")
 				s1Index = header.index("s1")
 				e1Index = header.index("e1")
@@ -60,15 +62,9 @@ class InputParser:
 					cancerType = "breast"
 					
 				#Skip anything that is not breast cancer for now. From here is the easiest way, saves time in processing as well
-				if cancerType != "BRCA":
+				if cancerType != settings.general['cancerType']:
 					continue
 				
-				# if cancerType != "prostate cancer":
-				# 	continue
-				
-				# if cancerType != "ovarian cancer":
-				# 	continue
-				# 
 				svTypeIndex = header.index("sv_type")
 				svType = splitLine[svTypeIndex]
 				
@@ -355,8 +351,8 @@ class InputParser:
 					chrName = "chr" + splitLine[0]
 				else:
 					chrName = splitLine[0]
-				eQTLObject = EQTL(chrName, int(splitLine[1]), int(splitLine[2])) #chr, start, end
-				
+				eQTLObject = Element(chrName, int(splitLine[1]), int(splitLine[2])) #chr, start, end
+				eQTLObject.type = 'eQTL' #set the correct type
 				#The mapping information is in the file, so we can already do it here
 				#This function belongs more to the neighborhood definer, so we use the function from there. 
 				neighborhoodDefiner.mapElementsToGenes(eQTLObject, geneDict, splitLine[3])
@@ -436,14 +432,14 @@ class InputParser:
 					continue
 				
 				
-				eQTLObject = EQTL(chrName, start, end)
-				eQTLObject.type = "enhancer"
+				elementObject = Element(chrName, start, end)
+				elementObject.type = "enhancer"
 				
 				#The mapping information is in the file, so we can already do it here
-				neighborhoodDefiner.mapElementsToGenes(eQTLObject, geneDict, geneName)
+				neighborhoodDefiner.mapElementsToGenes(elementObject, geneDict, geneName)
 						
 				
-				enhancers.append([chrName, start, end, eQTLObject, "enhancer"]) #Keep the eQTL information raw as well for quick overlapping. 
+				enhancers.append([chrName, start, end, elementObject, "enhancer"]) #Keep the eQTL information raw as well for quick overlapping. 
 		
 		
 		return np.array(enhancers, dtype='object')

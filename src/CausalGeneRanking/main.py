@@ -1,21 +1,19 @@
 """
 	Set of scripts intended to do ranking of (causal) genes based on their neighborhood and the influence that SVs have in this neighborhood. 
 
-	The idea is to look at all known causal genes. The neighborhood may consist of eQTLs that have an effect on this gene, or TADs directly neighboring the gene.
-	If we annotate causal genes with these effects, then we can check for potential effects if anything in the neighborhood is affected by SVs.
-	Using some magical statistics, we can then make a prediction on how much more likely the effects on the neighborhood are to be disruptive to the causal genes than expected by random chance.
-	Later, this format can be extended to non-causal genes as well. 
-
+	The idea is to look at all genes. The neighborhood may consist of eQTLs that have an effect on this gene, or TADs directly neighboring the gene.
+	If we annotate causal genes with these effects, then we can check for potential effects on the gene (expression) if anything in the neighborhood is affected by SVs.
+	Using some magical statistics, we can then make a prediction on how much more likely the effects on the neighborhood are to be disruptive to the genes than expected by random chance.
 
 	The setup of these scripts will initally be (it will not be too pretty and perfect at first):
 	
 	- The main script where the input (genes) are parsed and the relevant scripts are called
 	- The neighborhoodDefiner, which takes SNVs or SVs as input (or both) and links these to the genes and elements in the neighborhood of that gene that these variants disrupt
 	- The geneRanking script, which takes annotated neighborhoods of genes as input, and then computes a score for each layer (i.e. genes, TADs, eQTLs)
-	- The above 3 scripts need to be repeated 1000 times (or more) with permutations to compute the scores for genes when the variants are randomly distributed
+	- The above 3 scripts need to be repeated 100 times (or more) with permutations to compute the scores for genes when the variants are randomly distributed
 	
-	To run these scripts with permutations, the starting point is runRankingWithPermutations.sh. It does not require any parameters (set the file locations in settings.py), and will run 1 normal scoring run and 1000 permutations on the HPC.
-	Then when all permutations are completed, you will need to run computePValuesPerGene.py. This script reads a given output directory containing all gene scores for the normal run and 1000 permutation runs. It will compute
+	To run these scripts with permutations, the starting point is runRankingWithPermutations.sh. It does not require any parameters (set the file locations in settings.py), and will run 1 normal scoring run and 100 permutations on the HPC.
+	Then when all permutations are completed, you will need to run computePValuesPerGene.py. This script reads a given output directory containing all gene scores for the normal run and 100 permutation runs. It will compute
 	a p-value for each layer and rank the causal genes by which have significant p-values in the most layers.
 	
 	To run without permutations, this script main.py can be run as: main.py "runName" N, so for example "main.py ABC N" will run the code once without permutations, and write output to a folder named ABC in the
@@ -34,13 +32,14 @@ import numpy as np
 import random
 import pickle as pkl
 import os
-
+import re
 
 from neighborhoodDefiner import NeighborhoodDefiner
 from geneRanking import GeneRanking
 from inputParser import InputParser
 from genomicShuffler import GenomicShuffler
 from channelVisualizer import ChannelVisualizer
+from outputWriter import OutputWriter
 from genome import Genome
 import settings
 
@@ -50,43 +49,29 @@ import settings
 
 
 #0. Collect all the relevant parameters here for clarity
-uuid = sys.argv[1] #This uuid will normally be provided by the sh script when running in parallel
+uuid = sys.argv[1] #This uuid will normally be provided by the sh script when running in parallel. It is the folder name that will be created in RankedGenes, and where the output will be written to. 
 permutationYN = sys.argv[2] #True or False depending on if we want to permute or not
-mode = settings.general['mode'] #Either SV or SNV, then the relevant functions for this data type will be called. For now, a combination of data types is not yet implemented. 
+mode = settings.general['mode'] #Either SV or SNV, then the relevant functions for this data type will be called.
 #permutationRound is parameter 5, only used when running on the HPC
 
-import pickle
-
-#1. Read and parse the causal genes
-
+#1. Read and parse the causal genes and the nonCausal genes. For now, keep them separate to test on causal/non-causal genes separately
 causalGenes = InputParser().readCausalGeneFile(settings.files['causalGenesFile'])
 nonCausalGenes = InputParser().readNonCausalGeneFile(settings.files['nonCausalGenesFile'], causalGenes) #In the same format as the causal genes.
 
-
-uniqueCancerTypes = []
-
-#Combine the genes for now
+#Combine the genes into one set. 
 causalGenes = np.concatenate((causalGenes, nonCausalGenes), axis=0)
 
-#The combination of SVs and SNVs will come afterwards, because then we will need to map the names of the cancer types correctly. 
-
 #2. Read the SVs or SNVs depending on the mode.
-import re
-
 variantData = []
 if mode == "SV":
 	print "Reading SV data"
 	svFile = settings.files['svFile']
 	svData = InputParser().getSVsFromFile(svFile, "all")
-	
-	
 
 if mode == "SNV":
 	print "Reading SNV data"
 	snvFile = settings.files['snvFile']
 	snvData = InputParser().getSNVsFromFile(snvFile)
-	
-	
 	
 #This can be done better with an array of parameters,but this is quick and dirty for now	
 if mode == "SV+SNV":
@@ -98,8 +83,7 @@ if mode == "SV+SNV":
 	snvData = InputParser().getSNVsFromFile(snvFile)
 	
 	
-#3. If this is a permutation run, we wish to shuffle these SVs.
- #Check if this run is a permutation or not. The output file name depends on this
+#3. If this is a permutation run, we wish to shuffle these SVs or SNVs.
 if permutationYN == "True":
 	print "Shuffling variants"
 	genomicShuffler = GenomicShuffler()
@@ -112,28 +96,9 @@ if permutationYN == "True":
 		svData = genomicShuffler.shuffleSVs(svData)
 		snvData = genomicShuffler.shuffleSNVs(snvData)
 
-
-
-#Number of patients
-#print len(np.unique(svData[:,7]))
-# 
-# import os.path
-# 
-# if os.path.exists('genome.pkl'):
-# 	print "loading genome bins from pkl"
-# 	
-# 	with open('genome.pkl', 'rb') as h:
-# 		genome = pkl.load(h)
-# else:
-# 	genome = Genome() #pkl this object
-# 
-# 	with open('genome.pkl', 'wb') as h:
-# 		pkl.dump(genome, h, protocol=pkl.HIGHEST_PROTOCOL)
-
-genome = Genome()
-
-		
-#2. Get the neighborhood for these genes
+#Define the genome, to fill up regions where there are no TADs in the data (is now deprecated, to be removed in later versions)
+genome = Genome()		
+#2. Get the neighborhood for these genes based on the SVs or SNVs
 if mode == "SV":
 	print "Defining the neighborhood for the causal genes and the SVs"
 	NeighborhoodDefiner(causalGenes, svData, None, mode, genome) #Provide the mode to ensure that the right variant type is used (different positions used in annotation)
@@ -145,84 +110,28 @@ if mode == "SV+SNV":
 	NeighborhoodDefiner(causalGenes, svData, snvData, mode, genome) #Provide the mode to ensure that the right variant type is used (different positions used in annotation)
 	
 
-#3. Do simple ranking of the genes and report the causal SVs
+#3. Do ranking of the genes and report the causal SVs
 print "Ranking the genes for the variants"
 geneRanking = GeneRanking(causalGenes[:,3], svData, mode)
 
-
-#Skip the ranking for now and instead do exploration
-
-#Save the causal genes up until here and load them for faster development
+#Save the causal genes up until here and load them for faster development of the deep learning part
 # import pickle
 # 
 # filehandler = open("GenesAndNeighborhoods.pkl", 'wb')
 # pickle.dump(causalGenes, filehandler)
 # filehandler.close()
-# exit()
-# 
+#
+# #For using deep learning, call the channel visualizer that makes channels for the disruptions and visualizes that. 
 # ChannelVisualizer(causalGenes[:,3], mode, genome)
 # 
 # exit()
 
 
-#Output the ranking scores to a file (should probably also be its own class or at least a function)
+#Output the ranking scores to a file. 
+permutationRound = None
+if permutationYN == "True":
+	permutationRound = sys.argv[3]
 
-rankedGeneScoreDir = "./RankedGenes/" #This should be in the settings later
-if not os.path.exists(rankedGeneScoreDir):
-    os.makedirs(rankedGeneScoreDir)
-if not os.path.exists(rankedGeneScoreDir + "/" + uuid):
-	os.makedirs(rankedGeneScoreDir + "/" + uuid) #this should be unique, so I now avoid checking if the directory exists. Could later be a thing from the sh file 
+OutputWriter().writeOutput(geneRanking, causalGenes, uuid, permutationYN, permutationRound)
 
-
-#Obtain a numpy matrix with the scores per gene
-#Format: a file per cancer type.
-#Each row corresponds to a gene. Each gene will have a score for the eQTLs, TADs and Gene itself.
-
-for cancerType in geneRanking.scores:
 	
-	
-	cancerTypeScores = geneRanking.scores[cancerType]
-	
-	
-	perGeneScores = np.empty([len(causalGenes), 7], dtype="object") #store by gene name because it is easiest to match back later
-	
-	for row in range(0, cancerTypeScores.shape[0]):
-		gene = cancerTypeScores[row][0]
-		geneName = gene.name
-		
-		geneScore = cancerTypeScores[row,1]
-		eQTLGainScore = cancerTypeScores[row,2]
-		eQTLLossScore = cancerTypeScores[row,3]
-		enhancerGainScore = cancerTypeScores[row,4]
-		enhancerLossScore = cancerTypeScores[row,5]
-		
-		# tadScore = cancerTypeScores[row,3]
-		# interactionScore = cancerTypeScores[row,4]
-		
-		perGeneScores[row][0] = geneName
-		perGeneScores[row][1] = geneScore
-		perGeneScores[row][2] = eQTLGainScore
-		perGeneScores[row][3] = eQTLLossScore
-		perGeneScores[row][4] = enhancerGainScore
-		perGeneScores[row][5] = enhancerLossScore
-		perGeneScores[row][6] = enhancerGainScore #focus only on losses for now
-		# perGeneScores[row][2] = eQTLScore
-		# perGeneScores[row][3] = tadScore
-		# perGeneScores[row][4] = interactionScore
-
-	#Also rank the output by highest total score (recurrence)
-	perGeneScores = perGeneScores[perGeneScores[:,6].argsort()[::-1]]
-	
-	cancerTypeFolder = rankedGeneScoreDir + "/" + uuid + "/" + cancerType
-	if not os.path.exists(cancerTypeFolder):
-		os.makedirs(cancerTypeFolder)
-
-	if permutationYN == "True" or settings.general['shuffleTads'] == True:
-		permutationRound = sys.argv[3]	
-		outfileName = cancerTypeFolder + "/permutedSVs_" + permutationRound + "_geneScores.txt"
-	else:
-		outfileName = cancerTypeFolder + "/realSVs_geneScores.txt"
-		
-		
-	#Write to numpy output file	
-	np.savetxt(outfileName, perGeneScores, delimiter='\t', fmt='%s')
