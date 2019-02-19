@@ -77,11 +77,7 @@ for geneScoreFile in geneScoreFiles:
 		
 		#Go through the same thresholds
 		for row in range(0, geneScores.shape[0]):
-			print row
-			exit()
 			
-			if len(geneScores[row]) > 8: #if there is something wird in the file
-				continue
 			
 			threshold = int(geneScores[row][0])
 			if threshold >= maxScore:
