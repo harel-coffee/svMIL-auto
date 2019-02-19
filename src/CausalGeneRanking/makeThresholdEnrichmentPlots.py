@@ -129,7 +129,7 @@ def plotData(realScores, permutedScores, maxScore):
 			thrMean = np.mean(permutedScores[threshold])
 			
 		ax.errorbar(threshold, thrMean, np.std(permutedScores[threshold]), marker='o', mfc='black', mec='black')
-
+print "plotting data"
 plotData(realScoreCountsCosmic, permutedScoreCountsCosmic, maxScore)
 plt.savefig("cosmic.svg")
 
@@ -164,7 +164,7 @@ def plotThresholdEnrichment(realScores, permutedScores, maxScore):
 
 # plotThresholdEnrichment(realScoreCountsCosmic, permutedScoreCountsCosmic, 3)
 # plt.savefig("cosmic_enrichtment.svg")
-
+print "plot enrichment"
 plotThresholdEnrichment(realScoreCountsCosmic, permutedScoreCountsCosmic, maxScore)
 plt.savefig("cosmic_enrichment.svg")
 
