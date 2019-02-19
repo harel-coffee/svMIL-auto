@@ -123,7 +123,12 @@ def plotData(realScores, permutedScores, maxScore):
 		
 		#Take mean and std of permuted scores and plot
 		#ax.plot(threshold, np.mean(permutedScores[threshold]), 'ko')
-		ax.errorbar(threshold, np.mean(permutedScores[threshold]), np.std(permutedScores[threshold]), marker='o', mfc='black', mec='black')
+		thrSum = np.sum(permutedScores[threshold])
+		thrMean = 0
+		if thrSum > 0:
+			thrMean = np.mean(permutedScores[threshold])
+			
+		ax.errorbar(threshold, thrMean, np.std(permutedScores[threshold]), marker='o', mfc='black', mec='black')
 
 plotData(realScoreCountsCosmic, permutedScoreCountsCosmic, maxScore)
 plt.savefig("cosmic.svg")
