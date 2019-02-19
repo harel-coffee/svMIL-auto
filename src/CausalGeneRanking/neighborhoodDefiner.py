@@ -98,13 +98,13 @@ class NeighborhoodDefiner:
 		#3. Map SVs to all neighborhood elements
 		if mode == "SV":
 			print "Mapping SVs to the neighborhood"
-			self.mapSVsToNeighborhood(genes, svData, tadData, genome)
+			self.mapSVsToNeighborhood(genes, svData, tadData)
 		if mode == "SNV":
 			print "Mapping SNVs to the neighborhood"
 			self.mapSNVsToNeighborhood(genes, snvData, eQTLData)
 		if mode == "SV+SNV": #in this case map both
 			print "Mapping SVs to the neighborhood"
-			self.mapSVsToNeighborhood(genes, svData, tadData, genome)
+			self.mapSVsToNeighborhood(genes, svData, tadData)
 			
 			print "Mapping SNVs to the neighborhood"
 			self.mapSNVsToNeighborhood(genes, snvData, eQTLData)
