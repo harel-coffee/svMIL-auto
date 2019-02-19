@@ -24,7 +24,7 @@ geneScoreFiles = [f for f in listdir(permutationDataFolder) if isfile(join(permu
 
 
 rankedGenesFile = geneScoreFiles[rankedGenesFileNum]
-
+print rankedGenesFile
 #1. Get the ranked genes 
 #Read the ranking file
 geneScores = dict()
@@ -36,7 +36,7 @@ with open(permutationDataFolder + "/" + rankedGenesFile, 'r') as rankF:
 		splitLine = line.split()
 		
 		geneName = splitLine[0]
-		geneScore = int(float(splitLine[4]))
+		geneScore = int(float(splitLine[1]))
 		if geneScore > maxScore: 
 			maxScore = geneScore
 		
@@ -98,10 +98,12 @@ def computeCategoryMatches(realGeneScores, threshold):
 	cosmicGenesNeg = []
 	snvGenesPos = []
 	snvGenesNeg = []
+	allGenes = []
 	
 	for gene in realGeneScores:
 		
-		if float(gene[4]) > threshold:
+		if float(gene[1]) > threshold:
+			allGenes.append(gene[0])
 			if gene[0] in degGenes:
 				degGenesPos.append(gene[0])
 			if gene[0] in cosmicGenes:
@@ -128,7 +130,7 @@ def computeCategoryMatches(realGeneScores, threshold):
 	# print "Number of genes that have SNV and are DEG: ", len(snvDEGsIntersect)
 
 	#Return in the format of the venn diagram method
-	return len(cosmicGenesPos), len(snvGenesPos), len(cosmicSNVsIntersect), len(degGenesPos), len(cosmicDEGsIntersect), len(snvDEGsIntersect), len(allCriteriaIntersect)
+	return len(cosmicGenesPos), len(snvGenesPos), len(cosmicSNVsIntersect), len(degGenesPos), len(cosmicDEGsIntersect), len(snvDEGsIntersect), len(allCriteriaIntersect), len(allGenes)
 
 #Get the gene scores from the file without permutations
 realGeneScores = np.loadtxt(permutationDataFolder + "/" + rankedGenesFile, dtype="object")
@@ -152,7 +154,7 @@ else:
 	outFile = "ThresholdEnrichment/" + rankedGenesFile
 with open(outFile, 'w') as outF:
 	for threshold in range(0, maxScore):
-		[cosmic, snvs, cosmicSNVs, degs, cosmicDEGs, snvDEGs, allCriteria] = computeCategoryMatches(realGeneScores, threshold)
+		[cosmic, snvs, cosmicSNVs, degs, cosmicDEGs, snvDEGs, allCriteria, posGenes] = computeCategoryMatches(realGeneScores, threshold)
 		# realScoreCountsCosmic[threshold] = cosmic
 		# realScoreCountsSNVs[threshold] = snvs
 		# realScoreCountsDEGS[threshold] = degs
@@ -161,7 +163,7 @@ with open(outFile, 'w') as outF:
 		# realScoreCountsSNVDEGs[threshold] = snvDEGs
 		# realScoreCountsAll[threshold] = allCriteria
 		# 
-		outF.write(str(threshold) + "\t" + str(cosmic) + "\t" + str(snvs) + "\t" + str(cosmicSNVs) + "\t" + str(degs) + "\t" + str(cosmicDEGs) + "\t" + str(snvDEGs) + "\t" + str(allCriteria) + "\n")
+		outF.write(str(threshold) + "\t" + str(cosmic) + "\t" + str(snvs) + "\t" + str(cosmicSNVs) + "\t" + str(degs) + "\t" + str(cosmicDEGs) + "\t" + str(snvDEGs) + "\t" + str(allCriteria) + "\t" + str(posGenes) + "\n")
 	
 	#realScoreCounts[threshold] = [[cosmic, snvs, cosmicSNVs, degs, cosmicDEGs, snvDEGs, allCriteria]]
 	# ax.plot(threshold, cosmic, 'bo')

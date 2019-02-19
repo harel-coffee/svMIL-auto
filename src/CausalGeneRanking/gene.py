@@ -16,10 +16,10 @@ class Gene:
 		self.SNVs = None
 		self.leftTAD = None
 		self.rightTAD = None
-		self.eQTLs = []
+		self.elements = []
 		self.interactions = []
-		self.gainedEQTLs = dict()
-		self.lostEQTLs = dict()
+		self.gainedElements = dict()
+		self.lostElements = dict()
 		
 	def setTADs(self, leftTAD, rightTAD):
 		
@@ -33,9 +33,9 @@ class Gene:
 		self.rightTAD = rightTAD
 		
 	
-	def setEQTLS(self, eQTLS):
+	def setElements(self, elements):
 		
-		self.eQTLS = eQTLS
+		self.elements = elements
 		
 	def setInteractions(self, interactions):
 		self.interactions = interactions
@@ -47,22 +47,28 @@ class Gene:
 	def setSNVs(self, SNVs):
 		self.SNVs = SNVs
 		
-	def addEQTL(self, eQTL):
-		self.eQTLs.append(eQTL)
+	def addElement(self, element):
+		self.elements.append(element)
 		
-	def setGainedEQTLs(self, gainedEQTLs, sample):
-		self.gainedEQTLs[sample] = gainedEQTLs #keep the gained eQTLs separate per patient to later do mutual exclusivity.
+	def setGainedElements(self, gainedElements, sample):
+		self.gainedElements[sample] = gainedElements #keep the gained eQTLs separate per patient to later do mutual exclusivity.
 		
-	def addGainedEQTLs(self, gainedEQTLs, sample):
+	def addGainedElements(self, gainedElements, sample):
 
 			#print "final no of gains: ", len(self.gainedEQTLs[sample])
+		types = []
+		for gainedElement in gainedElements:
+			if gainedElement.type not in types:
+				
+				types.append(gainedElement.type)
 		
 		#For the recurrence ranking, speed up code by adding only 1 per sample. More is not necessary. 
-		if len(gainedEQTLs) > 0:
-			if sample not in self.gainedEQTLs:
-				self.gainedEQTLs[sample] = [gainedEQTLs[0]]
+		if len(gainedElements) > 0:
+			if sample not in self.gainedElements:
+				self.gainedElements[sample] = types
 			else:
-				self.gainedEQTLs[sample].append(gainedEQTLs[0])
+				for elementType in types:
+					self.gainedElements[sample].append(elementType)
 		
 		#Use this part for when we need all eQTLs in a list
 		# if len(gainedEQTLs) > 0:
@@ -78,34 +84,33 @@ class Gene:
 		# 	exit()
 		
 	
-	def addLostEQTLs(self, lostEQTLs, sample):
-		
-			
+	def addLostElements(self, lostElements, sample):
+
 		#An eQTL can only be lost if it is associated with that specific gene. 	
-		for lostEQTL in lostEQTLs:
-			if lostEQTL in self.eQTLs:
-				self.addLostEQTL(lostEQTL, sample)
+		for lostElement in lostElements:
+			if lostElement in self.elements:
+				self.addLostElement(lostElement, sample)
 		#self.lostEQTLs[sample] += lostEQTLs
 		
-	def setLostEQTLs(self, lostEQTLs, sample):
-		for lostEQTL in lostEQTLs:
-			if lostEQTL in self.eQTLs:
-				self.addLostEQTL(lostEQTL, sample)
+	def setLostElements(self, lostElements, sample):
+		for lostElement in lostElements:
+			if lostElement in self.elements:
+				self.addLostElement(lostElement, sample)
 		#self.lostEQTLs[sample] = lostEQTLs
 	
-	def addLostEQTL(self, lostEQTL, sample):
+	def addLostElement(self, lostElement, sample):
 	
 		if settings.general['lncRNA'] == True:
 			
-			if sample not in self.lostEQTLs:
-				self.lostEQTLs[sample] = []
+			if sample not in self.lostElements:
+				self.lostElements[sample] = []
 			
-			self.lostEQTLs[sample].append(lostEQTL)
+			self.lostElements[sample].append(lostElement.type)
 	
 		else:	
-			if lostEQTL in self.eQTLs:
-				if sample not in self.lostEQTLs:
-					self.lostEQTLs[sample] = []
+			if lostElement in self.elements:
+				if sample not in self.lostElements:
+					self.lostElements[sample] = []
 				
-				self.lostEQTLs[sample].append(lostEQTL)
+				self.lostElements[sample].append(lostElement.type)
 		

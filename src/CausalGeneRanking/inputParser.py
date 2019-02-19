@@ -4,6 +4,7 @@
 	- Read SV files
 	- Read SNV files
 	- Read gene files
+	- Read all the individual data types (e.g. eQTLs, enhancers, Hi-C data)
 	
 	Each of these input files will require a specific format with at least some required fields. 
 
@@ -11,9 +12,12 @@
 from gene import Gene
 from sv import SV
 from snv import SNV
+from tad import TAD
+from element import Element
 import numpy as np
 from random import randint
 import re
+import settings
 
 class InputParser:
 	
@@ -36,7 +40,7 @@ class InputParser:
 					lineCount += 1
 					continue
 				
-				#Now extract the chromosome, start and end (there are multiple)
+				#Now extract the chromosome, start and end (there are multiple, 2 for an SV)
 				chr1Index = header.index("chr1")
 				s1Index = header.index("s1")
 				e1Index = header.index("e1")
@@ -58,15 +62,9 @@ class InputParser:
 					cancerType = "breast"
 					
 				#Skip anything that is not breast cancer for now. From here is the easiest way, saves time in processing as well
-				if cancerType != "BRCA":
+				if cancerType != settings.general['cancerType']:
 					continue
 				
-				# if cancerType != "prostate cancer":
-				# 	continue
-				
-				# if cancerType != "ovarian cancer":
-				# 	continue
-				# 
 				svTypeIndex = header.index("sv_type")
 				svType = splitLine[svTypeIndex]
 				
@@ -272,8 +270,243 @@ class InputParser:
 	
 		
 		return nonCausalGenes 
+	
+	#Read TAD data
+	def getTADsFromFile(self, tadFile):
+		"""
+			Read the TADs into NumPy format. I don't read the TADs into objects immediately, because the NumPy matrices work very well for
+			quick overlapping. I add an object reference to the matrix so that we can later add the right TAD object to the genes. 
+		"""
 		
+		#Read the gene list data into a list
+		tadData = []
+		with open(tadFile, "r") as f:
+			lineCount = 0
+			for line in f:
+				if lineCount < 2: #skip header
+					lineCount += 1
+					continue
+				line = line.strip()
+				splitLine = line.split("\t")
+				
+				
+				TADObject = TAD(splitLine[0], int(splitLine[1]), int(splitLine[2]))
+				
+				#chr, start, end
+				tadData.append([splitLine[0], int(splitLine[1]), int(splitLine[2]), TADObject])
+		
+		#Also convert the other dataset to numpy
+		tadData = np.array(tadData, dtype='object')
+		
+		#Make sure to sort the tads oer chromosome
+		sortedTads = []
+		chroms = np.unique(tadData[:,0])
+		for chromosome in chroms:
+			tadSubset = tadData[tadData[:,0] == chromosome]
 			
+			sortedSubset = tadSubset[tadSubset[:,1].argsort()]
+			for tad in sortedSubset:
+			
+				sortedTads.append(tad)
+			
+		
+		return np.array(sortedTads)
+	
+	#Reading eQTL file
+	def getEQTLsFromFile(self, eQTLFile, genes, neighborhoodDefiner):
+		"""
+			TO DO:
+			- Make more modular, if this function is generalized to bed files, we can use it to read any genomic element and link it to genes. 
+		
+			Read eQTLs from the file. To save time, link these to the respective gene objects right away
+		"""
+		#Filter the eQTLs that do not have a match
+		geneDict = dict()
+		
+		for gene in genes:
+			if gene not in geneDict:
+				geneDict[gene.name] = gene
+		
+		
+		eQTLs = []
+		with open(eQTLFile, 'rb') as f:
+			
+			lineCount = 0
+			for line in f:
+				if lineCount < 1:
+					lineCount += 1
+					continue
+				
+				line = line.strip()
+				splitLine = line.split("\t")
+				
+				
+				if splitLine[3] not in geneDict:
+					continue
+				
+				#Add the chr notation for uniformity. 		
+				chrMatch = re.search("chr", splitLine[0], re.IGNORECASE)
+				chrName = ""
+				if chrMatch is None:
+					chrName = "chr" + splitLine[0]
+				else:
+					chrName = splitLine[0]
+				eQTLObject = Element(chrName, int(splitLine[1]), int(splitLine[2])) #chr, start, end
+				eQTLObject.type = 'eQTL' #set the correct type
+				#The mapping information is in the file, so we can already do it here
+				#This function belongs more to the neighborhood definer, so we use the function from there. 
+				neighborhoodDefiner.mapElementsToGenes(eQTLObject, geneDict, splitLine[3])
+						
+				
+				eQTLs.append([chrName, int(splitLine[1]), int(splitLine[2]), eQTLObject, "eQTL"]) #Keep the eQTL information raw as well for quick overlapping. 
+		
+		
+		return np.array(eQTLs, dtype='object')
+	
+	def getLncRNAsFromFile(self, lncRNAFile):
+		
+		lncRNAs = []
+		with open(lncRNAFile, 'rb') as f:
+			
+			for line in f:
+				line = line.strip()
+				splitLine = line.split("\t")
+				
+				#Quick and dirty
+				lncRNAObject = EQTL(splitLine[0], int(splitLine[1]), int(splitLine[2]))
+				
+				lncRNAs.append([splitLine[0], int(splitLine[1]), int(splitLine[2]), lncRNAObject])					
+		
+		return np.array(lncRNAs, dtype="object")
+	
+	
+	def getEnhancersFromFile(self, enhancerFile, genes, neighborhoodDefiner):
+		"""
+			TO DO:
+			- make modular and re-use the eQTL function
+			We re-use the eQTL object for now, but it is better if this would be a generic type of object not called eQTL but e.g. element
+		
+		"""
+		
+		
+		geneDict = dict()
+		
+		for gene in genes:
+			if gene not in geneDict:
+				geneDict[gene.name] = gene
+		
+		
+		enhancers = []
+		with open(enhancerFile, 'rb') as f:
+			
+			lineCount = 0
+			for line in f:
+				if lineCount < 1:
+					lineCount += 1
+					continue
+				
+				line = line.strip()
+				splitLine = line.split("\t")
+				
+				interaction = splitLine[0]
+				splitInteraction = interaction.split("_") #first part is the enhancer, 2nd part the gene
+				
+				enhancerInfo = splitInteraction[0]
+				splitEnhancerInfo = enhancerInfo.split(":")
+				#Add the chr notation for uniformity. 		
+				chrMatch = re.search("chr", splitEnhancerInfo[0], re.IGNORECASE)
+				chrName = ""
+				if chrMatch is None:
+					chrName = "chr" + splitEnhancerInfo[0]
+				else:
+					chrName = splitEnhancerInfo[0]
+				splitPosInfo = splitEnhancerInfo[1].split("-") #get the positions
+				start = int(splitPosInfo[0])
+				end = int(splitPosInfo[1])
+				
+				#Get the gene name
+				splitGeneInfo = splitInteraction[1].split("$")
+				geneName = splitGeneInfo[1]
+				
+				if geneName not in geneDict:
+					continue
+				
+				
+				elementObject = Element(chrName, start, end)
+				elementObject.type = "enhancer"
+				
+				#The mapping information is in the file, so we can already do it here
+				neighborhoodDefiner.mapElementsToGenes(elementObject, geneDict, geneName)
+						
+				
+				enhancers.append([chrName, start, end, elementObject, "enhancer"]) #Keep the eQTL information raw as well for quick overlapping. 
+		
+		
+		return np.array(enhancers, dtype='object')
+	
+	def getHiCInteractionsFromFile(self, interactionsFile):
+		"""
+			Read all Hi-C interactions from the interactions file
+			
+			- Column 1 is the starting region of the interaction
+			- Column 2 is the ending region of the interaction
+			
+			
+			
+		"""
+		seenRegions = dict() #use a dictionary to quickly determine if we have added this region before to keep the regions unique
+		regions = []
+		interactions = dict() #for now I won't make objects for interactions, do we really need them? 
+		with open(interactionsFile, 'r') as inF:
+			
+			lineCount = 0
+			for line in inF:
+				line = line.strip()
+				
+				if lineCount < 1: #skip header
+					lineCount += 1
+					continue
+				
+				splitLine = line.split(",") #csv format
+
+				interactionStart = splitLine[0]
+				interactionEnd = splitLine[1]
+				
+				#Split the regions into the chromosome and region/bin
+				splitInteractionStart = interactionStart.split("_")
+				splitInteractionEnd = interactionEnd.split("_")
+				
+				chr1 = splitInteractionStart[0]
+				start1 = int(splitInteractionStart[1])
+				end1 = start1 + int(settings.interactions['binSize'])
+				
+				chr2 = splitInteractionEnd[0]
+				start2 = int(splitInteractionEnd[1])
+				end2 = start2 + int(settings.interactions['binSize'])
+				
+				if interactionStart not in seenRegions:
+					regions.append([chr1, start1, end1, interactionStart])
+					seenRegions[interactionStart] = len(regions) #keep the index at which the region is
+				if interactionEnd not in seenRegions:
+					regions.append([chr2, start2, end2, interactionEnd])
+					seenRegions[interactionEnd] = len(regions)
+				
+				if interactionStart not in interactions:
+					interactions[interactionStart] = []
+				if interactionEnd not in interactions:
+					interactions[interactionEnd] = [] #Some interactions are only in the end region
+				
+				interactions[interactionStart].append(interactionEnd)
+				interactions[interactionEnd].append(interactionStart)
+				
+		
+		regions = np.array(regions, dtype="object")
+		#interactions = np.array(interactions, dtype="object")
+
+		return interactions, regions
+			
+	#Reading bed files
+	
 			
 		
 		
