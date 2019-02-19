@@ -26,10 +26,7 @@ for geneScoreFile in geneScoreFiles:
 		
 		#Go through the same thresholds
 		for row in range(0, geneScores.shape[0]):
-			print geneScores[row]
-			print geneScores[row][0]
-			print int(geneScores[row][0])
-			print "f: ", len(geneScores[row])
+			
 			threshold = int(geneScores[row][0])
 			cosmic = int(geneScores[row][1])
 			snvs = int(geneScores[row][2])
@@ -80,7 +77,8 @@ for geneScoreFile in geneScoreFiles:
 		
 		#Go through the same thresholds
 		for row in range(0, geneScores.shape[0]):
-			
+			print row
+			exit()
 			
 			if len(geneScores[row]) > 8: #if there is something wird in the file
 				continue
