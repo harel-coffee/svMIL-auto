@@ -78,9 +78,15 @@ class GeneRanking:
 			eQTLLossesScoringMatrix = self.scoreByElementLosses(genes, sampleMap, geneMap, "eQTL")
 			enhancerGainsScoringMatrix = self.scoreByElementGains(genes, sampleMap, geneMap, "enhancer")
 			enhancerLossesScoringMatrix = self.scoreByElementLosses(genes, sampleMap, geneMap, "enhancer")
+			promoterGainsScoringMatrix = self.scoreByElementGains(genes, sampleMap, geneMap, "promoter")
+			promoterLossesScoringMatrix = self.scoreByElementLosses(genes, sampleMap, geneMap, "promoter")
+			cpgGainsScoringMatrix = self.scoreByElementGains(genes, sampleMap, geneMap, "cpg")
+			cpgLossesScoringMatrix = self.scoreByElementLosses(genes, sampleMap, geneMap, "cpg")
+			tfGainsScoringMatrix = self.scoreByElementGains(genes, sampleMap, geneMap, "tf")
+			tfLossesScoringMatrix = self.scoreByElementLosses(genes, sampleMap, geneMap, "tf")
 			
 			#The final scoring matrix selected here determines how the genes will be ranked. For testing, this varies. Eventually, this will be a combined score that we rank by. 
-			scoringMatrix = enhancerGainsScoringMatrix
+			scoringMatrix = promoterGainsScoringMatrix
 			
 			#Sum the total score per gene and report the genes by which ones are most likely causal.
 
@@ -94,7 +100,9 @@ class GeneRanking:
 			for geneInd in sortedGenesInd:
 				gene = reverseGeneMap[geneInd] #Get the gene back from the scoring matrix by index
 
-				geneScores.append([gene, np.sum(geneScoringMatrix[:,geneInd]), np.sum(eQTLGainsScoringMatrix[:,geneInd]), np.sum(eQTLLossesScoringMatrix[:,geneInd]), np.sum(enhancerGainsScoringMatrix[:,geneInd]), np.sum(enhancerLossesScoringMatrix[:,geneInd])])
+				geneScores.append([gene, np.sum(geneScoringMatrix[:,geneInd]), np.sum(eQTLGainsScoringMatrix[:,geneInd]), np.sum(eQTLLossesScoringMatrix[:,geneInd]),
+								   np.sum(enhancerGainsScoringMatrix[:,geneInd]), np.sum(enhancerLossesScoringMatrix[:,geneInd]), np.sum(promoterGainsScoringMatrix[:,geneInd]), np.sum(promoterLossesScoringMatrix[:,geneInd]),
+								   np.sum(cpgGainsScoringMatrix[:,geneInd]), np.sum(cpgLossesScoringMatrix[:,geneInd]), np.sum(tfGainsScoringMatrix[:,geneInd]), np.sum(tfLossesScoringMatrix[:,geneInd])])
 			
 			geneScores = np.array(geneScores, dtype="object")
 			scores[cancerType] = geneScores

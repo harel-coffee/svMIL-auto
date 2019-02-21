@@ -90,10 +90,40 @@ class NeighborhoodDefiner:
 		print "getting enhancers"
 		if settings.general['enhancers'] == True:
 			enhancerData = InputParser().getEnhancersFromFile(settings.files['enhancerFile'], genes[:,3], self)
+			#Add the enhancers to TADs & genes as well	
+			tadData = self.mapElementsToTads(enhancerData, tadData)	
 		
-		#Add the enhancers to TADs & genes as well	
-		tadData = self.mapElementsToTads(enhancerData, tadData)	
+		#4. Get promoters
+		print "getting promoters"
+		if settings.general['promoters'] == True:
+			promoterData = InputParser().getPromotersFromFile(settings.files['promoterFile'], genes[:,3], self)
+			
+			#Add the promoters to the TADs
+			tadData = self.mapElementsToTads(promoterData, tadData)
 		
+		#5. Get CpG islands
+		if settings.general['cpgIslands'] == True:
+			print "Getting cpg islands"
+			cpgData = InputParser().getCpgIslandsFromFile(settings.files['cpgFile'])
+		
+			#Add the CpG sites to the TADs
+			tadData = self.mapElementsToTads(cpgData, tadData)
+		
+		#6. Get Transcription factors
+		if settings.general['transcriptionFactors'] == True:
+			print "Getting transcription factors"
+			tfData = InputParser().getTranscriptionFactorsFromFile(settings.files['tfFile'])
+		
+			#Add the CpG sites to the TADs
+			tadData = self.mapElementsToTads(tfData, tadData)
+		
+		#7. Get Hi-C data
+		if settings.general['hiC'] == True:
+			print "Getting Hi-C data"
+			hicData = InputParser().getTranscriptionFactorsFromFile(settings.files['hicFile'])
+		
+			#Add the CpG sites to the TADs
+			tadData = self.mapElementsToTads(hicData, tadData)
 		
 		#3. Map SVs to all neighborhood elements
 		if mode == "SV":
