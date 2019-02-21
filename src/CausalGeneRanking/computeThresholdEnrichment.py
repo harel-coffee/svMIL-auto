@@ -36,7 +36,7 @@ with open(permutationDataFolder + "/" + rankedGenesFile, 'r') as rankF:
 		splitLine = line.split()
 		
 		geneName = splitLine[0]
-		geneScore = int(float(splitLine[6]))
+		geneScore = int(float(splitLine[12]))
 		if geneScore > maxScore: 
 			maxScore = geneScore
 		
@@ -102,7 +102,7 @@ def computeCategoryMatches(realGeneScores, threshold):
 	
 	for gene in realGeneScores:
 		
-		if float(gene[6]) > threshold:
+		if float(gene[12]) > threshold:
 			allGenes.append(gene[0])
 			if gene[0] in degGenes:
 				degGenesPos.append(gene[0])
