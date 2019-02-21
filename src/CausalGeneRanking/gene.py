@@ -99,8 +99,9 @@ class Gene:
 		#self.lostEQTLs[sample] = lostEQTLs
 	
 	def addLostElement(self, lostElement, sample):
-	
-		if settings.general['lncRNA'] == True:
+		
+		#Treat losses differently for elements that we cannot link to the gene
+		if lostElement.type == "cpg" or lostElement.type == "tf":
 			
 			if sample not in self.lostElements:
 				self.lostElements[sample] = []

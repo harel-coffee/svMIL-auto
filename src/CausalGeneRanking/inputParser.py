@@ -444,6 +444,145 @@ class InputParser:
 		
 		return np.array(enhancers, dtype='object')
 	
+	def getPromotersFromFile(self, promoterFile, genes, neighborhoodDefiner):
+		"""
+			TO DO:
+			- make modular and re-use the eQTL function
+			We re-use the eQTL object for now, but it is better if this would be a generic type of object not called eQTL but e.g. element
+		
+		"""
+		
+		geneDict = dict()
+		
+		for gene in genes:
+			if gene not in geneDict:
+				geneDict[gene.name] = gene
+		
+		
+		promoters = []
+		with open(promoterFile, 'rb') as f:
+			
+			lineCount = 0
+			for line in f:
+				if lineCount < 1:
+					lineCount += 1
+					continue
+				
+				line = line.strip()
+				splitLine = line.split("\t")
+				
+				#Format of file:
+				#chr		start	end	geneName_\d
+				
+				#Add the chr notation for uniformity. 		
+				chrMatch = re.search("chr", splitLine[0], re.IGNORECASE)
+				chrName = ""
+				if chrMatch is None:
+					chrName = "chr" + splitLine[0]
+				else:
+					chrName = splitLine[0]
+					
+				start = int(splitLine[1])
+				end = int(splitLine[2])
+				geneName = splitLine[3]
+				splitGeneName = geneName.split("_")
+				finalGeneName = splitGeneName[0] #only get the part before the underscore
+				
+				if finalGeneName not in geneDict:
+					continue
+				
+				
+				elementObject = Element(chrName, start, end)
+				elementObject.type = "promoter"
+				
+				#The mapping information is in the file, so we can already do it here
+				neighborhoodDefiner.mapElementsToGenes(elementObject, geneDict, finalGeneName)
+
+				promoters.append([chrName, start, end, elementObject, "promoter"]) #Keep the eQTL information raw as well for quick overlapping. 
+		
+		return np.array(promoters, dtype='object')	
+
+	def getCpgIslandsFromFile(self, cpgFile):
+		"""
+			TO DO:
+			- make modular and re-use the eQTL function
+			We re-use the eQTL object for now, but it is better if this would be a generic type of object not called eQTL but e.g. element
+		
+		"""
+		
+		cpgIslands = []
+		with open(cpgFile, 'rb') as f:
+			
+			lineCount = 0
+			for line in f:
+				if lineCount < 1:
+					lineCount += 1
+					continue
+				
+				line = line.strip()
+				splitLine = line.split("\t")
+				
+				#Add the chr notation for uniformity. 		
+				chrMatch = re.search("chr", splitLine[1], re.IGNORECASE)
+				chrName = ""
+				if chrMatch is None:
+					chrName = "chr" + splitLine[1]
+				else:
+					chrName = splitLine[1]
+					
+				start = int(splitLine[2])
+				end = int(splitLine[3])
+				
+				elementObject = Element(chrName, start, end)
+				elementObject.type = "cpg"
+				
+
+				cpgIslands.append([chrName, start, end, elementObject, "cpg"]) #Keep the eQTL information raw as well for quick overlapping. 
+		
+		return np.array(cpgIslands, dtype='object')	
+
+	def getTranscriptionFactorsFromFile(self, tfFile):
+		"""
+			TO DO:
+			- make modular and re-use the eQTL function
+			We re-use the eQTL object for now, but it is better if this would be a generic type of object not called eQTL but e.g. element
+		
+		"""
+		
+		tfs = []
+		with open(tfFile, 'rb') as f:
+			
+			lineCount = 0
+			for line in f:
+				if lineCount < 1:
+					lineCount += 1
+					continue
+				
+				line = line.strip()
+				splitLine = line.split("\t")
+				
+				#Add the chr notation for uniformity. 		
+				chrMatch = re.search("chr", splitLine[0], re.IGNORECASE)
+				chrName = ""
+				if chrMatch is None:
+					chrName = "chr" + splitLine[0]
+				else:
+					chrName = splitLine[0]
+					
+				start = int(splitLine[1])
+				end = int(splitLine[2])
+				
+				elementObject = Element(chrName, start, end)
+				elementObject.type = "tf"
+				
+
+				tfs.append([chrName, start, end, elementObject, "tf"])
+		
+		return np.array(tfs, dtype='object')	
+		
+		
+
+
 	def getHiCInteractionsFromFile(self, interactionsFile):
 		"""
 			Read all Hi-C interactions from the interactions file

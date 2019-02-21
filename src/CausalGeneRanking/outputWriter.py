@@ -54,7 +54,7 @@ class OutputWriter:
 			cancerTypeScores = geneRanking.scores[cancerType]
 
 			#Store all the gene scores in here. 
-			perGeneScores = np.empty([len(genes), 7], dtype="object") #store by gene name because it is easiest to match back later
+			perGeneScores = np.empty([len(genes), 13], dtype="object") #store by gene name because it is easiest to match back later
 			
 			for row in range(0, cancerTypeScores.shape[0]):
 				gene = cancerTypeScores[row][0]
@@ -65,6 +65,12 @@ class OutputWriter:
 				eQTLLossScore = cancerTypeScores[row,3]
 				enhancerGainScore = cancerTypeScores[row,4]
 				enhancerLossScore = cancerTypeScores[row,5]
+				promoterGainScore = cancerTypeScores[row,6]
+				promoterLossScore = cancerTypeScores[row,7]
+				cpgGainScore = cancerTypeScores[row,8]
+				cpgLossScore = cancerTypeScores[row,9]
+				tfGainScore = cancerTypeScores[row,10]
+				tfLossScore = cancerTypeScores[row,11]
 				
 				perGeneScores[row][0] = geneName
 				perGeneScores[row][1] = geneScore
@@ -72,11 +78,17 @@ class OutputWriter:
 				perGeneScores[row][3] = eQTLLossScore
 				perGeneScores[row][4] = enhancerGainScore
 				perGeneScores[row][5] = enhancerLossScore
-				perGeneScores[row][6] = enhancerGainScore + enhancerLossScore #data type to rank by. 
+				perGeneScores[row][6] = promoterGainScore
+				perGeneScores[row][7] = promoterLossScore
+				perGeneScores[row][8] = cpgGainScore
+				perGeneScores[row][9] = cpgLossScore
+				perGeneScores[row][10] = tfGainScore
+				perGeneScores[row][11] = tfLossScore
+				perGeneScores[row][12] = enhancerGainScore + enhancerLossScore #data type to rank by. 
 
 		
 			#Also rank the output by highest total score (recurrence)
-			perGeneScores = perGeneScores[perGeneScores[:,6].argsort()[::-1]] #Select the column  to rank by
+			perGeneScores = perGeneScores[perGeneScores[:,10].argsort()[::-1]] #Select the column  to rank by
 			
 			#Create the folder to write the output to specific for the current cancer type
 			cancerTypeFolder = rankedGeneScoreDir + "/" + uuid + "/" + cancerType
