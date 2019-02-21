@@ -84,11 +84,11 @@ class OutputWriter:
 				perGeneScores[row][9] = cpgLossScore
 				perGeneScores[row][10] = tfGainScore
 				perGeneScores[row][11] = tfLossScore
-				perGeneScores[row][12] = enhancerGainScore + enhancerLossScore #data type to rank by. 
+				perGeneScores[row][12] = enhancerGainScore + enhancerLossScore + cpgGainScore + cpgLossScore + promoterGainScore + promoterLossScore + eQTLGainScore + eQTLLossScore #data type to rank by. 
 
 		
 			#Also rank the output by highest total score (recurrence)
-			perGeneScores = perGeneScores[perGeneScores[:,10].argsort()[::-1]] #Select the column  to rank by
+			perGeneScores = perGeneScores[perGeneScores[:,12].argsort()[::-1]] #Select the column  to rank by
 			
 			#Create the folder to write the output to specific for the current cancer type
 			cancerTypeFolder = rankedGeneScoreDir + "/" + uuid + "/" + cancerType
