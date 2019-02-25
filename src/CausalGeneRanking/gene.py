@@ -90,12 +90,14 @@ class Gene:
 		
 	
 	def addLostElements(self, lostElements, sample):
-
-		#An eQTL can only be lost if it is associated with that specific gene. 	
+		
+		types = dict()
 		for lostElement in lostElements:
-			if lostElement in self.elements:
-				self.addLostElement(lostElement, sample)
-		#self.lostEQTLs[sample] += lostEQTLs
+			types[lostElement[3]] = 0
+		
+		for lostElement in lostElements:
+			self.addLostElement(lostElement, sample, types)
+		
 		
 	def setLostElements(self, lostElements, sample):
 		for lostElement in lostElements:
@@ -103,20 +105,24 @@ class Gene:
 				self.addLostElement(lostElement, sample)
 		#self.lostEQTLs[sample] = lostEQTLs
 	
-	def addLostElement(self, lostElement, sample):
-		
+	def addLostElement(self, lostElement, sample, types):
+
 		#Treat losses differently for elements that we cannot link to the gene
-		if lostElement[3] == "cpg" or lostElement[3] == "tf":
+		elementsNotLinkedToGenes = ['cpg', 'tf', 'hic', 'dnaseI', 'h3k9me3', 'h3k4me3', 'h3k27ac', 'h3k27me3', 'h3k4me1', 'h3k36me3']
+		
+		if lostElement[3] in elementsNotLinkedToGenes:
 			
 			if sample not in self.lostElements:
-				self.lostElements[sample] = []
-			
-			self.lostElements[sample].append(lostElement[3])
+				self.lostElements[sample] = types.keys()
+			else:
+				for elementType in types:
+					self.lostElements[sample].append(elementType)
 	
 		else:	
 			if lostElement in self.elements:
 				if sample not in self.lostElements:
-					self.lostElements[sample] = []
-				
-				self.lostElements[sample].append(lostElement[3])
+					self.lostElements[sample] = types.keys()
+				else:
+					for elementType in types:
+						self.lostElements[sample].append(elementType)
 		

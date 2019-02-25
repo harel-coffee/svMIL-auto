@@ -227,6 +227,7 @@ class GeneRanking:
 			if len(gene.lostElements) > 0:
 				for sample in gene.lostElements:
 					
+					
 					loss = False #Make sure that we only focus on lost elements of the provided type. 
 					for element in gene.lostElements[sample]:
 						if element == elementType:
