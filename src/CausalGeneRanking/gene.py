@@ -56,20 +56,25 @@ class Gene:
 	def addGainedElements(self, gainedElements, sample):
 
 			#print "final no of gains: ", len(self.gainedEQTLs[sample])
-		types = []
+		types = dict()
 		for gainedElement in gainedElements:
-			if gainedElement.type not in types:
-				
-				types.append(gainedElement.type)
+			types[gainedElement[3]] = 0
+			#if gainedElement.type not in types:
+			
+			#	types.append(gainedElement.type)
+			# if gainedElement[3] not in types:
+			# 	types.append(gainedElement[3])
 		
-		#For the recurrence ranking, speed up code by adding only 1 per sample. More is not necessary. 
+		#For the recurrence ranking, speed up code by adding only 1 per sample. More is not necessary.
+		
 		if len(gainedElements) > 0:
 			if sample not in self.gainedElements:
-				self.gainedElements[sample] = types
+				self.gainedElements[sample] = types.keys()
 			else:
 				for elementType in types:
+					
 					self.gainedElements[sample].append(elementType)
-		
+			
 		#Use this part for when we need all eQTLs in a list
 		# if len(gainedEQTLs) > 0:
 		# 	if sample not in self.gainedEQTLs:
@@ -101,17 +106,17 @@ class Gene:
 	def addLostElement(self, lostElement, sample):
 		
 		#Treat losses differently for elements that we cannot link to the gene
-		if lostElement.type == "cpg" or lostElement.type == "tf":
+		if lostElement[3] == "cpg" or lostElement[3] == "tf":
 			
 			if sample not in self.lostElements:
 				self.lostElements[sample] = []
 			
-			self.lostElements[sample].append(lostElement.type)
+			self.lostElements[sample].append(lostElement[3])
 	
 		else:	
 			if lostElement in self.elements:
 				if sample not in self.lostElements:
 					self.lostElements[sample] = []
 				
-				self.lostElements[sample].append(lostElement.type)
+				self.lostElements[sample].append(lostElement[3])
 		

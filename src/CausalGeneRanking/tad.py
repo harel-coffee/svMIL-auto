@@ -33,7 +33,7 @@ class TAD:
 	
 	def addElements(self, elements):
 		for element in elements:
-			self.elements.append(element)
+			self.elements.append(list(element))
 		
 	def addGene(self, gene): #Function to add genes that are within the TAD
 		self.genes.append(gene)
@@ -43,12 +43,16 @@ class TAD:
 	
 	def getElementsByRange(self, start, end):
 		
-		#First do this only for eQTLs
-		elementsInRange = []
-		for eQTL in self.elements:
-			if eQTL.start >= start and eQTL.start <= end:
-				elementsInRange.append(eQTL)
 		
+		elementsInRange = []
+		for element in self.elements:
+			if element[1] >= start and element[2] <= end:
+				elementsInRange.append(element)
+			# 
+			# if eQTL.start >= start and eQTL.start <= end:
+			# 	elementsInRange.append(eQTL)
+		
+	
 		return elementsInRange
 	
 	def getGenesByRange(self, start, end):

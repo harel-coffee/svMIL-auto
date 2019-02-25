@@ -84,6 +84,26 @@ class GeneRanking:
 			cpgLossesScoringMatrix = self.scoreByElementLosses(genes, sampleMap, geneMap, "cpg")
 			tfGainsScoringMatrix = self.scoreByElementGains(genes, sampleMap, geneMap, "tf")
 			tfLossesScoringMatrix = self.scoreByElementLosses(genes, sampleMap, geneMap, "tf")
+			hicGainsScoringMatrix = self.scoreByElementGains(genes, sampleMap, geneMap, "hic")
+			hicLossesScoringMatrix = self.scoreByElementLosses(genes, sampleMap, geneMap, "hic")
+			
+			
+			h3k9me3GainsScoringMatrix = self.scoreByElementGains(genes, sampleMap, geneMap, "h3k9me3")
+			h3k9me3LossesScoringMatrix = self.scoreByElementLosses(genes, sampleMap, geneMap, "h3k9me3")
+			h3k4me3GainsScoringMatrix = self.scoreByElementGains(genes, sampleMap, geneMap, "h3k4me3")
+			h3k4me3LossesScoringMatrix = self.scoreByElementLosses(genes, sampleMap, geneMap, "h3k4me3")
+			h3k27acGainsScoringMatrix = self.scoreByElementGains(genes, sampleMap, geneMap, "h3k27ac")
+			h3k27acLossesScoringMatrix = self.scoreByElementLosses(genes, sampleMap, geneMap, "h3k27ac")
+			h3k27me3GainsScoringMatrix = self.scoreByElementGains(genes, sampleMap, geneMap, "h3k27me3")
+			h3k27me3LossesScoringMatrix = self.scoreByElementLosses(genes, sampleMap, geneMap, "h3k27me3")
+			h3k4me1GainsScoringMatrix = self.scoreByElementGains(genes, sampleMap, geneMap, "h3k4me1")
+			h3k4me1LossesScoringMatrix = self.scoreByElementLosses(genes, sampleMap, geneMap, "h3k4me1")
+			h3k36me3GainsScoringMatrix = self.scoreByElementGains(genes, sampleMap, geneMap, "h3k36me3")
+			h3k36me3LossesScoringMatrix = self.scoreByElementLosses(genes, sampleMap, geneMap, "h3k36me3")
+			
+			dnaseIGainsScoringMatrix = self.scoreByElementGains(genes, sampleMap, geneMap, "dnaseI")
+			dnaseILossesScoringMatrix = self.scoreByElementLosses(genes, sampleMap, geneMap, "dnaseI")
+			
 			
 			#The final scoring matrix selected here determines how the genes will be ranked. For testing, this varies. Eventually, this will be a combined score that we rank by. 
 			scoringMatrix = promoterGainsScoringMatrix
@@ -102,7 +122,12 @@ class GeneRanking:
 
 				geneScores.append([gene, np.sum(geneScoringMatrix[:,geneInd]), np.sum(eQTLGainsScoringMatrix[:,geneInd]), np.sum(eQTLLossesScoringMatrix[:,geneInd]),
 								   np.sum(enhancerGainsScoringMatrix[:,geneInd]), np.sum(enhancerLossesScoringMatrix[:,geneInd]), np.sum(promoterGainsScoringMatrix[:,geneInd]), np.sum(promoterLossesScoringMatrix[:,geneInd]),
-								   np.sum(cpgGainsScoringMatrix[:,geneInd]), np.sum(cpgLossesScoringMatrix[:,geneInd]), np.sum(tfGainsScoringMatrix[:,geneInd]), np.sum(tfLossesScoringMatrix[:,geneInd])])
+								   np.sum(cpgGainsScoringMatrix[:,geneInd]), np.sum(cpgLossesScoringMatrix[:,geneInd]), np.sum(tfGainsScoringMatrix[:,geneInd]), np.sum(tfLossesScoringMatrix[:,geneInd]),
+								   np.sum(hicGainsScoringMatrix[:,geneInd]), np.sum(hicLossesScoringMatrix[:,geneInd]),
+								   np.sum(h3k9me3GainsScoringMatrix[:,geneInd]), np.sum(h3k9me3LossesScoringMatrix[:,geneInd]), np.sum(h3k4me3GainsScoringMatrix[:,geneInd]), np.sum(h3k4me3LossesScoringMatrix[:,geneInd]),
+								   np.sum(h3k27acGainsScoringMatrix[:,geneInd]), np.sum(h3k27acLossesScoringMatrix[:,geneInd]), np.sum(h3k27me3GainsScoringMatrix[:,geneInd]), np.sum(h3k27me3LossesScoringMatrix[:,geneInd]),
+								   np.sum(h3k4me1GainsScoringMatrix[:,geneInd]), np.sum(h3k4me1LossesScoringMatrix[:,geneInd]), np.sum(h3k36me3GainsScoringMatrix[:,geneInd]), np.sum(h3k36me3LossesScoringMatrix[:,geneInd]),
+								   np.sum(dnaseIGainsScoringMatrix[:,geneInd]), np.sum(dnaseILossesScoringMatrix[:,geneInd])])
 			
 			geneScores = np.array(geneScores, dtype="object")
 			scores[cancerType] = geneScores
