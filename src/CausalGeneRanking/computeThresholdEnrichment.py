@@ -45,7 +45,7 @@ with open(permutationDataFolder + "/" + rankedGenesFile, 'r') as rankF:
 		scores = splitLine[2:11]
 		floatScores = [float(i) for i in scores]
 		firstScore = sum(floatScores)
-		dnaseScores = splitLine[26:27]
+		dnaseScores = splitLine[14:27]
 		floatScores = [float(i) for i in dnaseScores]
 		geneScore = sum(floatScores) + firstScore
 		
@@ -124,7 +124,7 @@ def computeCategoryMatches(realGeneScores, threshold):
 		# 
 		floatScores = [float(i) for i in gene[2:11]]
 		firstScore = sum(floatScores)
-		floatScores = [float(i) for i in gene[26:27]]
+		floatScores = [float(i) for i in gene[14:27]]
 		geneScore = sum(floatScores) + firstScore
 		
 		if geneScore > threshold:
