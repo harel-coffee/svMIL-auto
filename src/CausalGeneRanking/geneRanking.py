@@ -72,22 +72,28 @@ class GeneRanking:
 			#Do the scoring of the genes
 			#We make a scoring matrix of patients x genes. Each gene has a score in each patient of if an SV overlaps with that element in the neighborhood of the gene yes/no.
 			#To get the total score for a gene, we can sum across all patients. 
-			print "scoring genes, eQTLs and enhancers:"
+			print "scoring genes:"
 			geneScoringMatrix = self.scoreBySVsInGenes(genes, sampleMap, geneMap)
+			print "scoring eQTL: "
 			eQTLGainsScoringMatrix = self.scoreByElementGains(genes, sampleMap, geneMap, "eQTL")
 			eQTLLossesScoringMatrix = self.scoreByElementLosses(genes, sampleMap, geneMap, "eQTL")
+			print "scoring enhancers: "
 			enhancerGainsScoringMatrix = self.scoreByElementGains(genes, sampleMap, geneMap, "enhancer")
 			enhancerLossesScoringMatrix = self.scoreByElementLosses(genes, sampleMap, geneMap, "enhancer")
+			print "scoring promoters: "
 			promoterGainsScoringMatrix = self.scoreByElementGains(genes, sampleMap, geneMap, "promoter")
 			promoterLossesScoringMatrix = self.scoreByElementLosses(genes, sampleMap, geneMap, "promoter")
+			print "scoring cpg: "
 			cpgGainsScoringMatrix = self.scoreByElementGains(genes, sampleMap, geneMap, "cpg")
 			cpgLossesScoringMatrix = self.scoreByElementLosses(genes, sampleMap, geneMap, "cpg")
+			print "scoring tfs: "
 			tfGainsScoringMatrix = self.scoreByElementGains(genes, sampleMap, geneMap, "tf")
 			tfLossesScoringMatrix = self.scoreByElementLosses(genes, sampleMap, geneMap, "tf")
+			print "scoring hic: "
 			hicGainsScoringMatrix = self.scoreByElementGains(genes, sampleMap, geneMap, "hic")
 			hicLossesScoringMatrix = self.scoreByElementLosses(genes, sampleMap, geneMap, "hic")
 			
-			
+			print "scoring histone marks: "
 			h3k9me3GainsScoringMatrix = self.scoreByElementGains(genes, sampleMap, geneMap, "h3k9me3")
 			h3k9me3LossesScoringMatrix = self.scoreByElementLosses(genes, sampleMap, geneMap, "h3k9me3")
 			h3k4me3GainsScoringMatrix = self.scoreByElementGains(genes, sampleMap, geneMap, "h3k4me3")
@@ -101,6 +107,7 @@ class GeneRanking:
 			h3k36me3GainsScoringMatrix = self.scoreByElementGains(genes, sampleMap, geneMap, "h3k36me3")
 			h3k36me3LossesScoringMatrix = self.scoreByElementLosses(genes, sampleMap, geneMap, "h3k36me3")
 			
+			print "scoring tfs: "
 			dnaseIGainsScoringMatrix = self.scoreByElementGains(genes, sampleMap, geneMap, "dnaseI")
 			dnaseILossesScoringMatrix = self.scoreByElementLosses(genes, sampleMap, geneMap, "dnaseI")
 			
@@ -156,13 +163,14 @@ class GeneRanking:
 			
 			#Perform additional check to see if the gene has SVs at all, otherwise we can skip it
 			geneSVs = gene.SVs
-			if geneSVs is None:
+			
+			if geneSVs is None or len(geneSVs) < 1:
 				continue
 			
-			for svInd in range(0, len(geneSVs)):
+			for sv in geneSVs:
 
 				#check the sample of this sv and get the right position of the samples in the scoring matrix
-				sampleName = geneSVs[svInd][6]
+				sampleName = sv
 				sampleInd = sampleMap[sampleName]
 
 				scoringMatrix[sampleInd][matrixGeneInd] = 1 #set the score to 1 to ensure that per sample we count only 1 SV. 

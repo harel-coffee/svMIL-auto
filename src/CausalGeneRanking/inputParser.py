@@ -358,7 +358,7 @@ class InputParser:
 				#This function belongs more to the neighborhood definer, so we use the function from there. 
 				#neighborhoodDefiner.mapElementsToGenes(eQTLObject, geneDict, splitLine[3])
 				eQTL = [chrName, int(splitLine[1]), int(splitLine[2]), "eQTL", splitLine[3]]
-				#neighborhoodDefiner.mapElementsToGenes(eQTL, geneDict, splitLine[3])
+				neighborhoodDefiner.mapElementsToGenes(eQTL, geneDict, splitLine[3])
 
 				#eQTLs.append([chrName, int(splitLine[1]), int(splitLine[2]), eQTLObject, "eQTL"]) #Keep the eQTL information raw as well for quick overlapping.
 				eQTLs.append(eQTL) #Keep the eQTL information raw as well for quick overlapping. 
@@ -439,9 +439,10 @@ class InputParser:
 				# elementObject.type = "enhancer"
 				
 				#The mapping information is in the file, so we can already do it here
-				#neighborhoodDefiner.mapElementsToGenes(elementObject, geneDict, geneName)
+				
 						
 				element = [chrName, start, end, "enhancer", geneName]
+				neighborhoodDefiner.mapElementsToGenes(element, geneDict, geneName)
 				enhancers.append(element)
 		
 		
@@ -499,8 +500,9 @@ class InputParser:
 				# elementObject.type = "promoter"
 				
 				#The mapping information is in the file, so we can already do it here
-				#neighborhoodDefiner.mapElementsToGenes(elementObject, geneDict, finalGeneName)
+				
 				promoter = [chrName, start, end, "promoter", finalGeneName]
+				neighborhoodDefiner.mapElementsToGenes(promoter, geneDict, finalGeneName)
 				promoters.append(promoter) #Keep the eQTL information raw as well for quick overlapping. 
 		
 		return np.array(promoters, dtype='object')	

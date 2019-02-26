@@ -232,7 +232,7 @@ class NeighborhoodDefiner:
 		"""
 		
 		geneDict[geneSymbol].addElement(element)
-		element.addGene(geneDict[geneSymbol])
+		#element.addGene(geneDict[geneSymbol])
 		
 	def mapInteractionsToGenes(self, genes, interactionData):
 		"""
@@ -351,50 +351,55 @@ class NeighborhoodDefiner:
 		"""
 			
 		"""
-		print "mapping to tads"
-		uniqueElements = dict()
-		for tadStr in interactionsByTad:
+		
+		hicOut = "../../data/HiC/hic.bed"
+		with open(hicOut, 'w') as outF:
 			
-			#1. Get the right TAD object
-			splitTadStr = tadStr.split("_")
-			
-			
-			tadChrMatch = tadData[:,0] == splitTadStr[0]
-			tadStartMatch = tadData[:,1] == int(splitTadStr[1])
-			tadEndMatch = tadData[:,2] == int(splitTadStr[2])
-			
-			matchingTad = tadData[tadChrMatch * tadStartMatch * tadEndMatch]
-			
-			if len(matchingTad) < 1: #This should not happen, but it does anyway? 
-				continue
-			
-			matchingTad = matchingTad[0]
-			
-			#Assign the interactions to this TAD.
-			#matchingTad[3].addElements(interactionsByTad[tadStr])
-			interactionLines = []
-			binSize = 5000
-			
-			for lineInd in range(0, len(interactionsByTad[tadStr])-1):
-				line = interactionsByTad[tadStr][lineInd]
-				# el = Element(splitTadStr[0], int(line), int(line)+binSize)
-				# el.type = "hic"
-				element = [splitTadStr[0], int(line), int(line)+binSize, "hic", None] #None because it is not associated with any gene
-				interactionLines.append(element)
-										
-				#interactionLines.append([line, "hic"])
-			# 	if line != "":
-			# 		elementStr = splitTadStr[0] + "_" + str(line) + "_" + str(int(line)+binSize)
-			# 		#if elementStr not in uniqueElements:
-			# 		uniqueElements[elementStr] = [splitTadStr[0], int(line), int(line)+binSize]
-			# 			#Add this element
-			# 		#elementObject = Element(splitTadStr[0], int(line), int(line)+binSize)
-			# 		#elementObject.type = "hic"
-			# 		#matchingTad[3].addElements([elementObject])
-			# 
-			#matchingTad[3].addElements(np.array(interactionLines, dtype="object"))
-			matchingTad[3].addElements(interactionLines)
-
+			print "mapping to tads"
+			uniqueElements = dict()
+			for tadStr in interactionsByTad:
+				
+				#1. Get the right TAD object
+				splitTadStr = tadStr.split("_")
+				
+				
+				tadChrMatch = tadData[:,0] == splitTadStr[0]
+				tadStartMatch = tadData[:,1] == int(splitTadStr[1])
+				tadEndMatch = tadData[:,2] == int(splitTadStr[2])
+				
+				matchingTad = tadData[tadChrMatch * tadStartMatch * tadEndMatch]
+				
+				if len(matchingTad) < 1: #This should not happen, but it does anyway? 
+					continue
+				
+				matchingTad = matchingTad[0]
+				
+				#Assign the interactions to this TAD.
+				#matchingTad[3].addElements(interactionsByTad[tadStr])
+				interactionLines = []
+				binSize = 5000
+				
+				for lineInd in range(0, len(interactionsByTad[tadStr])-1):
+					line = interactionsByTad[tadStr][lineInd]
+					# el = Element(splitTadStr[0], int(line), int(line)+binSize)
+					# el.type = "hic"
+					element = [splitTadStr[0], int(line), int(line)+binSize, "hic", None] #None because it is not associated with any gene
+					interactionLines.append(element)
+					outF.write(splitTadStr[0] + "\t" + str(line) + "\t" + str(int(line)+binSize) + "\n")
+											
+					#interactionLines.append([line, "hic"])
+				# 	if line != "":
+				# 		elementStr = splitTadStr[0] + "_" + str(line) + "_" + str(int(line)+binSize)
+				# 		#if elementStr not in uniqueElements:
+				# 		uniqueElements[elementStr] = [splitTadStr[0], int(line), int(line)+binSize]
+				# 			#Add this element
+				# 		#elementObject = Element(splitTadStr[0], int(line), int(line)+binSize)
+				# 		#elementObject.type = "hic"
+				# 		#matchingTad[3].addElements([elementObject])
+				# 
+				#matchingTad[3].addElements(np.array(interactionLines, dtype="object"))
+				matchingTad[3].addElements(interactionLines)
+		
 		return tadData 
 		
 	def determineGainedInteractions(self, svData, tadData):
@@ -523,6 +528,45 @@ class NeighborhoodDefiner:
 		#Specific for deletions, this will need to be part of the derivative TAD maker later on
 		if settings.general['gainOfInteractions'] == True:
 			self.determineGainedInteractions(svData, tadData)
+		
+		
+		#Map SVs to genes that these overlap
+		for sv in svData:
+			
+			#1. Get the genes on the right chromosome
+			
+			if sv[0] == sv[3]: #intrachromosomal SV
+				
+				geneChrSubset = genes[sv[0] == genes[:,0]]
+				
+				#Find all genes overlapped by this SV. 
+				startMatches = sv[1] < geneChrSubset[:,2]
+				endMatches = sv[5] > geneChrSubset[:,1]
+				
+				matchingGenes = geneChrSubset[startMatches * endMatches]
+				for gene in matchingGenes[:,3]:
+					gene.SVs[sv[7]] = 1
+				
+			else: #interchromosomal SV
+				
+				geneChr1Subset = genes[sv[0] == genes[:,0]]
+				#Find all genes overlapped by this SV. 
+				startMatches = sv[1] < geneChr1Subset[:,2]
+				endMatches = sv[2] > geneChr1Subset[:,1]
+				
+				matchingGenes = geneChr1Subset[startMatches * endMatches]
+				for gene in matchingGenes[:,3]:
+					gene.SVs[sv[7]] = 1
+				
+				geneChr2Subset = genes[sv[3] == genes[:,0]]
+				#Find all genes overlapped by this SV. 
+				startMatches = sv[4] < geneChr2Subset[:,2]
+				endMatches = sv[5] > geneChr2Subset[:,1]
+				
+				matchingGenes = geneChr2Subset[startMatches * endMatches]
+				for gene in matchingGenes[:,3]:
+					gene.SVs[sv[7]] = 1
+			
 		
 		
 		print "Done mapping SVs"
