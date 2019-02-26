@@ -529,7 +529,7 @@ class NeighborhoodDefiner:
 		if settings.general['gainOfInteractions'] == True:
 			self.determineGainedInteractions(svData, tadData)
 		
-		
+		print "mapping SVs to genes"
 		#Map SVs to genes that these overlap
 		for sv in svData:
 			

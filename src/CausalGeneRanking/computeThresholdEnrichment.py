@@ -30,15 +30,24 @@ print rankedGenesFile
 geneScores = dict()
 maxScore = 0 #Keep a max score that we use to determine the thresholds to search through
 with open(permutationDataFolder + "/" + rankedGenesFile, 'r') as rankF:
-	
+	lineCount = 0
 	for line in rankF:
+		if lineCount < 1:
+			lineCount += 1
+			continue
 		line = line.strip()
 		splitLine = line.split()
 		
 		geneName = splitLine[0]
-		geneScore = int(float(splitLine[12]))
+		
+		#Scoring by eQTLs, enhancers & promoters. Range 2:7.
+		scores = splitLine[2:7]
+		floatScores = [float(i) for i in scores]
+		geneScore = sum(floatScores)
+		
+		#geneScore = int(float(splitLine[12]))
 		if geneScore > maxScore: 
-			maxScore = geneScore
+			maxScore = int(geneScore)
 		
 		geneScores[geneName] = geneScore
 
@@ -102,7 +111,12 @@ def computeCategoryMatches(realGeneScores, threshold):
 	
 	for gene in realGeneScores:
 		
-		if float(gene[12]) > threshold:
+		#Scoring by eQTLs, enhancers & promoters. Range 2:7.
+		
+		floatScores = [float(i) for i in gene[2:7]]
+		geneScore = sum(floatScores)
+		
+		if geneScore > threshold:
 			allGenes.append(gene[0])
 			if gene[0] in degGenes:
 				degGenesPos.append(gene[0])
