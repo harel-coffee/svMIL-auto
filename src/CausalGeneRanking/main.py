@@ -33,6 +33,7 @@ import random
 import pickle as pkl
 import os
 import re
+import time
 
 from neighborhoodDefiner import NeighborhoodDefiner
 from geneRanking import GeneRanking
@@ -47,6 +48,7 @@ import settings
 ###############
 ###Main code###
 
+startTime = time.time() #Keep run time of the program
 
 #0. Collect all the relevant parameters here for clarity
 uuid = sys.argv[1] #This uuid will normally be provided by the sh script when running in parallel. It is the folder name that will be created in RankedGenes, and where the output will be written to. 
@@ -131,5 +133,8 @@ if permutationYN == "True":
 	permutationRound = sys.argv[3]
 
 OutputWriter().writeOutput(geneRanking, causalGenes, uuid, permutationYN, permutationRound)
+
+endTime = time.time()
+print "The program took ", endTime-startTime, " seconds to complete"
 
 	

@@ -12,7 +12,7 @@ class Gene:
 		self.chromosome = chromosome
 		self.start = start
 		self.end = end
-		self.SVs = None
+		self.SVs = dict()
 		self.SNVs = None
 		self.leftTAD = None
 		self.rightTAD = None
@@ -54,22 +54,35 @@ class Gene:
 		self.gainedElements[sample] = gainedElements #keep the gained eQTLs separate per patient to later do mutual exclusivity.
 		
 	def addGainedElements(self, gainedElements, sample):
-
-			#print "final no of gains: ", len(self.gainedEQTLs[sample])
-		types = []
-		for gainedElement in gainedElements:
-			if gainedElement.type not in types:
-				
-				types.append(gainedElement.type)
 		
-		#For the recurrence ranking, speed up code by adding only 1 per sample. More is not necessary. 
 		if len(gainedElements) > 0:
 			if sample not in self.gainedElements:
-				self.gainedElements[sample] = types
-			else:
-				for elementType in types:
-					self.gainedElements[sample].append(elementType)
+				self.gainedElements[sample] = dict()
 		
+		for gainedElement in gainedElements:
+			if gainedElement[3] not in self.gainedElements[sample]:
+				self.gainedElements[sample][gainedElement[3]] = 0
+			self.gainedElements[sample][gainedElement[3]] += 1
+			#print "final no of gains: ", len(self.gainedEQTLs[sample])
+		# types = dict()
+		# for gainedElement in gainedElements:
+		# 	types[gainedElement[3]] = 0
+		# 	#if gainedElement.type not in types:
+		# 	
+		# 	#	types.append(gainedElement.type)
+		# 	# if gainedElement[3] not in types:
+		# 	# 	types.append(gainedElement[3])
+		# 
+		# #For the recurrence ranking, speed up code by adding only 1 per sample. More is not necessary.
+		# 
+		# if len(gainedElements) > 0:
+		# 	if sample not in self.gainedElements:
+		# 		self.gainedElements[sample] = types.keys()
+		# 	else:
+		# 		for elementType in types:
+		# 			
+		# 			self.gainedElements[sample].append(elementType)
+		# 	
 		#Use this part for when we need all eQTLs in a list
 		# if len(gainedEQTLs) > 0:
 		# 	if sample not in self.gainedEQTLs:
@@ -85,12 +98,22 @@ class Gene:
 		
 	
 	def addLostElements(self, lostElements, sample):
-
-		#An eQTL can only be lost if it is associated with that specific gene. 	
+		
+		if sample not in self.lostElements:
+			self.lostElements[sample] = dict()
+		
 		for lostElement in lostElements:
-			if lostElement in self.elements:
-				self.addLostElement(lostElement, sample)
-		#self.lostEQTLs[sample] += lostEQTLs
+			if lostElement[3] not in self.lostElements[sample]:
+				self.lostElements[sample][lostElement[3]] = 0
+			self.lostElements[sample][lostElement[3]] +=1
+			
+			
+			
+			
+		
+		# for lostElement in lostElements:
+		# 	self.addLostElement(lostElement, sample, types)
+		# 
 		
 	def setLostElements(self, lostElements, sample):
 		for lostElement in lostElements:
@@ -98,20 +121,30 @@ class Gene:
 				self.addLostElement(lostElement, sample)
 		#self.lostEQTLs[sample] = lostEQTLs
 	
-	def addLostElement(self, lostElement, sample):
-		
+	def addLostElement(self, lostElement, sample, types):
+
 		#Treat losses differently for elements that we cannot link to the gene
-		if lostElement.type == "cpg" or lostElement.type == "tf":
-			
-			if sample not in self.lostElements:
-				self.lostElements[sample] = []
-			
-			self.lostElements[sample].append(lostElement.type)
-	
-		else:	
-			if lostElement in self.elements:
-				if sample not in self.lostElements:
-					self.lostElements[sample] = []
-				
-				self.lostElements[sample].append(lostElement.type)
+		elementsNotLinkedToGenes = ['cpg', 'tf', 'hic', 'dnaseI', 'h3k9me3', 'h3k4me3', 'h3k27ac', 'h3k27me3', 'h3k4me1', 'h3k36me3']
+		
+		# if lostElement[3] in elementsNotLinkedToGenes:
+		# 	
+		# 	if sample not in self.lostElements:
+		# 		self.lostElements[sample] = types.keys()
+		# 	else:
+		# 		for elementType in types:
+		# 			self.lostElements[sample].append(elementType)
+		if sample not in self.lostElements:
+			self.lostElements[sample] = dict()
+
+		for elementType in types:
+			if elementType not in self.lostElements[sample]:
+				self.lostElements[sample][elementType] = 0
+			self.lostElements[sample][elementType] += 1
+		# else:	
+		# 	if lostElement in self.elements:
+		# 		if sample not in self.lostElements:
+		# 			self.lostElements[sample] = types.keys()
+		# 		else:
+		# 			for elementType in types:
+		# 				self.lostElements[sample].append(elementType)
 		

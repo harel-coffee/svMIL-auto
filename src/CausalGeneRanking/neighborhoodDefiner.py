@@ -74,8 +74,8 @@ class NeighborhoodDefiner:
 			print "getting eQTLs"
 			eQTLData = InputParser().getEQTLsFromFile(eQTLFile, genes[:,3], self)
 
-			with open('eQTLData.pkl', 'wb') as h:
-				pkl.dump(eQTLData, h, protocol=pkl.HIGHEST_PROTOCOL)
+			# with open('eQTLData.pkl', 'wb') as h:
+			# 	pkl.dump(eQTLData, h, protocol=pkl.HIGHEST_PROTOCOL)
 		
 		#Read the lncRNA data. If we enable lncRNAs, for now we switch that for eQTLs. Will be fixed in a later version. 
 		if settings.general['lncRNA'] == True:
@@ -112,19 +112,41 @@ class NeighborhoodDefiner:
 		#6. Get Transcription factors
 		if settings.general['transcriptionFactors'] == True:
 			print "Getting transcription factors"
+
 			tfData = InputParser().getTranscriptionFactorsFromFile(settings.files['tfFile'])
-		
+	
 			#Add the CpG sites to the TADs
 			tadData = self.mapElementsToTads(tfData, tadData)
+		
 		
 		#7. Get Hi-C data
 		if settings.general['hiC'] == True:
 			print "Getting Hi-C data"
-			hicData = InputParser().getTranscriptionFactorsFromFile(settings.files['hicFile'])
+			hicData = InputParser().getHiCInteractionsFromFile(settings.files['hicFile'])
+			
+			#Map the interactions to TADs as elements
+			tadData = self.mapInteractionsToTads(hicData, tadData)
 		
-			#Add the CpG sites to the TADs
-			tadData = self.mapElementsToTads(hicData, tadData)
+		#8. Get histone marks
+		if settings.general['histones'] == True:
+			print "Getting histone marks"
+			files = [settings.files['h3k9me3'], settings.files['h3k4me3'], settings.files['h3k27ac'], settings.files['h3k27me3'],
+					 settings.files['h3k4me1'], settings.files['h3k36me3']]
+			types = ['h3k9me3', 'h3k4me3', 'h3k27ac', 'h3k27me3', 'h3k4me1', 'h3k36me3']
+			for histoneFileInd in range(0, len(files)):
+				histoneData = InputParser().getHistoneMarksFromFile(files[histoneFileInd], types[histoneFileInd])
+			
+				#map the histone marks to the TADs
+				tadData = self.mapElementsToTads(histoneData, tadData)
 		
+		#9. Get DNAse I hypersensitivty sites
+		if settings.general['dnaseI'] == True:
+			print "Getting DNAse I hypersensitivity sites"
+			
+			dnaseIData = InputParser().getDNAseIFromFile(settings.files['dnaseIFile'])
+			
+			tadData = self.mapElementsToTads(dnaseIData, tadData)
+			
 		#3. Map SVs to all neighborhood elements
 		if mode == "SV":
 			print "Mapping SVs to the neighborhood"
@@ -139,6 +161,7 @@ class NeighborhoodDefiner:
 			print "Mapping SNVs to the neighborhood"
 			self.mapSNVsToNeighborhood(genes, snvData, eQTLData)
 
+				
 	
 	def mapTADsToGenes(self, genes, tadData):
 		"""
@@ -209,7 +232,7 @@ class NeighborhoodDefiner:
 		"""
 		
 		geneDict[geneSymbol].addElement(element)
-		element.addGene(geneDict[geneSymbol])
+		#element.addGene(geneDict[geneSymbol])
 		
 	def mapInteractionsToGenes(self, genes, interactionData):
 		"""
@@ -319,73 +342,64 @@ class NeighborhoodDefiner:
 				continue
 			else:
 				
-				tad[3].addElements(matchingElements[:,3]) #Add the elements objects to the TAD objects.
+				#tad[3].addElements(matchingElements[:,3]) #Add the elements objects to the TAD objects.
+				tad[3].addElements(matchingElements) #Add the elements objects to the TAD objects.
 			
 		return tadData		
 	
-	def mapInteractionsToTads(self, interactions, regions, tadData):
+	def mapInteractionsToTads(self, interactionsByTad, tadData):
 		"""
-			Determine which interactions take place within which TAD.
-			Interactions will be mapped to TAD objects.
-			
-			- For now, I remove all interactions that take place with regions outside of the TAD. For the purpose of this script, we only look at interactions that are gained as a
-			result of disrupted TAD boundaries, so regions that are already outside of TAD boundaries are questionable. Are these errors? Are the TAD boundary definitions not correct?
-			
-			
-			Returns the tadData, where the objects now have interactions mapped to them (but these are objects, so by reference this should not be necessary)
-			
-			TO DO:
-			-	deprecated function, may be removed later
 			
 		"""
-		print "Mapping interactions to TADs"
-		previousChromosome = 0
-		for tad in tadData:
+		
+		hicOut = "../../data/HiC/hic.bed"
+		with open(hicOut, 'w') as outF:
 			
-			#Find all interactions taking place within this TAD.
-			
-			#The interactions are currently intrachromosomal, but may later be interchromosomal
-			#Thus for now we can just match on 1 chromosome
-			
-			#Get all regions that are within the TAD
-			#Find all corresponding interactions between the regions within the TAD (make sure that these do not go outside of the boundary, this may indicate data errors)
-			
-			if tad[0] != previousChromosome:
-				previousChromosome = tad[0]
-				regionChrSubset = regions[np.where(regions[:,0] == tad[0])] #First get the subset of all regions on the current chromosome, TADs are sorted
-
-			
-			#Find which regions are within this TAD
-			#All regions must have their start position larger than the TAD start and the end smaller than the TAD end
-			startMatches = regionChrSubset[:,1] >= tad[1]
-			endMatches = regionChrSubset[:,2] <= tad[2]
-			
-			allMatches = startMatches * endMatches
-			matchingRegions = regionChrSubset[allMatches,:]
-			
-			#Get the interactions of these matching regions and ensure that these are within the TAD boundaries
-			
-			#Find all the interactions mapping to this region.
-			 
-			matchingRegionsInteractions = []
-			for region in matchingRegions:
-				regionInteractions = interactions[region[3]] #the interacting regions
-				for interaction in regionInteractions: #make sure that the interacting regions are actually within the TAD
-					
-					splitInteraction = interaction.split("_")
-					interactionChrom = splitInteraction[0]
-					splitInteractionStartRegion = int(splitInteraction[1])
-					splitInteractionEndRegion = splitInteractionStartRegion + settings.interactions['binSize']
-					
-					if splitInteractionStartRegion < tad[2]: #remove the interacting regions where the start of the interaction is outside of the TAD
-						#Make the final format for the interactions and then add them to the TAD
-						markedUpInteraction = [region[0], region[1], region[2], interactionChrom, splitInteractionStartRegion, splitInteractionEndRegion]
-						matchingRegionsInteractions.append(markedUpInteraction)
-						
-						
-			#Add the interactions to this TAD			
-			tad[3].setInteractions(matchingRegionsInteractions)
-
+			print "mapping to tads"
+			uniqueElements = dict()
+			for tadStr in interactionsByTad:
+				
+				#1. Get the right TAD object
+				splitTadStr = tadStr.split("_")
+				
+				
+				tadChrMatch = tadData[:,0] == splitTadStr[0]
+				tadStartMatch = tadData[:,1] == int(splitTadStr[1])
+				tadEndMatch = tadData[:,2] == int(splitTadStr[2])
+				
+				matchingTad = tadData[tadChrMatch * tadStartMatch * tadEndMatch]
+				
+				if len(matchingTad) < 1: #This should not happen, but it does anyway? 
+					continue
+				
+				matchingTad = matchingTad[0]
+				
+				#Assign the interactions to this TAD.
+				#matchingTad[3].addElements(interactionsByTad[tadStr])
+				interactionLines = []
+				binSize = 5000
+				
+				for lineInd in range(0, len(interactionsByTad[tadStr])-1):
+					line = interactionsByTad[tadStr][lineInd]
+					# el = Element(splitTadStr[0], int(line), int(line)+binSize)
+					# el.type = "hic"
+					element = [splitTadStr[0], int(line), int(line)+binSize, "hic", None] #None because it is not associated with any gene
+					interactionLines.append(element)
+					outF.write(splitTadStr[0] + "\t" + str(line) + "\t" + str(int(line)+binSize) + "\n")
+											
+					#interactionLines.append([line, "hic"])
+				# 	if line != "":
+				# 		elementStr = splitTadStr[0] + "_" + str(line) + "_" + str(int(line)+binSize)
+				# 		#if elementStr not in uniqueElements:
+				# 		uniqueElements[elementStr] = [splitTadStr[0], int(line), int(line)+binSize]
+				# 			#Add this element
+				# 		#elementObject = Element(splitTadStr[0], int(line), int(line)+binSize)
+				# 		#elementObject.type = "hic"
+				# 		#matchingTad[3].addElements([elementObject])
+				# 
+				#matchingTad[3].addElements(np.array(interactionLines, dtype="object"))
+				matchingTad[3].addElements(interactionLines)
+		
 		return tadData 
 		
 	def determineGainedInteractions(self, svData, tadData):
@@ -476,14 +490,14 @@ class NeighborhoodDefiner:
 			for gene in farLeftTad[3].genes:
 				
 				if len(farRightTad[3].elements) > 0:
-					gene.setGainedElements(farRightTad[3].elements, sv[7])
+					gene.addGainedElements(farRightTad[3].elements, sv[7])
 					
 			
 			for gene in farRightTad[3].genes:
 				
 				
 				if len(farLeftTad[3].elements) > 0:	
-					gene.setGainedElements(farLeftTad[3].elements, sv[7])
+					gene.addGainedElements(farLeftTad[3].elements, sv[7])
 				
 		
 		return 0
@@ -511,147 +525,51 @@ class NeighborhoodDefiner:
 		DerivativeTADMaker(svData, genes, tadData)
 		
 		
-		#First map the SVs to TADs to see if we can infer gained interactions
+		#Specific for deletions, this will need to be part of the derivative TAD maker later on
 		if settings.general['gainOfInteractions'] == True:
 			self.determineGainedInteractions(svData, tadData)
 		
-		#The code below is now very specifically for all elements, but I will initially remove the TAD part and focus just on eQTLs.
-		#eQTLs will only be labelled as lost when these are targeted by a deletion, and also when these are within the nearest TAD boundaries of their gene. 
+		print "mapping SVs to genes"
+		#Map SVs to genes that these overlap
+		for sv in svData:
+			
+			#1. Get the genes on the right chromosome
+			
+			if sv[0] == sv[3]: #intrachromosomal SV
+				
+				geneChrSubset = genes[sv[0] == genes[:,0]]
+				
+				#Find all genes overlapped by this SV. 
+				startMatches = sv[1] < geneChrSubset[:,2]
+				endMatches = sv[5] > geneChrSubset[:,1]
+				
+				matchingGenes = geneChrSubset[startMatches * endMatches]
+				for gene in matchingGenes[:,3]:
+					gene.SVs[sv[7]] = 1
+				
+			else: #interchromosomal SV
+				
+				geneChr1Subset = genes[sv[0] == genes[:,0]]
+				#Find all genes overlapped by this SV. 
+				startMatches = sv[1] < geneChr1Subset[:,2]
+				endMatches = sv[2] > geneChr1Subset[:,1]
+				
+				matchingGenes = geneChr1Subset[startMatches * endMatches]
+				for gene in matchingGenes[:,3]:
+					gene.SVs[sv[7]] = 1
+				
+				geneChr2Subset = genes[sv[3] == genes[:,0]]
+				#Find all genes overlapped by this SV. 
+				startMatches = sv[4] < geneChr2Subset[:,2]
+				endMatches = sv[5] > geneChr2Subset[:,1]
+				
+				matchingGenes = geneChr2Subset[startMatches * endMatches]
+				for gene in matchingGenes[:,3]:
+					gene.SVs[sv[7]] = 1
+			
 		
-		previousChr = None
-		for gene in genes[:,3]:
-			
-			#We first split the data per chromosome for faster overlapping. Thus, if the chromosome of the gene is 1, then we find all SVs for which either chromosome 1 or chromosome 2 (translcoations)
-			#are on chromosome 1. The genes are sorted, so this saves time when doing overlap with large sets of SVs or SNVs. 
-			
-			#To overlap, there are SVs that either have overlap with elements in the gene neighborhood on chr1 or chr2 (if translocation). Thus, we make 3 different sets
-			#for SVs that are not translocations (checking if overlapping with chromosome 1, start 1 and end 2 (intraChrSubset)).
-			#If the SV is a translocation, we can match either on chromosome 1 or chromosome 2. Thus we have 2 sets of SVs on chr1, where we overlap with s1 and e1, and on chr2, where we overlap with
-			#s2 and e2. These are then all combined into one large set, so that we can immediately do the overlap at once for all elements in the neighborhood on the chromosomes of the SVs. 
-			
-			if gene.chromosome != previousChr:
-				
-				matchingSvChr1Ind = svData[:,0] == str(gene.chromosome)
-				matchingSvChr2Ind = svData[:,3] == str(gene.chromosome)
-				
-				#Intra and chr1 and chr2 will overlap if we don't exclude the positions where both chr1 and chr2 are the same. 
 		
-				notChr1Matches = svData[:,3] != str(gene.chromosome)
-				chr1OnlyInd = matchingSvChr1Ind * notChr1Matches
-				
-				notChr2Matches = svData[:,0] != str(gene.chromosome)
-				chr2OnlyInd = matchingSvChr2Ind * notChr2Matches
-				
-				#intraSubset: chr1 and chr2 both match
-				matchingChr1AndChr2Ind = matchingSvChr1Ind * matchingSvChr2Ind
-				intraSubset = svData[matchingChr1AndChr2Ind]
-				
-				#interChr1Subset: only chr1 matches
-				interChr1Subset = svData[chr1OnlyInd]
-				
-				#interChr2Subset: only chr2 matches
-				interChr2Subset = svData[chr2OnlyInd]
-				
-		
-				#Now concatenate them into one set, but keep the formatting the same as: chr, start, end
-				
-				svChr1Subset = np.empty([interChr1Subset.shape[0],11],dtype='object')
-				svChr1Subset[:,0] = interChr1Subset[:,0] #For chromosome 1, we use just the first chromosome, s1 and e1.
-				svChr1Subset[:,1] = interChr1Subset[:,1] #For chromosome 1, we use just the first chromosome, s1 and e1.
-				svChr1Subset[:,2] = interChr1Subset[:,2] #For chromosome 1, we use just the first chromosome, s1 and e1.
-				svChr1Subset[:,3] = None #Here fill with None because the SVs need to have the cancer type and sample name in the same place in the array as the SNVs, but the SNVs don't have this info. Also just use None because we won't use the other position anymore.
-				svChr1Subset[:,4] = None
-				svChr1Subset[:,5] = None
-				svChr1Subset[:,6] = interChr1Subset[:,7]
-				svChr1Subset[:,7] = interChr1Subset[:,6]
-				
-				#Make the subset for the chr2 matches
-				svChr2Subset = np.empty([interChr2Subset.shape[0],11], dtype='object')
-				svChr2Subset[:,0] = interChr2Subset[:,0] #For chromosome 2, we use just the second chromosome, s2 and e2.
-				svChr2Subset[:,1] = interChr2Subset[:,4] 
-				svChr2Subset[:,2] = interChr2Subset[:,5] 
-				svChr2Subset[:,3] = None
-				svChr2Subset[:,4] = None
-				svChr2Subset[:,5] = None
-				svChr2Subset[:,6] = interChr2Subset[:,7] 
-				svChr2Subset[:,7] = interChr2Subset[:,6] 
-				
-				
-				#For the intra subset, we need to use s1 and e2.
-				svIntraSubset = np.empty([intraSubset.shape[0],11], dtype='object')
-				svIntraSubset[:,0] = intraSubset[:,0] #For chromosome 2, we use chromosome 1, s1 and e2.
-				svIntraSubset[:,1] = intraSubset[:,1] 
-				svIntraSubset[:,2] = intraSubset[:,5] 
-				svIntraSubset[:,3] = None
-				svIntraSubset[:,4] = None
-				svIntraSubset[:,5] = None
-				svIntraSubset[:,6] = intraSubset[:,7] 
-				svIntraSubset[:,7] = intraSubset[:,6] 
-				
-				#Now concatenate the arrays
-				svSubset = np.concatenate((svChr1Subset, svChr2Subset, svIntraSubset))
-			
-				previousChr = gene.chromosome
-			
-			if np.size(svSubset) < 1:
-				continue #no need to compute the distance, there are no TADs on this chromosome
-			
-			#Check which of these SVs overlap with the gene itself
-			
-			geneStartMatches = gene.start <= svSubset[:,2]
-			geneEndMatches = gene.end >= svSubset[:,1]
-			
-			geneMatches = geneStartMatches * geneEndMatches #both should be true, use AND for concatenating
-		
-			svsOverlappingGenes = svSubset[geneMatches]
-			
-			
-			#Get the SV objects and link them to the gene
-			gene.setSVs(svsOverlappingGenes)
-			
-			#Check which SVs overlap with the eQTLs
-			
-			#Repeat for eQTLs. Is the gene on the same chromosome as the eQTL? Then use the above chromosome subset.
-			
-			#In the input parser we already removed all non-deletions. This should be a check around here later on. 
-			
-			geneElements = gene.elements
-			
-			for element in geneElements: #only if the gene has eQTLs
-				
-				startMatches = element.start <= svSubset[:,2]
-				endMatches = element.end >= svSubset[:,1]
-				
-				allMatches = startMatches * endMatches
-
-				svsOverlappingElement = svSubset[allMatches]
-				
-				#Filter the matches further on if these are within the gene's TAD boundary. Position of eQTL > left TAD, < right TAD
-				
-				if gene.leftTAD == None or gene.rightTAD == None or len(svsOverlappingElement) == 0: #if there are no TAD boundaries, we cannot check losses
-					continue
-				
-				#Assume that start and end are so small for eQTLs that usig only the start is enough
-				startMatches = element.start >= gene.leftTAD.end
-				endMatches = element.start <= gene.rightTAD.start
-
-				#if this eQTL is within the TAD boundaries of the gene, count the samples in which it is disrupted by an SV. 
-				match = startMatches * endMatches
-				
-				
-				if match == True:
-					
-					#Make sure that the SVs that overlap the gene as well are not counted
-					for sv in svsOverlappingElement:
-						for sv2 in svsOverlappingGenes:
-							#if sv not in svsOverlappingGenes:
-							if sv[0] != sv2[0] and sv[1] != sv2[1] and sv[5] != sv2[5]:
-								gene.addLostElement(element, sv[6])
-					
-				#If there is anything in svsWithinTAD, then we can count ths eQTL as a lost eQTL
-				
-				element.setSVs(svsOverlappingElement)
-			
+		print "Done mapping SVs"
 		
 	def mapSNVsToNeighborhood(self, genes, snvData, elementData):
 		"""

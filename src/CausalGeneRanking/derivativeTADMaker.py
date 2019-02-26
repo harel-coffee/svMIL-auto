@@ -45,6 +45,7 @@ class DerivativeTADMaker:
 		print "Linking SV effects to genes"
 		invCount = 0
 		dupCount = 0
+		delCount = 0
 		
 		#Inversions
 		for sv in svData:
@@ -64,17 +65,32 @@ class DerivativeTADMaker:
 				dupCount += 1
 				print "duplication count: ", dupCount
 				
+		#Deletions		
+		for sv in svData:
+			typeMatch = re.search("del", sv[8].svType, re.IGNORECASE)
+			if typeMatch is not None:
+				
+				self.determineDerivativeTADs(sv, tadData, "del")
+				delCount += 1
+				print "deletion count: ", delCount		
+				
+				
 		#For the translocations separately
 		# 1. For each SV, determine which TAD the SVs are in
+		print "matching TADs with translocations"
 		tadsPerSV = self.matchTADsWithTranslocations(svData, tadData)
 		
 		#2. Group the SVs that form a 'chain' and have at least 1 TAD in overlap
+		print "making SV groups"
 		svGroups = self.defineGroupsOfTranslocations(tadsPerSV)
 		
-		
+		print "determine derivative TADs"
 		#3. Call the derivative TAD maker on this group of SVs and let it assign the gains/losses to the genes
+		import time
+		startTime = time.time()
 		self.determineDerivativeTADs([svGroups, tadsPerSV], tadData, "trans")
-		
+		endTime = time.time()
+		print "Took ", endTime - startTime, " to determine the derivative TADs"
 		
 		print "done making derivative TADs"
 	
@@ -482,6 +498,9 @@ class DerivativeTADMaker:
 		# tadsPerSV[sv3[8]] = [[tad2], [tad3]]
 		# svData = [svGroups, tadsPerSV]
 		
+		
+		
+		
 		### TRANSLOCATIONS ###
 		if svType == "trans":
 			
@@ -881,45 +900,101 @@ class DerivativeTADMaker:
 				
 				#For each of the TADs, see which genes are in them and are affected, and determine their eQTL interactions.
 				
-					
+				######	
 				
 					allTads = updatedTads + fullNewTads
 					for tad in allTads:
+						
 						if tad[1] == tad[2]: #skip TADs that have no length
 							continue
 						
 						for gene in tad[3].genes:
 							
-								
+							#Get the elements that are inside this TAD for this gene	
 							elementsInTad = []
 							for element in gene.elements:
+								elementStr = element[0] + "_" + str(element[1]) + "_" + str(element[2]) + "_" + str(element[3])
 								
-								elementsInTad.append([element.chromosome, element.start, element])
-
+								#elementsInTad.append([element.chromosome, element.start, element])
+								elementsInTad.append(elementStr)
 							
+							originalTadElements = []
+							for element in gene.leftTAD.elements: #assume left TAD is the same as the right TAD, because the gene is within a TAD
+								elementStr = element[0] + "_" + str(element[1]) + "_" + str(element[2]) + "_" + str(element[3])
+								originalTadElements.append(elementStr)
+							
+							#Get all elements that are now in this TAD
 							newElements = []
 							for element in tad[3].elements:
 								#if eQTL not in gene.leftTAD.eQTLInteractions:
-								newElements.append(element)
-							
-							originalTadElements = gene.leftTAD.elements
-							filteredNewElements = np.setdiff1d(newElements, originalTadElements)
+								elementStr = element[0] + "_" + str(element[1]) + "_" + str(element[2]) + "_" + str(element[3])
 								
+								newElements.append(elementStr)
+							
+							
+							filteredNewElements = np.setdiff1d(newElements, originalTadElements)
 							#Make the derivative, determine which eQTLs are gained and lost for this gene.
 							lostElements = []
 							for element in elementsInTad:
 								if element not in newElements: #this eQTL has been lost. 
-									lostElements.append(element[2])
+									lostElements.append(element.split("_"))
+							
+							gene.addLostElements(lostElements, sv.sampleName)
 							
 							gainedElements = []
 							for element in filteredNewElements:
-								if [element.chromosome, element.start, element] not in elementsInTad:
+								if element not in elementsInTad:
 									#if eQTL[2] not in gene.leftTAD.eQTLInteractions: #Also do this check to make sure that we do not add eQTLs that were in the oroginal TAD of the gene, which are simply not associated to the gene. 
-									gainedElements.append(element)
+									gainedElements.append(element.split("_"))
+							
+							if len(gainedElements) < 1:
+								continue
 							
 							gene.addGainedElements(gainedElements, sv.sampleName)
-							gene.addLostElements(lostElements, sv.sampleName)
 		
+		### DELETIONS ###
+		if svType == "del":
+			
+			#1. For every SV, determine the TADs that it occurs in.
+			#2. Collect all elements within the SV region of these TADs
+			#3. Assign the elements as lost for these genes (ignore if the gene itself is also deleted for now, that could be a different feature). If the elements were linked to genes and are lost, or if these are TAD-wide, is determined
+			#by the gene object itself. 
+			
+			#Determine all overlapping TADs.
+			
+			tadChrSubsetInd = svData[0] == tadData[:,0]
+			tadChrSubset = tadData[tadChrSubsetInd]
+			
+			#If the SV start is before the end of the TAD, and the SV end after the start of the TAD, the TAD is overlapped.
+			startMatches = svData[1] <= tadChrSubset[:,2]
+			endMatches = svData[2] >= tadChrSubset[:,1]
+			
+			tadMatches = tadChrSubset[startMatches * endMatches]
+			
+			if tadMatches.shape[0] < 1: #no matches
+				return
+								
+			#Filter for TADs that are entirely overlapped and TADs that only contain part of the deletion.
+			
+			for tad in tadMatches:
+				lostElements = []
+				if svData[1] > tad[1] or svData[2] < tad[2]: #if the SV overlaps the TAD entirely, this will never be true.
+					#Determine which part of the TAD is disrupted by the SV
+					if svData[1] > tad[1] and svData[2] > tad[2]: #If the SV starts after the TAD start, but the TAD ends before the SV end, the SV is in the leftmost TAD.
+						lostElements = tad[3].getElementsByRange(svData[1], tad[2]) #Elements in the deletion
+						#For now, all genes will lose these elements, not just the genes that remain in the TAD. At a later point we could perhaps exclude the genes that are also deleted.  
+					if svData[2] > tad[1] and svData[2] < tad[2]: #If the SV ends after the start of the TAD, and also ends before the end of the TAD, the SV is in the rightmost TAD.
+						lostElements = tad[3].getElementsByRange(tad[1], svData[2])
+				else:
+					lostElements = tad[3].elements
+				for gene in tad[3].genes:
+					gene.addLostElements(lostElements, svData[8].sampleName)
+				
+					
+			
+					
+								
+							
 		### INVERSION ###
 		if svType == "inv":
 			
@@ -1087,16 +1162,16 @@ class DerivativeTADMaker:
 				#The next TAD boundary is the first boundary disrupted by the duplication, so the start of the last TAD disrupted
 				#The position should be the insert position (duplication end) + (TAD boundary - duplication start)
 				#The TAD boundary position is the end of the TAD if the duplication overlaps with the end of the TAD, otherwise it is the start
-				newTad1Start = filteredTads[len(filteredTads)-1][1]
+				# newTad1Start = filteredTads[len(filteredTads)-1][1]
+				# 
+				# 
+				# if svData[1] < filteredTads[0][1] and svData[5] > filteredTads[0][1]:
+				# 	newTad1End = svData[5] + (filteredTads[0][1] - svData[1])	
+				# else:
+				# 	newTad1End = svData[5] + (filteredTads[0][2] - svData[1])
+				# 
+				#newTad1 = TAD(svData[0], newTad1Start, newTad1End)
 				
-				
-				if svData[1] < filteredTads[0][1] and svData[5] > filteredTads[0][1]:
-					newTad1End = svData[5] + (filteredTads[0][1] - svData[1])	
-				else:
-					newTad1End = svData[5] + (filteredTads[0][2] - svData[1])
-				
-				newTad1 = TAD(svData[0], newTad1Start, newTad1End)
-					
 				#For every other TAD overlapped by the SV (except for the first and last), simply add the original TADs.
 				followingTads = []
 				
@@ -1161,8 +1236,12 @@ class DerivativeTADMaker:
 							#2. Filter these for the eQTLs of the gene
 							gainedEQTLs = []
 							for eQTL in tadEQTLs:
-								if gene in eQTL.genes:
+								if eQTL[4] == gene.name:
 									gainedEQTLs.append(eQTL)
+								# if eQTL in gene.elements:
+								# 	gainedEQTLs.append(eQTL)
+								# if gene in eQTL.genes:
+								# 	gainedEQTLs.append(eQTL)
 							#3. Add the eQTLs to the gene for the current sample
 							gene.addGainedElements(gainedEQTLs, svData[7])
 							

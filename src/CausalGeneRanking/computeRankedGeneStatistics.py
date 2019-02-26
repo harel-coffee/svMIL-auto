@@ -52,13 +52,15 @@ bcCountGoodScore = 0
 bcCountBadScore = 0
 genes = dict()
 with open(rankedGenesFile, 'rb') as f:
-	
+	lineCount = 0
 	for line in f:
 		line = line.strip()
 		splitLine = line.split("\t")
+		if lineCount < 1:
+			lineCount += 1
+			continue
 		
-		
-		if float(splitLine[1]) + float(splitLine[4]) > 0:
+		if float(splitLine[28]) > 0:
 			if splitLine[0] in cosmicGenes:
 				print "COSMIC gene: ", splitLine[0]
 				cosmicCountGoodScore += 1
@@ -99,12 +101,15 @@ snvCountNeg = 0
 nonSnvCountNeg = 0
 
 with open(rankedGenesFile, 'rb') as f:
-	
+	lineCount = 0
 	for line in f:
 		line = line.strip()
 		splitLine = line.split("\t")
+		if lineCount < 1:
+			lineCount += 1
+			continue
 		
-		if float(splitLine[1]) + float(splitLine[4]) > 0:
+		if float(splitLine[28])> 0:
 			if splitLine[0] in snvGenes:
 				snvCountPos += 1
 			else:
@@ -134,13 +139,15 @@ degCountNeg = 0
 nonDegCountNeg = 0
 
 with open(rankedGenesFile, 'rb') as f:
-	
+	lineCount = 0
 	for line in f:
 		line = line.strip()
 		splitLine = line.split("\t")
+		if lineCount < 1:
+			lineCount += 1
+			continue
 		
-		
-		if float(splitLine[1]) + float(splitLine[4]) > 0:
+		if float(splitLine[28])> 0:
 			if splitLine[0] in degGenes:
 				degCountPos += 1
 			else:
@@ -166,12 +173,16 @@ snvGenesPos = []
 snvGenesNeg = []
 
 with open(rankedGenesFile, 'rb') as f:
-	
+	lineCount = 0
 	for line in f:
 		line = line.strip()
 		splitLine = line.split("\t")
 		
-		if float(splitLine[1]) + float(splitLine[4]) > 0:
+		if lineCount < 1:
+			lineCount += 1
+			continue
+		
+		if float(splitLine[28])> 0:
 			if splitLine[0] in degGenes:
 				degGenesPos.append(splitLine[0])
 			if splitLine[0] in cosmicGenes:

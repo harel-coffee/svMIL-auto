@@ -278,6 +278,7 @@ class InputParser:
 			quick overlapping. I add an object reference to the matrix so that we can later add the right TAD object to the genes. 
 		"""
 		
+		
 		#Read the gene list data into a list
 		tadData = []
 		with open(tadFile, "r") as f:
@@ -351,14 +352,16 @@ class InputParser:
 					chrName = "chr" + splitLine[0]
 				else:
 					chrName = splitLine[0]
-				eQTLObject = Element(chrName, int(splitLine[1]), int(splitLine[2])) #chr, start, end
-				eQTLObject.type = 'eQTL' #set the correct type
-				#The mapping information is in the file, so we can already do it here
+				# eQTLObject = Element(chrName, int(splitLine[1]), int(splitLine[2])) #chr, start, end
+				# eQTLObject.type = 'eQTL' #set the correct type
+				# #The mapping information is in the file, so we can already do it here
 				#This function belongs more to the neighborhood definer, so we use the function from there. 
-				neighborhoodDefiner.mapElementsToGenes(eQTLObject, geneDict, splitLine[3])
-						
-				
-				eQTLs.append([chrName, int(splitLine[1]), int(splitLine[2]), eQTLObject, "eQTL"]) #Keep the eQTL information raw as well for quick overlapping. 
+				#neighborhoodDefiner.mapElementsToGenes(eQTLObject, geneDict, splitLine[3])
+				eQTL = [chrName, int(splitLine[1]), int(splitLine[2]), "eQTL", splitLine[3]]
+				neighborhoodDefiner.mapElementsToGenes(eQTL, geneDict, splitLine[3])
+
+				#eQTLs.append([chrName, int(splitLine[1]), int(splitLine[2]), eQTLObject, "eQTL"]) #Keep the eQTL information raw as well for quick overlapping.
+				eQTLs.append(eQTL) #Keep the eQTL information raw as well for quick overlapping. 
 		
 		
 		return np.array(eQTLs, dtype='object')
@@ -432,14 +435,15 @@ class InputParser:
 					continue
 				
 				
-				elementObject = Element(chrName, start, end)
-				elementObject.type = "enhancer"
+				# elementObject = Element(chrName, start, end)
+				# elementObject.type = "enhancer"
 				
 				#The mapping information is in the file, so we can already do it here
-				neighborhoodDefiner.mapElementsToGenes(elementObject, geneDict, geneName)
-						
 				
-				enhancers.append([chrName, start, end, elementObject, "enhancer"]) #Keep the eQTL information raw as well for quick overlapping. 
+						
+				element = [chrName, start, end, "enhancer", geneName]
+				neighborhoodDefiner.mapElementsToGenes(element, geneDict, geneName)
+				enhancers.append(element)
 		
 		
 		return np.array(enhancers, dtype='object')
@@ -492,13 +496,14 @@ class InputParser:
 					continue
 				
 				
-				elementObject = Element(chrName, start, end)
-				elementObject.type = "promoter"
+				# elementObject = Element(chrName, start, end)
+				# elementObject.type = "promoter"
 				
 				#The mapping information is in the file, so we can already do it here
-				neighborhoodDefiner.mapElementsToGenes(elementObject, geneDict, finalGeneName)
-
-				promoters.append([chrName, start, end, elementObject, "promoter"]) #Keep the eQTL information raw as well for quick overlapping. 
+				
+				promoter = [chrName, start, end, "promoter", finalGeneName]
+				neighborhoodDefiner.mapElementsToGenes(promoter, geneDict, finalGeneName)
+				promoters.append(promoter) #Keep the eQTL information raw as well for quick overlapping. 
 		
 		return np.array(promoters, dtype='object')	
 
@@ -533,11 +538,11 @@ class InputParser:
 				start = int(splitLine[2])
 				end = int(splitLine[3])
 				
-				elementObject = Element(chrName, start, end)
-				elementObject.type = "cpg"
+				# elementObject = Element(chrName, start, end)
+				# elementObject.type = "cpg"
 				
-
-				cpgIslands.append([chrName, start, end, elementObject, "cpg"]) #Keep the eQTL information raw as well for quick overlapping. 
+				cpgIsland = [chrName, start, end, "cpg", None] #None because it is not associated with a gene
+				cpgIslands.append(cpgIsland) #Keep the eQTL information raw as well for quick overlapping. 
 		
 		return np.array(cpgIslands, dtype='object')	
 
@@ -551,7 +556,7 @@ class InputParser:
 		
 		tfs = []
 		with open(tfFile, 'rb') as f:
-			
+			print tfFile
 			lineCount = 0
 			for line in f:
 				if lineCount < 1:
@@ -560,7 +565,7 @@ class InputParser:
 				
 				line = line.strip()
 				splitLine = line.split("\t")
-				
+
 				#Add the chr notation for uniformity. 		
 				chrMatch = re.search("chr", splitLine[0], re.IGNORECASE)
 				chrName = ""
@@ -572,78 +577,99 @@ class InputParser:
 				start = int(splitLine[1])
 				end = int(splitLine[2])
 				
-				elementObject = Element(chrName, start, end)
-				elementObject.type = "tf"
-				
+				# elementObject = Element(chrName, start, end)
+				# elementObject.type = "tf"
+				# 
 
-				tfs.append([chrName, start, end, elementObject, "tf"])
+				tfs.append([chrName, start, end, "tf", None])
 		
 		return np.array(tfs, dtype='object')	
-		
-		
-
 
 	def getHiCInteractionsFromFile(self, interactionsFile):
 		"""
 			Read all Hi-C interactions from the interactions file
-			
-			- Column 1 is the starting region of the interaction
-			- Column 2 is the ending region of the interaction
-			
-			
-			
+
 		"""
-		seenRegions = dict() #use a dictionary to quickly determine if we have added this region before to keep the regions unique
-		regions = []
-		interactions = dict() #for now I won't make objects for interactions, do we really need them? 
+		
+		#Obtain the interaction indices per TAD
+		interactions = dict()
+		
 		with open(interactionsFile, 'r') as inF:
 			
-			lineCount = 0
 			for line in inF:
-				line = line.strip()
 				
-				if lineCount < 1: #skip header
+				line = line.strip()
+				splitLine = line.split("\t")
+				
+				tad = splitLine[0]
+				
+				interactionIndices = splitLine[1].split(",")
+				interactions[tad] = interactionIndices
+				
+		
+		
+		return interactions	
+	
+	def getHistoneMarksFromFile(self, histoneFile, histoneType):
+		
+		histoneMarks = []
+		with open(histoneFile, 'rb') as f:
+			
+			lineCount = 0
+			for line in f:
+				if lineCount < 1:
 					lineCount += 1
 					continue
 				
-				splitLine = line.split(",") #csv format
+				line = line.strip()
+				splitLine = line.split("\t")
 
-				interactionStart = splitLine[0]
-				interactionEnd = splitLine[1]
+				#Add the chr notation for uniformity. 		
+				chrMatch = re.search("chr", splitLine[0], re.IGNORECASE)
+				chrName = ""
+				if chrMatch is None:
+					chrName = "chr" + splitLine[0]
+				else:
+					chrName = splitLine[0]
+					
+				start = int(splitLine[1])
+				end = int(splitLine[2])
 				
-				#Split the regions into the chromosome and region/bin
-				splitInteractionStart = interactionStart.split("_")
-				splitInteractionEnd = interactionEnd.split("_")
-				
-				chr1 = splitInteractionStart[0]
-				start1 = int(splitInteractionStart[1])
-				end1 = start1 + int(settings.interactions['binSize'])
-				
-				chr2 = splitInteractionEnd[0]
-				start2 = int(splitInteractionEnd[1])
-				end2 = start2 + int(settings.interactions['binSize'])
-				
-				if interactionStart not in seenRegions:
-					regions.append([chr1, start1, end1, interactionStart])
-					seenRegions[interactionStart] = len(regions) #keep the index at which the region is
-				if interactionEnd not in seenRegions:
-					regions.append([chr2, start2, end2, interactionEnd])
-					seenRegions[interactionEnd] = len(regions)
-				
-				if interactionStart not in interactions:
-					interactions[interactionStart] = []
-				if interactionEnd not in interactions:
-					interactions[interactionEnd] = [] #Some interactions are only in the end region
-				
-				interactions[interactionStart].append(interactionEnd)
-				interactions[interactionEnd].append(interactionStart)
-				
-		
-		regions = np.array(regions, dtype="object")
-		#interactions = np.array(interactions, dtype="object")
-
-		return interactions, regions
 			
+				histoneMarks.append([chrName, start, end, histoneType, None])
+		
+		return np.array(histoneMarks, dtype='object')	
+	
+	def getDNAseIFromFile(self, dnaseIFile):
+		dnaseISites = []
+		with open(dnaseIFile, 'rb') as f:
+			
+			lineCount = 0
+			for line in f:
+				if lineCount < 1:
+					lineCount += 1
+					continue
+				
+				line = line.strip()
+				splitLine = line.split("\t")
+
+				#Add the chr notation for uniformity. 		
+				chrMatch = re.search("chr", splitLine[0], re.IGNORECASE)
+				chrName = ""
+				if chrMatch is None:
+					chrName = "chr" + splitLine[0]
+				else:
+					chrName = splitLine[0]
+					
+				start = int(splitLine[1])
+				end = int(splitLine[2])
+				
+			
+				dnaseISites.append([chrName, start, end, "dnaseI", None])
+		
+		return np.array(dnaseISites, dtype='object')	
+		
+				
 	#Reading bed files
 	
 			
