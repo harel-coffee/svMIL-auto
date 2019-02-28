@@ -20,7 +20,7 @@ geneScoreFiles = [f for f in listdir(permutationDataFolder) if isfile(join(permu
 print geneScoreFiles
 for geneScoreFile in geneScoreFiles:
 	
-	if geneScoreFile == 'realSVs_geneScores.txt':
+	if geneScoreFile == 'deltaGeneScores.txt':
 		#Read the file
 		geneScores = np.loadtxt(permutationDataFolder + "/" + geneScoreFile, dtype="object")
 		
@@ -69,7 +69,7 @@ for threshold in range(0, maxScore): #prepare dictionaries
 
 for geneScoreFile in geneScoreFiles:
 	
-	if geneScoreFile == 'realSVs_geneScores.txt':
+	if geneScoreFile == 'deltaGeneScores.txt':
 		continue
 	else:
 		#Read the file
