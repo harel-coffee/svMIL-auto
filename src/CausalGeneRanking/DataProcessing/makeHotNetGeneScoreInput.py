@@ -13,7 +13,7 @@ with open(hotNetOutFile, 'w') as outF1:
 				line = line.strip()
 				splitLine = line.split("\t")
 				
-				outF1.write(splitLine[0] + "\t" + splitLine[1] + "\n")
-				outF2.write(splitLine[0] + "\t" + splitLine[4] + "\n")
+				outF1.write(splitLine[0] + "\t" + splitLine[28] + "\n")
+				outF2.write(splitLine[0] + "\t" + splitLine[1] + "\n")
 			
 		
