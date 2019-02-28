@@ -54,11 +54,13 @@ class OutputWriter:
 			cancerTypeScores = geneRanking.scores[cancerType]
 
 			#Store all the gene scores in here. 
-			perGeneScores = np.empty([len(genes), 29], dtype="object") #store by gene name because it is easiest to match back later
+			perGeneScores = np.empty([len(genes), 31], dtype="object") #store by gene name because it is easiest to match back later
 			
 			for row in range(0, cancerTypeScores.shape[0]):
 				gene = cancerTypeScores[row][0]
 				geneName = gene.name
+				geneChr = gene.chromosome
+				geneStart = gene.start
 				
 				geneScore = cancerTypeScores[row,1]
 				eQTLGainScore = cancerTypeScores[row,2]
@@ -90,40 +92,43 @@ class OutputWriter:
 				
 				
 				perGeneScores[row][0] = geneName
-				perGeneScores[row][1] = geneScore
-				perGeneScores[row][2] = eQTLGainScore
-				perGeneScores[row][3] = eQTLLossScore
-				perGeneScores[row][4] = enhancerGainScore
-				perGeneScores[row][5] = enhancerLossScore
-				perGeneScores[row][6] = promoterGainScore
-				perGeneScores[row][7] = promoterLossScore
-				perGeneScores[row][8] = cpgGainScore
-				perGeneScores[row][9] = cpgLossScore
-				perGeneScores[row][10] = tfGainScore
-				perGeneScores[row][11] = tfLossScore
-				perGeneScores[row][12] = hicGainScore
-				perGeneScores[row][13] = hicLossScore
-				perGeneScores[row][14] = h3k9me3GainScore
-				perGeneScores[row][15] = h3k9me3LossScore
-				perGeneScores[row][16] = h3k4me3GainScore
-				perGeneScores[row][17] = h3k4me3LossScore
-				perGeneScores[row][18] = h3k27acGainScore
-				perGeneScores[row][19] = h3k27acLossScore
-				perGeneScores[row][20] = h3k27me3GainScore
-				perGeneScores[row][21] = h3k27me3LossScore
-				perGeneScores[row][22] = h3k4me1GainScore
-				perGeneScores[row][23] = h3k4me1LossScore
-				perGeneScores[row][24] = h3k36me3GainScore
-				perGeneScores[row][25] = h3k36me3LossScore
-				perGeneScores[row][26] = dnaseIGainScore
-				perGeneScores[row][27] = dnaseILossScore
+				perGeneScores[row][1] = geneChr
+				perGeneScores[row][2] = geneStart
+				
+				perGeneScores[row][3] = geneScore
+				perGeneScores[row][4] = eQTLGainScore
+				perGeneScores[row][5] = eQTLLossScore
+				perGeneScores[row][6] = enhancerGainScore
+				perGeneScores[row][7] = enhancerLossScore
+				perGeneScores[row][8] = promoterGainScore
+				perGeneScores[row][9] = promoterLossScore
+				perGeneScores[row][10] = cpgGainScore
+				perGeneScores[row][11] = cpgLossScore
+				perGeneScores[row][12] = tfGainScore
+				perGeneScores[row][13] = tfLossScore
+				perGeneScores[row][14] = hicGainScore
+				perGeneScores[row][15] = hicLossScore
+				perGeneScores[row][16] = h3k9me3GainScore
+				perGeneScores[row][17] = h3k9me3LossScore
+				perGeneScores[row][18] = h3k4me3GainScore
+				perGeneScores[row][19] = h3k4me3LossScore
+				perGeneScores[row][20] = h3k27acGainScore
+				perGeneScores[row][21] = h3k27acLossScore
+				perGeneScores[row][22] = h3k27me3GainScore
+				perGeneScores[row][23] = h3k27me3LossScore
+				perGeneScores[row][24] = h3k4me1GainScore
+				perGeneScores[row][25] = h3k4me1LossScore
+				perGeneScores[row][26] = h3k36me3GainScore
+				perGeneScores[row][27] = h3k36me3LossScore
+				perGeneScores[row][28] = dnaseIGainScore
+				perGeneScores[row][29] = dnaseILossScore
 				
 				
-				perGeneScores[row][28] = np.sum(perGeneScores[row][2:27])
+				perGeneScores[row][30] = np.sum(perGeneScores[row][4:29])
 
 		
 			#Also rank the output by highest total score (recurrence)
-			perGeneScores = perGeneScores[perGeneScores[:,28].argsort()[::-1]] #Select the column  to rank by
+			perGeneScores = perGeneScores[perGeneScores[:,30].argsort()[::-1]] #Select the column  to rank by
 			
 			#Create the folder to write the output to specific for the current cancer type
 			cancerTypeFolder = rankedGeneScoreDir + "/" + uuid + "/" + cancerType
@@ -134,7 +139,7 @@ class OutputWriter:
 			if permutationYN == "True" or settings.general['shuffleTads'] == True:	
 				outfileName = cancerTypeFolder + "/permutedSVs_" + permutationRound + "_geneScores.txt"
 			else:
-				outfileName = cancerTypeFolder + "/realSVs_geneScores.txt"
+				outfileName = cancerTypeFolder + "/realSVs_geneScores_chr.txt"
 			
 			header = "geneName\tgeneScore\teQTLGains\teQTLLosses\tenhancerGains\tenhancerLosses\tpromoterGains\tpromoterLosses\tcpgGains\tcpgLosses\ttfGains\ttfLosses\thicGains\thicLosses\th3k9me3Gains\th3k9me3Losses\th3k4me3Gains\th3k4me3Losses\th3k27acGains\th3k27acLosses\th3k27me3Gains\th3k27me3Losses\th3k4me1Gains\th3k4me1Losses\th3k36me3Gains\th3k36me3Losses\tdnaseIGains\tdnaseILosses\ttotal"
 				

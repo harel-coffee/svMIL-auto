@@ -184,6 +184,7 @@ with open(rankedGenesFile, 'rb') as f:
 		
 		if float(splitLine[28])> 0 and float(splitLine[1]) == 0:
 			if splitLine[0] in degGenes:
+				print "deg: ", splitLine[0]
 				degGenesPos.append(splitLine[0])
 			if splitLine[0] in cosmicGenes:
 				cosmicGenesPos.append(splitLine[0])
