@@ -22,6 +22,16 @@ import settings
 class InputParser:
 	
 	def getSVsFromFile(self, svFile, typeFilter):
+		"""
+			Parse the SV data from the SV input file.
+			
+			svFile: (string) location of the SV file to read
+			typeFilter: (string) meant to filter by which types of SVs to include in the model, but does not work. 
+			
+			return
+			regions: (numpy array) array with the SVs and their information. chr1, s1, e1, chr2, s2, e2, cancerType, sampleName, svObject.
+		"""
+		
 			
 		variantsList = []
 		
@@ -68,12 +78,12 @@ class InputParser:
 				svTypeIndex = header.index("sv_type")
 				svType = splitLine[svTypeIndex]
 				
-				if typeFilter != "all":
-					#Check if the SV type matches deletions
-					match = re.search("deletion", svType, re.IGNORECASE)
-					if match is None: #only focus on deletions for now
-						continue
-				
+				# if typeFilter != "all":
+				# 	#Check if the SV type matches deletions
+				# 	match = re.search("deletion", svType, re.IGNORECASE)
+				# 	if match is None: #only focus on deletions for now
+				# 		continue
+				# 
 				
 				#if cancerType not in uniqueCancerTypes:
 				#	uniqueCancerTypes.append(cancerType)
@@ -136,7 +146,11 @@ class InputParser:
 	#cancer type (ID_tumour or Primary site) 
 	#sample name (ID_SAMPLE)
 	def getSNVsFromFile(self, snvFile):
+		"""
+			TO DO:
+			- Re-add SNVs to the model and fully document
 		
+		"""
 		snvList = []
 		
 		with open(snvFile, 'rb') as f:
@@ -181,6 +195,15 @@ class InputParser:
 		return regions
 	
 	def readCausalGeneFile(self, causalGeneFile):
+		"""
+			Read the COSMIC genes from the file.
+			
+			causalGeneFile: (string) location of the file with COSMIC genes.
+			
+			return
+			cosmicGenesSorted: (numpy array) array with the genes and their information, lexographically sorted by chromosome. chr, start, end, geneObject
+		"""
+		
 			
 		cosmicGenes = [] 
 		with open(causalGeneFile, 'r') as geneFile:
@@ -230,8 +253,15 @@ class InputParser:
 		
 	def readNonCausalGeneFile(self, nonCausalGeneFile, causalGenes):
 		"""
-			Read the non-causal genes. We currently take a random subset of these genes, and make sure that these are not overlapping with the COSMIC set.
-			We first read all the genes, and then take a subset of the genes and make sure that these are not in cosmic. 
+			Read the non-causal genes. These are filtered for genes that are in COSMIC to make sure that these do not overlap. 
+			
+			
+			nonCausalGeneFile: (string) location of the file with non-causal (non-COSMIC) genes. 
+			causalGenes: (numpy array) array with the genes and their information. chr, start, end, geneObject
+			
+			return:
+			nonCausalGenes: (numpy array) array with the non-causal genes and their information. chr, start, end, geneObject
+			
 		"""
 		causalGeneDict = dict() #for filtering out genes that are already present in the causal gene list
 		for gene in causalGenes:
@@ -274,8 +304,13 @@ class InputParser:
 	#Read TAD data
 	def getTADsFromFile(self, tadFile):
 		"""
-			Read the TADs into NumPy format. I don't read the TADs into objects immediately, because the NumPy matrices work very well for
-			quick overlapping. I add an object reference to the matrix so that we can later add the right TAD object to the genes. 
+			Read the TADs from the provided TAD file. 
+			
+			tadFile: (string) location of the TAD file on disk
+			
+			return:
+			sortedTads: (numpy array) array with the TADs and their information. Sorted by chromosome & start position. chr, start, end, tadObject
+			
 		"""
 		
 		
@@ -316,10 +351,15 @@ class InputParser:
 	#Reading eQTL file
 	def getEQTLsFromFile(self, eQTLFile, genes, neighborhoodDefiner):
 		"""
-			TO DO:
-			- Make more modular, if this function is generalized to bed files, we can use it to read any genomic element and link it to genes. 
-		
-			Read eQTLs from the file. To save time, link these to the respective gene objects right away
+			Read the eQTLs from the file.
+			
+			eQTLFile: (string) Location of the eQTL file on disk.
+			genes: (numpy array) array with the genes and their information. chr, start, end, geneObject
+			neighborhoodDefiner: (object) neighborhoodDefiner class. Used to assign the elements to genes to determine losses later on. 
+			
+			return
+			eQTLs: (numpy array) array with eQTL elements. chr, start, end, ElementObject
+			
 		"""
 		#Filter the eQTLs that do not have a match
 		geneDict = dict()
@@ -367,6 +407,15 @@ class InputParser:
 		return np.array(eQTLs, dtype='object')
 	
 	def getLncRNAsFromFile(self, lncRNAFile):
+		"""
+			TO DO:
+			- Currently unused function
+			- Needs to either be tested or removed
+		
+		"""
+		
+		
+		
 		
 		lncRNAs = []
 		with open(lncRNAFile, 'rb') as f:
@@ -385,9 +434,14 @@ class InputParser:
 	
 	def getEnhancersFromFile(self, enhancerFile, genes, neighborhoodDefiner):
 		"""
-			TO DO:
-			- make modular and re-use the eQTL function
-			We re-use the eQTL object for now, but it is better if this would be a generic type of object not called eQTL but e.g. element
+			Read the enhancers from the file.
+			
+			enhancerFile: (string) Location of the enhancer file on disk.
+			genes: (numpy array) array with the genes and their information. chr, start, end, geneObject
+			neighborhoodDefiner: (object) neighborhoodDefiner class. Used to assign the elements to genes to determine losses later on. 
+			
+			return
+			enhancers: (numpy array) array with enhancer elements. chr, start, end, ElementObject
 		
 		"""
 		
@@ -450,10 +504,14 @@ class InputParser:
 	
 	def getPromotersFromFile(self, promoterFile, genes, neighborhoodDefiner):
 		"""
-			TO DO:
-			- make modular and re-use the eQTL function
-			We re-use the eQTL object for now, but it is better if this would be a generic type of object not called eQTL but e.g. element
-		
+			Read the promoters from the file.
+			
+			promoterFile: (string) Location of the promoter file on disk.
+			genes: (numpy array) array with the genes and their information. chr, start, end, geneObject
+			neighborhoodDefiner: (object) neighborhoodDefiner class. Used to assign the elements to genes to determine losses later on. 
+			
+			return
+			promoters: (numpy array) array with promoter elements. chr, start, end, ElementObject
 		"""
 		
 		geneDict = dict()
@@ -509,10 +567,13 @@ class InputParser:
 
 	def getCpgIslandsFromFile(self, cpgFile):
 		"""
-			TO DO:
-			- make modular and re-use the eQTL function
-			We re-use the eQTL object for now, but it is better if this would be a generic type of object not called eQTL but e.g. element
-		
+			Read the CpG islands from the file.
+			
+			cpgFile: (string) Location of the CpG file on disk.
+			
+			
+			return
+			cpgIslands: (numpy array) array with CpG elements. chr, start, end, ElementObject
 		"""
 		
 		cpgIslands = []
@@ -548,10 +609,13 @@ class InputParser:
 
 	def getTranscriptionFactorsFromFile(self, tfFile):
 		"""
-			TO DO:
-			- make modular and re-use the eQTL function
-			We re-use the eQTL object for now, but it is better if this would be a generic type of object not called eQTL but e.g. element
-		
+			Read the transcription factors from the file.
+			
+			tfFile: (string) Location of the transcription factor file on disk.
+			
+			
+			return
+			tfs: (numpy array) array with TF elements. chr, start, end, ElementObject
 		"""
 		
 		tfs = []
@@ -587,7 +651,12 @@ class InputParser:
 
 	def getHiCInteractionsFromFile(self, interactionsFile):
 		"""
-			Read all Hi-C interactions from the interactions file
+			Read the Hi-C interactions from the file. To speed this up, the interactions file should already be linked to TADs to skip an additional step in the tool.
+			
+			interactionsFile: (string) Location of the Hi-C interactions file on disk.
+
+			return
+			interactions: (dictionary) the TAD ID as provided in the file is the key, the start positions of the interactions are the values. 
 
 		"""
 		
@@ -603,15 +672,22 @@ class InputParser:
 				
 				tad = splitLine[0]
 				
-				interactionIndices = splitLine[1].split(",")
-				interactions[tad] = interactionIndices
-				
-		
-		
+				interactionPositions = splitLine[1].split(",")
+				interactions[tad] = interactionPositions
+
 		return interactions	
 	
 	def getHistoneMarksFromFile(self, histoneFile, histoneType):
-		
+		"""
+			Read the histone marks from the file. The histone marks are across multiple files in the same format, so we provide the type of histone as well
+			to assign it to the Element object as type. 
+			
+			histoneFile: (string) Location of the histone marks file on disk.
+			
+			
+			return
+			histoneMarks: (numpy array) array with histone mark elements. chr, start, end, ElementObject
+		"""
 		histoneMarks = []
 		with open(histoneFile, 'rb') as f:
 			
@@ -641,6 +717,15 @@ class InputParser:
 		return np.array(histoneMarks, dtype='object')	
 	
 	def getDNAseIFromFile(self, dnaseIFile):
+		"""
+			Read the DNAse I hypersensitivity sites from the file. 
+			
+			dnaseIFile: (string) Location of the DNAse I file on disk.
+
+			return
+			dnaseISites: (numpy array) array with DNAse I sites elements. chr, start, end, ElementObject
+		"""
+		
 		dnaseISites = []
 		with open(dnaseIFile, 'rb') as f:
 			
@@ -668,12 +753,5 @@ class InputParser:
 				dnaseISites.append([chrName, start, end, "dnaseI", None])
 		
 		return np.array(dnaseISites, dtype='object')	
-		
-				
-	#Reading bed files
-	
-			
-		
-		
 			
 	

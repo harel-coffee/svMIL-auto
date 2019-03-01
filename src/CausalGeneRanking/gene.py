@@ -4,7 +4,8 @@ import settings
 
 class Gene:
 	"""
-		Class to describe a gene. Will hold all other information related to the neighborhood of the gene as well, like the TADs, eQTLs and SVs. 
+		Class to describe a gene. Holds all other information related to the neighborhood of the gene as well, like the TADs, eQTLs and SVs.
+		
 	"""
 	def __init__(self, name, chromosome, start, end):
 		
@@ -17,7 +18,6 @@ class Gene:
 		self.leftTAD = None
 		self.rightTAD = None
 		self.elements = []
-		self.interactions = []
 		self.gainedElements = dict()
 		self.lostElements = dict()
 		
@@ -26,6 +26,7 @@ class Gene:
 		self.leftTAD = leftTAD
 		self.rightTAD = rightTAD
 	
+	#I'm not sure if the left and right TADs are really used anymore, needs to be checked
 	def setLeftTAD(self, leftTAD):
 		self.leftTAD = leftTAD
 		
@@ -36,9 +37,6 @@ class Gene:
 	def setElements(self, elements):
 		
 		self.elements = elements
-		
-	def setInteractions(self, interactions):
-		self.interactions = interactions
 		
 	def setSVs(self, SVs):
 		
@@ -59,42 +57,13 @@ class Gene:
 			if sample not in self.gainedElements:
 				self.gainedElements[sample] = dict()
 		
+		#Have a dictionary where we count the number of elements of a specific type that are gained per sample.
+		#This is much faster than storing the actual elements that are gained, and we do not use that information in the ranking, so it can be discarded here. 
 		for gainedElement in gainedElements:
 			if gainedElement[3] not in self.gainedElements[sample]:
 				self.gainedElements[sample][gainedElement[3]] = 0
 			self.gainedElements[sample][gainedElement[3]] += 1
-			#print "final no of gains: ", len(self.gainedEQTLs[sample])
-		# types = dict()
-		# for gainedElement in gainedElements:
-		# 	types[gainedElement[3]] = 0
-		# 	#if gainedElement.type not in types:
-		# 	
-		# 	#	types.append(gainedElement.type)
-		# 	# if gainedElement[3] not in types:
-		# 	# 	types.append(gainedElement[3])
-		# 
-		# #For the recurrence ranking, speed up code by adding only 1 per sample. More is not necessary.
-		# 
-		# if len(gainedElements) > 0:
-		# 	if sample not in self.gainedElements:
-		# 		self.gainedElements[sample] = types.keys()
-		# 	else:
-		# 		for elementType in types:
-		# 			
-		# 			self.gainedElements[sample].append(elementType)
-		# 	
-		#Use this part for when we need all eQTLs in a list
-		# if len(gainedEQTLs) > 0:
-		# 	if sample not in self.gainedEQTLs:
-		# 		self.gainedEQTLs[sample] = gainedEQTLs
-		# 	else:
-		# 		self.gainedEQTLs[sample] += gainedEQTLs
-		# 
-		# 
-		# if sample in self.gainedEQTLs:
-		# 	print "no of gains: ", len(gainedEQTLs)
-		# 	print "final no of gains: ", len(self.gainedEQTLs[sample])
-		# 	exit()
+		
 		
 	
 	def addLostElements(self, lostElements, sample):
@@ -102,18 +71,13 @@ class Gene:
 		if sample not in self.lostElements:
 			self.lostElements[sample] = dict()
 		
+		#Have a dictionary where we count the number of elements of a specific type that are lost per sample.
+		#This is much faster than storing the actual elements that are lost, and we do not use that information in the ranking, so it can be discarded here. 
 		for lostElement in lostElements:
 			if lostElement[3] not in self.lostElements[sample]:
 				self.lostElements[sample][lostElement[3]] = 0
 			self.lostElements[sample][lostElement[3]] +=1
-			
-			
-			
-			
 		
-		# for lostElement in lostElements:
-		# 	self.addLostElement(lostElement, sample, types)
-		# 
 		
 	def setLostElements(self, lostElements, sample):
 		for lostElement in lostElements:
@@ -126,13 +90,6 @@ class Gene:
 		#Treat losses differently for elements that we cannot link to the gene
 		elementsNotLinkedToGenes = ['cpg', 'tf', 'hic', 'dnaseI', 'h3k9me3', 'h3k4me3', 'h3k27ac', 'h3k27me3', 'h3k4me1', 'h3k36me3']
 		
-		# if lostElement[3] in elementsNotLinkedToGenes:
-		# 	
-		# 	if sample not in self.lostElements:
-		# 		self.lostElements[sample] = types.keys()
-		# 	else:
-		# 		for elementType in types:
-		# 			self.lostElements[sample].append(elementType)
 		if sample not in self.lostElements:
 			self.lostElements[sample] = dict()
 
@@ -140,11 +97,5 @@ class Gene:
 			if elementType not in self.lostElements[sample]:
 				self.lostElements[sample][elementType] = 0
 			self.lostElements[sample][elementType] += 1
-		# else:	
-		# 	if lostElement in self.elements:
-		# 		if sample not in self.lostElements:
-		# 			self.lostElements[sample] = types.keys()
-		# 		else:
-		# 			for elementType in types:
-		# 				self.lostElements[sample].append(elementType)
+
 		

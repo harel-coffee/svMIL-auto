@@ -1,5 +1,7 @@
 class SV:
-	
+	"""
+		Class describing SV objects. 
+	"""
 	
 	def __init__(self, chr1, s1, e1, o1, chr2, s2, e2, o2, sampleName, cancerType, svType):
 		
