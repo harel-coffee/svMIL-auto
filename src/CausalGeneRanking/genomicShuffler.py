@@ -3,15 +3,26 @@ from tad import TAD
 import numpy as np
 
 import random
+import settings
 
 class GenomicShuffler:
+	"""
+		The goal of this class is to provide functions to enable shuffling of genomic elements.
+		
+		Currently implemented:
+		- Shuffling SVs
+		- Shuffling TADs
 	
-	
+	"""
+
 	#By default set the hg19 coordinates for shuffling SVs
 	def __init__(self):
-			
-		###Make this a setting later
-		hg19CoordinatesFile = "../../data/chromosomes/hg19Coordinates.txt"
+		"""
+			By default, we need the hg19 coordinates to make sure that we do not shuffle outside of the genome. 
+		
+		"""
+		
+		hg19CoordinatesFile = settings.files['hg19CoordinatesFile']
 		
 		self.hg19Coordinates = dict()
 		with open(hg19CoordinatesFile, 'r') as f:
@@ -28,36 +39,42 @@ class GenomicShuffler:
 				chromosome = 'chr' + splitLine[0]
 				end = splitLine[3]
 				
-				self.hg19Coordinates[chromosome] = int(end)
+				self.hg19Coordinates[chromosome] = int(end) #use the outermost coordinate as a limit
 	
 	def shuffleTADs(self, tadData):
 		"""
-			Assign new random positions to the TADs. Similar to the shuffling of the SVs. The contents of the TADs should depend on where these are located on the genome, not be copied from the original TADs. 
+			Assign new random positions to the TADs. Similar to the shuffling of the SVs.
+			The contents of the TADs should depend on where these are located on the genome, not be copied from the original TADs.
+			
+			We use a circular shuffling, where TADs are shifted by a specified offset to the right. This is 1 mb for now.
+			If a TAD goes outside of the genome, we continue with the TAD at the beginning. This will be split into 2 TADs. 
+			
+			tadData: (numpy array) array with the TADs and their information. chr, start, end, tadObject
+			
+			return
+			shuffledTads: (numpy array) array with the TADs and their information, but then with shuffled coordinates. chr, start, end, tadObject
+			
 		"""
 	
 		shuffledTads = []
 		
 		#Instead of assigning random positions to the TADs, use an offset. At the end of the genome, start again at the beginning (cicular shuffling)
-		offset = 100000 #Use a 1 mb offset.
+		offset = 100000 #Use a 1 mb offset.This is a random choice for now. 
 	
 		for tad in tadData:
 			
 			chrom = tad[0]
 			
-			if chrom not in self.hg19Coordinates:
+			if chrom not in self.hg19Coordinates: #skip strange chromosomes 
 				continue
 			
 			
 			chrLength = self.hg19Coordinates[chrom]
 			
 			tadLength = tad[2] - tad[1]
-			
-			
-			
+
 			offsetStart = tad[1] + offset
 			offsetEnd = tad[2] + offset
-			
-			
 			
 			if offsetStart > chrLength: #In this case, start from the beginning of the chromosome. 
 				overhang = chrLength - offsetStart
@@ -82,25 +99,7 @@ class GenomicShuffler:
 			
 			newTadObj = TAD(chrom, offsetStart, offsetEnd)
 			shuffledTads.append([chrom, offsetStart, offsetEnd, newTadObj])
-				
-				
-		
-		# for tad in tadData:
-		# 	
-		# 	chrom = tad[0]
-		# 	chrLength = self.hg19Coordinates[chrom]
-		# 	
-		# 	tadLength = tad[2] - tad[1]
-		# 	
-		# 	minimumStart = 1
-		# 	maximumStart = chrLength - tadLength #Make sure that the tad does not go outside of the chromosome
-		# 	
-		# 	newStart = random.randint(minimumStart, maximumStart)
-		# 	newEnd = newStart + tadLength
-		# 	
-		# 	newTadObj = TAD(chrom, newStart, newEnd)
-		# 	shuffledTads.append([chrom, newStart, newEnd, newTadObj])
-		# 
+
 		#Sort the TADs
 		shuffledTads = np.array(shuffledTads, dtype="object")
 		ind = np.lexsort((shuffledTads[:,1], shuffledTads[:,0]))
@@ -112,13 +111,20 @@ class GenomicShuffler:
 		with open(outFile, 'wb') as outF:
 			for tad in shuffledTads:
 				outF.write(tad[0] + "\t" + str(tad[1]) + "\t" + str(tad[2]) + "\n")
-				
-		
-		
+
 		return shuffledTads
 		
 	
 	def shuffleSVs(self, svData):
+		"""
+			Shuffle the coordinates of the SVs across the genome. SVs are given random coordinates, but we keep their length and original chromosome.
+			We make sure that the new coordinates are not outside of the genome. 
+			
+			svData: (numpy array) array with the SVs and their information. chr1, s1, e1, chr2, s2, e2, cancerType, sampleName, svObject.
+		
+			return
+			shuffledSvs: (numpy array) array with the SVs and their information, but with random coordinates. chr1, s1, e1, chr2, s2, e2, cancerType, sampleName, svObject.
+		"""
 		
 		shuffledSvs = []
 		
@@ -230,6 +236,14 @@ class GenomicShuffler:
 		return shuffledSvs
 
 	def shuffleSNVs(self, snvData):
+		"""
+			Function for shuffling the positions of SNVs. Has not been used for a while and may not function.
+		
+			TO DO:
+			- Check function & test
+			- re-implement SNVs in the future
+		
+		"""
 
 		shuffledSnvs = []
 		

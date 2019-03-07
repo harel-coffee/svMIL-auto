@@ -5,7 +5,6 @@
 	For duplications, inversions, and (intra & interchromosomal) translocations.
 	
 	TO DO:
-	- Add deletions
 	- Make sure that the effects of SVs are not counted more than once. Currently, since translocations and e.g. inversions are considered separately, we do not consider effects caused by e.g. first a translocation, and then an inversion
 	that will un-do the gains/losses of the translocation.
 	- finish documentation
@@ -164,7 +163,17 @@ class DerivativeTADMaker:
 		return svGroups
 
 	def matchTADsWithTranslocations(self, svData, tadData):
-		
+		"""
+			For every SV, find the TAD that it ends in on the left and on the right. This can be the same TAD.
+			
+			svData: (numpy array) array with the SVs and their information. chr1, s1, e1, chr2, s2, e2, cancerType, sampleName, svObject. Can be empty in SNV mode.
+			tadData: (numpy array) array with the TADs and their information. chr, start, end, tadObject
+			
+			return:
+			tadsPerSV: (dictionary) dictionary with the SV object as the key, and the left TAD (in np array format, like tadData) as first array element,
+									right TAD as the second. 
+			
+		"""
 		tadsPerSV = dict()
 		
 		for sv in svData:
@@ -222,6 +231,12 @@ class DerivativeTADMaker:
 		"""
 			Given an SV or a set of SVs, depending on the type of SVs, we compute how the affected region of the genome will look after the SV.
 			We then make a set of new TAD objects that are located next to each other, and update all elements that are now inside these new/affected TADs. 
+		
+			svData: (numpy array) array with the SVs and their information. chr1, s1, e1, chr2, s2, e2, cancerType, sampleName, svObject. Can be empty in SNV mode.
+			tadData: (numpy array) array with the TADs and their information. chr, start, end, tadObject
+			svType: (string) type of SV that we should determine the derivative TAD for. Either del, inv, dup or trans.
+			
+		
 		"""
 	
 		#1. Get all TADs that are affected by the SV.
@@ -967,7 +982,7 @@ class DerivativeTADMaker:
 			
 			#If the SV start is before the end of the TAD, and the SV end after the start of the TAD, the TAD is overlapped.
 			startMatches = svData[1] <= tadChrSubset[:,2]
-			endMatches = svData[2] >= tadChrSubset[:,1]
+			endMatches = svData[5] >= tadChrSubset[:,1]
 			
 			tadMatches = tadChrSubset[startMatches * endMatches]
 			
@@ -977,17 +992,21 @@ class DerivativeTADMaker:
 			#Filter for TADs that are entirely overlapped and TADs that only contain part of the deletion.
 			
 			for tad in tadMatches:
+				
 				lostElements = []
-				if svData[1] > tad[1] or svData[2] < tad[2]: #if the SV overlaps the TAD entirely, this will never be true.
+				remainingGenes = []
+				if svData[1] > tad[1] or svData[5] < tad[2]: #if the SV overlaps the TAD entirely, this will never be true.
 					#Determine which part of the TAD is disrupted by the SV
-					if svData[1] > tad[1] and svData[2] > tad[2]: #If the SV starts after the TAD start, but the TAD ends before the SV end, the SV is in the leftmost TAD.
+					if svData[1] > tad[1] and svData[5] > tad[2]: #If the SV starts after the TAD start, but the TAD ends before the SV end, the SV is in the leftmost TAD.
 						lostElements = tad[3].getElementsByRange(svData[1], tad[2]) #Elements in the deletion
+						remainingGenes = tad[3].getGenesByRange(tad[1], svData[1])
 						#For now, all genes will lose these elements, not just the genes that remain in the TAD. At a later point we could perhaps exclude the genes that are also deleted.  
-					if svData[2] > tad[1] and svData[2] < tad[2]: #If the SV ends after the start of the TAD, and also ends before the end of the TAD, the SV is in the rightmost TAD.
-						lostElements = tad[3].getElementsByRange(tad[1], svData[2])
+					if svData[5] > tad[1] and svData[5] < tad[2]: #If the SV ends after the start of the TAD, and also ends before the end of the TAD, the SV is in the rightmost TAD.
+						lostElements = tad[3].getElementsByRange(tad[1], svData[5])
+						remainingGenes = tad[3].getGenesByRange(svData[5], tad[2])
 				else:
 					lostElements = tad[3].elements
-				for gene in tad[3].genes:
+				for gene in remainingGenes:
 					gene.addLostElements(lostElements, svData[8].sampleName)
 				
 					
@@ -1129,8 +1148,7 @@ class DerivativeTADMaker:
 			
 			#Possible cases:
 			#- The duplication ends in a TAD on both sides.
-			#- The duplication ends in a genomic bin on either side (and can span multiple boundaries)
-			#- The duplication is in a genomic bin on both sides (skip this case)
+			#- We skip cases where the duplication does not end in a TAD on either side. 
 			
 			
 			if len(filteredTads) > 1: #The SV spans multiple TADs
@@ -1153,24 +1171,6 @@ class DerivativeTADMaker:
 				if len(leftMostTad) < 1 or len(rightMostTad) < 1:
 					return #For now here only use cases where the duplication ends in 2 TADs. 
 				
-				
-				
-				#Here we should also distinguish between cases where the duplications are either in a genomic bin or not.
-				#Can this code be simplified? In principle, the ideas are the same, but then with either a TAD or bin. 
-				
-				
-				#The next TAD boundary is the first boundary disrupted by the duplication, so the start of the last TAD disrupted
-				#The position should be the insert position (duplication end) + (TAD boundary - duplication start)
-				#The TAD boundary position is the end of the TAD if the duplication overlaps with the end of the TAD, otherwise it is the start
-				# newTad1Start = filteredTads[len(filteredTads)-1][1]
-				# 
-				# 
-				# if svData[1] < filteredTads[0][1] and svData[5] > filteredTads[0][1]:
-				# 	newTad1End = svData[5] + (filteredTads[0][1] - svData[1])	
-				# else:
-				# 	newTad1End = svData[5] + (filteredTads[0][2] - svData[1])
-				# 
-				#newTad1 = TAD(svData[0], newTad1Start, newTad1End)
 				
 				#For every other TAD overlapped by the SV (except for the first and last), simply add the original TADs.
 				followingTads = []

@@ -3,7 +3,7 @@ from copy import deepcopy
 class TAD:
 	
 	"""
-		Class to describe the location of a TAD and potentially SVs overlapping it.
+		Class to describe the location of a TAD and the genes and genomic elements found within this TAD. 
 	"""
 	
 	def __init__(self, chromosome, start, end):
@@ -13,7 +13,6 @@ class TAD:
 		self.end = end
 		self.SVs = None
 		self.SNVs = None
-		self.interactions = None
 		self.elements = []
 		self.genes = []
 		
@@ -25,10 +24,7 @@ class TAD:
 		
 		self.SNVs = SNVs
 		
-	def setInteractions(self, interactions): #All interactions that take place within this TAD
-		self.interactions = interactions
-		
-	def setElements(self, elements): #All eQTL interactions that take place within the TAD. 
+	def setElements(self, elements): #All genomic elements found inside this TAD
 		self.elements = elements
 	
 	def addElements(self, elements):
@@ -41,20 +37,17 @@ class TAD:
 	def setGenes(self, genes):
 		self.genes = genes
 	
+	#Get all genomic elements within this TAD given a specific range within the TAD
 	def getElementsByRange(self, start, end):
-		
 		
 		elementsInRange = []
 		for element in self.elements:
 			if element[1] >= start and element[2] <= end:
 				elementsInRange.append(element)
-			# 
-			# if eQTL.start >= start and eQTL.start <= end:
-			# 	elementsInRange.append(eQTL)
-		
-	
+
 		return elementsInRange
 	
+	#Get all genes within this TAD given a specific range within the TAD
 	def getGenesByRange(self, start, end):
 		genesInRange = []
 		for gene in self.genes:

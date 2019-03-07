@@ -22,7 +22,8 @@ files = dict(
 	dnaseIFile = '../../data/dnase/ENCFF301VRH.bed',
 	hicFile = '../../data/HiC/HMEC_groupedTADInteractions.txt',
 	tadFile = "../../data/tads/HMEC_Lieberman-raw_TADs.bed", #File with TADs specific for breast tissue
-	rankedGeneScoreDir = "./RankedGenes" #File that the output scores will be written to. The output will be in a folder with the provided UUID under this main results folder
+	rankedGeneScoreDir = "./RankedGenes", #File that the output scores will be written to. The output will be in a folder with the provided UUID under this main results folder
+	hg19CoordinatesFile = "../../data/chromosomes/hg19Coordinates.txt"
 )
 
 general = dict(
