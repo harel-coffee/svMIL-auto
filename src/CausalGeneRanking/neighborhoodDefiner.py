@@ -50,28 +50,28 @@ class NeighborhoodDefiner:
 			tadData = InputParser().getTADsFromFile(tadFile)
 			
 			#Filter the SVs out that overlap more than 10 TADs. (temporarily)
-			filteredSvData = []
-			types = []
-			for sv in svData:
-				if sv[8].svType == "del" or sv[8].svType == "invers" or sv[8].svType == "tandem_dup": #only do the threshold thing for dels, invers and dups
-					tadSubset = tadData[tadData[:,0] == sv[0]]
-				
-					startMatches = sv[1] < tadSubset[:,1]
-					endMatches = sv[5] > tadSubset[:,2]
-					
-					allMatches = startMatches * endMatches
-					overlappedTads = tadSubset[allMatches]
-					if len(overlappedTads) > 2:
-						continue
-					filteredSvData.append(sv)
-				else:
-					filteredSvData.append(sv)
-				types.append(sv[8].svType)
-				
-			print np.unique(types)	
-			svData = np.array(filteredSvData, dtype="object")
-			print "number of svs: ", svData.shape
-			
+			# filteredSvData = []
+			# types = []
+			# for sv in svData:
+			# 	if sv[8].svType == "del" or sv[8].svType == "invers" or sv[8].svType == "tandem_dup": #only do the threshold thing for dels, invers and dups
+			# 		tadSubset = tadData[tadData[:,0] == sv[0]]
+			# 	
+			# 		startMatches = sv[1] < tadSubset[:,1]
+			# 		endMatches = sv[5] > tadSubset[:,2]
+			# 		
+			# 		allMatches = startMatches * endMatches
+			# 		overlappedTads = tadSubset[allMatches]
+			# 		if len(overlappedTads) > 2:
+			# 			continue
+			# 		filteredSvData.append(sv)
+			# 	else:
+			# 		filteredSvData.append(sv)
+			# 	types.append(sv[8].svType)
+			# 	
+			# print np.unique(types)	
+			# svData = np.array(filteredSvData, dtype="object")
+			# print "number of svs: ", svData.shape
+			# 
 			# #temporarily write to a file
 			# testOut = "../../data/TPTNTestSet/brca_2TADs.txt"
 			# header = "chr1\ts1\te1\to1\tchr2\ts2\te2\to2\tsource\tsample_name\tsv_type\tcancer_type\n"
