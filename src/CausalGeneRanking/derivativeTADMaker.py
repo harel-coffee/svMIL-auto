@@ -982,7 +982,7 @@ class DerivativeTADMaker:
 			
 			#If the SV start is before the end of the TAD, and the SV end after the start of the TAD, the TAD is overlapped.
 			startMatches = svData[1] <= tadChrSubset[:,2]
-			endMatches = svData[2] >= tadChrSubset[:,1]
+			endMatches = svData[5] >= tadChrSubset[:,1]
 			
 			tadMatches = tadChrSubset[startMatches * endMatches]
 			
@@ -992,17 +992,21 @@ class DerivativeTADMaker:
 			#Filter for TADs that are entirely overlapped and TADs that only contain part of the deletion.
 			
 			for tad in tadMatches:
+				
 				lostElements = []
-				if svData[1] > tad[1] or svData[2] < tad[2]: #if the SV overlaps the TAD entirely, this will never be true.
+				remainingGenes = []
+				if svData[1] > tad[1] or svData[5] < tad[2]: #if the SV overlaps the TAD entirely, this will never be true.
 					#Determine which part of the TAD is disrupted by the SV
-					if svData[1] > tad[1] and svData[2] > tad[2]: #If the SV starts after the TAD start, but the TAD ends before the SV end, the SV is in the leftmost TAD.
+					if svData[1] > tad[1] and svData[5] > tad[2]: #If the SV starts after the TAD start, but the TAD ends before the SV end, the SV is in the leftmost TAD.
 						lostElements = tad[3].getElementsByRange(svData[1], tad[2]) #Elements in the deletion
+						remainingGenes = tad[3].getGenesByRange(tad[1], svData[1])
 						#For now, all genes will lose these elements, not just the genes that remain in the TAD. At a later point we could perhaps exclude the genes that are also deleted.  
-					if svData[2] > tad[1] and svData[2] < tad[2]: #If the SV ends after the start of the TAD, and also ends before the end of the TAD, the SV is in the rightmost TAD.
-						lostElements = tad[3].getElementsByRange(tad[1], svData[2])
+					if svData[5] > tad[1] and svData[5] < tad[2]: #If the SV ends after the start of the TAD, and also ends before the end of the TAD, the SV is in the rightmost TAD.
+						lostElements = tad[3].getElementsByRange(tad[1], svData[5])
+						remainingGenes = tad[3].getGenesByRange(svData[5], tad[2])
 				else:
 					lostElements = tad[3].elements
-				for gene in tad[3].genes:
+				for gene in remainingGenes:
 					gene.addLostElements(lostElements, svData[8].sampleName)
 				
 					

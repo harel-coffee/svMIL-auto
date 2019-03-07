@@ -48,7 +48,40 @@ class NeighborhoodDefiner:
 			
 			print "Getting TADs"
 			tadData = InputParser().getTADsFromFile(tadFile)
-
+			
+			#Filter the SVs out that overlap more than 10 TADs. (temporarily)
+			filteredSvData = []
+			types = []
+			for sv in svData:
+				if sv[8].svType == "del" or sv[8].svType == "invers" or sv[8].svType == "tandem_dup": #only do the threshold thing for dels, invers and dups
+					tadSubset = tadData[tadData[:,0] == sv[0]]
+				
+					startMatches = sv[1] < tadSubset[:,1]
+					endMatches = sv[5] > tadSubset[:,2]
+					
+					allMatches = startMatches * endMatches
+					overlappedTads = tadSubset[allMatches]
+					if len(overlappedTads) > 2:
+						continue
+					filteredSvData.append(sv)
+				else:
+					filteredSvData.append(sv)
+				types.append(sv[8].svType)
+				
+			print np.unique(types)	
+			svData = np.array(filteredSvData, dtype="object")
+			print "number of svs: ", svData.shape
+			
+			# #temporarily write to a file
+			# testOut = "../../data/TPTNTestSet/brca_2TADs.txt"
+			# header = "chr1\ts1\te1\to1\tchr2\ts2\te2\to2\tsource\tsample_name\tsv_type\tcancer_type\n"
+			# 
+			# with open(testOut, 'w') as outF:
+			# 	outF.write(header)
+			# 	for sv in svData:
+			# 		line = sv[0] + "\t" + str(sv[1]) + "\t" + str(sv[2]) + "\t" + sv[8].o1 + "\t" + sv[3] + "\t" + str(sv[4]) + "\t" + str(sv[5]) + "\t" + sv[8].o2 + "\t-\t" + sv[8].sampleName + "\t" + sv[8].svType + "\t" + sv[8].cancerType + "\n"
+			# 		outF.write(line)
+			# exit()
 			if settings.general['shuffleTads'] == True:
 				#Shuffle the TADs. Assign random genomic positions to the TADs, but keep the same length. 
 				genomicShuffler = GenomicShuffler()
@@ -146,7 +179,9 @@ class NeighborhoodDefiner:
 			dnaseIData = InputParser().getDNAseIFromFile(settings.files['dnaseIFile'])
 			
 			tadData = self.mapElementsToTads(dnaseIData, tadData)
-			
+		
+		
+		
 		#3. Map SVs to all neighborhood elements
 		if mode == "SV":
 			print "Mapping SVs to the neighborhood"
@@ -161,7 +196,43 @@ class NeighborhoodDefiner:
 			print "Mapping SNVs to the neighborhood"
 			self.mapSNVsToNeighborhood(genes, snvData, eQTLData)
 
-				
+
+		# samplesPerTad = dict()
+		# samplesPerGene = dict()
+		# for tad in tadData:
+		# 	
+		# 	#Get the genes
+		# 	genes = tad[3].genes
+		# 	tadSamples = dict()
+		# 	for gene in genes:
+		# 		sampleGains = gene.gainedElements.keys()
+		# 		sampleLosses = gene.lostElements.keys()
+		# 		samples = sampleGains + sampleLosses
+		# 		uniqueSamples = np.unique(samples)
+		# 		for sample in uniqueSamples:
+		# 			tadSamples[sample] = 0
+		# 		if len(uniqueSamples) not in samplesPerGene:
+		# 			samplesPerGene[len(uniqueSamples)] = 0
+		# 		samplesPerGene[len(uniqueSamples)] += 1
+		# 	
+		# 	if len(tadSamples) not in samplesPerTad:
+		# 		samplesPerTad[len(tadSamples)] = 0
+		# 	samplesPerTad[len(tadSamples)] += 1
+		# 		
+		# 	#Count the number of samples that are affected per gene
+		# 
+		# #Frequency
+		# print samplesPerTad
+		# print samplesPerGene
+		# import matplotlib.pyplot as plt
+		# plt.bar(samplesPerTad.keys(), samplesPerTad.values())
+		# plt.show()
+		# plt.clf()
+		# plt.bar(samplesPerGene.keys(), samplesPerGene.values())
+		# plt.show()
+		# exit()
+		
+			
 	
 	def mapTADsToGenes(self, genes, tadData):
 		"""
@@ -486,18 +557,25 @@ class NeighborhoodDefiner:
 			farLeftTad = overlappingTads[0] #This list is sorted
 			farRightTad = overlappingTads[overlappingTads.shape[0]-1,:]
 
-			#For every gene in the TAD, add the eQTLs of the other TAD as potentially gained interactions.
-			for gene in farLeftTad[3].genes:
+			
+			#The genes in the far left TAD, only in the part that is not overlapped by the deletion, gain the elements that are not overlapped by the deletion
+			#in the far right tad.
+			remainingLeftGenes = farLeftTad[3].getGenesByRange(farLeftTad[1], sv[1])
+			remainingLeftElements = farLeftTad[3].getElementsByRange(farLeftTad[1], sv[1])
+			
+			remainingRightGenes = farLeftTad[3].getGenesByRange(sv[5], farRightTad[2])
+			remainingRightElements = farLeftTad[3].getElementsByRange(sv[5], farRightTad[2])
+			
+			for gene in remainingLeftGenes:
 				
-				if len(farRightTad[3].elements) > 0:
-					gene.addGainedElements(farRightTad[3].elements, sv[7])
+				if len(remainingRightElements) > 0:
+					gene.addGainedElements(remainingRightElements, sv[7])
 					
 			
-			for gene in farRightTad[3].genes:
-				
-				
-				if len(farLeftTad[3].elements) > 0:	
-					gene.addGainedElements(farLeftTad[3].elements, sv[7])
+			for gene in remainingRightGenes:
+
+				if len(remainingLeftElements) > 0:	
+					gene.addGainedElements(remainingLeftElements, sv[7])
 				
 		
 		return 0

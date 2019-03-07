@@ -124,7 +124,7 @@ class OutputWriter:
 				perGeneScores[row][29] = dnaseILossScore
 				
 				
-				perGeneScores[row][30] = np.sum(perGeneScores[row][4:29])
+				perGeneScores[row][30] = np.sum(perGeneScores[row][4:30])
 
 		
 			#Also rank the output by highest total score (recurrence)
