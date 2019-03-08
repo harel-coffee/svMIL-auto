@@ -50,6 +50,7 @@ class NeighborhoodDefiner:
 			tadData = InputParser().getTADsFromFile(tadFile)
 			
 			#Filter the SVs out that overlap more than 10 TADs. (temporarily)
+			# print "original number of svs:", svData.shape
 			# filteredSvData = []
 			# types = []
 			# for sv in svData:
@@ -71,7 +72,7 @@ class NeighborhoodDefiner:
 			# print np.unique(types)	
 			# svData = np.array(filteredSvData, dtype="object")
 			# print "number of svs: ", svData.shape
-			# 
+			
 			# #temporarily write to a file
 			# testOut = "../../data/TPTNTestSet/brca_2TADs.txt"
 			# header = "chr1\ts1\te1\to1\tchr2\ts2\te2\to2\tsource\tsample_name\tsv_type\tcancer_type\n"

@@ -44,7 +44,8 @@ class GeneRanking:
 		
 		sampleMap = dict() #samples and their index in the final scoring matrix. 
 		geneMap = dict() #genes and their index in the final scoring matrix
-		reverseGeneMap = dict() #also keep a map where we can search by index to later obtain back the gene from the matrix. 
+		reverseGeneMap = dict() #also keep a map where we can search by index to later obtain back the gene from the matrix.
+		reverseSampleMap = dict()
 		scores = dict() #final scores per gene
 		#1. Get all unique cancer types and map the gene objects to the right cancer type
 		cancerTypes = np.unique(svData[:,6])
@@ -52,6 +53,9 @@ class GeneRanking:
 		samples = np.unique(svData[:,7])
 		for sampleInd in range(0, len(samples)):
 			sampleMap[samples[sampleInd]] = sampleInd
+		for sample in sampleMap:
+			index = sampleMap[sample]
+			reverseSampleMap[index] = sample
 		
 		#Make the gene maps
 		geneIndex = 0
@@ -126,6 +130,45 @@ class GeneRanking:
 			geneScores = []
 			for geneInd in sortedGenesInd:
 				gene = reverseGeneMap[geneInd] #Get the gene back from the scoring matrix by index
+				
+				sampleIndices = []
+				
+				#Get a unique list of samples in which the gene is affected (combined across features)
+				sampleIndices += list(np.where(eQTLGainsScoringMatrix[:,geneInd] == 1)[0])
+				sampleIndices += list(np.where(eQTLLossesScoringMatrix[:,geneInd] == 1)[0])
+				sampleIndices += list(np.where(enhancerGainsScoringMatrix[:,geneInd] == 1)[0])
+				sampleIndices += list(np.where(enhancerLossesScoringMatrix[:,geneInd] == 1)[0])
+				sampleIndices += list(np.where(promoterGainsScoringMatrix[:,geneInd] == 1)[0])
+				sampleIndices += list(np.where(promoterLossesScoringMatrix[:,geneInd] == 1)[0])
+				sampleIndices += list(np.where(cpgGainsScoringMatrix[:,geneInd] == 1)[0])
+				sampleIndices += list(np.where(cpgLossesScoringMatrix[:,geneInd] == 1)[0])
+				sampleIndices += list(np.where(tfGainsScoringMatrix[:,geneInd] == 1)[0])
+				sampleIndices += list(np.where(tfLossesScoringMatrix[:,geneInd] == 1)[0])
+				sampleIndices += list(np.where(hicGainsScoringMatrix[:,geneInd] == 1)[0])
+				sampleIndices += list(np.where(hicLossesScoringMatrix[:,geneInd] == 1)[0])
+				sampleIndices += list(np.where(h3k9me3GainsScoringMatrix[:,geneInd] == 1)[0])
+				sampleIndices += list(np.where(h3k9me3LossesScoringMatrix[:,geneInd] == 1)[0])
+				sampleIndices += list(np.where(h3k4me3GainsScoringMatrix[:,geneInd] == 1)[0])
+				sampleIndices += list(np.where(h3k4me3LossesScoringMatrix[:,geneInd] == 1)[0])
+				sampleIndices += list(np.where(h3k27acGainsScoringMatrix[:,geneInd] == 1)[0])
+				sampleIndices += list(np.where(h3k27acLossesScoringMatrix[:,geneInd] == 1)[0])
+				sampleIndices += list(np.where(h3k27me3GainsScoringMatrix[:,geneInd] == 1)[0])
+				sampleIndices += list(np.where(h3k27me3LossesScoringMatrix[:,geneInd] == 1)[0])
+				sampleIndices += list(np.where(h3k4me1GainsScoringMatrix[:,geneInd] == 1)[0])
+				sampleIndices += list(np.where(h3k4me1LossesScoringMatrix[:,geneInd] == 1)[0])
+				sampleIndices += list(np.where(h3k36me3GainsScoringMatrix[:,geneInd] == 1)[0])
+				sampleIndices += list(np.where(h3k36me3LossesScoringMatrix[:,geneInd] == 1)[0])
+				sampleIndices += list(np.where(dnaseIGainsScoringMatrix[:,geneInd] == 1)[0])
+				sampleIndices += list(np.where(dnaseILossesScoringMatrix[:,geneInd] == 1)[0])
+
+				sampleIndices = np.unique(sampleIndices)
+				samples = []
+				for sampleInd in sampleIndices:
+					samples.append(reverseSampleMap[sampleInd])
+				if len(samples) < 1:
+					samples = "None"
+				else:
+					samples = ",".join(samples)
 
 				geneScores.append([gene, np.sum(geneScoringMatrix[:,geneInd]), np.sum(eQTLGainsScoringMatrix[:,geneInd]), np.sum(eQTLLossesScoringMatrix[:,geneInd]),
 								   np.sum(enhancerGainsScoringMatrix[:,geneInd]), np.sum(enhancerLossesScoringMatrix[:,geneInd]), np.sum(promoterGainsScoringMatrix[:,geneInd]), np.sum(promoterLossesScoringMatrix[:,geneInd]),
@@ -134,7 +177,7 @@ class GeneRanking:
 								   np.sum(h3k9me3GainsScoringMatrix[:,geneInd]), np.sum(h3k9me3LossesScoringMatrix[:,geneInd]), np.sum(h3k4me3GainsScoringMatrix[:,geneInd]), np.sum(h3k4me3LossesScoringMatrix[:,geneInd]),
 								   np.sum(h3k27acGainsScoringMatrix[:,geneInd]), np.sum(h3k27acLossesScoringMatrix[:,geneInd]), np.sum(h3k27me3GainsScoringMatrix[:,geneInd]), np.sum(h3k27me3LossesScoringMatrix[:,geneInd]),
 								   np.sum(h3k4me1GainsScoringMatrix[:,geneInd]), np.sum(h3k4me1LossesScoringMatrix[:,geneInd]), np.sum(h3k36me3GainsScoringMatrix[:,geneInd]), np.sum(h3k36me3LossesScoringMatrix[:,geneInd]),
-								   np.sum(dnaseIGainsScoringMatrix[:,geneInd]), np.sum(dnaseILossesScoringMatrix[:,geneInd])])
+								   np.sum(dnaseIGainsScoringMatrix[:,geneInd]), np.sum(dnaseILossesScoringMatrix[:,geneInd]), samples])
 			
 			geneScores = np.array(geneScores, dtype="object")
 			scores[cancerType] = geneScores
