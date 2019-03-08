@@ -41,6 +41,10 @@ with open(variantsFile, 'rb') as f:
 		cancerType = splitLine[cancerTypeIndex]
 		sampleName = splitLine[sampleNameIndex]
 		svType = splitLine[svTypeIndex]
+		
+		if svType != "del" and svType != "invers" and svType != "tandem_dup":
+			continue
+		
 		#If the coordinates are missing on the second chromosome, we use the coordinates of the first chromosome unless chr 1 and chr 2 are different.
 		if splitLine[chr1Index] == splitLine[chr2Index]:
 			if splitLine[s2Index] == 'NaN':
@@ -135,7 +139,7 @@ with open(outFile, 'wb') as out:
 		sampleName = region[8].replace(" ", "")
 		info = "SVTYPE=" + region[6] + ";CHR2=" + region[3] + ";S2=" + region[4] + ";E1=" + region[2] + ";SAMPLE=" + sampleName + ";END=" + end #IGV uses 'END' for plotting, so don't use the e2 coordinate if translocation
 		info = info.replace(" ", "_")
-		line = region[0] + "\t" + region[1] + "\t.\t" + refBase + "\t.\t.\t.\t" + info + "\n"
+		line = region[0] + "\t" + region[1] + "\t" + sampleName + "\t" + refBase + "\t.\t.\t.\t" + info + "\n"
 		
 		out.write(line)
 		
