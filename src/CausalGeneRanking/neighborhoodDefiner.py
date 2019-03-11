@@ -83,6 +83,41 @@ class NeighborhoodDefiner:
 			# 		line = sv[0] + "\t" + str(sv[1]) + "\t" + str(sv[2]) + "\t" + sv[8].o1 + "\t" + sv[3] + "\t" + str(sv[4]) + "\t" + str(sv[5]) + "\t" + sv[8].o2 + "\t-\t" + sv[8].sampleName + "\t" + sv[8].svType + "\t" + sv[8].cancerType + "\n"
 			# 		outF.write(line)
 			# exit()
+			
+			#Plot the number of SVs that start or end in a TAD
+			# svCount = []
+			# for sv in svData:
+			# 	
+			# 	tadChrSubset = tadData[tadData[:,0] == sv[0]]
+			# 	
+			# 	#Number of TADs that are overlapped by an SV
+			# 	startMatches = sv[1] < tadChrSubset[:,2]
+			# 	endMatches = sv[5] > tadChrSubset[:,1]
+			# 	
+			# 	tadMatches = tadChrSubset[startMatches * endMatches]
+			# 	# 
+			# 	# startMatches = (sv[1] > tadChrSubset[:,1]) * (sv[1] < tadChrSubset[:,2])
+			# 	# endMatches = (sv[5] > tadChrSubset[:,1]) * (sv[5] < tadChrSubset[:,2])
+			# 	# 
+			# 	# tadMatches = tadChrSubset[startMatches + endMatches]
+			# 	
+			# 	# if tadMatches.shape[0] not in svCount:
+			# 	# 	svCount[tadMatches.shape[0]] = 0
+			# 	# svCount[tadMatches.shape[0]] += 1	
+			# 	#
+			# 	if tadMatches.shape[0] < 50:
+			# 		svCount.append(tadMatches.shape[0])
+			# 
+			# print svCount
+			# 
+			# import matplotlib.pyplot as plt
+			# plt.hist(svCount)
+			# #plt.bar(svCount.keys(), svCount.values())
+			# plt.show()
+			# exit()
+				
+			
+			
 			if settings.general['shuffleTads'] == True:
 				#Shuffle the TADs. Assign random genomic positions to the TADs, but keep the same length. 
 				genomicShuffler = GenomicShuffler()
@@ -232,6 +267,31 @@ class NeighborhoodDefiner:
 		# plt.bar(samplesPerGene.keys(), samplesPerGene.values())
 		# plt.show()
 		# exit()
+		
+		#Plot how many SVs disrupt how many TADs. 
+		# samplesPerTad = dict()
+		# samplesPerGene = dict()
+		# for tad in tadData:
+		# 	
+		# 	#Get the genes
+		# 	genes = tad[3].genes
+		# 	tadSamples = []
+		# 	for gene in genes:
+		# 		sampleGains = gene.gainedElements.keys()
+		# 		sampleLosses = gene.lostElements.keys()
+		# 		samples = sampleGains + sampleLosses
+		# 		for sample in samples:
+		# 			tadSamples.append(sample)
+		# 
+		# 	if len(tadSamples) not in samplesPerTad:
+		# 		samplesPerTad[len(tadSamples)] = 0
+		# 	samplesPerTad[len(tadSamples)] += 1
+		# 		
+		# import matplotlib.pyplot as plt
+		# plt.bar(samplesPerTad.keys(), samplesPerTad.values())
+		# plt.show()
+		# exit()
+		
 		
 			
 	

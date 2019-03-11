@@ -32,7 +32,7 @@ threshold = 5
 filteredGenes = []
 for gene in geneScores:
 	samples = gene[31].split(",")
-	if len(samples) > threshold:
+	if len(samples) == threshold:
 		
 		filteredGenes.append(gene)
 		
@@ -151,7 +151,7 @@ signGenes = np.array(signGenes)
 header = "geneName\tgeneScore\teQTLGains\teQTLLosses\tenhancerGains\tenhancerLosses\tpromoterGains\tpromoterLosses\tcpgGains\tcpgLosses\ttfGains\ttfLosses\thicGains\thicLosses\th3k9me3Gains\th3k9me3Losses\th3k4me3Gains\th3k4me3Losses\th3k27acGains\th3k27acLosses\th3k27me3Gains\th3k27me3Losses\th3k4me1Gains\th3k4me1Losses\th3k36me3Gains\th3k36me3Losses\tdnaseIGains\tdnaseILosses\ttotal\tsamples"
 				
 #Write to numpy output file	
-np.savetxt(geneScoreFile + "_signlt5.txt", signGenes, delimiter='\t', fmt='%s', header=header)
+np.savetxt(geneScoreFile + "_sign5.txt", signGenes, delimiter='\t', fmt='%s', header=header)
 
 
 exit()		
