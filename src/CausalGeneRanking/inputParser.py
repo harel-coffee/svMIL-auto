@@ -83,7 +83,7 @@ class InputParser:
 				# 	continue
 				#
 				# 
-				if svType != "del":
+				if svType != "invers":
 					continue
 				
 				# #only keep the main 4 types
