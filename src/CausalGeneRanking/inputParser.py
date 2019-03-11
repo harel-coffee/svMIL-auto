@@ -83,7 +83,7 @@ class InputParser:
 				# 	continue
 				#
 				# 
-				if svType != "invers":
+				if svType != "tandem_dup":
 					continue
 				
 				# #only keep the main 4 types
