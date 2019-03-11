@@ -219,6 +219,25 @@ print "Number of genes that have SNV and are DEG: ", len(snvDEGsIntersect)
 
 print "genes in the total intersect: "
 print allCriteriaIntersect
+intersectScores = []
+with open(rankedGenesFile, 'rb') as f:
+	lineCount = 0
+	for line in f:
+		line = line.strip()
+		splitLine = line.split("\t")
+		
+		if lineCount < 1:
+			lineCount += 1
+			continue
+		
+		if float(splitLine[30]) > 0:
+			if splitLine[0] in allCriteriaIntersect:
+				intersectScores.append(float(splitLine[30]))
+import matplotlib.pyplot as plt
+plt.hist(intersectScores)
+plt.show()
+#exit()
+
 #exit()
 
 import pylab as plt

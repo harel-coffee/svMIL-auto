@@ -128,9 +128,13 @@ class GeneRanking:
 
 			#Now map the indices of the scoring matrix back to the actual genes, and report the scores in the different layers per gene. 
 			geneScores = []
+			patientsTotalScoreMatrix = np.zeros([len(geneMap)+1, len(sampleMap)+1], dtype="object") #have a matrix where we store the total scores per gene per patient
+			for sample in sampleMap:
+				sampleInd = sampleMap[sample]
+				patientsTotalScoreMatrix[0,sampleInd+1] = sample
 			for geneInd in sortedGenesInd:
 				gene = reverseGeneMap[geneInd] #Get the gene back from the scoring matrix by index
-				
+				patientsTotalScoreMatrix[geneInd+1,0] = gene.name
 				sampleIndices = []
 				
 				#Get a unique list of samples in which the gene is affected (combined across features)
@@ -178,9 +182,24 @@ class GeneRanking:
 								   np.sum(h3k27acGainsScoringMatrix[:,geneInd]), np.sum(h3k27acLossesScoringMatrix[:,geneInd]), np.sum(h3k27me3GainsScoringMatrix[:,geneInd]), np.sum(h3k27me3LossesScoringMatrix[:,geneInd]),
 								   np.sum(h3k4me1GainsScoringMatrix[:,geneInd]), np.sum(h3k4me1LossesScoringMatrix[:,geneInd]), np.sum(h3k36me3GainsScoringMatrix[:,geneInd]), np.sum(h3k36me3LossesScoringMatrix[:,geneInd]),
 								   np.sum(dnaseIGainsScoringMatrix[:,geneInd]), np.sum(dnaseILossesScoringMatrix[:,geneInd]), samples])
+				
+				
+				for sampleInd in sampleIndices:
+					#obtain the total score of this gene for this patient
+					totalScore = eQTLGainsScoringMatrix[sampleInd,geneInd] + eQTLLossesScoringMatrix[sampleInd,geneInd] + enhancerGainsScoringMatrix[sampleInd, geneInd] + enhancerLossesScoringMatrix[sampleInd,geneInd] + \
+					promoterGainsScoringMatrix[sampleInd,geneInd] + promoterLossesScoringMatrix[sampleInd,geneInd] + cpgGainsScoringMatrix[sampleInd,geneInd] + cpgLossesScoringMatrix[sampleInd,geneInd] + \
+					tfGainsScoringMatrix[sampleInd,geneInd] + tfLossesScoringMatrix[sampleInd,geneInd] + hicGainsScoringMatrix[sampleInd,geneInd] + hicLossesScoringMatrix[sampleInd,geneInd] + \
+					h3k9me3GainsScoringMatrix[sampleInd,geneInd] + h3k9me3LossesScoringMatrix[sampleInd,geneInd] + h3k4me3GainsScoringMatrix[sampleInd,geneInd] + h3k4me3LossesScoringMatrix[sampleInd,geneInd] + \
+					h3k27acGainsScoringMatrix[sampleInd,geneInd] + h3k27acLossesScoringMatrix[sampleInd,geneInd] + h3k27me3GainsScoringMatrix[sampleInd,geneInd] + h3k27me3LossesScoringMatrix[sampleInd,geneInd] + \
+					h3k4me1GainsScoringMatrix[sampleInd,geneInd] + h3k4me1LossesScoringMatrix[sampleInd,geneInd] + h3k36me3GainsScoringMatrix[sampleInd,geneInd] + h3k36me3LossesScoringMatrix[sampleInd,geneInd] + \
+					dnaseIGainsScoringMatrix[sampleInd,geneInd] + dnaseILossesScoringMatrix[sampleInd,geneInd]
+					
+					patientsTotalScoreMatrix[geneInd+1,sampleInd+1] = totalScore
 			
 			geneScores = np.array(geneScores, dtype="object")
 			scores[cancerType] = geneScores
+	
+			np.savetxt("patientsTotalScore.txt", patientsTotalScoreMatrix, delimiter='\t', fmt='%s')
 	
 		self.scores = scores #Currently, we make it part of the object, but in principle this could be returned and that would be a bit nicer.
 				
