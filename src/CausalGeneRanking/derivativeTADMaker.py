@@ -928,21 +928,21 @@ class DerivativeTADMaker:
 							#Get the elements that are inside this TAD for this gene	
 							elementsInTad = []
 							for element in gene.elements:
-								elementStr = element[0] + "_" + str(element[1]) + "_" + str(element[2]) + "_" + str(element[3])
+								elementStr = element[0] + "_" + str(element[1]) + "_" + str(element[2]) + "_" + str(element[3]) + "_" + str(element[4])
 								
 								#elementsInTad.append([element.chromosome, element.start, element])
 								elementsInTad.append(elementStr)
 							
 							originalTadElements = []
 							for element in gene.leftTAD.elements: #assume left TAD is the same as the right TAD, because the gene is within a TAD
-								elementStr = element[0] + "_" + str(element[1]) + "_" + str(element[2]) + "_" + str(element[3])
+								elementStr = element[0] + "_" + str(element[1]) + "_" + str(element[2]) + "_" + str(element[3]) + "_" + str(element[4])
 								originalTadElements.append(elementStr)
 							
 							#Get all elements that are now in this TAD
 							newElements = []
 							for element in tad[3].elements:
 								#if eQTL not in gene.leftTAD.eQTLInteractions:
-								elementStr = element[0] + "_" + str(element[1]) + "_" + str(element[2]) + "_" + str(element[3])
+								elementStr = element[0] + "_" + str(element[1]) + "_" + str(element[2]) + "_" + str(element[3]) + "_" + str(element[4])
 								
 								newElements.append(elementStr)
 							
@@ -1004,8 +1004,8 @@ class DerivativeTADMaker:
 					if svData[5] > tad[1] and svData[5] < tad[2]: #If the SV ends after the start of the TAD, and also ends before the end of the TAD, the SV is in the rightmost TAD.
 						lostElements = tad[3].getElementsByRange(tad[1], svData[5])
 						remainingGenes = tad[3].getGenesByRange(svData[5], tad[2])
-				else:
-					lostElements = tad[3].elements
+				# else: #do not do this, if the deletion covers the entire TAD, it also removes the gene itself, so that is not intersting as a 'loss' 
+				# 	lostElements = tad[3].elements
 				for gene in remainingGenes:
 					gene.addLostElements(lostElements, svData[8].sampleName)
 				
