@@ -2,12 +2,12 @@ import numpy as np
 import json
 import pickle as pkl
 import re
+import os.path
 
 from tad import TAD
 from sv import SV
 from gene import Gene
 from element import Element
-from interaction import Interaction
 from snv import SNV
 from derivativeTADMaker import DerivativeTADMaker
 from genome import Genome
@@ -30,6 +30,38 @@ class NeighborhoodDefiner:
 		- Genes, with gains and losses of specific elements annotated as a result of SVs
 		
 	"""
+	
+	def checkIfSettingsAreSame(self):
+		"""
+			The purpose of this function is to check if the settings were updated since last run (currently only support for the data). If these did not change, we can load a pre-existing pkl to
+			speed up the runs. 
+			
+			The settings are stored in a separate file. If the settings in the actual settings file are the same as in this cached file, return false.
+			Otherwise, return true. 
+			
+			*** Currently, this function is not used becuase with pkl we exceed the recursion depth if we store the genes. I cannot change this depth. 
+		"""
+		
+		#If the settings file is not on disk, create it
+		settingsCacheFile = 'settings.cache'
+
+		if os.path.isfile(settingsCacheFile) == False:
+					
+			with open(settingsCacheFile, 'w') as cacheFile:
+				 json.dump(settings.general, cacheFile)
+		
+			#In this case, return true because the settings were just initialized and so we have no neighborhood yet
+			return True
+		else: #In this case, the file exists, so we can start checking if the settings are the same
+			with open(settingsCacheFile, 'r') as cacheFile:
+				cachedSettings = json.load(cacheFile)
+				matchedSettings = True #if even 1 is different, the data should be re-loaded
+				for setting in cachedSettings:
+					if cachedSettings[setting] != settings.general[setting]:
+						matchedSettings = False
+						break
+				
+				return matchedSettings
 
 	def __init__(self, genes, svData, snvData, mode):
 		"""
@@ -40,7 +72,7 @@ class NeighborhoodDefiner:
 			snvData: (numpy array) array with the SNVs and their information. chr, start, end, None, None, None, sampleName, cancerType. Can be empty in SV mode (NOT WORKING ATM)
 			mode: (string) SV, SNV or SV+SNV.
 		"""
-
+		
 		#1. Get TADs from the TAD file, and then map TADs to genes (left/right TAD).
 		tadData = []
 		if settings.general['tads'] == True or settings.general['gainOfInteractions'] == True: #Gain of interactions is dependent on TADs
@@ -51,28 +83,30 @@ class NeighborhoodDefiner:
 			
 			#Filter the SVs out that overlap more than 10 TADs. (temporarily)
 			print "original number of svs:", svData.shape
-			filteredSvData = []
-			types = []
-			for sv in svData:
-				if sv[8].svType == "del" or sv[8].svType == "invers" or sv[8].svType == "tandem_dup": #only do the threshold thing for dels, invers and dups
-					tadSubset = tadData[tadData[:,0] == sv[0]]
-				
-					startMatches = sv[1] < tadSubset[:,1]
-					endMatches = sv[5] > tadSubset[:,2]
-					
-					allMatches = startMatches * endMatches
-					overlappedTads = tadSubset[allMatches]
-					if len(overlappedTads) > 2:
-						continue
-					filteredSvData.append(sv)
-				else:
-					filteredSvData.append(sv)
-				types.append(sv[8].svType)
-				
-			print np.unique(types)	
-			svData = np.array(filteredSvData, dtype="object")
-			print "number of svs: ", svData.shape
 			
+			
+			# filteredSvData = []
+			# types = []
+			# for sv in svData:
+			# 	if sv[8].svType == "del" or sv[8].svType == "invers" or sv[8].svType == "tandem_dup": #only do the threshold thing for dels, invers and dups
+			# 		tadSubset = tadData[tadData[:,0] == sv[0]]
+			# 	
+			# 		startMatches = sv[1] < tadSubset[:,1]
+			# 		endMatches = sv[5] > tadSubset[:,2]
+			# 		
+			# 		allMatches = startMatches * endMatches
+			# 		overlappedTads = tadSubset[allMatches]
+			# 		if len(overlappedTads) > 2:
+			# 			continue
+			# 		filteredSvData.append(sv)
+			# 	else:
+			# 		filteredSvData.append(sv)
+			# 	types.append(sv[8].svType)
+			# 	
+			# print np.unique(types)	
+			# svData = np.array(filteredSvData, dtype="object")
+			# print "number of svs: ", svData.shape
+			# 
 			# #temporarily write to a file
 			# testOut = "../../data/TPTNTestSet/brca_2TADs.txt"
 			# header = "chr1\ts1\te1\to1\tchr2\ts2\te2\to2\tsource\tsample_name\tsv_type\tcancer_type\n"
@@ -232,6 +266,7 @@ class NeighborhoodDefiner:
 			print "Mapping SNVs to the neighborhood"
 			self.mapSNVsToNeighborhood(genes, snvData, eQTLData)
 
+			
 
 		# samplesPerTad = dict()
 		# samplesPerGene = dict()
