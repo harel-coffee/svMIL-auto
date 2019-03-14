@@ -1,14 +1,14 @@
 files = dict(
 	
 	#In SV mode, snvFile can be left empty. For SNV mode, svFile can be left empty. 
-	svFile = '../../data/TPTNTestSet/brca_tcga_parsed_05022019.txt', #TCGA BRCA SVs
-	snvFile = '../../data/SNVs/cosmicNCV.txt', #all SNVs
-	causalGenesFile = '../../data/Genes/CCGC.tsv', #file with all causal genes from cosmic. 
-	nonCausalGenesFile = '../../data/Genes/hg19_proteinCodingGenes.bed', #file with all protein-coding genes. 
-	heatDiffusionFile = '../../data/HiC/diffusionScores.txt', # HEAT DIFFUSION IS BROKEN File with the heat diffusion scores for each region in the Hi-C network
-	hiCInteractionsFile = '../../data/HiC/regions_regions_rel.csv', #All intrachromosomal regions that interact with each other
+	svFile = '../../data/svs/brca_tcga_parsed_05022019.txt', #TCGA BRCA SVs
+	snvFile = '../../data/snvs/cosmicNCV.txt', #all SNVs
+	causalGenesFile = '../../data/genes/CCGC.tsv', #file with all causal genes from cosmic. 
+	nonCausalGenesFile = '../../data/genes/hg19_proteinCodingGenes.bed', #file with all protein-coding genes. 
+	heatDiffusionFile = '../../data/hic/diffusionScores.txt', # HEAT DIFFUSION IS BROKEN File with the heat diffusion scores for each region in the Hi-C network
+	hiCInteractionsFile = '../../data/hic/regions_regions_rel.csv', #All intrachromosomal regions that interact with each other
 	lncRNAFile = '../../data/lncRNAs/lncRNA.bed', #File with all lncRNAs and positions
-	eQTLFile = '../../data/eQTLs/breast_eQTLs.txt', #File with eQTLs specific for breast tissue
+	eQTLFile = '../../data/eQTLs/breast_eQTLs.bed', #File with eQTLs specific for breast tissue
 	enhancerFile = '../../data/enhancers/enhancer_gene_GM12878.txt', #File with enhancers specific for normal cell lines
 	promoterFile = '../../data/promoters/epdnew_hg38ToHg19_9vC8m.bed', #File with promoters in human, not cell-specific
 	cpgFile = '../../data/cpg/cpgIslandExt.txt', #All human CpG sites
@@ -20,7 +20,7 @@ files = dict(
 	h3k4me1 = '../../data/histones/ENCFF336DDM_H3K4me1.bed',
 	h3k36me3 = '../../data/histones/ENCFF906MJM_H3K36me3.bed',
 	dnaseIFile = '../../data/dnase/ENCFF301VRH.bed',
-	hicFile = '../../data/HiC/HMEC_groupedTADInteractions.txt',
+	hicFile = '../../data/hic/HMEC_groupedTADInteractions.txt',
 	tadFile = "../../data/tads/HMEC_Lieberman-raw_TADs.bed", #File with TADs specific for breast tissue
 	rankedGeneScoreDir = "./RankedGenes", #File that the output scores will be written to. The output will be in a folder with the provided UUID under this main results folder
 	hg19CoordinatesFile = "../../data/chromosomes/hg19Coordinates.txt"
