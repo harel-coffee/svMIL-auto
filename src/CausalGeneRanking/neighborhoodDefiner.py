@@ -519,7 +519,7 @@ class NeighborhoodDefiner:
 			
 		"""
 		
-		hicOut = "../../data/HiC/hic.bed"
+		hicOut = "../../data/hic/hic.bed"
 		with open(hicOut, 'w') as outF:
 			
 			print "mapping to tads"
