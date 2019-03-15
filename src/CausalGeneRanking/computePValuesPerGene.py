@@ -113,6 +113,7 @@ for row in range(0, nonPermutedScores.shape[0]):
 	#cancerTypePValues[row][1] = gene.chromosome
 	#cancerTypePValues[row][2] = gene.start
 	cancerTypePValues[row][1] = total
+	cancerTypePValues[row][2] = proportion
 
 	#Compute a total score to sort by. 
 	#totalScore = proportion + eQTLProportion + tadProportion
@@ -129,11 +130,11 @@ for row in range(0, nonPermutedScores.shape[0]):
 	# 	totalCutoffMatches += 1
 
 		
-	cancerTypePValues[row][2] = totalCutoffMatches	
+	cancerTypePValues[row][3] = totalCutoffMatches	
 
 #Rank by the total score and report the genes.
 np.set_printoptions(threshold=np.nan)
-sortedPValues = cancerTypePValues[cancerTypePValues[:,2].argsort()[::-1]]
+sortedPValues = cancerTypePValues[cancerTypePValues[:,3].argsort()[::-1]]
 
 outFile = "rankedGenes_test.txt"
 
