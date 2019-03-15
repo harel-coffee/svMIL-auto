@@ -71,7 +71,7 @@ for geneScoreFile in geneScoreFiles:
 		
 		
 		
-		perGeneScores["totalScore"][currentGeneIndex, permutationRound] = geneScores[row][31]
+		perGeneScores["totalScore"][currentGeneIndex, permutationRound] = geneScores[row][30]
 		
 
 
@@ -100,7 +100,7 @@ for row in range(0, nonPermutedScores.shape[0]):
 	#Get the distribution of scores for the permutation for this gene
 	geneName = nonPermutedScores[row][0]
 	
-	total = float(nonPermutedScores[row,31])
+	total = float(nonPermutedScores[row,30])
 	
 	geneIndex = geneIndexDict[geneName]
 	
