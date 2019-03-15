@@ -134,7 +134,7 @@ for row in range(0, nonPermutedScores.shape[0]):
 
 #Rank by the total score and report the genes.
 np.set_printoptions(threshold=np.nan)
-sortedPValues = cancerTypePValues[cancerTypePValues[:,3].argsort()[::-1]]
+sortedPValues = cancerTypePValues[cancerTypePValues[:,2].argsort()[::-1]]
 
 outFile = "rankedGenes_test.txt"
 
