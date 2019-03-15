@@ -30,9 +30,7 @@ nonPermutedScores = np.loadtxt(nonPermutedScoresFile, dtype="object")
 noOfCausalGenes = len(nonPermutedScores[:,0])	
 
 perGeneScores = dict()
-perGeneScores["geneScore"] = np.zeros([noOfCausalGenes, noOfPermutations+1])
-perGeneScores["eQTLGainScore"] = np.zeros([noOfCausalGenes, noOfPermutations+1])
-perGeneScores["eQTLLossScore"] = np.zeros([noOfCausalGenes, noOfPermutations+1])
+perGeneScores["totalScore"] = np.zeros([noOfCausalGenes, noOfPermutations+1])
 
 
 #Make an index for the positions of the genes in the final scoring matrix
@@ -73,9 +71,8 @@ for geneScoreFile in geneScoreFiles:
 		
 		
 		
-		perGeneScores["geneScore"][currentGeneIndex, permutationRound] = geneScores[row][1]
-		perGeneScores["eQTLGainScore"][currentGeneIndex, permutationRound] = geneScores[row][2]
-		perGeneScores["eQTLLossScore"][currentGeneIndex, permutationRound] = geneScores[row][3]
+		perGeneScores["totalScore"][currentGeneIndex, permutationRound] = geneScores[row][31]
+		
 
 
 # geneInd = geneIndexDict['ZFP57']
@@ -95,62 +92,48 @@ for geneScoreFile in geneScoreFiles:
 print "Computing p-values and ranking genes: " 	
 
 
-cancerTypePValues = np.empty([nonPermutedScores.shape[0], 8], dtype="object") #for all genes, store the gene identifier, and 3 columns for the layers.  
+cancerTypePValues = np.empty(nonPermutedScores.shape, dtype="object") #for all genes, store the gene identifier, and 3 columns for the layers.  
 
 #For each cancer type keep an array with the scores in the columns. Then do a sorting where the scores are the highest across all rows for that gene. 
 
 for row in range(0, nonPermutedScores.shape[0]):
-
-	
-
 	#Get the distribution of scores for the permutation for this gene
 	geneName = nonPermutedScores[row][0]
 	
-	geneScore = float(nonPermutedScores[row,1])
-	eQTLGainScore = float(nonPermutedScores[row,2])
-	eQTLLossScore = float(nonPermutedScores[row,3])
-	eQTLScore = eQTLGainScore + eQTLLossScore
+	total = float(nonPermutedScores[row,31])
 	
 	geneIndex = geneIndexDict[geneName]
 	
-	permutedGeneScores = np.array(perGeneScores["geneScore"][geneIndex])
-	permutedEQTLGainScores = np.array(perGeneScores["eQTLGainScore"][geneIndex])
-	permutedEQTLLossScores = np.array(perGeneScores["eQTLLossScore"][geneIndex])
-	permutedEQTLScores = permutedEQTLGainScores + permutedEQTLLossScores
-	
-	
+	permutedTotalScores = np.array(perGeneScores["totalScore"][geneIndex])
+
 	#First compute the p-value for the gene score layer
-	proportion = (np.sum((permutedGeneScores >= geneScore).astype(int)) + 1) / float(len(permutedGeneScores) + 1) #I think we need equals, when the sum is the same, the value should be TRUE and receive a lower p-value. 
-	
-	eQTLProportion = (np.sum((permutedEQTLScores >= eQTLScore).astype(int)) + 1) / float(len(permutedEQTLScores) + 1) 
+	proportion = (np.sum((permutedTotalScores >= total).astype(int)) + 1) / float(len(permutedTotalScores) + 1) #I think we need equals, when the sum is the same, the value should be TRUE and receive a lower p-value. 
 	
 	cancerTypePValues[row][0] = geneName
 	#cancerTypePValues[row][1] = gene.chromosome
 	#cancerTypePValues[row][2] = gene.start
-	cancerTypePValues[row][1] = proportion
-	cancerTypePValues[row][2] = eQTLProportion
-	
+	cancerTypePValues[row][1] = total
 
 	#Compute a total score to sort by. 
 	#totalScore = proportion + eQTLProportion + tadProportion
 	#cancerTypePValues[row][6] = totalScore
 	
-	cutoff = 0.01
+	cutoff = 0.05
 	totalCutoffMatches = 0
 	
 	# if proportion < cutoff:
 	# 	totalCutoffMatches += 1
-	if eQTLProportion < cutoff: #I want to rank only by eQTL scores
+	if proportion < cutoff: #I want to rank only by eQTL scores
 		totalCutoffMatches += 1	
 	# if tadProportion < cutoff:
 	# 	totalCutoffMatches += 1
 
 		
-	cancerTypePValues[row][3] = totalCutoffMatches	
+	cancerTypePValues[row][2] = totalCutoffMatches	
 
 #Rank by the total score and report the genes.
 np.set_printoptions(threshold=np.nan)
-sortedPValues = cancerTypePValues[cancerTypePValues[:,3].argsort()[::-1]]
+sortedPValues = cancerTypePValues[cancerTypePValues[:,2].argsort()[::-1]]
 
 outFile = "rankedGenes_test.txt"
 
