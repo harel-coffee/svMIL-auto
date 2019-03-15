@@ -24,7 +24,7 @@ noOfPermutations = int(sys.argv[2]) #provide how many permutations we expected. 
 
 #first read the non-permuted scores
 
-nonPermutedScoresFile = dataFolder + "/realSVs_geneScores.txt"
+nonPermutedScoresFile = dataFolder + "/realSVs_geneScores_chr.txt"
 nonPermutedScores = np.loadtxt(nonPermutedScoresFile, dtype="object")
 
 noOfCausalGenes = len(nonPermutedScores[:,0])	
