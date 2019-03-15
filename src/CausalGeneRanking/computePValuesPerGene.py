@@ -92,7 +92,7 @@ for geneScoreFile in geneScoreFiles:
 print "Computing p-values and ranking genes: " 	
 
 
-cancerTypePValues = np.empty(nonPermutedScores.shape, dtype="object") #for all genes, store the gene identifier, and 3 columns for the layers.  
+cancerTypePValues = np.empty([nonPermutedScores.shape[0],2], dtype="object") #for all genes, store the gene identifier, and 3 columns for the layers.  
 
 #For each cancer type keep an array with the scores in the columns. Then do a sorting where the scores are the highest across all rows for that gene. 
 
