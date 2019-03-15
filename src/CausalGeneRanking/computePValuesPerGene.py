@@ -57,7 +57,7 @@ for geneScoreFile in geneScoreFiles:
 	
 	#separate the permutation round number from the file name
 	
-	if geneScoreFile == "realSVs_geneScores.txt": #skip the non-permutation file
+	if geneScoreFile == "realSVs_geneScores_chr.txt": #skip the non-permutation file
 		continue
 	
 	permutationRound = int(geneScoreFile.split("_")[1])
