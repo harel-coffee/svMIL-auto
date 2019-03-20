@@ -1,7 +1,8 @@
 files = dict(
 	
 	#In SV mode, snvFile can be left empty. For SNV mode, svFile can be left empty. 
-	svFile = '../../data/svs/brca_tcga_parsed_05022019.txt', #TCGA BRCA SVs
+	#svFile = '../../data/svs/brca_tcga_parsed_05022019.txt', #TCGA BRCA SVs
+	svFile = '../../data/svs/germline_dgv.txt', #germline SV test
 	snvFile = '../../data/snvs/cosmicNCV.txt', #all SNVs
 	causalGenesFile = '../../data/genes/CCGC.tsv', #file with all causal genes from cosmic. 
 	nonCausalGenesFile = '../../data/genes/hg19_proteinCodingGenes.bed', #file with all protein-coding genes. 
@@ -29,16 +30,16 @@ files = dict(
 general = dict(
 	
 	mode = 'SV', #Options are: SV, SNV or SV+SNV
-	cancerType = 'BRCA', #Use to specify which cancer type the data should be filtered by
+	cancerType = 'germline', #Use to specify which cancer type the data should be filtered by
 	tads = True, #Include TADs in the ranking yes/no, only to rank by how often TAD boundaries themselves are disrupted by SVs. (we are getting very dependent on TADs, so perhaps force this as always required)
 	eQTLs = True, #Include eQTLs in the ranking yes/no
 	enhancers = True, #Include enhancers in the ranking yes/no
 	promoters = True, #Include promoters in the ranking yes/no
 	cpgIslands = True, #Include CpG islands in the ranking yes/no
-	transcriptionFactors = True, #Include TFs in the ranking yes/no
-	hiC = True, #Include HiC interactions in the ranking yes/no
-	histones = True, #Include the histone marks in the ranking yes/no (maybe these need to be split later)
-	dnaseI = True, #Include DNAse I hypersensitivity sites yes/no
+	transcriptionFactors = False, #Include TFs in the ranking yes/no
+	hiC = False, #Include HiC interactions in the ranking yes/no
+	histones = False, #Include the histone marks in the ranking yes/no (maybe these need to be split later)
+	dnaseI = False, #Include DNAse I hypersensitivity sites yes/no
 	gainOfInteractions = True, #This depends on TADs and interactions.
 	shuffleTads = False, #Should TAD positions be shuffled
 	lncRNA = False #use lncRNAs instead of eQTLs

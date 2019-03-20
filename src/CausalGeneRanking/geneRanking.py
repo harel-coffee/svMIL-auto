@@ -67,6 +67,29 @@ class GeneRanking:
 			index = geneMap[gene]
 			reverseGeneMap[index] = gene
 		
+		#Make the SV maps
+		svIndex = 0
+		svMap = dict()
+		for sv in svData:
+			if sv not in svData:
+				svMap[sv] = svIndex
+				svIndex += 1
+		
+		#Make all combinations with genes & svs. Is this too many?
+		svGenePairMap = dict()
+		pairInd = 0
+		for gene in genes:
+			svs = gene.lostElementsSVs.keys()
+			
+			for sv in svs:
+				pairName = gene.name + "_" + sv[0] + "_" + str(sv[1]) + "_" + str(sv[2]) + "_" + sv[3] + "_" + str(sv[4]) + "_" + str(sv[5]) + "_" + sv[8].sampleName
+				if pairName not in svGenePairMap:
+					svGenePairMap[pairName] = pairInd
+				pairInd += 1
+		
+		print len(svGenePairMap)
+		exit()
+		
 		
 		print "doing the scoring"
 		#Score per cancer type individually
@@ -75,45 +98,48 @@ class GeneRanking:
 
 			#Do the scoring of the genes
 			#We make a scoring matrix of patients x genes. Each gene has a score in each patient of if an SV overlaps with that element in the neighborhood of the gene yes/no.
-			#To get the total score for a gene, we can sum across all patients. 
+			#To get the total score for a gene, we can sum across all patients.
+			eQTLLossesSVs = self.scoreByElementLossesSVs(genes, svMap, geneMap, "eQTL")
+			
+			
 			print "scoring genes:"
-			geneScoringMatrix = self.scoreBySVsInGenes(genes, sampleMap, geneMap)
+			geneScoringMatrix, geneGeneMatrix = self.scoreBySVsInGenes(genes, sampleMap, geneMap)
 			print "scoring eQTL: "
-			eQTLGainsScoringMatrix = self.scoreByElementGains(genes, sampleMap, geneMap, "eQTL")
-			eQTLLossesScoringMatrix = self.scoreByElementLosses(genes, sampleMap, geneMap, "eQTL")
+			eQTLGainsScoringMatrix, eQTLGainsGeneMatrix = self.scoreByElementGains(genes, sampleMap, geneMap, "eQTL")
+			eQTLLossesScoringMatrix, eQTLLossesGeneMatrix = self.scoreByElementLosses(genes, sampleMap, geneMap, "eQTL")
 			print "scoring enhancers: "
-			enhancerGainsScoringMatrix = self.scoreByElementGains(genes, sampleMap, geneMap, "enhancer")
-			enhancerLossesScoringMatrix = self.scoreByElementLosses(genes, sampleMap, geneMap, "enhancer")
+			enhancerGainsScoringMatrix, enhancerGainsGeneMatrix = self.scoreByElementGains(genes, sampleMap, geneMap, "enhancer")
+			enhancerLossesScoringMatrix, enhancerLossesGeneMatrix = self.scoreByElementLosses(genes, sampleMap, geneMap, "enhancer")
 			print "scoring promoters: "
-			promoterGainsScoringMatrix = self.scoreByElementGains(genes, sampleMap, geneMap, "promoter")
-			promoterLossesScoringMatrix = self.scoreByElementLosses(genes, sampleMap, geneMap, "promoter")
+			promoterGainsScoringMatrix, promoterGainsGeneMatrix = self.scoreByElementGains(genes, sampleMap, geneMap, "promoter")
+			promoterLossesScoringMatrix, promoterLossesGeneMatrix = self.scoreByElementLosses(genes, sampleMap, geneMap, "promoter")
 			print "scoring cpg: "
-			cpgGainsScoringMatrix = self.scoreByElementGains(genes, sampleMap, geneMap, "cpg")
-			cpgLossesScoringMatrix = self.scoreByElementLosses(genes, sampleMap, geneMap, "cpg")
+			cpgGainsScoringMatrix, cpgGainsGeneMatrix = self.scoreByElementGains(genes, sampleMap, geneMap, "cpg")
+			cpgLossesScoringMatrix, cpgLossesGeneMatrix = self.scoreByElementLosses(genes, sampleMap, geneMap, "cpg")
 			print "scoring tfs: "
-			tfGainsScoringMatrix = self.scoreByElementGains(genes, sampleMap, geneMap, "tf")
-			tfLossesScoringMatrix = self.scoreByElementLosses(genes, sampleMap, geneMap, "tf")
+			tfGainsScoringMatrix, tfGainsGeneMatrix = self.scoreByElementGains(genes, sampleMap, geneMap, "tf")
+			tfLossesScoringMatrix, tfLossesGeneMatrix = self.scoreByElementLosses(genes, sampleMap, geneMap, "tf")
 			print "scoring hic: "
-			hicGainsScoringMatrix = self.scoreByElementGains(genes, sampleMap, geneMap, "hic")
-			hicLossesScoringMatrix = self.scoreByElementLosses(genes, sampleMap, geneMap, "hic")
+			hicGainsScoringMatrix, hicGainsGeneMatrix = self.scoreByElementGains(genes, sampleMap, geneMap, "hic")
+			hicLossesScoringMatrix, hicLossesGeneMatrix = self.scoreByElementLosses(genes, sampleMap, geneMap, "hic")
 			
 			print "scoring histone marks: "
-			h3k9me3GainsScoringMatrix = self.scoreByElementGains(genes, sampleMap, geneMap, "h3k9me3")
-			h3k9me3LossesScoringMatrix = self.scoreByElementLosses(genes, sampleMap, geneMap, "h3k9me3")
-			h3k4me3GainsScoringMatrix = self.scoreByElementGains(genes, sampleMap, geneMap, "h3k4me3")
-			h3k4me3LossesScoringMatrix = self.scoreByElementLosses(genes, sampleMap, geneMap, "h3k4me3")
-			h3k27acGainsScoringMatrix = self.scoreByElementGains(genes, sampleMap, geneMap, "h3k27ac")
-			h3k27acLossesScoringMatrix = self.scoreByElementLosses(genes, sampleMap, geneMap, "h3k27ac")
-			h3k27me3GainsScoringMatrix = self.scoreByElementGains(genes, sampleMap, geneMap, "h3k27me3")
-			h3k27me3LossesScoringMatrix = self.scoreByElementLosses(genes, sampleMap, geneMap, "h3k27me3")
-			h3k4me1GainsScoringMatrix = self.scoreByElementGains(genes, sampleMap, geneMap, "h3k4me1")
-			h3k4me1LossesScoringMatrix = self.scoreByElementLosses(genes, sampleMap, geneMap, "h3k4me1")
-			h3k36me3GainsScoringMatrix = self.scoreByElementGains(genes, sampleMap, geneMap, "h3k36me3")
-			h3k36me3LossesScoringMatrix = self.scoreByElementLosses(genes, sampleMap, geneMap, "h3k36me3")
+			h3k9me3GainsScoringMatrix, h3k9me3GainsGeneMatrix = self.scoreByElementGains(genes, sampleMap, geneMap, "h3k9me3")
+			h3k9me3LossesScoringMatrix, h3k9me3LossesGeneMatrix = self.scoreByElementLosses(genes, sampleMap, geneMap, "h3k9me3")
+			h3k4me3GainsScoringMatrix, h3k4me3GainsGeneMatrix = self.scoreByElementGains(genes, sampleMap, geneMap, "h3k4me3")
+			h3k4me3LossesScoringMatrix, h3k4me3LossesGeneMatrix = self.scoreByElementLosses(genes, sampleMap, geneMap, "h3k4me3")
+			h3k27acGainsScoringMatrix, h3k27acGainsGeneMatrix = self.scoreByElementGains(genes, sampleMap, geneMap, "h3k27ac")
+			h3k27acLossesScoringMatrix, h3k27acLossesGeneMatrix = self.scoreByElementLosses(genes, sampleMap, geneMap, "h3k27ac")
+			h3k27me3GainsScoringMatrix, h3k27me3GainsGeneMatrix = self.scoreByElementGains(genes, sampleMap, geneMap, "h3k27me3")
+			h3k27me3LossesScoringMatrix, h3k27me3LossesGeneMatrix = self.scoreByElementLosses(genes, sampleMap, geneMap, "h3k27me3")
+			h3k4me1GainsScoringMatrix, h3k4me1GainsGeneMatrix = self.scoreByElementGains(genes, sampleMap, geneMap, "h3k4me1")
+			h3k4me1LossesScoringMatrix, h3k4me1LossesGeneMatrix = self.scoreByElementLosses(genes, sampleMap, geneMap, "h3k4me1")
+			h3k36me3GainsScoringMatrix, h3k36me3GainsGeneMatrix = self.scoreByElementGains(genes, sampleMap, geneMap, "h3k36me3")
+			h3k36me3LossesScoringMatrix, h3k36me3LossesGeneMatrix = self.scoreByElementLosses(genes, sampleMap, geneMap, "h3k36me3")
 			
 			print "scoring tfs: "
-			dnaseIGainsScoringMatrix = self.scoreByElementGains(genes, sampleMap, geneMap, "dnaseI")
-			dnaseILossesScoringMatrix = self.scoreByElementLosses(genes, sampleMap, geneMap, "dnaseI")
+			dnaseIGainsScoringMatrix, dnaseIGainsGeneMatrix = self.scoreByElementGains(genes, sampleMap, geneMap, "dnaseI")
+			dnaseILossesScoringMatrix, dnaseILossesGeneMatrix = self.scoreByElementLosses(genes, sampleMap, geneMap, "dnaseI")
 			
 			
 			#The final scoring matrix selected here determines how the genes will be ranked. For testing, this varies. Eventually, this will be a combined score that we rank by. 
@@ -133,7 +159,10 @@ class GeneRanking:
 			for sample in sampleMap:
 				sampleInd = sampleMap[sample]
 				patientsTotalScoreMatrix[0,sampleInd+1] = sample
+			print "	collecting scores per gene: "
+			
 			for geneInd in sortedGenesInd:
+				
 				gene = reverseGeneMap[geneInd] #Get the gene back from the scoring matrix by index
 				
 				sampleIndices = []
@@ -165,7 +194,7 @@ class GeneRanking:
 				sampleIndices += list(np.where(h3k36me3LossesScoringMatrix[:,geneInd] == 1)[0])
 				sampleIndices += list(np.where(dnaseIGainsScoringMatrix[:,geneInd] == 1)[0])
 				sampleIndices += list(np.where(dnaseILossesScoringMatrix[:,geneInd] == 1)[0])
-			
+				
 				sampleIndices = np.unique(sampleIndices)
 				
 				samples = []
@@ -175,7 +204,18 @@ class GeneRanking:
 					samples = "None"
 				else:
 					samples = ",".join(samples)
-
+				
+				
+				# geneScores.append([gene, geneGeneMatrix[geneInd], eQTLGainsGeneMatrix[geneInd], eQTLLossesGeneMatrix[geneInd],
+				# 				   enhancerGainsGeneMatrix[geneInd], enhancerLossesGeneMatrix[geneInd], promoterGainsGeneMatrix[geneInd], promoterLossesGeneMatrix[geneInd],
+				# 				   cpgGainsGeneMatrix[geneInd], cpgLossesGeneMatrix[geneInd], tfGainsGeneMatrix[geneInd], tfLossesGeneMatrix[geneInd],
+				# 				   hicGainsGeneMatrix[geneInd], hicLossesGeneMatrix[geneInd],
+				# 				   h3k9me3GainsGeneMatrix[geneInd], h3k9me3LossesGeneMatrix[geneInd], h3k4me3GainsGeneMatrix[geneInd], h3k4me3LossesGeneMatrix[geneInd],
+				# 				   h3k27acGainsGeneMatrix[geneInd], h3k27acLossesGeneMatrix[geneInd], h3k27me3GainsGeneMatrix[geneInd], h3k27me3LossesGeneMatrix[geneInd],
+				# 				   h3k4me1GainsGeneMatrix[geneInd], h3k4me1LossesGeneMatrix[geneInd], h3k36me3GainsGeneMatrix[geneInd], h3k36me3LossesGeneMatrix[geneInd],
+				# 				   dnaseIGainsGeneMatrix[geneInd], dnaseILossesGeneMatrix[geneInd], samples])
+				# 
+				
 				geneScores.append([gene, np.sum(geneScoringMatrix[:,geneInd]), np.sum(eQTLGainsScoringMatrix[:,geneInd]), np.sum(eQTLLossesScoringMatrix[:,geneInd]),
 								   np.sum(enhancerGainsScoringMatrix[:,geneInd]), np.sum(enhancerLossesScoringMatrix[:,geneInd]), np.sum(promoterGainsScoringMatrix[:,geneInd]), np.sum(promoterLossesScoringMatrix[:,geneInd]),
 								   np.sum(cpgGainsScoringMatrix[:,geneInd]), np.sum(cpgLossesScoringMatrix[:,geneInd]), np.sum(tfGainsScoringMatrix[:,geneInd]), np.sum(tfLossesScoringMatrix[:,geneInd]),
@@ -185,61 +225,61 @@ class GeneRanking:
 								   np.sum(h3k4me1GainsScoringMatrix[:,geneInd]), np.sum(h3k4me1LossesScoringMatrix[:,geneInd]), np.sum(h3k36me3GainsScoringMatrix[:,geneInd]), np.sum(h3k36me3LossesScoringMatrix[:,geneInd]),
 								   np.sum(dnaseIGainsScoringMatrix[:,geneInd]), np.sum(dnaseILossesScoringMatrix[:,geneInd]), samples])
 				
-				
+			print "done"	
 			geneScores = np.array(geneScores, dtype="object")
 			scores[cancerType] = geneScores
 	
-			sortedGeneScores = np.empty([geneScores.shape[0], 29], dtype="object") #store by gene name because it is easiest to match back later
-			for row in range(0, geneScores.shape[0]):
-				sortedGeneScores[row][0:27] = geneScores[row][0:27]
-				#print geneScores[row][0:27]
-				
-				sortedGeneScores[row][27] = np.sum(sortedGeneScores[row][2:27])
-				#print sortedGeneScores[row][27]
-				
-				sortedGeneScores[row][28] = geneScores[row][28]
-				#print geneScores[row][28]
-				# for row2 in range(0, sortedGeneScores.shape[1]):
-				# 	print row2
-				# 	print sortedGeneScores[row,row2]
-				#print sortedGeneScores
-				
-			#print sortedGeneScores
-			
-			sortedGeneScores = sortedGeneScores[sortedGeneScores[:,27].argsort()[::-1]]
-			
-			for row in sortedGeneScores:
-				gene = row[0]
-				
-				#exit()
-				geneInd = geneMap[gene]
-				
-			
-				#Output gene/patient pairs. Each row is a gene in a patient, every column is the feature. There are 89 patients and 20000 genes, so this is 1.780.000 in size.
-				for sample in sampleMap:
-					sampleInd = sampleMap[sample]
-					
-					genePatientPair = gene.name + "_" + sample
-					scoreArray = [genePatientPair, eQTLGainsScoringMatrix[sampleInd,geneInd], eQTLLossesScoringMatrix[sampleInd,geneInd], enhancerGainsScoringMatrix[sampleInd, geneInd], enhancerLossesScoringMatrix[sampleInd,geneInd], \
-					promoterGainsScoringMatrix[sampleInd,geneInd], promoterLossesScoringMatrix[sampleInd,geneInd], cpgGainsScoringMatrix[sampleInd,geneInd], cpgLossesScoringMatrix[sampleInd,geneInd], \
-					tfGainsScoringMatrix[sampleInd,geneInd], tfLossesScoringMatrix[sampleInd,geneInd], hicGainsScoringMatrix[sampleInd,geneInd], hicLossesScoringMatrix[sampleInd,geneInd], \
-					h3k9me3GainsScoringMatrix[sampleInd,geneInd], h3k9me3LossesScoringMatrix[sampleInd,geneInd], h3k4me3GainsScoringMatrix[sampleInd,geneInd], h3k4me3LossesScoringMatrix[sampleInd,geneInd], \
-					h3k27acGainsScoringMatrix[sampleInd,geneInd], h3k27acLossesScoringMatrix[sampleInd,geneInd], h3k27me3GainsScoringMatrix[sampleInd,geneInd], h3k27me3LossesScoringMatrix[sampleInd,geneInd], \
-					h3k4me1GainsScoringMatrix[sampleInd,geneInd], h3k4me1LossesScoringMatrix[sampleInd,geneInd], h3k36me3GainsScoringMatrix[sampleInd,geneInd], h3k36me3LossesScoringMatrix[sampleInd,geneInd], \
-					dnaseIGainsScoringMatrix[sampleInd,geneInd], dnaseILossesScoringMatrix[sampleInd,geneInd]]
-					
-					
-					
-				#print np.where(np.array(scoreArray) == 1)[0].shape[0]
-
-					if np.where(np.array(scoreArray) == '1.0')[0].shape[0] > 0:
-						genePatientPairScores.append(scoreArray)
-				
-			
-			genePatientPairScores = np.array(genePatientPairScores, dtype="object")
-			
-			np.savetxt("genePatientPairScores.txt", genePatientPairScores, delimiter='\t', fmt='%s')
+			# sortedGeneScores = np.empty([geneScores.shape[0], 29], dtype="object") #store by gene name because it is easiest to match back later
+			# for row in range(0, geneScores.shape[0]):
+			# 	sortedGeneScores[row][0:27] = geneScores[row][0:27]
+			# 	#print geneScores[row][0:27]
 			# 	
+			# 	sortedGeneScores[row][27] = np.sum(sortedGeneScores[row][2:27])
+			# 	#print sortedGeneScores[row][27]
+			# 	
+			# 	sortedGeneScores[row][28] = geneScores[row][28]
+			# 	#print geneScores[row][28]
+			# 	# for row2 in range(0, sortedGeneScores.shape[1]):
+			# 	# 	print row2
+			# 	# 	print sortedGeneScores[row,row2]
+			# 	#print sortedGeneScores
+			# 	
+			# #print sortedGeneScores
+			# 
+			# sortedGeneScores = sortedGeneScores[sortedGeneScores[:,27].argsort()[::-1]]
+			# 
+			# for row in sortedGeneScores:
+			# 	gene = row[0]
+			# 	
+			# 	#exit()
+			# 	geneInd = geneMap[gene]
+			# 	
+			# 
+			# 	#Output gene/patient pairs. Each row is a gene in a patient, every column is the feature. There are 89 patients and 20000 genes, so this is 1.780.000 in size.
+			# 	for sample in sampleMap:
+			# 		sampleInd = sampleMap[sample]
+			# 		
+			# 		genePatientPair = gene.name + "_" + sample
+			# 		scoreArray = [genePatientPair, eQTLGainsScoringMatrix[sampleInd,geneInd], eQTLLossesScoringMatrix[sampleInd,geneInd], enhancerGainsScoringMatrix[sampleInd, geneInd], enhancerLossesScoringMatrix[sampleInd,geneInd], \
+			# 		promoterGainsScoringMatrix[sampleInd,geneInd], promoterLossesScoringMatrix[sampleInd,geneInd], cpgGainsScoringMatrix[sampleInd,geneInd], cpgLossesScoringMatrix[sampleInd,geneInd], \
+			# 		tfGainsScoringMatrix[sampleInd,geneInd], tfLossesScoringMatrix[sampleInd,geneInd], hicGainsScoringMatrix[sampleInd,geneInd], hicLossesScoringMatrix[sampleInd,geneInd], \
+			# 		h3k9me3GainsScoringMatrix[sampleInd,geneInd], h3k9me3LossesScoringMatrix[sampleInd,geneInd], h3k4me3GainsScoringMatrix[sampleInd,geneInd], h3k4me3LossesScoringMatrix[sampleInd,geneInd], \
+			# 		h3k27acGainsScoringMatrix[sampleInd,geneInd], h3k27acLossesScoringMatrix[sampleInd,geneInd], h3k27me3GainsScoringMatrix[sampleInd,geneInd], h3k27me3LossesScoringMatrix[sampleInd,geneInd], \
+			# 		h3k4me1GainsScoringMatrix[sampleInd,geneInd], h3k4me1LossesScoringMatrix[sampleInd,geneInd], h3k36me3GainsScoringMatrix[sampleInd,geneInd], h3k36me3LossesScoringMatrix[sampleInd,geneInd], \
+			# 		dnaseIGainsScoringMatrix[sampleInd,geneInd], dnaseILossesScoringMatrix[sampleInd,geneInd]]
+			# 		
+			# 		
+			# 		
+			# 	#print np.where(np.array(scoreArray) == 1)[0].shape[0]
+			# 
+			# 		if np.where(np.array(scoreArray) == '1.0')[0].shape[0] > 0:
+			# 			genePatientPairScores.append(scoreArray)
+			# 	
+			# 
+			# genePatientPairScores = np.array(genePatientPairScores, dtype="object")
+			# 
+			# np.savetxt("genePatientPairScores.txt", genePatientPairScores, delimiter='\t', fmt='%s')
+			# # 	
 	
 		self.scores = scores #Currently, we make it part of the object, but in principle this could be returned and that would be a bit nicer.
 				
@@ -256,6 +296,7 @@ class GeneRanking:
 		"""
 		
 		scoringMatrix = np.zeros([len(sampleMap), len(geneMap)])
+		geneMatrix = np.zeros(len(geneMap))
 		for geneInd in range(0, len(genes)): #first loop over the genes, then get their SVs
 			gene = genes[geneInd]
 
@@ -275,9 +316,10 @@ class GeneRanking:
 				sampleName = sv
 				sampleInd = sampleMap[sampleName]
 
-				scoringMatrix[sampleInd][matrixGeneInd] = 1 #set the score to 1 to ensure that per sample we count only 1 SV. 
+				scoringMatrix[sampleInd][matrixGeneInd] = 1 #set the score to 1 to ensure that per sample we count only 1 SV.
+				geneMatrix[geneInd] += 1
 	
-		return scoringMatrix
+		return scoringMatrix, geneMatrix
 	
 	def scoreByElementGains(self, genes, sampleMap, geneMap, elementType):
 		"""
@@ -293,6 +335,7 @@ class GeneRanking:
 		"""
 		
 		scoringMatrix = np.zeros([len(sampleMap), len(geneMap)]) #store the final scores
+		geneMatrix = np.zeros(len(geneMap))
 		
 		for geneInd in range(0, len(genes)):
 			
@@ -309,9 +352,10 @@ class GeneRanking:
 					if gain == True: 
 						sampleInd = sampleMap[sample]
 						scoringMatrix[sampleInd][matrixGeneInd] = 1
+						geneMatrix[geneInd] += 1
 				
 		
-		return scoringMatrix
+		return scoringMatrix, geneMatrix
 	
 	def scoreByElementLosses(self, genes, sampleMap, geneMap, elementType):
 		"""
@@ -327,6 +371,7 @@ class GeneRanking:
 		"""
 		
 		scoringMatrix = np.zeros([len(sampleMap), len(geneMap)])
+		geneMatrix = np.zeros(len(geneMap))
 		
 		for geneInd in range(0, len(genes)):
 			
@@ -345,6 +390,51 @@ class GeneRanking:
 					if loss == True:
 						sampleInd = sampleMap[sample]
 						scoringMatrix[sampleInd][matrixGeneInd] = 1
-					
+						geneMatrix[geneInd] += 1
 		
-		return scoringMatrix
+		return scoringMatrix, geneMatrix
+
+	def scoreByElementLossesSVs(self, genes, svMap, geneMap, elementType):
+		"""
+			Determine for each gene how many elements are lost. 
+			
+			genes:  (numpy array) array with the genes and their information. chr, start, end, geneObject
+			sampleMap: (dictionary) each sample is a key, and the value is the index of where the gene score is in the final scoring matrix.
+			geneMap: (dictionary) each gene is a key, and the value is the index of where the gene score is in the final scoring matrix.
+			elementType: (string) type of the element that we should score the losses of. 
+			
+			return
+			scoringMatrix: (numpy array) matrix of samples x genes (samples in rows, genes in columns) with a value of 1 indicating that the sample has an SV causing a loss of at least 1 element, or 0 if there are none. 
+		"""
+		
+		#Idea: have sv-gene pairs on one axis, and a 1 or 0 for this particular feature in the first column
+		
+		for geneInd in range(0, len(genes)):
+			gene = genes[geneInd]
+			
+			if len(gene.lostElementsSVs) > 0:
+				1+1
+		
+		# scoringMatrix = np.zeros([len(svMap), len(geneMap)])
+		# geneMatrix = np.zeros(len(geneMap))
+		# 
+		# for geneInd in range(0, len(genes)):
+		# 	
+		# 	gene = genes[geneInd]
+		# 	
+		# 	matrixGeneInd = geneMap[gene]
+		# 	
+		# 	if len(gene.lostElementsSVs) > 0:
+		# 		for sample in gene.lostElementsSVs:
+		# 
+		# 			loss = False #Make sure that we only focus on lost elements of the provided type. 
+		# 			for element in gene.lostElementsSVs[sample]:
+		# 				if element == elementType:
+		# 					loss = True
+		# 			if loss == True:
+		# 				sampleInd = sampleMap[sample]
+		# 				scoringMatrix[sampleInd][matrixGeneInd] = 1
+		# 				geneMatrix[geneInd] += 1
+		# 
+		# return scoringMatrix, geneMatrix
+

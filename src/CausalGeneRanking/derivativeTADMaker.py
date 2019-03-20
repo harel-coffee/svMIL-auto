@@ -955,6 +955,7 @@ class DerivativeTADMaker:
 									lostElements.append(element.split("_"))
 							
 							gene.addLostElements(lostElements, sv.sampleName)
+							gene.addLostElementsSVs(lostElements, sv.chr1 + "_" + str(sv.s1) + "_" + str(sv.e1) + "_" + sv.chr2 + "_" + str(sv.s2) + "_" + str(sv.e2) + "_" + sv.sampleName)
 							
 							gainedElements = []
 							for element in filteredNewElements:
@@ -1008,7 +1009,7 @@ class DerivativeTADMaker:
 				# 	lostElements = tad[3].elements
 				for gene in remainingGenes:
 					gene.addLostElements(lostElements, svData[8].sampleName)
-				
+					gene.addLostElementsSVs(lostElements, svData[0] + "_" + str(svData[1]) + "_" + str(svData[2]) + "_" + svData[3] + "_" + str(svData[4]) + "_" + str(svData[5]) + "_" + svData[8].sampleName)
 					
 			
 					
@@ -1082,6 +1083,7 @@ class DerivativeTADMaker:
 				gene.addGainedElements(rightSideElements, svData[7])
 				
 				gene.addLostElements(leftSideElements, svData[7])
+				gene.addLostElementsSVs(lostElements, svData[0] + "_" + str(svData[1]) + "_" + str(svData[2]) + "_" + svData[3] + "_" + str(svData[4]) + "_" + str(svData[5]) + "_" + svData[8].sampleName)
 				
 			#All genes in the right side of the inversion will gain elements from the original left TAD.
 			#All genes in the right side will lose interactions with eQTLs in the unaffected right TAD. 
@@ -1090,6 +1092,7 @@ class DerivativeTADMaker:
 				gene.addGainedElements(unaffectedElementsLeft, svData[7])
 				#print "Number of unaffected elements right: ", len(unaffectedElementsRight), " for genes ", len(rightSideGenes)
 				gene.addLostElements(unaffectedElementsRight, svData[7])
+				gene.addLostElementsSVs(lostElements, svData[0] + "_" + str(svData[1]) + "_" + str(svData[2]) + "_" + svData[3] + "_" + str(svData[4]) + "_" + str(svData[5]) + "_" + svData[8].sampleName)
 			
 			#vice versa but then for the right TAD and right side of the inversion.
 			#The lost eQTLs are the ones that are in the right side of the inversion
@@ -1097,12 +1100,14 @@ class DerivativeTADMaker:
 				
 				gene.addGainedElements(leftSideElements, svData[7])
 				gene.addLostElements(rightSideElements, svData[7])
+				gene.addLostElementsSVs(lostElements, svData[0] + "_" + str(svData[1]) + "_" + str(svData[2]) + "_" + svData[3] + "_" + str(svData[4]) + "_" + str(svData[5]) + "_" + svData[8].sampleName)
 			
 			#The lost eQTLs are the ones that are in the unaffected original left TAD
 			for gene in leftSideGenes:
 				
 				gene.addGainedElements(unaffectedElementsRight, svData[7])
 				gene.addLostElements(unaffectedElementsLeft, svData[7])
+				gene.addLostElementsSVs(lostElements, svData[0] + "_" + str(svData[1]) + "_" + str(svData[2]) + "_" + svData[3] + "_" + str(svData[4]) + "_" + str(svData[5]) + "_" + svData[8].sampleName)
 			
 			
 				

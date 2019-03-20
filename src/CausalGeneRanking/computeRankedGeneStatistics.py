@@ -62,6 +62,7 @@ with open(rankedGenesFile, 'rb') as f:
 		
 		#if float(splitLine[30]) > 0 and float(splitLine[1]) == 0:
 		if float(splitLine[30]) > 0:
+		#if float(splitLine[1]) < 0.05:
 		#if splitLine:
 			if splitLine[0] in cosmicGenes:
 				print "COSMIC gene: ", splitLine[0]
@@ -112,7 +113,9 @@ with open(rankedGenesFile, 'rb') as f:
 			continue
 		
 		#if float(splitLine[28])> 0 and float(splitLine[1]) == 0:
-		if splitLine:
+		#if splitLine:
+		#if float(splitLine[1]) < 0.05:
+		if float(splitLine[30]) > 0:
 			if splitLine[0] in snvGenes:
 				snvCountPos += 1
 			else:
@@ -151,6 +154,7 @@ with open(rankedGenesFile, 'rb') as f:
 			continue
 		
 		if float(splitLine[30]) > 0:
+		#if float(splitLine[1]) < 0.05:
 		#if float(splitLine[28])> 0 and float(splitLine[1]) == 0:
 		#if splitLine:
 			if splitLine[0] in degGenes:
@@ -188,6 +192,7 @@ with open(rankedGenesFile, 'rb') as f:
 			continue
 		
 		if float(splitLine[30]) > 0:
+		#if float(splitLine[1]) < 0.05:
 		#if float(splitLine[28])> 0 and float(splitLine[1]) == 0:
 		#if splitLine:
 			if splitLine[0] in degGenes:
@@ -231,6 +236,7 @@ with open(rankedGenesFile, 'rb') as f:
 			continue
 		
 		if float(splitLine[30]) > 0:
+		#if float(splitLine[1]) < 0.05:
 			if splitLine[0] in allCriteriaIntersect:
 				intersectScores.append(float(splitLine[30]))
 import matplotlib.pyplot as plt

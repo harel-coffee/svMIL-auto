@@ -96,14 +96,14 @@ class InputParser:
 				# 	continue
 				# 
 				#only keep the main 4 types
-				if svType != "del" and svType != "invers" and svType != "tandem_dup":
-					
-					interChrTypeMatch = re.search("chr", svType, re.IGNORECASE)
-					transTypeMatch = re.search("trans", svType, re.IGNORECASE)
-					rangeTypeMatch = re.search("range", svType, re.IGNORECASE)
-					if interChrTypeMatch is None and transTypeMatch is None and rangeTypeMatch is None:
-						continue
-					
+				# if svType != "del" and svType != "invers" and svType != "tandem_dup":
+				# 	
+				# 	interChrTypeMatch = re.search("chr", svType, re.IGNORECASE)
+				# 	transTypeMatch = re.search("trans", svType, re.IGNORECASE)
+				# 	rangeTypeMatch = re.search("range", svType, re.IGNORECASE)
+				# 	if interChrTypeMatch is None and transTypeMatch is None and rangeTypeMatch is None:
+				# 		continue
+				# 	
 					
 				
 				# if svType != "tandem_dup":
@@ -136,11 +136,11 @@ class InputParser:
 				else:
 					if splitLine[chr2Index] == 'NaN':
 						continue # This line does not have correct chromosome 2 information (should we be skipping it?)
-		
+				
 				s1 = int(splitLine[s1Index])
-				e1 = int(splitLine[e1Index])
+				e1 = int(float(splitLine[e1Index]))
 				s2 = int(splitLine[s2Index])
-				e2 = int(splitLine[e2Index])
+				e2 = int(float(splitLine[e2Index]))
 				chr2 = splitLine[chr2Index]
 				
 				chr1 = splitLine[chr1Index]
