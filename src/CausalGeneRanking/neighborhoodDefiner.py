@@ -666,13 +666,14 @@ class NeighborhoodDefiner:
 				
 				if len(remainingRightElements) > 0:
 					gene.addGainedElements(remainingRightElements, sv[7])
+					gene.addGainedElementsSVs(remainingRightElements, sv[0] + "_" + str(sv[1]) + "_" + str(sv[2]) + "_" + sv[3] + "_" + str(sv[4]) + "_" + str(sv[5]) + "_" + sv[8].sampleName)
 					
 			
 			for gene in remainingRightGenes:
 
 				if len(remainingLeftElements) > 0:	
 					gene.addGainedElements(remainingLeftElements, sv[7])
-				
+					gene.addGainedElementsSVs(remainingLeftElements, sv[0] + "_" + str(sv[1]) + "_" + str(sv[2]) + "_" + sv[3] + "_" + str(sv[4]) + "_" + str(sv[5]) + "_" + sv[8].sampleName)
 		
 		return 0
 		

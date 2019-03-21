@@ -103,7 +103,7 @@ class InputParser:
 				# 	rangeTypeMatch = re.search("range", svType, re.IGNORECASE)
 				# 	if interChrTypeMatch is None and transTypeMatch is None and rangeTypeMatch is None:
 				# 		continue
-				# 	
+					
 					
 				
 				# if svType != "tandem_dup":

@@ -21,6 +21,7 @@ class Gene:
 		self.gainedElements = dict()
 		self.lostElements = dict()
 		self.lostElementsSVs = dict() #lost elements per SV, not per sample
+		self.gainedElementsSVs = dict()
 		
 	def setTADs(self, leftTAD, rightTAD):
 		
@@ -65,7 +66,19 @@ class Gene:
 				self.gainedElements[sample][gainedElement[3]] = 0
 			self.gainedElements[sample][gainedElement[3]] += 1
 		
+	def addGainedElementsSVs(self, gainedElements, sv):
 		
+		if len(gainedElements) > 0:
+			if sv not in self.gainedElements:
+				self.gainedElementsSVs[sv] = dict()
+		
+		#Have a dictionary where we count the number of elements of a specific type that are gained per sample.
+		#This is much faster than storing the actual elements that are gained, and we do not use that information in the ranking, so it can be discarded here. 
+		for gainedElement in gainedElements:
+			if gainedElement[3] not in self.gainedElementsSVs[sv]:
+				self.gainedElementsSVs[sv][gainedElement[3]] = 0
+			self.gainedElementsSVs[sv][gainedElement[3]] += 1
+			
 	
 	def addLostElements(self, lostElements, sample):
 		
