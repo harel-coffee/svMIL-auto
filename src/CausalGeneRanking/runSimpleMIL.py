@@ -170,7 +170,7 @@ for train, test in cv.split(bags, labels):
 #For ROC, we simply average the AUC and accuracies.
 avgAuc = np.mean(aucs)
 avgAccuracy = np.mean(accuracies)
-meanTpr = np.mean(tpr)
+meanTpr = np.mean(tprs, axis=0)
 
 #For precision-recall, we can only make the curve at the end, because toherwise there are different thresholds. SO we need to write the labels and predictions to the file. 
 testReal = np.concatenate(testReal)
@@ -181,7 +181,7 @@ precision, recall, _ = precision_recall_curve(testReal, testProbs)
 with open(sys.argv[3] + '/' + sys.argv[4] + ".txt", 'w') as outF:
 	outF.write(str(avgAuc) + "\n")
 	outF.write(str(avgAccuracy) + "\n")
-	outF.write(str(meanTpr) + "\n")
+	outF.write(",".join([str(i) for i in meanTpr]) + "\n")
 	outF.write(",".join([str(i) for i in testReal]) + "\n")
 	outF.write(",".join([str(i) for i in testProbs]) + "\n")
 
