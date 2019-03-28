@@ -1,8 +1,8 @@
 files = dict(
 	
 	#In SV mode, snvFile can be left empty. For SNV mode, svFile can be left empty. 
-	#svFile = '../../data/svs/brca_tcga_parsed_05022019.txt', #TCGA BRCA SVs
-	svFile = '../../data/svs/germline_dgv.txt', #germline SV test
+	svFile = '../../data/svs/brca_tcga_parsed_05022019.txt', #TCGA BRCA SVs
+	#svFile = '../../data/svs/germline_dgv.txt', #germline SV test
 	snvFile = '../../data/snvs/cosmicNCV.txt', #all SNVs
 	causalGenesFile = '../../data/genes/CCGC.tsv', #file with all causal genes from cosmic. 
 	nonCausalGenesFile = '../../data/genes/hg19_proteinCodingGenes.bed', #file with all protein-coding genes. 
@@ -30,7 +30,7 @@ files = dict(
 general = dict(
 	
 	mode = 'SV', #Options are: SV, SNV or SV+SNV
-	cancerType = 'germline', #Use to specify which cancer type the data should be filtered by
+	cancerType = 'BRCA', #Use to specify which cancer type the data should be filtered by
 	tads = True, #Include TADs in the ranking yes/no, only to rank by how often TAD boundaries themselves are disrupted by SVs. (we are getting very dependent on TADs, so perhaps force this as always required)
 	eQTLs = True, #Include eQTLs in the ranking yes/no
 	enhancers = True, #Include enhancers in the ranking yes/no

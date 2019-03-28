@@ -43,9 +43,10 @@ lossData = [eQTLLosses, enhancerLosses, promoterLosses, cpgLosses, tfLosses, hic
 fig, ax = plt.subplots()
 bp = plt.boxplot(lossData)
 ax.set_xticklabels(['eQTLs', 'enhancers', 'promoters', 'CpG', 'TF', 'HiC', 'h3k9me3', 'h3k4me3', 'h3k27ac', 'h3k27me3', 'h3k4me1', 'h3k36me3', 'DNAseI'])
+ax.set_ylim(0,18)
 plt.xticks(rotation=70)
 # Save the figure
-plt.savefig("losses_germline.png", bbox_inches='tight')
+plt.savefig("losses_gt3subset.png", bbox_inches='tight')
 
 
 #Repeat but then for gains
@@ -73,8 +74,9 @@ fig, ax = plt.subplots()
 bp = plt.boxplot(gainData)
 ax.set_xticklabels(['eQTLs', 'enhancers', 'promoters', 'CpG', 'TF', 'HiC', 'h3k9me3', 'h3k4me3', 'h3k27ac', 'h3k27me3', 'h3k4me1', 'h3k36me3', 'DNAseI'])
 plt.xticks(rotation=70)
+ax.set_ylim(0,18)
 # Save the figure
-plt.savefig("gains_germline.png", bbox_inches='tight')
+plt.savefig("gains_gt3subset.png", bbox_inches='tight')
 
 
 

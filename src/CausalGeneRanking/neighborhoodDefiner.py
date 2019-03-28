@@ -267,7 +267,7 @@ class NeighborhoodDefiner:
 			self.mapSNVsToNeighborhood(genes, snvData, eQTLData)
 
 			
-
+		# 
 		# samplesPerTad = dict()
 		# samplesPerGene = dict()
 		# for tad in tadData:
@@ -298,6 +298,7 @@ class NeighborhoodDefiner:
 		# import matplotlib.pyplot as plt
 		# plt.bar(samplesPerTad.keys(), samplesPerTad.values())
 		# plt.show()
+		# exit()
 		# plt.clf()
 		# plt.bar(samplesPerGene.keys(), samplesPerGene.values())
 		# plt.show()
