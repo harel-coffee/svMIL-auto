@@ -2,6 +2,7 @@ files = dict(
 	
 	#In SV mode, snvFile can be left empty. For SNV mode, svFile can be left empty. 
 	svFile = '../../data/svs/brca_tcga_parsed_05022019.txt', #TCGA BRCA SVs
+	#svFile = '../../data/svs/germline_dgv.txt', #germline SV test
 	snvFile = '../../data/snvs/cosmicNCV.txt', #all SNVs
 	causalGenesFile = '../../data/genes/CCGC.tsv', #file with all causal genes from cosmic. 
 	nonCausalGenesFile = '../../data/genes/hg19_proteinCodingGenes.bed', #file with all protein-coding genes. 

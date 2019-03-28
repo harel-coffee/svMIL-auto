@@ -20,6 +20,8 @@ class Gene:
 		self.elements = []
 		self.gainedElements = dict()
 		self.lostElements = dict()
+		self.lostElementsSVs = dict() #lost elements per SV, not per sample
+		self.gainedElementsSVs = dict()
 		
 	def setTADs(self, leftTAD, rightTAD):
 		
@@ -64,7 +66,19 @@ class Gene:
 				self.gainedElements[sample][gainedElement[3]] = 0
 			self.gainedElements[sample][gainedElement[3]] += 1
 		
+	def addGainedElementsSVs(self, gainedElements, sv):
 		
+		if len(gainedElements) > 0:
+			if sv not in self.gainedElements:
+				self.gainedElementsSVs[sv] = dict()
+		
+		#Have a dictionary where we count the number of elements of a specific type that are gained per sample.
+		#This is much faster than storing the actual elements that are gained, and we do not use that information in the ranking, so it can be discarded here. 
+		for gainedElement in gainedElements:
+			if gainedElement[3] not in self.gainedElementsSVs[sv]:
+				self.gainedElementsSVs[sv][gainedElement[3]] = 0
+			self.gainedElementsSVs[sv][gainedElement[3]] += 1
+			
 	
 	def addLostElements(self, lostElements, sample):
 		
@@ -86,25 +100,46 @@ class Gene:
 					if lostElement[3] not in self.lostElements[sample]: 
 						self.lostElements[sample][lostElement[3]] = 0
 					self.lostElements[sample][lostElement[3]] +=1
-		
-	def setLostElements(self, lostElements, sample):
-		
-		for lostElement in lostElements:
-			if lostElement in self.elements:
-				self.addLostElement(lostElement, sample)
-		#self.lostEQTLs[sample] = lostEQTLs
 	
-	def addLostElement(self, lostElement, sample, types):
+	def addLostElementsSVs(self, lostElements, sv):
 		
-		#Treat losses differently for elements that we cannot link to the gene
+		if sv not in self.lostElements:
+			self.lostElementsSVs[sv] = dict()
+		
+		#Have a dictionary where we count the number of elements of a specific type that are lost per sample.
+		#This is much faster than storing the actual elements that are lost, and we do not use that information in the ranking, so it can be discarded here.
 		elementsNotLinkedToGenes = ['cpg', 'tf', 'hic', 'dnaseI', 'h3k9me3', 'h3k4me3', 'h3k27ac', 'h3k27me3', 'h3k4me1', 'h3k36me3']
 		
-		if sample not in self.lostElements:
-			self.lostElements[sample] = dict()
-
-		for elementType in types:
-			if elementType not in self.lostElements[sample]:
-				self.lostElements[sample][elementType] = 0
-			self.lostElements[sample][elementType] += 1
-
+		for lostElement in lostElements:
+			if lostElement[3] in elementsNotLinkedToGenes:
+				if lostElement[3] not in self.lostElementsSVs[sv]:
+					self.lostElementsSVs[sv][lostElement[3]] = 0
+				self.lostElementsSVs[sv][lostElement[3]] +=1
+			else:
+				
+				if lostElement[4] == self.name:#filter by elements that are linked to genes in the data, exclude these as losses if not linked to the gene
+					if lostElement[3] not in self.lostElementsSVs[sv]: 
+						self.lostElementsSVs[sv][lostElement[3]] = 0
+					self.lostElementsSVs[sv][lostElement[3]] +=1
 		
+	# def setLostElements(self, lostElements, sample):
+	# 	
+	# 	for lostElement in lostElements:
+	# 		if lostElement in self.elements:
+	# 			self.addLostElement(lostElement, sample)
+	# 	#self.lostEQTLs[sample] = lostEQTLs
+	# 
+	# def addLostElement(self, lostElement, sample, types):
+	# 	
+	# 	#Treat losses differently for elements that we cannot link to the gene
+	# 	elementsNotLinkedToGenes = ['cpg', 'tf', 'hic', 'dnaseI', 'h3k9me3', 'h3k4me3', 'h3k27ac', 'h3k27me3', 'h3k4me1', 'h3k36me3']
+	# 	
+	# 	if sample not in self.lostElements:
+	# 		self.lostElements[sample] = dict()
+	# 
+	# 	for elementType in types:
+	# 		if elementType not in self.lostElements[sample]:
+	# 			self.lostElements[sample][elementType] = 0
+	# 		self.lostElements[sample][elementType] += 1
+	# 
+	# 	

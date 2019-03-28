@@ -136,11 +136,11 @@ class InputParser:
 				else:
 					if splitLine[chr2Index] == 'NaN':
 						continue # This line does not have correct chromosome 2 information (should we be skipping it?)
-		
+				
 				s1 = int(splitLine[s1Index])
-				e1 = int(splitLine[e1Index])
+				e1 = int(float(splitLine[e1Index]))
 				s2 = int(splitLine[s2Index])
-				e2 = int(splitLine[e2Index])
+				e2 = int(float(splitLine[e2Index]))
 				chr2 = splitLine[chr2Index]
 				
 				chr1 = splitLine[chr1Index]
