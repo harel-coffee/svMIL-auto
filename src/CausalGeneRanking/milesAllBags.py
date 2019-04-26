@@ -3,7 +3,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 
-### Running MILES with somatic only, using the > 3 patient DEG labels
+## Running MILES with somatic only, using the > 3 patient DEG labels
 
 somaticScores = np.loadtxt(sys.argv[1], dtype="object")
 degLabels = np.loadtxt(sys.argv[2], dtype="object")
@@ -68,7 +68,7 @@ for sv in svBagContents:
 	labels.append(bagLabel)
 
 
-### Running MILES with somatic only, but using per patient-gene pair DEG labels
+## Running MILES with somatic only, but using per patient-gene pair DEG labels
 # 
 # somaticScores = np.loadtxt(sys.argv[1], dtype="object")
 # degLabels = np.loadtxt(sys.argv[2], dtype="object")
@@ -233,7 +233,6 @@ for sv in svBagContents:
 # 		pairNames.append(sv + "_" + gene)
 # 	bags.append(svBagContents[sv])
 # 	labels.append(-1)
-# 
 
 
 # bags = bags[1:100]
@@ -288,12 +287,17 @@ for bagInd in range(0, bags.shape[0]):
 #4. Train a classifier on the similarity space
 from sklearn.ensemble import RandomForestClassifier
 print "training the classifier in similarity space"
+np.random.seed(500)
 rfClassifier = RandomForestClassifier(max_depth=5, n_estimators=2)
 rfClassifier.fit(similarityMatrix, labels) #Use the bag labels, not the instance labels
+
+print similarityMatrix
+print labels
 
 predictions = rfClassifier.predict(similarityMatrix)
 print predictions
 print np.average(labels == np.sign(predictions))
+
 # positiveInd = np.where(np.array(predictions) == 1)[0]
 # print positiveInd
 # print len(list(positiveInd))
@@ -327,18 +331,18 @@ for index in nonZeroIndices:
 print len(positivePairs)
 print len(positiveGenes)
 
-milesConceptGenesOut = "milesConceptGenes.txt"
+milesConceptGenesOut = "SomaticGermline/milesConceptGenes.txt"
 with open(milesConceptGenesOut, 'w') as outF:
 	for gene in positiveGenes:
 		outF.write(gene + "\t" + str(positiveGenes[gene]) + "\n")
 
 #output the similarity matrix and also the labels and bag indices so that we can do analysis after running once
 
-np.save("bags.txt", bags)
-np.save("pairNames.txt", pairNames) #the sv-gene pair names of each bag entry
-np.save("labels.txt", labels)
-np.save("similarityMatrix.txt", similarityMatrix)
-np.save("conceptIndices.txt", nonZeroIndices)
+np.save("SomaticGermline/bags.txt", bags)
+np.save("SomaticGermline/pairNames.txt", pairNames) #the sv-gene pair names of each bag entry
+np.save("SomaticGermline/labels.txt", labels)
+np.save("SomaticGermline/similarityMatrix.txt", similarityMatrix)
+np.save("SomaticGermline/conceptIndices.txt", nonZeroIndices)
 
 
 exit()

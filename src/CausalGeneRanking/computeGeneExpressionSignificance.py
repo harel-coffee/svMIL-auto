@@ -28,11 +28,11 @@ plt.bar(sampleCounts.keys(), sampleCounts.values())
 plt.show()
 
 #Make the gene subsets given a threshold of number of samples
-threshold = 5
+threshold = 2
 filteredGenes = []
 for gene in geneScores:
 	samples = gene[31].split(",")
-	if len(samples) == threshold:
+	if len(samples) > threshold:
 		
 		filteredGenes.append(gene)
 		
@@ -110,8 +110,8 @@ for gene in filteredGenes:
 		
 		if code < 10: 
 			negativeSamples.append(sample)
-		if len(negativeSamples) == len(matchedFullSampleNames):
-			break
+		# if len(negativeSamples) == len(matchedFullSampleNames):
+		# 	break
 	
 	#Get the expression of these samples
 	negativeSampleExpressionValues = []
@@ -132,18 +132,22 @@ for gene in filteredGenes:
 
 pValues = np.array(pValues, dtype="object")
 
-pValues = pValues[pValues[:,1].argsort()] 
-print pValues.shape
+pValues = pValues[pValues[:,1].argsort()]
+print pValues
+from statsmodels.sandbox.stats.multicomp import multipletests
+reject, pAdjusted, _, _ = multipletests(pValues[:,1], method='bonferroni')
+
+filteredPValues = pValues[reject]
+
 signGenes = []
 signCount = 0
-for pValue in pValues:
-	if pValue[1] < 0.05:
-		
-		gene = filteredGenes[filteredGenes[:,0] == pValue[0]][0]
-		signGenes.append(gene)
-		
-		print pValue
-		signCount += 1
+for pValue in filteredPValues:
+	
+	gene = filteredGenes[filteredGenes[:,0] == pValue[0]][0]
+	signGenes.append(gene)
+	
+	print pValue
+	signCount += 1
 print "Number of significant genes: ", signCount
 
 signGenes = np.array(signGenes)
@@ -151,7 +155,7 @@ signGenes = np.array(signGenes)
 header = "geneName\tgeneScore\teQTLGains\teQTLLosses\tenhancerGains\tenhancerLosses\tpromoterGains\tpromoterLosses\tcpgGains\tcpgLosses\ttfGains\ttfLosses\thicGains\thicLosses\th3k9me3Gains\th3k9me3Losses\th3k4me3Gains\th3k4me3Losses\th3k27acGains\th3k27acLosses\th3k27me3Gains\th3k27me3Losses\th3k4me1Gains\th3k4me1Losses\th3k36me3Gains\th3k36me3Losses\tdnaseIGains\tdnaseILosses\ttotal\tsamples"
 				
 #Write to numpy output file	
-np.savetxt(geneScoreFile + "_sign5.txt", signGenes, delimiter='\t', fmt='%s', header=header)
+np.savetxt(geneScoreFile + "_signgt3.txt", signGenes, delimiter='\t', fmt='%s', header=header)
 
 
 exit()		

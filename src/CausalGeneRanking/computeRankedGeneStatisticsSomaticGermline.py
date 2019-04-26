@@ -65,7 +65,79 @@ with open(degGt3File, 'r') as inf:
 
 #Compute the category count for a given set of scores
 
-def computeCategoryOverlap(rankedGenesFile, sampleThreshold):
+def getSomaticSVSubset(rankedGenesFile, sampleThreshold):
+	
+	somaticSubset = []
+	svCount = 0
+	with open(rankedGenesFile, 'r') as f:
+		lineCount = 0
+		for line in f:
+			line = line.strip()
+			splitLine = line.split("\t")
+			
+			if lineCount < 1:
+				lineCount += 1
+				continue
+
+			if float(splitLine[30]) > 0:
+				
+				samples = splitLine[31]
+				splitSamples = samples.split(",")
+				if len(splitSamples) < sampleThreshold:
+					continue
+				svCount += len(splitSamples)
+				somaticSubset.append(splitLine)
+	return somaticSubset, svCount
+
+def getGermlineSVSubset(rankedGenesFile, svCount):
+	
+	print "Somatic SV count: ", svCount
+	
+	germlineSubset = []
+	
+	with open(rankedGenesFile, 'r') as f:
+		lineCount = 0
+		for line in f:
+			line = line.strip()
+			splitLine = line.split("\t")
+			
+			if lineCount < 1:
+				lineCount += 1
+				continue
+
+			if float(splitLine[30]) > 0:
+				# samples = splitLine[31]
+				# splitSamples = samples.split(",")
+				# if len(splitSamples) < sampleThreshold:
+				# 	continue
+				
+				germlineSubset.append(splitLine)
+				
+	#Select random SVs in the same size as the somatic set size
+	#Randomly go through the genes in the germline subset and keep adding genes until we have exactly the same number of SVs (or approximately)
+	import random
+	random.shuffle(germlineSubset)
+	
+	germlineSVCount = 0
+	germlineSVSubset = []
+	for score in germlineSubset:
+	
+		samples = score[31]
+		splitSamples = samples.split(",")
+	
+		if germlineSVCount + len(splitSamples) > svCount:
+			continue
+		
+		
+		germlineSVSubset.append(score)
+		germlineSVCount += len(splitSamples)
+	
+	print "Germline SV count: ", svCount
+	return germlineSVSubset					 
+	#return germlineSubset
+	
+
+def computeCategoryOverlap(scores):
 		
 	
 	#Finally, show how many of the genes have all of the above, these are likely the most interesting genes. 
@@ -81,48 +153,30 @@ def computeCategoryOverlap(rankedGenesFile, sampleThreshold):
 	degGt3GenesPos = []
 	degGt3GenesNeg = []
 	
-	with open(rankedGenesFile, 'rb') as f:
-		lineCount = 0
-		for line in f:
-			line = line.strip()
-			splitLine = line.split("\t")
-			
-			if lineCount < 1:
-				lineCount += 1
-				continue
-			
-			
-			
-			if float(splitLine[30]) > 0:
+	for splitLine in scores:
+
+		allGenesPos.append(splitLine[0])
+
+		if splitLine[0] in degGenes:
+			#print "deg: ", splitLine[0]
+			degGenesPos.append(splitLine[0])
+		if splitLine[0] in cosmicGenes:
+			cosmicGenesPos.append(splitLine[0])
+		if splitLine[0] in snvGenes:
+			snvGenesPos.append(splitLine[0])
+		if splitLine[0] in degGt3Genes:
+			degGt3GenesPos.append(splitLine[0])
+	else:
+		allGenesNeg.append(splitLine[0])
+		if splitLine[0] in degGenes:
+			degGenesNeg.append(splitLine[0])
+		if splitLine[0] in cosmicGenes:
+			cosmicGenesNeg.append(splitLine[0])
+		if splitLine[0] in snvGenes:
+			snvGenesNeg.append(splitLine[0])
+		if splitLine[0] in degGt3Genes:
+			degGt3GenesNeg.append(splitLine[0])
 				
-				samples = splitLine[31]
-				splitSamples = samples.split(",")
-				if len(splitSamples) < sampleThreshold:
-					continue
-				
-				allGenesPos.append(splitLine[0])
-			#if float(splitLine[1]) < 0.05:
-			#if float(splitLine[28])> 0 and float(splitLine[1]) == 0:
-			#if splitLine:
-				if splitLine[0] in degGenes:
-					#print "deg: ", splitLine[0]
-					degGenesPos.append(splitLine[0])
-				if splitLine[0] in cosmicGenes:
-					cosmicGenesPos.append(splitLine[0])
-				if splitLine[0] in snvGenes:
-					snvGenesPos.append(splitLine[0])
-				if splitLine[0] in degGt3Genes:
-					degGt3GenesPos.append(splitLine[0])
-			else:
-				allGenesNeg.append(splitLine[0])
-				if splitLine[0] in degGenes:
-					degGenesNeg.append(splitLine[0])
-				if splitLine[0] in cosmicGenes:
-					cosmicGenesNeg.append(splitLine[0])
-				if splitLine[0] in snvGenes:
-					snvGenesNeg.append(splitLine[0])
-				if splitLine[0] in degGt3Genes:
-					degGt3GenesNeg.append(splitLine[0])
 	return allGenesPos, allGenesNeg
 
 
@@ -143,6 +197,7 @@ def computeCategoryOverlap(rankedGenesFile, sampleThreshold):
 
 #Do chi-square tests for each category combination
 from scipy.stats import chi2_contingency
+from scipy.stats import fisher_exact
 from scipy.stats import chi2
 import numpy as np
 # contingency table
@@ -165,12 +220,15 @@ def getCategoryOverlapCounts(somaticGenes, germlineGenes, categoryGenes):
 	
 	#return contingency table
 	table = [[len(somaticCategoryIntersect), len(germlineCategoryIntersect)], [len(somaticCategoryDifference), len(germlineCategoryDifference)]]
+	table = [[len(somaticCategoryIntersect), len(somaticCategoryDifference)], [len(germlineCategoryIntersect), len(germlineCategoryDifference)]]
 	return table
 
 def computeSignificance(somaticGenes, germlineGenes, categoryGenes):
 	table = getCategoryOverlapCounts(somaticGenes, germlineGenes, categoryGenes)
-	# print(table)
-	stat, p, dof, expected = chi2_contingency(table)
+	print(table)
+	#stat, p, dof, expected = chi2_contingency(table)
+	odds, p = fisher_exact(table)
+	print p
 	# print('dof=%d' % dof)
 	# print(expected)
 	# # interpret p-value
@@ -187,20 +245,32 @@ pValues = np.zeros([18,7])
 maxThreshold = 18 #there are no genes with more samples than this
 for threshold in range(0, maxThreshold):
 	print "Threshold: ", threshold
-	allGenesPosS, allGenesNegS = computeCategoryOverlap(somaticFile, threshold)
-	allGenesPosG, allGenesNegG = computeCategoryOverlap(germlineFile, threshold)
+	
+	somaticSVs, svCount = getSomaticSVSubset(somaticFile, threshold)
+	germlineSVs = getGermlineSVSubset(germlineFile, svCount)
+	
+	
+	allGenesPosS, allGenesNegS = computeCategoryOverlap(somaticSVs)
+	allGenesPosG, allGenesNegG = computeCategoryOverlap(germlineSVs)
 	
 	print "No of somatic genes: ", len(allGenesPosS)
+	print "No of germline genes: ", len(allGenesPosG)
 		
-	
+	print "COSMIC:"
 	cosmic = computeSignificance(allGenesPosS, allGenesPosG, cosmicGenes)
+	print "DEG:"
 	deg = computeSignificance(allGenesPosS, allGenesPosG, degGenes)
+	print "SNV:"
 	snv = computeSignificance(allGenesPosS, allGenesPosG, snvGenes)
 	
+	print "COSMIC+DEG:"
 	cosmicDeg = computeSignificance(allGenesPosS, allGenesPosG, list(set(cosmicGenes) & set(degGenes)))
+	print "COSMIC+SNVs:"
 	cosmicSnv = computeSignificance(allGenesPosS, allGenesPosG, list(set(cosmicGenes) & set(snvGenes)))
+	print "SNVs+DEGs:"
 	snvDeg = computeSignificance(allGenesPosS, allGenesPosG, list(set(degGenes) & set(snvGenes)))
 	
+	print "COSMIC+DEGs+SNVs:"
 	cosmicSnvDeg = computeSignificance(allGenesPosS, allGenesPosG, list(set(cosmicGenes) & set(degGenes) & set(snvGenes)))											
 	
 	pValues[threshold, 0] = cosmic
@@ -216,13 +286,14 @@ for threshold in range(0, maxThreshold):
 	print table
 	
 
-print pValues	
+print pValues
+
 
 print pValues.flatten()
 flattenedPValues = list(pValues.flatten())
 
 from statsmodels.sandbox.stats.multicomp import multipletests
-reject, pAdjusted, _, _ = multipletests(flattenedPValues, method='fdr_bh')
+reject, pAdjusted, _, _ = multipletests(flattenedPValues, method='fdr_bh') #fdr_bh
 
 print pAdjusted
 print reject
@@ -235,6 +306,30 @@ print pAdjustedReshaped[rejectReshaped]
 #Output a table to a file
 np.savetxt("categoryOverlap_sign.txt", pAdjustedReshaped, delimiter='\t', fmt='%s')
 
+
+
+#Make a venn diagram for the intersect between the genes of somatic & germline, and their overlaps with the deg, cosmic and snv genes.  
+import matplotlib.pyplot as plt
+#matplotlib.use('Agg')
+
+import venn
+
+somaticSVs, svCount = getSomaticSVSubset(somaticFile, 0)
+germlineSVs = getGermlineSVSubset(germlineFile, svCount)
+
+allGenesPosS, allGenesNegS = computeCategoryOverlap(somaticSVs)
+allGenesPosG, allGenesNegG = computeCategoryOverlap(germlineSVs)
+
+labels = venn.get_labels([allGenesPosS, allGenesPosG], fill=['number'])
+fig, ax = venn.venn2(labels, names=['Somatic', 'Germline'])
+fig.show()
+plt.show()
+
+
+# labels = venn.get_labels([allGenesPosS, allGenesPosG, cosmicGenes, snvGenes, degGenes], fill=['number'])
+# fig, ax = venn.venn5(labels, names=['Somatic', 'Germline', 'COSMIC', 'DEG all patients', 'SNV'])
+# fig.show()
+# plt.show()
 
 exit()
 
