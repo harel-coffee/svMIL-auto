@@ -298,11 +298,6 @@ predictions = rfClassifier.predict(similarityMatrix)
 print predictions
 print np.average(labels == np.sign(predictions))
 
-# positiveInd = np.where(np.array(predictions) == 1)[0]
-# print positiveInd
-# print len(list(positiveInd))
-# 
-
 #Now select the most important features with random forest
 importances = rfClassifier.feature_importances_
 std = np.std([tree.feature_importances_ for tree in rfClassifier.estimators_],
@@ -326,6 +321,23 @@ for index in nonZeroIndices:
 	if geneName not in positiveGenes:
 		positiveGenes[geneName] = 0
 	positiveGenes[geneName] += 1
+
+# 
+# print "SVM performance: "
+# 
+# from sklearn.svm import SVC
+# clf = SVC(kernel='linear', probability=True)
+# clf.fit(bagInstanceSimilarityTrain, trainLabels) 
+# score = clf.score(bagInstanceSimilarityTest, testLabels)
+# print score
+# 
+# predictionProbs = clf.predict_proba(bagInstanceSimilarityTest)[:,1]
+# 
+# fpr, tpr, thresholds = metrics.roc_curve(testLabels, predictionProbs, pos_label=1.)
+# roc_auc = auc(fpr, tpr)
+# 
+# print "AUC: ", roc_auc
+# print "Used features: ", len(clf.coef_[0] != 0)
 
 
 print len(positivePairs)
