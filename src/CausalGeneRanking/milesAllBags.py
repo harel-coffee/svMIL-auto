@@ -3,7 +3,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 
-## Running MILES with somatic only, using the > 3 patient DEG labels
+# Running MILES with somatic only, using the > 3 patient DEG labels
 
 somaticScores = np.loadtxt(sys.argv[1], dtype="object")
 degLabels = np.loadtxt(sys.argv[2], dtype="object")
@@ -68,7 +68,7 @@ for sv in svBagContents:
 	labels.append(bagLabel)
 
 
-## Running MILES with somatic only, but using per patient-gene pair DEG labels
+#Running MILES with somatic only, but using per patient-gene pair DEG labels
 # 
 # somaticScores = np.loadtxt(sys.argv[1], dtype="object")
 # degLabels = np.loadtxt(sys.argv[2], dtype="object")
@@ -134,7 +134,7 @@ for sv in svBagContents:
 
 
 #### Germline vs somatic miles
-
+# 
 # 
 # somaticScores = np.loadtxt(sys.argv[1], dtype="object")
 # germlineScores = np.loadtxt(sys.argv[2], dtype="object")
@@ -232,7 +232,7 @@ for sv in svBagContents:
 # 	for gene in genesPerBag[sv]:	
 # 		pairNames.append(sv + "_" + gene)
 # 	bags.append(svBagContents[sv])
-# 	labels.append(-1)
+# 	labels.append(0)
 
 
 # bags = bags[1:100]
@@ -284,43 +284,43 @@ for bagInd in range(0, bags.shape[0]):
 	#This instance will be used as representative for this bag. We use this value as the similarity to all other instances.  
 	similarityMatrix[bagInd] = minDistance
 
-#4. Train a classifier on the similarity space
-from sklearn.ensemble import RandomForestClassifier
-print "training the classifier in similarity space"
-np.random.seed(500)
-rfClassifier = RandomForestClassifier(max_depth=5, n_estimators=2)
-rfClassifier.fit(similarityMatrix, labels) #Use the bag labels, not the instance labels
-
-print similarityMatrix
-print labels
-
-predictions = rfClassifier.predict(similarityMatrix)
-print predictions
-print np.average(labels == np.sign(predictions))
-
-#Now select the most important features with random forest
-importances = rfClassifier.feature_importances_
-std = np.std([tree.feature_importances_ for tree in rfClassifier.estimators_],
-             axis=0)
-indices = np.argsort(importances)[::-1]
-
-
-nonZeroIndices = []
-for index in indices:
-	if importances[index] > 0:
-		nonZeroIndices.append(index)
-
-#Get the genes at these indices
-positiveGenes = dict()
-positivePairs = []
-for index in nonZeroIndices:
-	pairName = pairNames[index]
-	positivePairs.append(pairName)
-	splitPairName = pairName.split("_")
-	geneName = splitPairName[len(splitPairName)-1]
-	if geneName not in positiveGenes:
-		positiveGenes[geneName] = 0
-	positiveGenes[geneName] += 1
+# #4. Train a classifier on the similarity space
+# from sklearn.ensemble import RandomForestClassifier
+# print "training the classifier in similarity space"
+# np.random.seed(500)
+# rfClassifier = RandomForestClassifier(max_depth=5, n_estimators=2)
+# rfClassifier.fit(similarityMatrix, labels) #Use the bag labels, not the instance labels
+# 
+# print similarityMatrix
+# print labels
+# 
+# predictions = rfClassifier.predict(similarityMatrix)
+# print predictions
+# print np.average(labels == np.sign(predictions))
+# 
+# #Now select the most important features with random forest
+# importances = rfClassifier.feature_importances_
+# std = np.std([tree.feature_importances_ for tree in rfClassifier.estimators_],
+#              axis=0)
+# indices = np.argsort(importances)[::-1]
+# 
+# 
+# nonZeroIndices = []
+# for index in indices:
+# 	if importances[index] > 0:
+# 		nonZeroIndices.append(index)
+# 
+# #Get the genes at these indices
+# positiveGenes = dict()
+# positivePairs = []
+# for index in nonZeroIndices:
+# 	pairName = pairNames[index]
+# 	positivePairs.append(pairName)
+# 	splitPairName = pairName.split("_")
+# 	geneName = splitPairName[len(splitPairName)-1]
+# 	if geneName not in positiveGenes:
+# 		positiveGenes[geneName] = 0
+# 	positiveGenes[geneName] += 1
 
 # 
 # print "SVM performance: "
@@ -339,22 +339,103 @@ for index in nonZeroIndices:
 # print "AUC: ", roc_auc
 # print "Used features: ", len(clf.coef_[0] != 0)
 
+### Using Lasso
+from sklearn.linear_model import Lasso
+from sklearn.metrics import auc, precision_recall_curve
+from sklearn.model_selection import StratifiedKFold
+
+cv = StratifiedKFold(n_splits=10)
+labels = np.array(labels)
+#alphas = [1e-15, 1e-10, 1e-8, 1e-4, 1e-3, 1e-2, 1, 5, 10, 20]
+#alphas = [1e-4, 1e-3, 1e-2, 1]
+alphas = [1e-2]
+
+accs = dict()
+aucs = dict()
+coeffs = dict()
+predDiffs = dict()
+
+#Lasso but then with CV
+for currentAlpha in alphas:
+	print "alpha: ", currentAlpha
+	accs[currentAlpha] = []
+	aucs[currentAlpha] = []
+	coeffs[currentAlpha] = []
+	predDiffs[currentAlpha] = []
+	for train, test in cv.split(similarityMatrix, labels):
+		
+		lasso = Lasso(alpha=currentAlpha)
+		lasso.fit(similarityMatrix[train],labels[train])
+		
+		#train_score=lasso.score(bagInstanceSimilarityTrain,trainLabels)
+		test_score=lasso.score(similarityMatrix[test],labels[test])
+		coeff_used = np.sum(lasso.coef_!=0)
+		preds = lasso.predict(similarityMatrix[test])
+		predsDiff = np.average(labels[test] == np.sign(preds))
+		
+		precision, recall, thresholds = precision_recall_curve(labels[test], preds)
+		aucScore = auc(recall, precision)
+		
+		accs[currentAlpha].append(test_score)
+		aucs[currentAlpha].append(aucScore)
+		coeffs[currentAlpha].append(coeff_used)
+		predDiffs[currentAlpha].append(predsDiff)
+
+	#Report the averages per alpha
+	
+	print "Actual acc: ", np.mean(predDiffs[currentAlpha])
+	print "Mean acc: ", np.mean(accs[currentAlpha])
+	print "Mean AUC: ", np.mean(aucs[currentAlpha])
+	print "Mean coeffs: ", np.mean(coeffs[currentAlpha])
+
+#####Getting the concept genes without cross validation
+currentAlpha = 1e-2
+lasso = Lasso(alpha=currentAlpha)
+lasso.fit(similarityMatrix,labels)
+
+#train_score=lasso.score(bagInstanceSimilarityTrain,trainLabels)
+test_score=lasso.score(similarityMatrix,labels)
+coeff_used = np.sum(lasso.coef_!=0)
+preds = lasso.predict(similarityMatrix)
+predsDiff = np.average(labels == np.sign(preds))
+
+precision, recall, thresholds = precision_recall_curve(labels, preds)
+aucScore = auc(recall, precision)
+
+print "acc: ", test_score
+print "predsDiff: ", predsDiff
+print "auc: ", aucScore
+print "coeffs: ", coeff_used
+
+geneIndices = np.where(lasso.coef_ !=0)[0]
+positiveGenes = dict()
+positivePairs = []
+for index in geneIndices:
+	pairName = pairNames[index]
+	positivePairs.append(pairName)
+	splitPairName = pairName.split("_")
+	geneName = splitPairName[len(splitPairName)-1]
+	if geneName not in positiveGenes:
+		positiveGenes[geneName] = 0
+	positiveGenes[geneName] += 1
+
 
 print len(positivePairs)
 print len(positiveGenes)
 
-milesConceptGenesOut = "SomaticGermline/milesConceptGenes.txt"
+milesConceptGenesOut = "lasso2Patients/milesConceptGenes.txt"
 with open(milesConceptGenesOut, 'w') as outF:
 	for gene in positiveGenes:
 		outF.write(gene + "\t" + str(positiveGenes[gene]) + "\n")
 
-#output the similarity matrix and also the labels and bag indices so that we can do analysis after running once
 
-np.save("SomaticGermline/bags.txt", bags)
-np.save("SomaticGermline/pairNames.txt", pairNames) #the sv-gene pair names of each bag entry
-np.save("SomaticGermline/labels.txt", labels)
-np.save("SomaticGermline/similarityMatrix.txt", similarityMatrix)
-np.save("SomaticGermline/conceptIndices.txt", nonZeroIndices)
+#output the similarity matrix and also the labels and bag indices so that we can do analysis after running once
+np.save("lasso2Patients/alpha.txt", currentAlpha)
+np.save("lasso2Patients/bags.txt", bags)
+np.save("lasso2Patients/pairNames.txt", pairNames) #the sv-gene pair names of each bag entry
+np.save("lasso2Patients/labels.txt", labels)
+np.save("lasso2Patients/similarityMatrix.txt", similarityMatrix)
+np.save("lasso2Patients/conceptIndices.txt", geneIndices)
 
 
 exit()

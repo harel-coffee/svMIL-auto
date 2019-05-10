@@ -181,7 +181,8 @@ bags = np.array(bags)
 
 import misvm
 #classifier = misvm.MISVM(kernel='linear', C=1.0, max_iters=50)
-classifier = misvm.sbMIL(kernel='linear', eta=0.1, C=1e2)
+#classifier = misvm.sbMIL(kernel='linear', eta=0.1, C=1e2)
+classifier = misvm.STK()
 
 classifier.fit(bags, labels)
 bag_labels, instance_labels = classifier.predict(bags, instancePrediction=True)
