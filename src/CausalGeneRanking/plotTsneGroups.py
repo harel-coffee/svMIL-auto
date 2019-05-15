@@ -10,8 +10,9 @@ import matplotlib.pyplot as plt
 #First, use non-coding scores > 0 vs = 0. Any specific SVs showing up that are different from the rest?
 
 geneScores = np.loadtxt(sys.argv[1], dtype="object")
+subsetScores = np.loadtxt(sys.argv[2], dtype="object")
 
-totalScores = np.array(geneScores[:,4:30], dtype="float")
+totalScores = np.array(geneScores[:,[4,6,8]], dtype="float")
 
 
 # from sklearn.decomposition import PCA
@@ -36,15 +37,18 @@ from tsne import bh_sne
 
 
 colorLabels = []
+posClass = []
 for score in geneScores:
+	
 	if float(score[30]) > 0:
-		colorLabels.append('r')
-	else:
-		colorLabels.append('b')
+		if score[0] in subsetScores:
+			colorLabels.append('r')
+		else:
+			colorLabels.append('b')
+
 
 vis_data = bh_sne(totalScores)
-print vis_data
-exit()
+
 # plot the result
 vis_x = vis_data[:, 0]
 vis_y = vis_data[:, 1]

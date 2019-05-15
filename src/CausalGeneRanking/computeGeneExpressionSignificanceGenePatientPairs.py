@@ -1,5 +1,9 @@
 """
-	Compute the differential expression difference between genes with SVs and genes without SVs. 
+	Compute the differential expression difference between genes with SVs and genes without SVs.
+	
+	For every gene, go through the patients that have an SV linked to that gene. Do a t-test for the expression of that patient compared to all samples without an SV.
+	Based on the significance, determine the label of that gene/patient pair. 
+	
 
 """
 
@@ -13,39 +17,33 @@ from scipy import stats
 geneScoreFile = sys.argv[1]
 geneScores = np.loadtxt(geneScoreFile, dtype="object")
 
-sampleCounts = dict()
+# sampleCounts = dict()
+# 
+# for gene in geneScores:
+# 	
+# 	samples = gene[31].split(",")
+# 	if samples[0] != "None":
+# 		print samples[0]
+# 		if len(samples) not in sampleCounts:
+# 			sampleCounts[len(samples)] = 0
+# 		sampleCounts[len(samples)] += 1
+# 
+# plt.bar(sampleCounts.keys(), sampleCounts.values())
+# plt.show()
 
-for gene in geneScores:
-	
-	samples = gene[31].split(",")
-	if samples[0] != "None":
-		print samples[0]
-		if len(samples) not in sampleCounts:
-			sampleCounts[len(samples)] = 0
-		sampleCounts[len(samples)] += 1
-
-plt.bar(sampleCounts.keys(), sampleCounts.values())
-plt.show()
-
-#Make the gene subsets given a threshold of number of samples
-threshold = 2
+#Get all genes that have at least 1 SV
+threshold = 0
 filteredGenes = []
 for gene in geneScores:
 	samples = gene[31].split(",")
-	if len(samples) > threshold:
-		
+	
+	if len(samples) > threshold and samples[0] != "None":	
 		filteredGenes.append(gene)
-		
+
 filteredGenes = np.array(filteredGenes, dtype="object")
 print filteredGenes.shape
 
-#Write to outfile to check cosmic overlap etc
-header = "geneName\tgeneScore\teQTLGains\teQTLLosses\tenhancerGains\tenhancerLosses\tpromoterGains\tpromoterLosses\tcpgGains\tcpgLosses\ttfGains\ttfLosses\thicGains\thicLosses\th3k9me3Gains\th3k9me3Losses\th3k4me3Gains\th3k4me3Losses\th3k27acGains\th3k27acLosses\th3k27me3Gains\th3k27me3Losses\th3k4me1Gains\th3k4me1Losses\th3k36me3Gains\th3k36me3Losses\tdnaseIGains\tdnaseILosses\ttotal\tsamples"
-				
-#Write to numpy output file	
-np.savetxt(geneScoreFile + "_filtered.txt", filteredGenes, delimiter='\t', fmt='%s', header=header)
-
-#Get the expression values for the samples in the positive subset
+#Get the expression values for the patients for the genes with SVs
 expressionFile = sys.argv[2]
 
 expressionData = []
@@ -65,7 +63,7 @@ with open(expressionFile, 'r') as inF:
 		fullGeneName = splitLine[0]
 		geneName = fullGeneName.split("|")[0]
 
-		data = splitLine[1:len(splitLine)-1]
+		data = splitLine[1:len(splitLine)-1] 
 		fixedData = [geneName]
 		fixedData += data
 		expressionData.append(fixedData)
@@ -73,12 +71,12 @@ with open(expressionFile, 'r') as inF:
 expressionData = np.array(expressionData, dtype="object")	
 print expressionData
 
-pValues = []
+pValues = dict()
 for gene in filteredGenes:
 	if gene[0] not in expressionData[:,0]:
 		continue
 	geneExpression = expressionData[expressionData[:,0] == gene[0]][0]
-	sampleExpressionValues = [] #expression values of this gene in all samples
+	sampleExpressionValues = dict() #expression values of this gene in all samples
 	
 	geneSamples = gene[31].split(",")
 	matchedFullSampleNames = []
@@ -98,10 +96,10 @@ for gene in filteredGenes:
 				if code < 10: #above 9 are the normal samples, which we do not want to include here
 					sampleInd = samples.index(sample)
 					
-					sampleExpressionValues.append(float(geneExpression[sampleInd]))
+					sampleExpressionValues[geneSample] = float(geneExpression[sampleInd])
 			
 				
-	#Get 5 random samples that are not affecting this gene
+	#Get all the samples without an SV for this gene
 	unmatchedSamples = np.setdiff1d(samples[1:len(samples)-1], matchedFullSampleNames) #exclude hybrid ref
 	negativeSamples = []
 	for sample in unmatchedSamples: #sample tumor samples, exclude normals
@@ -119,35 +117,58 @@ for gene in filteredGenes:
 		sampleInd = samples.index(sample)				
 		negativeSampleExpressionValues.append(float(geneExpression[sampleInd]))
 	
+	#For every sample, do a t-test and get the p-value
+	for geneSample in geneSamples:
+
+		pValue = stats.ttest_1samp(negativeSampleExpressionValues, sampleExpressionValues[geneSample])[1]
+		
+		genePatientPair = gene[0] + "_" + geneSample
+		#The index of this pair is the gene count + sample count (-1 for 0 based)
+			
+		pValues[genePatientPair] = pValue
 	
-	#Do a t-test and compute the p-value for this gene
-	posMean = np.mean(sampleExpressionValues)
-	posStd = np.std(sampleExpressionValues)
-	negMean = np.mean(negativeSampleExpressionValues)
-	negStd = np.std(negativeSampleExpressionValues)
+	# 
+	# #Do a t-test and compute the p-value for this gene
+	# posMean = np.mean(sampleExpressionValues)
+	# posStd = np.std(sampleExpressionValues)
+	# negMean = np.mean(negativeSampleExpressionValues)
+	# negStd = np.std(negativeSampleExpressionValues)
+	# 
+	# pValue = stats.ttest_ind_from_stats(posMean, posStd, len(sampleExpressionValues), negMean, negStd, len(negativeSampleExpressionValues))[1]
+	# pValues.append([gene[0], pValue])
+
+from statsmodels.sandbox.stats.multicomp import multipletests
+reject, pAdjusted, _, _ = multipletests(pValues.values(), method='bonferroni')
+
+filteredPValues = dict()
+for rejectedInd in range(0, len(reject)):
 	
-	pValue = stats.ttest_ind_from_stats(posMean, posStd, len(sampleExpressionValues), negMean, negStd, len(negativeSampleExpressionValues))[1]
-	pValues.append([gene[0], pValue])
+	if reject[rejectedInd] == 1:
+		filteredPValues[pValues.keys()[rejectedInd]] = pValues.values()[rejectedInd]
+		
+print filteredPValues
+
+with open("genePatientPairPValues.txt", 'w') as outF:
+	for genePatientPair in filteredPValues:
+		outF.write(genePatientPair + "\t" + str(filteredPValues[genePatientPair]) + "\n")	
+	
+exit()	
 	
 
 pValues = np.array(pValues, dtype="object")
 
-pValues = pValues[pValues[:,1].argsort()]
-print pValues
-from statsmodels.sandbox.stats.multicomp import multipletests
-reject, pAdjusted, _, _ = multipletests(pValues[:,1], method='bonferroni')
-
-filteredPValues = pValues[reject]
-
+pValues = pValues[pValues[:,1].argsort()] 
+print pValues.shape
 signGenes = []
 signCount = 0
-for pValue in filteredPValues:
-	
-	gene = filteredGenes[filteredGenes[:,0] == pValue[0]][0]
-	signGenes.append(gene)
-	
-	print pValue
-	signCount += 1
+for pValue in pValues:
+	if pValue[1] < 0.05:
+		
+		gene = filteredGenes[filteredGenes[:,0] == pValue[0]][0]
+		signGenes.append(gene)
+		
+		print pValue
+		signCount += 1
 print "Number of significant genes: ", signCount
 
 signGenes = np.array(signGenes)
@@ -155,7 +176,7 @@ signGenes = np.array(signGenes)
 header = "geneName\tgeneScore\teQTLGains\teQTLLosses\tenhancerGains\tenhancerLosses\tpromoterGains\tpromoterLosses\tcpgGains\tcpgLosses\ttfGains\ttfLosses\thicGains\thicLosses\th3k9me3Gains\th3k9me3Losses\th3k4me3Gains\th3k4me3Losses\th3k27acGains\th3k27acLosses\th3k27me3Gains\th3k27me3Losses\th3k4me1Gains\th3k4me1Losses\th3k36me3Gains\th3k36me3Losses\tdnaseIGains\tdnaseILosses\ttotal\tsamples"
 				
 #Write to numpy output file	
-np.savetxt(geneScoreFile + "_signgt3.txt", signGenes, delimiter='\t', fmt='%s', header=header)
+np.savetxt(geneScoreFile + "_signgt5.txt", signGenes, delimiter='\t', fmt='%s', header=header)
 
 
 exit()		

@@ -4,6 +4,7 @@
 """
 
 import sys
+import numpy as np
 
 
 #1. How many genes with a score >0 are in COSMIC?
@@ -61,9 +62,9 @@ with open(rankedGenesFile, 'rb') as f:
 			continue
 		
 		#if float(splitLine[30]) > 0 and float(splitLine[1]) == 0:
-		if float(splitLine[30]) > 0:
+		#if float(splitLine[30]) > 0:
 		#if float(splitLine[1]) < 0.05:
-		#if splitLine:
+		if splitLine:
 			if splitLine[0] in cosmicGenes:
 				print "COSMIC gene: ", splitLine[0]
 				cosmicCountGoodScore += 1
@@ -90,6 +91,19 @@ print cosmicCountBadScore, " out of ", allGenesBadScore, " are in COSMIC and sco
 print bcCountGoodScore, " out of ", allGenesGoodScore, " are known breast cancer genes and score > 0"
 print bcCountBadScore, " out of ", allGenesBadScore, " are known breast cancer genes and score 0"
 
+from scipy.stats import chi2_contingency
+
+if allGenesBadScore == 0: #temporary simple fix
+	allGenesBadScore = 19286 - allGenesGoodScore
+	cosmicCountBadScore = len(cosmicGenes) - cosmicCountGoodScore
+
+#Compute if these values are also significant
+# cosmic & positive non-cosmic & positive
+# cosmic & negative non-cosmic & negative
+obs = np.array([[cosmicCountGoodScore, cosmicCountBadScore], [allGenesGoodScore - cosmicCountGoodScore, allGenesBadScore - cosmicCountBadScore]])
+g, p, dof, expctd = chi2_contingency(obs)
+print "COSMIC p-value: ", p
+
 #In addition, test how many of the genes also have SNVs affecting them in at least 1 sample
 snvGenes = []
 with open(snvFile, 'r') as inf:
@@ -102,6 +116,8 @@ snvCountPos = 0
 nonSnvCountPos = 0
 snvCountNeg = 0
 nonSnvCountNeg = 0
+allPos = 0
+allNeg = 0
 
 with open(rankedGenesFile, 'rb') as f:
 	lineCount = 0
@@ -113,23 +129,34 @@ with open(rankedGenesFile, 'rb') as f:
 			continue
 		
 		#if float(splitLine[28])> 0 and float(splitLine[1]) == 0:
-		#if splitLine:
+		if splitLine:
 		#if float(splitLine[1]) < 0.05:
-		if float(splitLine[30]) > 0:
+		#if float(splitLine[30]) > 0:
 			if splitLine[0] in snvGenes:
 				snvCountPos += 1
 			else:
 				nonSnvCountPos += 1
+			allPos += 1
 		else:
 			if splitLine[0] in snvGenes:
 				snvCountNeg += 1
 			else:
 				nonSnvCountNeg += 1
-
+			allNeg += 1
 			
 print snvCountPos, " out of ", snvCountPos + nonSnvCountPos, " score > 0 and have SNVs"
 print snvCountNeg, " out of ", snvCountNeg + nonSnvCountNeg, " score 0 and have SNVs"
 
+if allNeg == 0: #temporary simple fix
+	allNeg = 19286 - allPos
+	snvCountNeg = len(snvGenes) - snvCountPos
+
+#Compute if these values are also significant
+# cosmic & positive non-cosmic & positive
+# cosmic & negative non-cosmic & negative
+obs = np.array([[snvCountPos, snvCountNeg], [allPos - snvCountPos, allNeg - snvCountNeg]])
+g, p, dof, expctd = chi2_contingency(obs)
+print "SNV p-value: ", p
 
 #Then, determine how many of the genes are differentially expressed
 degGenes = []
@@ -143,6 +170,8 @@ degCountPos = 0
 nonDegCountPos = 0
 degCountNeg = 0
 nonDegCountNeg = 0
+allPos = 0
+allNeg = 0
 
 with open(rankedGenesFile, 'rb') as f:
 	lineCount = 0
@@ -153,24 +182,35 @@ with open(rankedGenesFile, 'rb') as f:
 			lineCount += 1
 			continue
 		
-		if float(splitLine[30]) > 0:
+		#if float(splitLine[30]) > 0:
 		#if float(splitLine[1]) < 0.05:
 		#if float(splitLine[28])> 0 and float(splitLine[1]) == 0:
-		#if splitLine:
+		if splitLine:
 			if splitLine[0] in degGenes:
 				degCountPos += 1
 			else:
 				nonDegCountPos += 1
+			allPos += 1
 		else:
 			if splitLine[0] in degGenes:
 				degCountNeg += 1
 			else:
 				nonDegCountNeg += 1
-
+			allNeg += 1
 			
 print degCountPos, " out of ", degCountPos + nonDegCountPos, " score > 0 and are DEG"
 print degCountNeg, " out of ", degCountNeg + nonDegCountNeg, " score 0 and are DEG"
 
+if allNeg == 0: #temporary simple fix
+	allNeg = 19286 - allPos
+	degCountNeg = len(degGenes) - degCountPos
+
+#Compute if these values are also significant
+# cosmic & positive non-cosmic & positive
+# cosmic & negative non-cosmic & negative
+obs = np.array([[degCountPos, degCountNeg], [allPos - degCountPos, allNeg - degCountNeg]])
+g, p, dof, expctd = chi2_contingency(obs)
+print "SNV p-value: ", p
 
 #Finally, show how many of the genes have all of the above, these are likely the most interesting genes. 
 
@@ -191,10 +231,10 @@ with open(rankedGenesFile, 'rb') as f:
 			lineCount += 1
 			continue
 		
-		if float(splitLine[30]) > 0:
+		#if float(splitLine[30]) > 0:
 		#if float(splitLine[1]) < 0.05:
 		#if float(splitLine[28])> 0 and float(splitLine[1]) == 0:
-		#if splitLine:
+		if splitLine:
 			if splitLine[0] in degGenes:
 				#print "deg: ", splitLine[0]
 				degGenesPos.append(splitLine[0])
@@ -221,27 +261,28 @@ print "Number of genes that are in COSMIC and have SNVs: ", len(cosmicSNVsInters
 print "Number of genes that are in COSMIC and are DEG: ", len(cosmicDEGsIntersect)
 print "Number of genes that have SNV and are DEG: ", len(snvDEGsIntersect)
 
-
-print "genes in the total intersect: "
-print allCriteriaIntersect
-intersectScores = []
-with open(rankedGenesFile, 'rb') as f:
-	lineCount = 0
-	for line in f:
-		line = line.strip()
-		splitLine = line.split("\t")
-		
-		if lineCount < 1:
-			lineCount += 1
-			continue
-		
-		if float(splitLine[30]) > 0:
-		#if float(splitLine[1]) < 0.05:
-			if splitLine[0] in allCriteriaIntersect:
-				intersectScores.append(float(splitLine[30]))
-import matplotlib.pyplot as plt
-plt.hist(intersectScores)
-plt.show()
+# 
+# print "genes in the total intersect: "
+# print allCriteriaIntersect
+# intersectScores = []
+# with open(rankedGenesFile, 'rb') as f:
+# 	lineCount = 0
+# 	for line in f:
+# 		line = line.strip()
+# 		splitLine = line.split("\t")
+# 		
+# 		if lineCount < 1:
+# 			lineCount += 1
+# 			continue
+# 		
+# 		if splitLine:
+# 		#if float(splitLine[30]) > 0:
+# 		#if float(splitLine[1]) < 0.05:
+# 			if splitLine[0] in allCriteriaIntersect:
+# 				intersectScores.append(float(splitLine[30]))
+# import matplotlib.pyplot as plt
+# plt.hist(intersectScores)
+# plt.show()
 #exit()
 
 #exit()
