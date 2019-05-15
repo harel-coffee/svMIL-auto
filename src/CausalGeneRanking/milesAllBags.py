@@ -327,13 +327,14 @@ import matplotlib.pyplot as plt
 ### Loading pre-made data to save time
 
 #To save time, bags and labels have been stored on disk already and can be re-loaded
-bags = np.load("3DEGs/bags.txt.npy")
-labels = np.load("3DEGs/labels.txt.npy")
-pairNames = np.load("3DEGs/pairNames.txt.npy") #the sv-gene pair names of each bag entry
-similarityMatrix = np.load("3DEGs/similarityMatrix.txt.npy")
+bags = np.load("PerPatientDEGs/bags.txt.npy")
+labels = np.load("PerPatientDEGs/labels.txt.npy")
+pairNames = np.load("PerPatientDEGs/pairNames.txt.npy") #the sv-gene pair names of each bag entry
+similarityMatrix = np.load("PerPatientDEGs/similarityMatrix.txt.npy")
 
 #Shuffle the labels
 np.random.shuffle(labels)
+
 
 # similarityMatrix = similarityMatrix[1:100, 1:100]
 # labels = labels[1:100]
@@ -496,12 +497,12 @@ for index in geneIndices:
 	if geneName not in positiveGenes:
 		positiveGenes[geneName] = 0
 	positiveGenes[geneName] += 1
-
+exit()
 
 print len(positivePairs)
 print len(positiveGenes)
 
-milesConceptGenesOut = "lasso2Patients/milesConceptGenes_random.txt"
+milesConceptGenesOut = "lassoSomaticGermline/milesConceptGenes_random.txt"
 with open(milesConceptGenesOut, 'w') as outF:
 	for gene in positiveGenes:
 		outF.write(gene + "\t" + str(positiveGenes[gene]) + "\n")
@@ -516,10 +517,10 @@ with open(milesConceptGenesOut, 'w') as outF:
 # np.save("lasso2Patients/conceptIndices.txt", geneIndices)
 
 #Instead save the scores to file
-np.save("lasso2Patients/acc_random.txt", test_score)
-np.save("lasso2Patients/preds_random.txt", predsDiff)
-np.save("lasso2Patients/auc_random.txt", aucScore)
-np.save("lasso2Patients/coeffs_random.txt", coeff_used)
+np.save("lassoSomaticGermline/acc_random.txt", test_score)
+np.save("lassoSomaticGermline/preds_random.txt", predsDiff)
+np.save("lassoSomaticGermline/auc_random.txt", aucScore)
+np.save("lassoSomaticGermline/coeffs_random.txt", coeff_used)
 
 exit()
 
