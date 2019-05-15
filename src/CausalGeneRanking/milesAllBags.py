@@ -332,6 +332,9 @@ labels = np.load("SomaticGermline/labels.txt.npy")
 pairNames = np.load("SomaticGermline/pairNames.txt.npy") #the sv-gene pair names of each bag entry
 similarityMatrix = np.load("SomaticGermline/similarityMatrix.txt.npy")
 
+similarityMatrix = similarityMatrix[1:100, 1:100]
+labels = labels[1:100]
+
 ### Using SVM
 # from sklearn.metrics import auc, precision_recall_curve
 # print "SVM performance: "
