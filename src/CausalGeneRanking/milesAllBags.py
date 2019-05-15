@@ -427,7 +427,7 @@ cv = StratifiedKFold(n_splits=10)
 labels = np.array(labels)
 #alphas = [1e-15, 1e-10, 1e-8, 1e-4, 1e-3, 1e-2, 1, 5, 10, 20]
 #alphas = [1e-4, 1e-3, 1e-2, 1]
-alphas = [1e-2]
+alphas = [1e-3]
 
 accs = dict()
 aucs = dict()
