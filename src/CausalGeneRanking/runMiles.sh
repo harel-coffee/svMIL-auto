@@ -4,9 +4,9 @@
 #$ -cwd
 #$ -m as
 #$ -M m.m.nieboer@umcutrecht.nl
-#$ -l h_vmem=50G
+#$ -l h_vmem=25G
 #$ -l h_rt=48:00:00
-#$ -e miles_svm_err
-#$ -o miles_svm_out
+#$ -e miles_lasso2_err
+#$ -o miles_lasso2_out
 
 python milesAllBags.py
