@@ -327,10 +327,10 @@ import matplotlib.pyplot as plt
 ### Loading pre-made data to save time
 
 #To save time, bags and labels have been stored on disk already and can be re-loaded
-bags = np.load("SomaticGermline/bags.txt.npy")
-labels = np.load("SomaticGermline/labels.txt.npy")
-pairNames = np.load("SomaticGermline/pairNames.txt.npy") #the sv-gene pair names of each bag entry
-similarityMatrix = np.load("SomaticGermline/similarityMatrix.txt.npy")
+bags = np.load("PerPatientDEGs/bags.txt.npy")
+labels = np.load("PerPatientDEGs/labels.txt.npy")
+pairNames = np.load("PerPatientDEGs/pairNames.txt.npy") #the sv-gene pair names of each bag entry
+similarityMatrix = np.load("PerPatientDEGs/similarityMatrix.txt.npy")
 
 #Shuffle the labels
 np.random.shuffle(labels)
@@ -501,7 +501,7 @@ for index in geneIndices:
 print len(positivePairs)
 print len(positiveGenes)
 
-milesConceptGenesOut = "lassoSomaticGermline/milesConceptGenes_random.txt"
+milesConceptGenesOut = "lassoPerPatient/milesConceptGenes_random.txt"
 with open(milesConceptGenesOut, 'w') as outF:
 	for gene in positiveGenes:
 		outF.write(gene + "\t" + str(positiveGenes[gene]) + "\n")
@@ -516,10 +516,10 @@ with open(milesConceptGenesOut, 'w') as outF:
 # np.save("lasso2Patients/conceptIndices.txt", geneIndices)
 
 #Instead save the scores to file
-np.save("lassoSomaticGermline/acc_random.txt", test_score)
-np.save("lassoSomaticGermline/preds_random.txt", predsDiff)
-np.save("lassoSomaticGermline/auc_random.txt", aucScore)
-np.save("lassoSomaticGermline/coeffs_random.txt", coeff_used)
+np.save("lassoPerPatient/acc_random.txt", test_score)
+np.save("lassoPerPatient/preds_random.txt", predsDiff)
+np.save("lassoPerPatient/auc_random.txt", aucScore)
+np.save("lassoPerPatient/coeffs_random.txt", coeff_used)
 
 exit()
 
