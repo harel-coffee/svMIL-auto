@@ -333,7 +333,7 @@ pairNames = np.load("SomaticGermline/pairNames.txt.npy") #the sv-gene pair names
 similarityMatrix = np.load("SomaticGermline/similarityMatrix.txt.npy")
 
 #Shuffle the labels
-np.random.shuffle(labels)
+#np.random.shuffle(labels)
 
 
 # similarityMatrix = similarityMatrix[1:100, 1:100]
@@ -508,7 +508,7 @@ for index in geneIndices:
 print len(positivePairs)
 print len(positiveGenes)
 
-milesConceptGenesOut = "lassoSomaticGermline/milesConceptGenes.txt"
+milesConceptGenesOut = "lassoSomaticGermline/milesConceptGenes_nonRandom.txt"
 with open(milesConceptGenesOut, 'w') as outF:
 	for gene in positiveGenes:
 		outF.write(gene + "\t" + str(positiveGenes[gene]) + "\n")
