@@ -334,6 +334,8 @@ similarityMatrix = np.load("SomaticGermline/similarityMatrix.txt.npy")
 
 #Shuffle the labels
 np.random.shuffle(labels)
+print labels
+exit()
 
 # similarityMatrix = similarityMatrix[1:100, 1:100]
 # labels = labels[1:100]
