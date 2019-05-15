@@ -327,10 +327,10 @@ import matplotlib.pyplot as plt
 ### Loading pre-made data to save time
 
 #To save time, bags and labels have been stored on disk already and can be re-loaded
-bags = np.load("SomaticGermline/bags.txt.npy")
-labels = np.load("SomaticGermline/labels.txt.npy")
-pairNames = np.load("SomaticGermline/pairNames.txt.npy") #the sv-gene pair names of each bag entry
-similarityMatrix = np.load("SomaticGermline/similarityMatrix.txt.npy")
+bags = np.load("3DEGs/bags.txt.npy")
+labels = np.load("3DEGs/labels.txt.npy")
+pairNames = np.load("3DEGs/pairNames.txt.npy") #the sv-gene pair names of each bag entry
+similarityMatrix = np.load("3DEGs/similarityMatrix.txt.npy")
 
 #Shuffle the labels
 #np.random.shuffle(labels)
@@ -379,44 +379,44 @@ similarityMatrix = np.load("SomaticGermline/similarityMatrix.txt.npy")
 # 	for pairInd in range(0, pairsRanking.shape[0]):
 # 		outF.write(pairsRanking[pairInd, 0] + "\t" + str(pairsRanking[pairInd, 1]) + "\n")
 
-# ###Using SVM with cross validation
-# print "SVM with RFECV performance: "
-# from sklearn.feature_selection import RFECV
-# from sklearn.metrics import auc, precision_recall_curve
-# from sklearn.svm import LinearSVC
-# clf = LinearSVC()
-# selector = RFECV(clf, step=1, cv=5)
-# print "Fitting classifier: "
-# selector = selector.fit(similarityMatrix, labels)
-# print "score: ", selector.score(similarityMatrix, labels)
-# preds = selector.predict(similarityMatrix)
-# predsDiff = np.average(labels == np.sign(preds))
-# 
-# print "mean score: ", predsDiff
-# 
-# precision, recall, thresholds = precision_recall_curve(labels, preds)
-# aucScore = auc(recall, precision)
-# 
-# print "AUC: ", aucScore
-# 
-# selectedGenesInd = selector.support_
-# selectedPairs = pairNames[selectedGenesInd]
-# 
-# print "Number of selected pairs: ", selectedPairs
-# pairsRankingOut = "svmRFECVPerPatient/pairsRanking.txt"
-# with open(pairsRankingOut, 'w') as outF:
-# 	for pairInd in range(0, selectedPairs.shape[0]):
-# 		outF.write(selectedPairs[pairInd] + "\n")
-# 
-# #output the similarity matrix and also the labels and bag indices so that we can do analysis after running once
-# #np.save("svmRFECVPerPatient/bags.txt", bags)
-# #np.save("svmRFECVPerPatient/pairNames.txt", pairNames) #the sv-gene pair names of each bag entry
-# #np.save("svmRFECVPerPatient/labels.txt", labels)
-# #np.save("svmSomaticGermline/similarityMatrix.txt", similarityMatrix) #no need to store this every time
-# #np.save("svmRFECVPerPatient/coef.txt", clf.coef_[0])
-# 
-# 
-# exit()
+###Using SVM with cross validation
+print "SVM with RFECV performance: "
+from sklearn.feature_selection import RFECV
+from sklearn.metrics import auc, precision_recall_curve
+from sklearn.svm import LinearSVC
+clf = LinearSVC()
+selector = RFECV(clf, step=1, cv=5)
+print "Fitting classifier: "
+selector = selector.fit(similarityMatrix, labels)
+print "score: ", selector.score(similarityMatrix, labels)
+preds = selector.predict(similarityMatrix)
+predsDiff = np.average(labels == np.sign(preds))
+
+print "mean score: ", predsDiff
+
+precision, recall, thresholds = precision_recall_curve(labels, preds)
+aucScore = auc(recall, precision)
+
+print "AUC: ", aucScore
+
+selectedGenesInd = selector.support_
+selectedPairs = pairNames[selectedGenesInd]
+
+print "Number of selected pairs: ", selectedPairs
+pairsRankingOut = "svmRFECV2Patients/pairsRanking.txt"
+with open(pairsRankingOut, 'w') as outF:
+	for pairInd in range(0, selectedPairs.shape[0]):
+		outF.write(selectedPairs[pairInd] + "\n")
+
+#output the similarity matrix and also the labels and bag indices so that we can do analysis after running once
+#np.save("svmRFECVPerPatient/bags.txt", bags)
+#np.save("svmRFECVPerPatient/pairNames.txt", pairNames) #the sv-gene pair names of each bag entry
+#np.save("svmRFECVPerPatient/labels.txt", labels)
+#np.save("svmSomaticGermline/similarityMatrix.txt", similarityMatrix) #no need to store this every time
+#np.save("svmRFECVPerPatient/coef.txt", clf.coef_[0])
+
+
+exit()
 
 ### Using Lasso
 from sklearn.linear_model import Lasso
