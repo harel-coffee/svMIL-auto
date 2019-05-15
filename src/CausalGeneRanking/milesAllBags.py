@@ -327,10 +327,10 @@ import matplotlib.pyplot as plt
 ### Loading pre-made data to save time
 
 #To save time, bags and labels have been stored on disk already and can be re-loaded
-bags = np.load("PerPatientDEGs/bags.txt.npy")
-labels = np.load("PerPatientDEGs/labels.txt.npy")
-pairNames = np.load("PerPatientDEGs/pairNames.txt.npy") #the sv-gene pair names of each bag entry
-similarityMatrix = np.load("PerPatientDEGs/similarityMatrix.txt.npy")
+bags = np.load("3DEGs/bags.txt.npy")
+labels = np.load("3DEGs/labels.txt.npy")
+pairNames = np.load("3DEGs/pairNames.txt.npy") #the sv-gene pair names of each bag entry
+similarityMatrix = np.load("3DEGs/similarityMatrix.txt.npy")
 
 #Shuffle the labels
 np.random.shuffle(labels)
@@ -487,7 +487,7 @@ predsDiff = np.average(labels == np.sign(preds))
 precision, recall, thresholds = precision_recall_curve(labels, preds)
 aucScore = auc(recall, precision)
 
-print "lasso per patient alpha 0.01"
+print "lasso 2 patient alpha 0.01"
 print "acc: ", test_score
 print "predsDiff: ", predsDiff
 print "auc: ", aucScore
@@ -508,7 +508,7 @@ for index in geneIndices:
 print len(positivePairs)
 print len(positiveGenes)
 
-milesConceptGenesOut = "lassoPerPatient/milesConceptGenes.txt"
+milesConceptGenesOut = "lasso2Patients/milesConceptGenes.txt"
 with open(milesConceptGenesOut, 'w') as outF:
 	for gene in positiveGenes:
 		outF.write(gene + "\t" + str(positiveGenes[gene]) + "\n")
