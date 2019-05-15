@@ -327,10 +327,10 @@ import matplotlib.pyplot as plt
 ### Loading pre-made data to save time
 
 #To save time, bags and labels have been stored on disk already and can be re-loaded
-bags = np.load("PerPatientDEGs/bags.txt.npy")
-labels = np.load("PerPatientDEGs/labels.txt.npy")
-pairNames = np.load("PerPatientDEGs/pairNames.txt.npy") #the sv-gene pair names of each bag entry
-similarityMatrix = np.load("PerPatientDEGs/similarityMatrix.txt.npy")
+bags = np.load("SomaticGermline/bags.txt.npy")
+labels = np.load("SomaticGermline/labels.txt.npy")
+pairNames = np.load("SomaticGermline/pairNames.txt.npy") #the sv-gene pair names of each bag entry
+similarityMatrix = np.load("SomaticGermline/similarityMatrix.txt.npy")
 
 #Shuffle the labels
 np.random.shuffle(labels)
@@ -497,7 +497,6 @@ for index in geneIndices:
 	if geneName not in positiveGenes:
 		positiveGenes[geneName] = 0
 	positiveGenes[geneName] += 1
-exit()
 
 print len(positivePairs)
 print len(positiveGenes)
