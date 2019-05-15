@@ -327,10 +327,10 @@ import matplotlib.pyplot as plt
 ### Loading pre-made data to save time
 
 #To save time, bags and labels have been stored on disk already and can be re-loaded
-bags = np.load("3DEGs/bags.txt.npy")
-labels = np.load("3DEGs/labels.txt.npy")
-pairNames = np.load("3DEGs/pairNames.txt.npy") #the sv-gene pair names of each bag entry
-similarityMatrix = np.load("3DEGs/similarityMatrix.txt.npy")
+bags = np.load("PerPatientDEGs/bags.txt.npy")
+labels = np.load("PerPatientDEGs/labels.txt.npy")
+pairNames = np.load("PerPatientDEGs/pairNames.txt.npy") #the sv-gene pair names of each bag entry
+similarityMatrix = np.load("PerPatientDEGs/similarityMatrix.txt.npy")
 
 #Shuffle the labels
 #np.random.shuffle(labels)
@@ -466,10 +466,10 @@ for currentAlpha in alphas:
 	print "Mean AUC: ", np.mean(aucs[currentAlpha])
 	print "Mean coeffs: ", np.mean(coeffs[currentAlpha])
 	
-	np.save("lasso2Patients/acc.txt", np.mean(predDiffs[currentAlpha]))
-	np.save("lasso2Patients/preds.txt", np.mean(accs[currentAlpha]))
-	np.save("lasso2Patients/auc.txt", np.mean(aucs[currentAlpha]))
-	np.save("lasso2Patients/coeffs.txt", np.mean(coeffs[currentAlpha]))
+	np.save("lassoPerPatient/acc.txt", np.mean(predDiffs[currentAlpha]))
+	np.save("lassoPerPatient/preds.txt", np.mean(accs[currentAlpha]))
+	np.save("lassoPerPatient/auc.txt", np.mean(aucs[currentAlpha]))
+	np.save("lassoPerPatient/coeffs.txt", np.mean(coeffs[currentAlpha]))
 	
 	
 
