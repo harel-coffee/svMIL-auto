@@ -433,78 +433,85 @@ accs = dict()
 aucs = dict()
 coeffs = dict()
 predDiffs = dict()
+
+#Lasso but then with CV
+for currentAlpha in alphas:
+	print "alpha: ", currentAlpha
+	accs[currentAlpha] = []
+	aucs[currentAlpha] = []
+	coeffs[currentAlpha] = []
+	predDiffs[currentAlpha] = []
+	for train, test in cv.split(similarityMatrix, labels):
+		
+		lasso = Lasso(alpha=currentAlpha)
+		lasso.fit(similarityMatrix[train],labels[train])
+		
+		#train_score=lasso.score(bagInstanceSimilarityTrain,trainLabels)
+		test_score=lasso.score(similarityMatrix[test],labels[test])
+		coeff_used = np.sum(lasso.coef_!=0)
+		preds = lasso.predict(similarityMatrix[test])
+		predsDiff = np.average(labels[test] == np.sign(preds))
+		
+		precision, recall, thresholds = precision_recall_curve(labels[test], preds)
+		aucScore = auc(recall, precision)
+		
+		accs[currentAlpha].append(test_score)
+		aucs[currentAlpha].append(aucScore)
+		coeffs[currentAlpha].append(coeff_used)
+		predDiffs[currentAlpha].append(predsDiff)
+
+	#Report the averages per alpha
+	
+	print "Actual acc: ", np.mean(predDiffs[currentAlpha])
+	print "Mean acc: ", np.mean(accs[currentAlpha])
+	print "Mean AUC: ", np.mean(aucs[currentAlpha])
+	print "Mean coeffs: ", np.mean(coeffs[currentAlpha])
+	
+	np.save("lassoPerPatient/acc_random.txt", test_score)
+	np.save("lassoPerPatient/preds_random.txt", predsDiff)
+	np.save("lassoPerPatient/auc_random.txt", aucScore)
+	np.save("lassoPerPatient/coeffs_random.txt", coeff_used)
+	
+	
+
+# # #####Getting the concept genes without cross validation
+# currentAlpha = 1e-2
+# lasso = Lasso(alpha=currentAlpha)
+# lasso.fit(similarityMatrix,labels)
 # 
-# #Lasso but then with CV
-# for currentAlpha in alphas:
-# 	print "alpha: ", currentAlpha
-# 	accs[currentAlpha] = []
-# 	aucs[currentAlpha] = []
-# 	coeffs[currentAlpha] = []
-# 	predDiffs[currentAlpha] = []
-# 	for train, test in cv.split(similarityMatrix, labels):
-# 		
-# 		lasso = Lasso(alpha=currentAlpha)
-# 		lasso.fit(similarityMatrix[train],labels[train])
-# 		
-# 		#train_score=lasso.score(bagInstanceSimilarityTrain,trainLabels)
-# 		test_score=lasso.score(similarityMatrix[test],labels[test])
-# 		coeff_used = np.sum(lasso.coef_!=0)
-# 		preds = lasso.predict(similarityMatrix[test])
-# 		predsDiff = np.average(labels[test] == np.sign(preds))
-# 		
-# 		precision, recall, thresholds = precision_recall_curve(labels[test], preds)
-# 		aucScore = auc(recall, precision)
-# 		
-# 		accs[currentAlpha].append(test_score)
-# 		aucs[currentAlpha].append(aucScore)
-# 		coeffs[currentAlpha].append(coeff_used)
-# 		predDiffs[currentAlpha].append(predsDiff)
+# #train_score=lasso.score(bagInstanceSimilarityTrain,trainLabels)
+# test_score=lasso.score(similarityMatrix,labels)
+# coeff_used = np.sum(lasso.coef_!=0)
+# preds = lasso.predict(similarityMatrix)
+# predsDiff = np.average(labels == np.sign(preds))
 # 
-# 	#Report the averages per alpha
-# 	
-# 	print "Actual acc: ", np.mean(predDiffs[currentAlpha])
-# 	print "Mean acc: ", np.mean(accs[currentAlpha])
-# 	print "Mean AUC: ", np.mean(aucs[currentAlpha])
-# 	print "Mean coeffs: ", np.mean(coeffs[currentAlpha])
+# precision, recall, thresholds = precision_recall_curve(labels, preds)
+# aucScore = auc(recall, precision)
 # 
-# #####Getting the concept genes without cross validation
-currentAlpha = 1e-2
-lasso = Lasso(alpha=currentAlpha)
-lasso.fit(similarityMatrix,labels)
-
-#train_score=lasso.score(bagInstanceSimilarityTrain,trainLabels)
-test_score=lasso.score(similarityMatrix,labels)
-coeff_used = np.sum(lasso.coef_!=0)
-preds = lasso.predict(similarityMatrix)
-predsDiff = np.average(labels == np.sign(preds))
-
-precision, recall, thresholds = precision_recall_curve(labels, preds)
-aucScore = auc(recall, precision)
-
-print "acc: ", test_score
-print "predsDiff: ", predsDiff
-print "auc: ", aucScore
-print "coeffs: ", coeff_used
-
-geneIndices = np.where(lasso.coef_ !=0)[0]
-positiveGenes = dict()
-positivePairs = []
-for index in geneIndices:
-	pairName = pairNames[index]
-	positivePairs.append(pairName)
-	splitPairName = pairName.split("_")
-	geneName = splitPairName[len(splitPairName)-1]
-	if geneName not in positiveGenes:
-		positiveGenes[geneName] = 0
-	positiveGenes[geneName] += 1
-
-print len(positivePairs)
-print len(positiveGenes)
-
-milesConceptGenesOut = "lassoPerPatient/milesConceptGenes_random.txt"
-with open(milesConceptGenesOut, 'w') as outF:
-	for gene in positiveGenes:
-		outF.write(gene + "\t" + str(positiveGenes[gene]) + "\n")
+# print "acc: ", test_score
+# print "predsDiff: ", predsDiff
+# print "auc: ", aucScore
+# print "coeffs: ", coeff_used
+# 
+# geneIndices = np.where(lasso.coef_ !=0)[0]
+# positiveGenes = dict()
+# positivePairs = []
+# for index in geneIndices:
+# 	pairName = pairNames[index]
+# 	positivePairs.append(pairName)
+# 	splitPairName = pairName.split("_")
+# 	geneName = splitPairName[len(splitPairName)-1]
+# 	if geneName not in positiveGenes:
+# 		positiveGenes[geneName] = 0
+# 	positiveGenes[geneName] += 1
+# 
+# print len(positivePairs)
+# print len(positiveGenes)
+# 
+# milesConceptGenesOut = "lassoPerPatient/milesConceptGenes_random.txt"
+# with open(milesConceptGenesOut, 'w') as outF:
+# 	for gene in positiveGenes:
+# 		outF.write(gene + "\t" + str(positiveGenes[gene]) + "\n")
 
 
 #output the similarity matrix and also the labels and bag indices so that we can do analysis after running once
@@ -516,10 +523,10 @@ with open(milesConceptGenesOut, 'w') as outF:
 # np.save("lasso2Patients/conceptIndices.txt", geneIndices)
 
 #Instead save the scores to file
-np.save("lassoPerPatient/acc_random.txt", test_score)
-np.save("lassoPerPatient/preds_random.txt", predsDiff)
-np.save("lassoPerPatient/auc_random.txt", aucScore)
-np.save("lassoPerPatient/coeffs_random.txt", coeff_used)
+# np.save("lassoPerPatient/acc_random.txt", test_score)
+# np.save("lassoPerPatient/preds_random.txt", predsDiff)
+# np.save("lassoPerPatient/auc_random.txt", aucScore)
+# np.save("lassoPerPatient/coeffs_random.txt", coeff_used)
 
 exit()
 
