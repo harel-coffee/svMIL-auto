@@ -403,7 +403,7 @@ selectedGenesInd = selector.support_
 selectedPairs = pairNames[selectedGenesInd]
 
 print "Number of selected pairs: ", selectedPairs
-pairsRankingOut = "svmRFECVPerPatient/pairsRanking.txt"
+pairsRankingOut = "svmRFECV2Patients/pairsRanking.txt"
 with open(pairsRankingOut, 'w') as outF:
 	for pairInd in range(0, selectedPairs.shape[0]):
 		outF.write(selectedPairs[pairInd] + "\n")
