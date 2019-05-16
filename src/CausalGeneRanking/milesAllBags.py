@@ -327,10 +327,10 @@ import matplotlib.pyplot as plt
 ### Loading pre-made data to save time
 
 #To save time, bags and labels have been stored on disk already and can be re-loaded
-bags = np.load("3DEGs/bags.txt.npy")
-labels = np.load("3DEGs/labels.txt.npy")
-pairNames = np.load("3DEGs/pairNames.txt.npy") #the sv-gene pair names of each bag entry
-similarityMatrix = np.load("3DEGs/similarityMatrix.txt.npy")
+bags = np.load("PerPatientDEGs/bags.txt.npy")
+labels = np.load("PerPatientDEGs/labels.txt.npy")
+pairNames = np.load("PerPatientDEGs/pairNames.txt.npy") #the sv-gene pair names of each bag entry
+similarityMatrix = np.load("PerPatientDEGs/similarityMatrix.txt.npy")
 
 #Shuffle the labels
 #np.random.shuffle(labels)
@@ -403,7 +403,7 @@ selectedGenesInd = selector.support_
 selectedPairs = pairNames[selectedGenesInd]
 
 print "Number of selected pairs: ", selectedPairs
-pairsRankingOut = "svmRFECV2Patients/pairsRanking.txt"
+pairsRankingOut = "svmRFECVPerPatient/pairsRanking.txt"
 with open(pairsRankingOut, 'w') as outF:
 	for pairInd in range(0, selectedPairs.shape[0]):
 		outF.write(selectedPairs[pairInd] + "\n")
