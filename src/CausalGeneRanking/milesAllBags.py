@@ -333,7 +333,7 @@ pairNames = np.load("SomaticGermline/pairNames.txt.npy") #the sv-gene pair names
 similarityMatrix = np.load("SomaticGermline/similarityMatrix.txt.npy")
 
 #Shuffle the labels
-np.random.shuffle(labels)
+#np.random.shuffle(labels)
 
 
 # similarityMatrix = similarityMatrix[1:100, 1:100]
@@ -497,7 +497,7 @@ plt.ylabel('Precision')
 plt.ylim([0.0, 1.05])
 plt.xlim([0.0, 1.0])
 #plt.show()
-plt.savefig('lasso_somaticGermline_rc.svg')
+plt.savefig('lasso_somaticGermline_rc_nonRandom.svg')
 
 
 print "acc: ", test_score
