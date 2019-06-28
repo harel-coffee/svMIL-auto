@@ -27,11 +27,11 @@ for somaticSV in somaticSVs:
 		#Match the right type
 		typeMatch = False
 		
-		if somaticSV[8].svType == "deletion" and germlineSV[8].svType == "del":
+		if somaticSV[8].svType == "del" and germlineSV[8].svType == "deletion":
 			typeMatch = True
-		if somaticSV[8].svType == "duplication" and germlineSV[8].svType == "tandem_dup":
+		if somaticSV[8].svType == "tandem_dup" and germlineSV[8].svType == "duplication":
 			typeMatch = True
-		if somaticSV[8].svType == "inversion" and germlineSV[8].svType == "invers":
+		if somaticSV[8].svType == "invers" and germlineSV[8].svType == "inversion":
 			typeMatch = True	
 
 		if typeMatch == False:
@@ -57,7 +57,7 @@ for somaticSV in somaticSVs:
 		
 		newSV = [currentBestSV[0], int(currentBestSV[1]-halfSizeDifference), int(currentBestSV[2]-halfSizeDifference), currentBestSV[8].o1,
 				 currentBestSV[3], int(currentBestSV[4]+halfSizeDifference), int(currentBestSV[5]+halfSizeDifference), currentBestSV[8].o2,
-				 'brca_tcga_equalSize', currentBestSV[7], currentBestSV[8].svType, currentBestSV[6]]
+				 'germline_dgv_equalSize', currentBestSV[7], currentBestSV[8].svType, currentBestSV[6]]
 		
 		sizedGermlineSVs.append(newSV)
 	
@@ -67,13 +67,13 @@ for somaticSV in somaticSVs:
 		
 		newSV = [currentBestSV[0], int(currentBestSV[1]+halfSizeDifference), int(currentBestSV[2]+halfSizeDifference), currentBestSV[8].o1,
 				 currentBestSV[3], int(currentBestSV[4]-halfSizeDifference), int(currentBestSV[5]-halfSizeDifference), currentBestSV[8].o2,
-				 'brca_tcga_equalSize', currentBestSV[7], currentBestSV[8].svType, currentBestSV[6]]
+				 'germline_dgv_equalSize', currentBestSV[7], currentBestSV[8].svType, currentBestSV[6]]
 		
 		sizedGermlineSVs.append(newSV)
 		
 header = 'chr1	s1	e1	o1	chr2	s2	e2	o2	source	sample_name	sv_type	cancer_type'		
 		
-np.savetxt('somaticSVs_equalSized.txt', np.array(sizedGermlineSVs, dtype="object"), fmt="%s", delimiter='\t', header=header)
+np.savetxt('Output/germlineSVs_equalSized.txt', np.array(sizedGermlineSVs, dtype="object"), fmt="%s", delimiter='\t', header=header)
 	
 	
 

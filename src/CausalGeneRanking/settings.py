@@ -23,7 +23,7 @@ files = dict(
 	dnaseIFile = '../../data/dnase/ENCFF301VRH.bed',
 	hicFile = '../../data/hic/HMEC_groupedTADInteractions.txt',
 	tadFile = "../../data/tads/HMEC_Lieberman-raw_TADs.bed", #File with TADs specific for breast tissue
-	rankedGeneScoreDir = "./RankedGenes", #File that the output scores will be written to. The output will be in a folder with the provided UUID under this main results folder
+	rankedGeneScoreDir = "Output/RankedGenes", #File that the output scores will be written to. The output will be in a folder with the provided UUID under this main results folder
 	hg19CoordinatesFile = "../../data/chromosomes/hg19Coordinates.txt"
 )
 
@@ -31,6 +31,8 @@ general = dict(
 	
 	mode = 'SV', #Options are: SV, SNV or SV+SNV
 	cancerType = 'BRCA', #Use to specify which cancer type the data should be filtered by
+	nonCoding = True, #Should we count gains/losses for genes that are affected by non-coding SVS?
+	coding = True, #Should we include gains and losses of non-coding elements, or only genes that are directly affected by SVs? 
 	tads = True, #Include TADs in the ranking yes/no, only to rank by how often TAD boundaries themselves are disrupted by SVs. (we are getting very dependent on TADs, so perhaps force this as always required)
 	eQTLs = True, #Include eQTLs in the ranking yes/no
 	enhancers = True, #Include enhancers in the ranking yes/no

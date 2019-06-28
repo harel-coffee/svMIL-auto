@@ -82,8 +82,9 @@ class Gene:
 	
 	def addLostElements(self, lostElements, sample):
 		
-		if sample not in self.lostElements:
-			self.lostElements[sample] = dict()
+		if len(lostElements) > 0:
+			if sample not in self.lostElements:
+				self.lostElements[sample] = dict()
 		
 		#Have a dictionary where we count the number of elements of a specific type that are lost per sample.
 		#This is much faster than storing the actual elements that are lost, and we do not use that information in the ranking, so it can be discarded here.
@@ -103,8 +104,9 @@ class Gene:
 	
 	def addLostElementsSVs(self, lostElements, sv):
 		
-		if sv not in self.lostElements:
-			self.lostElementsSVs[sv] = dict()
+		if len(lostElements) > 0:
+			if sv not in self.lostElements:
+				self.lostElementsSVs[sv] = dict()
 		
 		#Have a dictionary where we count the number of elements of a specific type that are lost per sample.
 		#This is much faster than storing the actual elements that are lost, and we do not use that information in the ranking, so it can be discarded here.

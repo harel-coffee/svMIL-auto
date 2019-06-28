@@ -11,7 +11,7 @@
 """
 from gene import Gene
 from sv import SV
-from snv import SNV
+# from snv import SNV
 from tad import TAD
 from element import Element
 import numpy as np
@@ -83,10 +83,37 @@ class InputParser:
 				# 	continue
 				#
 				# 
-				# if svType != "invers":
+				# if svType != "inversion":
 				# 	continue
 				
-				# if svType == "del" and svType == "invers" and svType == "tandem_dup":
+				if svType != "del" and svType != "invers" and svType != "tandem_dup":
+					continue
+				
+				# if svType != "deletion" and svType != "inversion" and svType != "duplication":
+				# 	continue
+				
+				 
+				# interChrTypeMatch = re.search("chr", svType, re.IGNORECASE)
+				# transTypeMatch = re.search("trans", svType, re.IGNORECASE)
+				# rangeTypeMatch = re.search("range", svType, re.IGNORECASE)
+				# if interChrTypeMatch is None and transTypeMatch is None and rangeTypeMatch is None:
+				# 	continue
+				# 
+				#only keep the main 4 types
+				# if svType != "del" and svType != "invers" and svType != "tandem_dup":
+				# 	
+				# 	interChrTypeMatch = re.search("chr", svType, re.IGNORECASE)
+				# 	transTypeMatch = re.search("trans", svType, re.IGNORECASE)
+				# 	rangeTypeMatch = re.search("range", svType, re.IGNORECASE)
+				# 	if interChrTypeMatch is None and transTypeMatch is None and rangeTypeMatch is None:
+				# 		continue
+				# 	
+				
+				# if svType != "invers":
+				# 	continue
+					
+				
+				# if svType != "inversion":
 				# 	continue
 				
 				# interChrTypeMatch = re.search("chr", svType, re.IGNORECASE)
@@ -95,26 +122,6 @@ class InputParser:
 				# if interChrTypeMatch is None and transTypeMatch is None and rangeTypeMatch is None:
 				# 	continue
 				# 
-				#only keep the main 4 types
-				if svType != "del" and svType != "invers" and svType != "tandem_dup":
-					
-					interChrTypeMatch = re.search("chr", svType, re.IGNORECASE)
-					transTypeMatch = re.search("trans", svType, re.IGNORECASE)
-					rangeTypeMatch = re.search("range", svType, re.IGNORECASE)
-					if interChrTypeMatch is None and transTypeMatch is None and rangeTypeMatch is None:
-						continue
-					
-					
-				
-				# if svType != "tandem_dup":
-				# 	continue
-				
-				# interChrTypeMatch = re.search("chr", svType, re.IGNORECASE)
-				# transTypeMatch = re.search("trans", svType, re.IGNORECASE)
-				# rangeTypeMatch = re.search("range", svType, re.IGNORECASE)
-				# if interChrTypeMatch is None and transTypeMatch is None and rangeTypeMatch is None:
-				# 	continue
-			
 				
 				# if typeFilter != "all":
 				# 	#Check if the SV type matches deletions
@@ -168,10 +175,15 @@ class InputParser:
 					s1 = e1
 					e1 = tmpS1
 				
-				
-				svObject = SV('chr' + chr1, s1, e1, o1, 'chr' + chr2, s2, e2, o2, sampleName, cancerType, svType)
+				if list(chr1)[0] == "c": #add the chr notation only when it is not already there
+					svObject = SV(chr1, s1, e1, o1, chr2, s2, e2, o2, sampleName, cancerType, svType)
+					variantsList.append([chr1, s1, e1, chr2, s2, e2, cancerType, sampleName, svObject])
+					
+				else:
+					svObject = SV('chr' + chr1, s1, e1, o1, 'chr' + chr2, s2, e2, o2, sampleName, cancerType, svType)
+					variantsList.append(['chr' + chr1, s1, e1, 'chr' + chr2, s2, e2, cancerType, sampleName, svObject])
 				#chr 1, start, end, chr2, start2, end2
-				variantsList.append(['chr' + chr1, s1, e1, 'chr' + chr2, s2, e2, cancerType, sampleName, svObject])
+				
 		
 		regions = np.array(variantsList, dtype='object')
 		

@@ -17,6 +17,7 @@ from scipy import stats
 geneScoreFile = sys.argv[1]
 geneScores = np.loadtxt(geneScoreFile, dtype="object")
 
+
 # sampleCounts = dict()
 # 
 # for gene in geneScores:
@@ -41,7 +42,6 @@ for gene in geneScores:
 		filteredGenes.append(gene)
 
 filteredGenes = np.array(filteredGenes, dtype="object")
-print filteredGenes.shape
 
 #Get the expression values for the patients for the genes with SVs
 expressionFile = sys.argv[2]
@@ -79,6 +79,11 @@ for gene in filteredGenes:
 	sampleExpressionValues = dict() #expression values of this gene in all samples
 	
 	geneSamples = gene[31].split(",")
+	
+	if gene[0] == "CLN6":
+		print geneSamples
+		
+	
 	matchedFullSampleNames = []
 	for geneSample in geneSamples:
 
@@ -88,6 +93,10 @@ for gene in filteredGenes:
 		for sampleInd in range(0, len(samples)):
 			sample = samples[sampleInd]
 			if re.search(shortSampleName, sample, re.IGNORECASE) is not None:
+				
+				if gene[0] == "CLN6":
+					print "matched on expr sample: ", sample
+				
 				matchedFullSampleNames.append(sample) #keep this to check later for the negative set
 				#Get the last 2 numbers
 				splitSample = sample.split("-")
@@ -119,12 +128,17 @@ for gene in filteredGenes:
 	
 	#For every sample, do a t-test and get the p-value
 	for geneSample in geneSamples:
-
-		pValue = stats.ttest_1samp(negativeSampleExpressionValues, sampleExpressionValues[geneSample])[1]
-		
 		genePatientPair = gene[0] + "_" + geneSample
-		#The index of this pair is the gene count + sample count (-1 for 0 based)
+		if gene[0] == "CLN6":
+			print "pair: ", genePatientPair
+		
+		if np.std(negativeSampleExpressionValues) == 0:
+			continue
+
+		z = (sampleExpressionValues[geneSample] - np.mean(negativeSampleExpressionValues)) / float(np.std(negativeSampleExpressionValues))
 			
+		pValue = stats.norm.sf(abs(z))*2
+
 		pValues[genePatientPair] = pValue
 	
 	# 
@@ -148,7 +162,7 @@ for rejectedInd in range(0, len(reject)):
 		
 print filteredPValues
 
-with open("genePatientPairPValues.txt", 'w') as outF:
+with open("genePatientPairPValues_filtered_me.txt", 'w') as outF:
 	for genePatientPair in filteredPValues:
 		outF.write(genePatientPair + "\t" + str(filteredPValues[genePatientPair]) + "\n")	
 	

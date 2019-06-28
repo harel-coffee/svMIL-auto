@@ -9,7 +9,7 @@ import numpy as np
 
 nonCodingRanks = np.loadtxt(sys.argv[1], dtype="object")
 mixedRanks = np.loadtxt(sys.argv[2], dtype="object")
-geneExpression = "" #Which values to use? 
+geneExpression = np.loadtxt(sys.argv[3],dtype="object") #Which values to use? 
 
 #Readfor each gene if it is linked to an SV. If yes, include it in the results.
 effects = dict() #store for every gene what it is affected by
@@ -80,4 +80,41 @@ effectsTable = effectsTable[effectsTable[:,1].argsort()][::-1]
 		
 np.savetxt("Output/effectsTable.txt", effectsTable, fmt="%s", delimiter="\t")
 
+#Search through the ranks, if there is a gene that is affected by non-coding SVs only AND has changed expression, we should include this gene.
+#If the gene has changed expression and it also has a coding SV, those patients are likely not the ones with expression changes driven by SVs.
+#This must be in the same sample, so we are using the results of the mutually exclusive set here. 
+
+nonCodingDrivers = []
+for rank in nonCodingRanks:
+	
+	gene = rank[0]
+	samples = rank[31]
+	if samples != "None": 
+		splitSamples = samples.split(",")
+		for sample in splitSamples:
+			pair = gene + "_" + sample
+			if pair in geneExpression[:,0]:
+				expr = float(geneExpression[geneExpression[:,0] == pair,1][0])
+				nonCodingDrivers.append([pair, expr])
+
+nonCodingDrivers = np.array(nonCodingDrivers, dtype="object")
+
+nonCodingDrivers = nonCodingDrivers[np.argsort(nonCodingDrivers[:,1])]
+
+print nonCodingDrivers
+print len(nonCodingDrivers)
+exit()
+genes = []			
+for pair in nonCodingDrivers:
+	
+	splitPair = pair.split("_")
+	if splitPair[0] not in genes:
+		genes.append(splitPair[0])
+		print splitPair[0]
+
+print len(genes)
 		
+		
+		
+	
+

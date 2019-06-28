@@ -111,6 +111,9 @@ class GeneRanking:
 			pairIds = []
 			for ind in range(0, len(svGeneIndices)):
 				sv = svGeneIndices[ind]
+				
+				 
+				
 				pairIds.append(sv)
 				if sv in eQTLLossScores:
 					pairScores[ind,0] = eQTLLossScores[sv]
@@ -174,8 +177,13 @@ class GeneRanking:
 					
 				
 				pairScores[ind,26] = np.sum(pairScores[ind,0:25])
+				
+				
+				
 			print pairScores	
 			pairIds = np.array(pairIds)
+			
+			
 			
 			pairScoresWithPairIds = np.empty([len(svGeneIndices), 28], dtype="object")
 			pairScoresWithPairIds[:,0] = pairIds
@@ -183,9 +191,8 @@ class GeneRanking:
 			
 			pairScoresWithPairIds = pairScoresWithPairIds[pairScoresWithPairIds[:,27].argsort()[::-1]] #Select the column  to rank by
 			print pairScoresWithPairIds
-			np.savetxt("geneSVPairs_germline.txt", pairScoresWithPairIds, delimiter='\t', fmt='%s')
+			np.savetxt("Output/geneSVPairs_germline_filtered.txt", pairScoresWithPairIds, delimiter='\t', fmt='%s')
 			
-			exit()	
 				
 				
 			
@@ -304,6 +311,9 @@ class GeneRanking:
 				# 				   dnaseIGainsGeneMatrix[geneInd], dnaseILossesGeneMatrix[geneInd], samples])
 				# 
 				
+				
+					
+				
 				geneScores.append([gene, np.sum(geneScoringMatrix[:,geneInd]), np.sum(eQTLGainsScoringMatrix[:,geneInd]), np.sum(eQTLLossesScoringMatrix[:,geneInd]),
 								   np.sum(enhancerGainsScoringMatrix[:,geneInd]), np.sum(enhancerLossesScoringMatrix[:,geneInd]), np.sum(promoterGainsScoringMatrix[:,geneInd]), np.sum(promoterLossesScoringMatrix[:,geneInd]),
 								   np.sum(cpgGainsScoringMatrix[:,geneInd]), np.sum(cpgLossesScoringMatrix[:,geneInd]), np.sum(tfGainsScoringMatrix[:,geneInd]), np.sum(tfLossesScoringMatrix[:,geneInd]),
@@ -312,6 +322,9 @@ class GeneRanking:
 								   np.sum(h3k27acGainsScoringMatrix[:,geneInd]), np.sum(h3k27acLossesScoringMatrix[:,geneInd]), np.sum(h3k27me3GainsScoringMatrix[:,geneInd]), np.sum(h3k27me3LossesScoringMatrix[:,geneInd]),
 								   np.sum(h3k4me1GainsScoringMatrix[:,geneInd]), np.sum(h3k4me1LossesScoringMatrix[:,geneInd]), np.sum(h3k36me3GainsScoringMatrix[:,geneInd]), np.sum(h3k36me3LossesScoringMatrix[:,geneInd]),
 								   np.sum(dnaseIGainsScoringMatrix[:,geneInd]), np.sum(dnaseILossesScoringMatrix[:,geneInd]), samples])
+				
+				
+				
 				
 			print "done"	
 			geneScores = np.array(geneScores, dtype="object")
@@ -387,6 +400,7 @@ class GeneRanking:
 		geneMatrix = np.zeros(len(geneMap))
 		for geneInd in range(0, len(genes)): #first loop over the genes, then get their SVs
 			gene = genes[geneInd]
+			
 
 			matrixGeneInd = geneMap[gene] #index of the gene in the scoring matrix
 			
@@ -431,14 +445,26 @@ class GeneRanking:
 
 			matrixGeneInd = geneMap[gene]
 			
+			if gene.name == 'DKK2':
+				print "gains: "
+				print gene.gainedElements
+			
 			if len(gene.gainedElements) > 0: #if the gene has gained elements
 				for sample in gene.gainedElements:
+					
+					#If mutually exclusive mode, skip genes that also have coding SVs in the same sample. 
+					if settings.general['nonCoding'] == True and settings.general['coding'] == False:
+						
+						if sample in gene.SVs:
+							continue
+					
 					gain = False #Make sure that we only focus on gained elements of the provided type. 
 					for element in gene.gainedElements[sample]:
 						if element == elementType:
 							gain = True
 					if gain == True: 
 						sampleInd = sampleMap[sample]
+
 						scoringMatrix[sampleInd][matrixGeneInd] = 1
 						geneMatrix[geneInd] += 1
 				
@@ -464,11 +490,21 @@ class GeneRanking:
 		for geneInd in range(0, len(genes)):
 			
 			gene = genes[geneInd]
-			
+
 			matrixGeneInd = geneMap[gene]
+			
+			if gene.name == 'DKK2':
+				print gene.lostElements
+				
+				
 			
 			if len(gene.lostElements) > 0:
 				for sample in gene.lostElements:
+					#If mutually exclusive mode, skip genes that also have coding SVs in the same sample. 
+					if settings.general['nonCoding'] == True and settings.general['coding'] == False:
+					
+						if sample in gene.SVs:
+							continue
 					
 					
 					loss = False #Make sure that we only focus on lost elements of the provided type. 
@@ -477,6 +513,7 @@ class GeneRanking:
 							loss = True
 					if loss == True:
 						sampleInd = sampleMap[sample]
+						
 						scoringMatrix[sampleInd][matrixGeneInd] = 1
 						geneMatrix[geneInd] += 1
 		
@@ -518,7 +555,8 @@ class GeneRanking:
 							loss = True
 					if loss == True:
 						pairScores[pairId] = 1 #assume that each SV can disrupt a gene only once
-		
+					
+						
 		return pairScores, svGeneMap, svGeneIndices		
 		
 	def scoreByElementGainsSVs(self, genes, svGeneMap, svGeneIndices, elementType):
@@ -557,6 +595,9 @@ class GeneRanking:
 							loss = True
 					if loss == True:
 						pairScores[pairId] = 1 #assume that each SV can disrupt a gene only once
+						
+						
+		
 		
 		return pairScores, svGeneMap, svGeneIndices	
 

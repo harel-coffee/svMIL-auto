@@ -226,7 +226,8 @@ class DerivativeTADMaker:
 		return tadsPerSV
 		
 		
-	def determineDerivativeTADs(self, svData, tadData, svType):	
+	def determineDerivativeTADs(self, svData, tadData, svType):
+		
 	
 		"""
 			Given an SV or a set of SVs, depending on the type of SVs, we compute how the affected region of the genome will look after the SV.
@@ -529,7 +530,7 @@ class DerivativeTADMaker:
 			updatedTadPos = dict() #keep the TADs and the new start/ends after 
 			
 			for group in svGroups:
-				
+				print "Group: ", group
 				
 				gains = dict()
 				losses = dict()
@@ -995,6 +996,10 @@ class DerivativeTADMaker:
 			
 			for tad in tadMatches:
 				
+				#For now skip the SVs that are entirely within the TAD
+				if svData[1] > tad[1] and svData[5] < tad[2]:
+					continue
+				
 				lostElements = []
 				remainingGenes = []
 				if svData[1] > tad[1] or svData[5] < tad[2]: #if the SV overlaps the TAD entirely, this will never be true.
@@ -1002,7 +1007,7 @@ class DerivativeTADMaker:
 					if svData[1] > tad[1] and svData[5] > tad[2]: #If the SV starts after the TAD start, but the TAD ends before the SV end, the SV is in the leftmost TAD.
 						lostElements = tad[3].getElementsByRange(svData[1], tad[2]) #Elements in the deletion
 						remainingGenes = tad[3].getGenesByRange(tad[1], svData[1])
-						#For now, all genes will lose these elements, not just the genes that remain in the TAD. At a later point we could perhaps exclude the genes that are also deleted.  
+						
 					if svData[5] > tad[1] and svData[5] < tad[2]: #If the SV ends after the start of the TAD, and also ends before the end of the TAD, the SV is in the rightmost TAD.
 						lostElements = tad[3].getElementsByRange(tad[1], svData[5])
 						remainingGenes = tad[3].getGenesByRange(svData[5], tad[2])
@@ -1115,22 +1120,19 @@ class DerivativeTADMaker:
 				
 				gene.addLostElements(unaffectedElementsLeft, svData[7])
 				gene.addLostElementsSVs(unaffectedElementsLeft, svData[0] + "_" + str(svData[1]) + "_" + str(svData[2]) + "_" + svData[3] + "_" + str(svData[4]) + "_" + str(svData[5]) + "_" + svData[8].sampleName)
-			
-			
-				
+
 			return
 		
 		### DUPLICATION ###
 		if svType == "dup":
-			
-			
+
 			#1. Determine which TADs are involved in the duplication (only the outmost 2 are affected, the rest can be kept in tact)
 			tadChrSubsetInd = svData[0] == tadData[:,0]
 			tadChrSubset = tadData[tadChrSubsetInd]
 			tadChrSubset = tadChrSubset[tadChrSubset[:,1].argsort()]
 			
 			startMatches = svData[1] < tadChrSubset[:,2]
-			endMatches = svData[5] > tadChrSubset[:,1]  ##? Is this correct?
+			endMatches = svData[5] > tadChrSubset[:,1]  
 			
 			matches = startMatches * endMatches
 	
@@ -1240,26 +1242,26 @@ class DerivativeTADMaker:
 					
 					#Each gene gains the eQTLs that are within the TAD that the gene is located in. 
 					
-					for tad in followingTads:
-						for gene in tad[3].genes:
-							
-							#1. Get all eQTLs within this TAD
-							tadEQTLs = tad[3].elements
-							
-								
-							#2. Filter these for the eQTLs of the gene
-							gainedEQTLs = []
-							for eQTL in tadEQTLs:
-								if eQTL[4] == gene.name:
-									gainedEQTLs.append(eQTL)
-								# if eQTL in gene.elements:
-								# 	gainedEQTLs.append(eQTL)
-								# if gene in eQTL.genes:
-								# 	gainedEQTLs.append(eQTL)
-							#3. Add the eQTLs to the gene for the current sample
-							gene.addGainedElements(gainedEQTLs, svData[7])
-							gene.addGainedElementsSVs(gainedEQTLs, svData[0] + "_" + str(svData[1]) + "_" + str(svData[2]) + "_" + svData[3] + "_" + str(svData[4]) + "_" + str(svData[5]) + "_" + svData[8].sampleName)
-							
+					# for tad in followingTads:
+					# 	for gene in tad[3].genes:
+					# 		
+					# 		#1. Get all eQTLs within this TAD
+					# 		tadEQTLs = tad[3].elements
+					# 		
+					# 			
+					# 		#2. Filter these for the eQTLs of the gene
+					# 		gainedEQTLs = []
+					# 		for eQTL in tadEQTLs:
+					# 			if eQTL[4] == gene.name:
+					# 				gainedEQTLs.append(eQTL)
+					# 			# if eQTL in gene.elements:
+					# 			# 	gainedEQTLs.append(eQTL)
+					# 			# if gene in eQTL.genes:
+					# 			# 	gainedEQTLs.append(eQTL)
+					# 		#3. Add the eQTLs to the gene for the current sample
+					# 		gene.addGainedElements(gainedEQTLs, svData[7])
+					# 		gene.addGainedElementsSVs(gainedEQTLs, svData[0] + "_" + str(svData[1]) + "_" + str(svData[2]) + "_" + svData[3] + "_" + str(svData[4]) + "_" + str(svData[5]) + "_" + svData[8].sampleName)
+					# 		
 				else: #Case where the duplication crosses 1 boundary
 				
 					#The left TAD (A) stays the same

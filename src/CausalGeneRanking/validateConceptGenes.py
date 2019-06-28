@@ -9,119 +9,95 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import sys
+# 
+# #Plot recurrence of concept genes
+# conceptGenes = np.loadtxt(sys.argv[1], dtype="object")
+# 
+# counts = dict()
+# 
+# for gene in conceptGenes:
+# 	
+# 	if int(gene[1]) not in counts:
+# 		counts[int(gene[1])] = 0
+# 	counts[int(gene[1])] += 1
+# 
+# 
+# plt.bar(counts.keys(), counts.values())
+# plt.show()
+# 
+# # plt.bar(conceptGenes[:,0], conceptGenes[:,1])
+# # plt.show()
+# 
+# 
+# 
+# exit()
+
+
 
 # # # 
-# bags = np.load("SomaticGermline/bags.txt.npy")
-# pairNames = np.load("SomaticGermline/pairNames.txt.npy") #the sv-gene pair names of each bag entry
-# labels = np.load("SomaticGermline/labels.txt.npy")
-# similarityMatrix = np.load("SomaticGermline/similarityMatrix.txt.npy")
-# conceptIndices = np.load("SomaticGermline/conceptIndices.txt.npy")
+# bags = np.load("lassoPerPatient/bags.txt.npy")
+# pairNames = np.load("lassoPerPatient/pairNames.txt.npy") #the sv-gene pair names of each bag entry
+labels = np.load("Output/similarityMatrices/somaticGermlineLabels.txt.npy")
+similarityMatrix = np.load("Output/similarityMatrices/somaticGermline.txt.npy")
+pairNames = np.load("Output/similarityMatrices/somaticGermlinePairNames.txt.npy")
+
+#non-coding only DEG pairs
+degPairs = ['RPL7_brcaA07B', 'PSMB7_brcaA130', 'TTLL11_brcaA1LL','RABEPK_brcaA130', 'PCDHB6_brcaA0RE', 'MCM4_brcaA14X', 'VDAC3_brcaA2DF', 'STAU2_brcaA07B', 'MANEAL_brcaA04D', 'RIMS1_brcaA04X',
+'UBE2V2_brcaA14X', 'GRK6_brcaA3XL', 'ZNF695_brcaA1FC', 'ITPKB_brcaA0RU', 'LAMC2_brcaA0BW', 'FAM3C_brcaA0D2', 'TBX19_brcaA0J4', 'TMED9_brcaA3XL', 'ZNF496_brcaA1FC', 'GPR20_brcaA14X',
+'PI4KB_brcaA1P8', 'GNL2_brcaA0D0', 'SLC35F3_brcaA04D', 'PRELID1_brcaA3XL', 'SH3BGRL3_brcaA1LL', 'PRKDC_brcaA14X', 'CDC25A_brcaA1AY', 'EIF1B_brcaA27H', 'GYPA_brcaA3Y0', 'CDCA8_brcaA04D',
+'ZNF124_brcaA1FC', 'ZNF727_brcaA0J4']
 
 
-#Perform some clustering on the similarity matrix
-
-# #from scipy.cluster.hierarchy import dendrogram, linkage
-# import fastcluster
-# from matplotlib import pyplot as plt
-# 
-# linked = fastcluster.linkage(similarityMatrix, 'single')
-# 
-# print similarityMatrix.shape
-# print len(pairNames)
-# exit()
-# 
-# 
-# plt.figure(figsize=(10, 7))  
-# dendrogram(linked,  
-#             orientation='top',
-#             labels=labelList,
-#             distance_sort='descending',
-#             show_leaf_counts=True)
-# plt.show() 
 
 
-# Compute the variance in the similarity matrix
+ # show the order of the concept genes in the ranking by nc score and in the DEGs
 # 
-# variance = np.var(similarityMatrix, axis=0) #get the variance for every instance
+# conceptGenes = np.loadtxt(sys.argv[1], dtype="object")
+# rankedGenes = np.loadtxt(sys.argv[2], dtype="object")
+# genePatientPairs = np.loadtxt(sys.argv[3], dtype="object")
 # 
-# print variance
-# print len(variance)
-# print similarityMatrix.shape
-# print np.sort(variance)
+# # Process the deg pairs
+# geneCounts = dict()
+# for pair in genePatientPairs[:,0]:
+# 	
+# 	splitPair = pair.split("_")
+# 	
+# 	if splitPair[0] not in geneCounts:
+# 		geneCounts[splitPair[0]] = 0
+# 	geneCounts[splitPair[0]] += 1
+# 	
+# geneCountsArray = np.empty([len(geneCounts), 2], dtype="object")
 # 
-# positiveIndices = np.where(np.array(labels) == 1)[0]
-# negativeIndices = np.where(np.array(labels) == -1)[0]
+# for geneCountInd in range(0, len(geneCounts.keys())):
+# 	
+# 	geneCountsArray[geneCountInd,0] = geneCounts.keys()[geneCountInd]
+# 	geneCountsArray[geneCountInd,1] = geneCounts.values()[geneCountInd]
+# 	
+# sortedGeneCounts = geneCountsArray[geneCountsArray[:,1].argsort()][::-1]
 # 
-# positiveBagVariance = np.var(similarityMatrix[positiveIndices,:], axis=0)
-# negativeBagVariance = np.var(similarityMatrix[negativeIndices,:], axis=0)
+# conceptRankX = []
+# conceptDegX = []
+# for gene in conceptGenes[:,0]:
+# 	geneInd = np.where(rankedGenes[:,0] == gene)[0][0]
+# 	conceptRankX.append(geneInd)
+# 	
+# 	# degInd = np.where(sortedGeneCounts[:,0] == gene)[0]
+# 	# 
+# 	# if len(degInd) == 0: #if the gene is not a DEG
+# 	# 	print gene
+# 	# 	continue
+# 	# 
+# 	# conceptDegX.append(degInd[0])
+# 	
+# print conceptRankX
+# # print conceptDegX
 # 
-# print np.sort(positiveBagVariance)
-# print np.sort(negativeBagVariance)
+# for ind in conceptRankX:
+# 	plt.axvline(ind)
 # 
-# #compute the variability index
-# varIndexPos = positiveBagVariance / np.mean(similarityMatrix[positiveIndices,:], axis=0)
-# varIndexNeg = negativeBagVariance / np.mean(similarityMatrix[negativeIndices,:], axis=0)
-# 
-# 
-# plt.figure()
-# plt.boxplot([positiveBagVariance, negativeBagVariance])
+# plt.xlim(0,rankedGenes.shape[0])
 # plt.show()
-# 
-# plt.figure()
-# plt.boxplot([varIndexPos, varIndexNeg])
-# plt.show()
-# 
 # exit()
-# 
-
-# Make a plot where we show the order of the concept genes in the ranking by nc score and in the DEGs
-
-conceptGenes = np.loadtxt(sys.argv[1], dtype="object")
-rankedGenes = np.loadtxt(sys.argv[2], dtype="object")
-genePatientPairs = np.loadtxt(sys.argv[3], dtype="object")
-
-# Process the deg pairs
-geneCounts = dict()
-for pair in genePatientPairs[:,0]:
-	
-	splitPair = pair.split("_")
-	
-	if splitPair[0] not in geneCounts:
-		geneCounts[splitPair[0]] = 0
-	geneCounts[splitPair[0]] += 1
-	
-geneCountsArray = np.empty([len(geneCounts), 2], dtype="object")
-
-for geneCountInd in range(0, len(geneCounts.keys())):
-	
-	geneCountsArray[geneCountInd,0] = geneCounts.keys()[geneCountInd]
-	geneCountsArray[geneCountInd,1] = geneCounts.values()[geneCountInd]
-	
-sortedGeneCounts = geneCountsArray[geneCountsArray[:,1].argsort()][::-1]
-
-conceptRankX = []
-conceptDegX = []
-for gene in conceptGenes[:,0]:
-	geneInd = np.where(rankedGenes[:,0] == gene)[0][0]
-	conceptRankX.append(geneInd)
-	
-	# degInd = np.where(sortedGeneCounts[:,0] == gene)[0]
-	# 
-	# if len(degInd) == 0: #if the gene is not a DEG
-	# 	print gene
-	# 	continue
-	# 
-	# conceptDegX.append(degInd[0])
-	
-print conceptRankX
-# print conceptDegX
-
-for ind in conceptRankX:
-	plt.axvline(ind)
-
-plt.xlim(0,rankedGenes.shape[0])
-plt.show()
-exit()
 # plt.clf()
 
 # for ind in conceptDegX:
@@ -133,12 +109,35 @@ exit()
 # exit()
 
 # 
-# # 
+# #
+
 from sklearn.decomposition import PCA
+
+#Get subset of PCA
 
 pca = PCA(n_components=2)
 
 projected = pca.fit_transform(similarityMatrix)
+
+rightPairs = []
+leftPairs = []
+thresholdX = 400
+for x in range(0, projected.shape[0]):
+	if projected[x,0] > 400:
+		rightPairs.append(pairNames[x])
+	else:
+		leftPairs.append(pairNames[x])
+
+# np.save('Output/similarityMatrices/uniqueSomaticGermlineRecurrentLeftPairs.txt', leftPairs)
+# np.save('Output/similarityMatrices/uniqueSomaticGermlineRecurrentRightPairs.txt', rightPairs)
+# exit()
+
+#Do PCA
+pca = PCA(n_components=2)
+
+projected = pca.fit_transform(similarityMatrix)
+
+
 # projectedWithOffset = projected
 # 
 # jitter = [0.01, -0.01]
@@ -155,9 +154,43 @@ for label in labels:
 	else:
 		colorLabels.append('b')
 
+fig,ax=plt.subplots(figsize=(7,5))
+plt.scatter(projected[:, 0], projected[:, 1], c=colorLabels)
 
-# plt.scatter(projected[:, 0], projected[:, 1], c=colorLabels)
+#plt.show()
+colorLabels2 = []
+pairInd = 0
+added = 0
+for pair in pairNames:
+	splitPair = pair.split("_")
+	gene = splitPair[0]
+	sample = splitPair[len(splitPair)-1]
+	shortPairName = gene + "_" + sample
+	
+	if shortPairName in degPairs:
+		ax.scatter(projected[:,0][pairInd],projected[:,1][pairInd],c='yellow',s=40)
+		#if projected[:,0][pairInd] > 2000:
+		print pair
+		added +=1
+	
+	pairInd += 1
+	
+print added
+
+#plt.scatter(projected[:, 0], projected[:, 1], c=colorLabels)
+
+#plt.show()
+
+plt.show()
+
+# for l in np.unique(labels):
+#  ix=np.where(labels==l)
+#  ax.scatter(projected[:,0][ix],projected[:,1][ix],c=cdict[l],s=40,
+#            alpha=alpha[l])
+# 
 # plt.show()
+
+exit()
 # plt.scatter(projectedWithOffset[:, 0], projectedWithOffset[:, 1], c=colorLabels)
 # plt.show()
 # 
@@ -230,8 +263,10 @@ for yInd in range(0, yBoxNum):
 			posCount = len(np.where(boxLabels == 'r')[0]) + 0.01
 			negCount = len(np.where(boxLabels == 'b')[0]) + 0.01
 			
-			#print posCount
-			#print negCount
+			#Normalize for the total count of that label
+			posCount = posCount / len(np.where(colorLabels == 'r')[0])
+			negCount = negCount / len(np.where(colorLabels == 'b')[0])
+			
 			if negCount > 0:
 				plotGrid[xInd,yInd] = np.log(posCount / float(negCount))
 			

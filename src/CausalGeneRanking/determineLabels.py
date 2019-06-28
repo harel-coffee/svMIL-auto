@@ -1,304 +1,311 @@
 import sys
 import numpy as np
 import matplotlib.pyplot as plt
+# 
+# # Combining DEGs, recurrence and germline
+# 
+# somaticScores = np.loadtxt(sys.argv[1], dtype="object")
+# germlineScores = np.loadtxt(sys.argv[2], dtype="object")
+# degLabels = np.loadtxt(sys.argv[3], dtype="object")
+# somaticRanks = np.loadtxt(sys.argv[4], dtype="object")
+# germlineRanks = np.loadtxt(sys.argv[5], dtype="object")
+# 
+# #get the deg genes
+# degs = []
+# for pair in degLabels[:,0]:
+# 	splitPair = pair.split("_")
+# 	gene = splitPair[0]
+# 	degs.append(gene)
+# 
+# #1. How many genes are linked to germline SVs? And how many of these are also linked to somatic? Which are exclusive? 
+# 
+# somaticGenes = []
+# for geneSVPair in somaticScores:
+# 	
+# 	features = [float(i) for i in geneSVPair[1:len(geneSVPair)-1]]
+# 	score = False
+# 	for feature in features:
+# 		if feature > 0:
+# 			score = True
+# 			break
+# 		
+# 	splitScore = geneSVPair[0].split("_")
+# 	
+# 	pair = splitScore[0] + "_" + splitScore[len(splitScore)-1]	
+# 
+# 	if score == True:
+# 		
+# 		if splitScore[0] not in somaticGenes:
+# 			somaticGenes.append(splitScore[0])
+# 
+# 
+# germlineGenes = []
+# for geneSVPair in germlineScores:
+# 	
+# 	features = [float(i) for i in geneSVPair[1:len(geneSVPair)-1]]
+# 	score = False
+# 	for feature in features:
+# 		if feature > 0:
+# 			score = True
+# 			break
+# 		
+# 	splitScore = geneSVPair[0].split("_")
+# 	
+# 	pair = splitScore[0] + "_" + splitScore[len(splitScore)-1]	
+# 
+# 	if score == True:
+# 		
+# 		if splitScore[0] not in germlineGenes:
+# 			germlineGenes.append(splitScore[0])
+# 
+# print len(somaticGenes)
+# print len(germlineGenes)
+# 
+# print len(np.intersect1d(somaticGenes, germlineGenes))
+# somaticUniqueGenes = np.setdiff1d(somaticGenes, germlineGenes)
+# germlineUniqueGenes = np.setdiff1d(germlineGenes, somaticGenes)
+# 
+# #Of the somatic unique genes, which are recurrent and which are DEG?
+# recurrenceThreshold = 3
+# somaticRecurrentGenes = []
+# for gene in somaticRanks:
+# 	
+# 	samples = gene[31]
+# 	
+# 	if samples == "None":
+# 		continue
+# 	
+# 	splitSamples = samples.split(",")
+# 	sampleNum = len(splitSamples)
+# 	
+# 	if sampleNum >= recurrenceThreshold and gene[0] in somaticUniqueGenes:
+# 		
+# 		somaticRecurrentGenes.append(gene[0])
+# 
+# print "Number of somatic recurrent genes: ", len(somaticRecurrentGenes)
+# somaticUniqueDegs = np.intersect1d(somaticUniqueGenes, degs)
+# print "Number of somatic unique genes that are DEG: ", len(somaticUniqueDegs)
+# 
+# #Of the germline unique genes, which are recurrent and which are DEG? 
+# recurrenceThreshold = 5
+# germlineRecurrentGenes = []
+# for gene in germlineRanks:
+# 	
+# 	samples = gene[31]
+# 	
+# 	if samples == "None":
+# 		continue
+# 	
+# 	splitSamples = samples.split(",")
+# 	sampleNum = len(splitSamples)
+# 	
+# 	if sampleNum >= recurrenceThreshold and gene[0] in germlineUniqueGenes:
+# 		
+# 		germlineRecurrentGenes.append(gene[0])
+# 
+# print "Number of germline genes that are recurrent: ", len(germlineRecurrentGenes)
+# print "Number of germline unique genes that are DEG: ", len(np.intersect1d(germlineUniqueGenes, degs))
+# 
+# #How many SVs do we get when we only use the ones that are linked to the unique germline set?
+# 
+# svBagContents = dict()
+# genesPerBag = dict() #genes per bag, to later link back to instances in the correct order
+# for geneSVPair in germlineScores:
+# 	
+# 	features = [float(i) for i in geneSVPair[1:len(geneSVPair)-1]]
+# 	score = False
+# 	for feature in features:
+# 		if feature > 0:
+# 			score = True
+# 			break
+# 		
+# 	splitScore = geneSVPair[0].split("_")
+# 	
+# 	pair = splitScore[0] + "_" + splitScore[len(splitScore)-1]	
+# 
+# 	if score == True:	
+# 		splitGeneSVPairName = geneSVPair[0].split("_")
+# 		geneName = splitGeneSVPairName[0]
+# 		
+# 		#The first element will be the gene name, the rest is the SV information
+# 		splitGeneSVPairName.pop(0) #remove first element
+# 		sv = "_".join(splitGeneSVPairName)
+# 		
+# 		if sv not in genesPerBag:
+# 			genesPerBag[sv] = []
+# 		genesPerBag[sv].append(geneName)
+# 
+# 		if sv not in svBagContents:
+# 			svBagContents[sv] = []
+# 		
+# 		svBagContents[sv].append(features)
+# 
+# negativeBags = [] #based on genes unique to germline
+# recurrentNegativeBags = [] #based on genes unique to germline that are also recurrent
+# negativeFeatures = []
+# genes = []
+# for sv in svBagContents:
+# 	
+# 	bagLabel = 0
+# 	#An SV is only in the negative set if it does not affect ANY gene that is not unique to germline/recurrent
+# 	negativeStatus = True
+# 	negativeRecurrentStatus = True
+# 	for gene in genesPerBag[sv]:	
+# 		
+# 		#get the patient ID
+# 		splitSVName = sv.split("_")
+# 		patientId = splitSVName[len(splitSVName)-1]
+# 		
+# 		#Using all genes unique to germline
+# 		if gene not in germlineUniqueGenes:
+# 			negativeStatus = False
+# 		#Using all genes that are germline + recurrent (VERY likely negative)
+# 		if gene not in germlineRecurrentGenes:
+# 			negativeRecurrentStatus = False
+# 			
+# 	#An SV is only in the negative set if it does not affect ANY gene that is not unique to germline/recurrent	
+# 	if negativeStatus == True:
+# 		negativeBags.append(svBagContents[sv])
+# 	if negativeRecurrentStatus == True:
+# 		negativeFeatures.append(svBagContents[sv][0])
+# 		recurrentNegativeBags.append(svBagContents[sv])
+# 		genes.append(gene)
+# 	
+# print "Number of SVs in negative set using only genes unique to germline: ", len(negativeBags)
+# print "Number of SVs in negative set using only genes unique to germline AND recurrent: ", len(recurrentNegativeBags)
+# 
+# #How many SVs do we get in the positive set?
+# 
+# svBagContents = dict()
+# genesPerBag = dict() #genes per bag, to later link back to instances in the correct order
+# for geneSVPair in somaticScores:
+# 	
+# 	features = [float(i) for i in geneSVPair[1:len(geneSVPair)-1]]
+# 	score = False
+# 	for feature in features:
+# 		if feature > 0:
+# 			score = True
+# 			break
+# 		
+# 	splitScore = geneSVPair[0].split("_")
+# 	
+# 	pair = splitScore[0] + "_" + splitScore[len(splitScore)-1]	
+# 
+# 	if score == True:	
+# 		splitGeneSVPairName = geneSVPair[0].split("_")
+# 		geneName = splitGeneSVPairName[0]
+# 		
+# 		#The first element will be the gene name, the rest is the SV information
+# 		splitGeneSVPairName.pop(0) #remove first element
+# 		sv = "_".join(splitGeneSVPairName)
+# 		
+# 		if sv not in genesPerBag:
+# 			genesPerBag[sv] = []
+# 		genesPerBag[sv].append(geneName)
+# 
+# 		if sv not in svBagContents:
+# 			svBagContents[sv] = []
+# 		
+# 		svBagContents[sv].append(features)
+# 
+# positiveBags = [] #based on genes unique to somatic
+# recurrentPositiveBags = [] #based on genes unique to somatic that are also recurrent
+# degPositiveBags = [] #based on genes unique to somatic that are also DEGs
+# recurrentDegPositiveBags = []
+# #features = []
+# genes = []
+# for sv in svBagContents:
+# 	
+# 	bagLabel = 0
+# 	#An SV is only in the positive set if it does not affect ANY gene that is not unique to somatic/recurrent
+# 	positiveStatus = True
+# 	positiveRecurrentStatus = True
+# 	positiveDegStatus = True
+# 	positiveRecurrentDegStatus = True
+# 	for gene in genesPerBag[sv]:	
+# 		
+# 		#get the patient ID
+# 		splitSVName = sv.split("_")
+# 		patientId = splitSVName[len(splitSVName)-1]
+# 		
+# 		#Using all genes unique to somatic
+# 		if gene not in somaticUniqueGenes:
+# 			positiveStatus = False
+# 		#Using all genes that are somatic + recurrent
+# 		if gene not in somaticRecurrentGenes:
+# 			positiveRecurrentStatus = False
+# 		if gene not in somaticUniqueDegs:
+# 			positiveDegStatus = False
+# 		if gene not in somaticUniqueDegs or gene not in somaticRecurrentGenes:
+# 			positiveRecurrentDegStatus = False
+# 		
+# 			
+# 	#An SV is only in the negative set if it does not affect ANY gene that is not unique to germline/recurrent	
+# 	if positiveStatus == True:
+# 		positiveBags.append(svBagContents[sv])
+# 		genes.append(gene)
+# 	if positiveRecurrentStatus == True:
+# 		recurrentPositiveBags.append(svBagContents[sv])
+# 	if positiveDegStatus == True:
+# 		degPositiveBags.append(svBagContents[sv])
+# 		
+# 	if positiveRecurrentDegStatus == True:
+# 		
+# 		recurrentDegPositiveBags.append(svBagContents[sv])
+# 
+# print "Number of SVs in positive set using only genes unique to somatic: ", len(positiveBags)
+# print "Number of SVs in positive set using only genes unique to somatic AND recurrent: ", len(recurrentPositiveBags)
+# print "Number of SVs in positive set using only genes unique to somatic AND DEGs: ", len(degPositiveBags)
+# print "Number of SVs in positive set using only genes unique to somatic AND DEGs AND recurrent: ", len(recurrentDegPositiveBags)
+# exit()
+# #Load the pairs at the left & right side of the PCA
+# leftPairs = np.load('Output/similarityMatrices/uniqueSomaticGermlineRecurrentLeftPairs.txt.npy')
+# rightPairs = np.load('Output/similarityMatrices/uniqueSomaticGermlineRecurrentRightPairs.txt.npy')
+# 
+# leftGenes = []
+# for pair in leftPairs:
+# 	splitPair = pair.split("_")
+# 	leftGenes.append(splitPair[0])
+# leftGenes = np.unique(leftGenes)
+# np.savetxt('Output/leftGenes.txt', leftGenes, fmt="%s")
+# 
+# rightGenes = []
+# for pair in rightPairs:
+# 	splitPair = pair.split("_")
+# 	rightGenes.append(splitPair[0])
+# rightGenes = np.unique(rightGenes)
+# np.savetxt('Output/rightGenes.txt', rightGenes, fmt="%s")
+# exit()
+# 
+# #Gather the features of these pairs specifically
+# rightFeatures = []
+# leftFeatures = []
+# for pair in leftPairs:
+# 	if pair in somaticScores[:,0]:
+# 		pairScores = somaticScores[somaticScores[:,0] == pair,1:somaticScores.shape[1]-1]
+# 		leftFeatures.append(pairScores[0])
+# 	if pair in germlineScores[:,0]:
+# 		pairScores = germlineScores[germlineScores[:,0] == pair,1:germlineScores.shape[1]-1]
+# 		leftFeatures.append(pairScores[0])
+# 
+# for pair in rightPairs:
+# 	if pair in somaticScores[:,0]:
+# 		pairScores = somaticScores[somaticScores[:,0] == pair,1:somaticScores.shape[1]-1]
+# 		rightFeatures.append(pairScores[0])
+# 	if pair in germlineScores[:,0]:
+# 		pairScores = germlineScores[germlineScores[:,0] == pair,1:germlineScores.shape[1]-1]
+# 		rightFeatures.append(pairScores[0])
 
-# Combining DEGs, recurrence and germline
 
-somaticScores = np.loadtxt(sys.argv[1], dtype="object")
-germlineScores = np.loadtxt(sys.argv[2], dtype="object")
-degLabels = np.loadtxt(sys.argv[3], dtype="object")
-somaticRanks = np.loadtxt(sys.argv[4], dtype="object")
-germlineRanks = np.loadtxt(sys.argv[5], dtype="object")
+# leftFeatures = np.array(leftFeatures)
+# rightFeatures = np.array(rightFeatures)
 
-#get the deg genes
-degs = []
-for pair in degLabels[:,0]:
-	splitPair = pair.split("_")
-	gene = splitPair[0]
-	degs.append(gene)
+leftFeatures = np.loadtxt(sys.argv[1], dtype="object")
+rightFeatures = np.loadtxt(sys.argv[2], dtype="object")
 
-#1. How many genes are linked to germline SVs? And how many of these are also linked to somatic? Which are exclusive? 
+leftFeatures = leftFeatures[:,1:]
+rightFeatures = rightFeatures[:,1:]
 
-somaticGenes = []
-for geneSVPair in somaticScores:
-	
-	features = [float(i) for i in geneSVPair[1:len(geneSVPair)-1]]
-	score = False
-	for feature in features:
-		if feature > 0:
-			score = True
-			break
-		
-	splitScore = geneSVPair[0].split("_")
-	
-	pair = splitScore[0] + "_" + splitScore[len(splitScore)-1]	
-
-	if score == True:
-		
-		if splitScore[0] not in somaticGenes:
-			somaticGenes.append(splitScore[0])
-
-
-germlineGenes = []
-for geneSVPair in germlineScores:
-	
-	features = [float(i) for i in geneSVPair[1:len(geneSVPair)-1]]
-	score = False
-	for feature in features:
-		if feature > 0:
-			score = True
-			break
-		
-	splitScore = geneSVPair[0].split("_")
-	
-	pair = splitScore[0] + "_" + splitScore[len(splitScore)-1]	
-
-	if score == True:
-		
-		if splitScore[0] not in germlineGenes:
-			germlineGenes.append(splitScore[0])
-
-print len(somaticGenes)
-print len(germlineGenes)
-
-print len(np.intersect1d(somaticGenes, germlineGenes))
-somaticUniqueGenes = np.setdiff1d(somaticGenes, germlineGenes)
-germlineUniqueGenes = np.setdiff1d(germlineGenes, somaticGenes)
-
-#Of the somatic unique genes, which are recurrent and which are DEG?
-recurrenceThreshold = 3
-somaticRecurrentGenes = []
-for gene in somaticRanks:
-	
-	samples = gene[31]
-	
-	if samples == "None":
-		continue
-	
-	splitSamples = samples.split(",")
-	sampleNum = len(splitSamples)
-	
-	if sampleNum >= recurrenceThreshold and gene[0] in somaticUniqueGenes:
-		
-		somaticRecurrentGenes.append(gene[0])
-
-print "Number of somatic recurrent genes: ", len(somaticRecurrentGenes)
-somaticUniqueDegs = np.intersect1d(somaticUniqueGenes, degs)
-print "Number of somatic unique genes that are DEG: ", len(somaticUniqueDegs)
-
-#Of the germline unique genes, which are recurrent and which are DEG? 
-recurrenceThreshold = 5
-germlineRecurrentGenes = []
-for gene in germlineRanks:
-	
-	samples = gene[31]
-	
-	if samples == "None":
-		continue
-	
-	splitSamples = samples.split(",")
-	sampleNum = len(splitSamples)
-	
-	if sampleNum >= recurrenceThreshold and gene[0] in germlineUniqueGenes:
-		
-		germlineRecurrentGenes.append(gene[0])
-
-print "Number of germline genes that are recurrent: ", len(germlineRecurrentGenes)
-print "Number of germline unique genes that are DEG: ", len(np.intersect1d(germlineUniqueGenes, degs))
-
-#How many SVs do we get when we only use the ones that are linked to the unique germline set?
-
-svBagContents = dict()
-genesPerBag = dict() #genes per bag, to later link back to instances in the correct order
-for geneSVPair in germlineScores:
-	
-	features = [float(i) for i in geneSVPair[1:len(geneSVPair)-1]]
-	score = False
-	for feature in features:
-		if feature > 0:
-			score = True
-			break
-		
-	splitScore = geneSVPair[0].split("_")
-	
-	pair = splitScore[0] + "_" + splitScore[len(splitScore)-1]	
-
-	if score == True:	
-		splitGeneSVPairName = geneSVPair[0].split("_")
-		geneName = splitGeneSVPairName[0]
-		
-		#The first element will be the gene name, the rest is the SV information
-		splitGeneSVPairName.pop(0) #remove first element
-		sv = "_".join(splitGeneSVPairName)
-		
-		if sv not in genesPerBag:
-			genesPerBag[sv] = []
-		genesPerBag[sv].append(geneName)
-
-		if sv not in svBagContents:
-			svBagContents[sv] = []
-		
-		svBagContents[sv].append(features)
-
-negativeBags = [] #based on genes unique to germline
-recurrentNegativeBags = [] #based on genes unique to germline that are also recurrent
-negativeFeatures = []
-genes = []
-for sv in svBagContents:
-	
-	bagLabel = 0
-	#An SV is only in the negative set if it does not affect ANY gene that is not unique to germline/recurrent
-	negativeStatus = True
-	negativeRecurrentStatus = True
-	for gene in genesPerBag[sv]:	
-		
-		#get the patient ID
-		splitSVName = sv.split("_")
-		patientId = splitSVName[len(splitSVName)-1]
-		
-		#Using all genes unique to germline
-		if gene not in germlineUniqueGenes:
-			negativeStatus = False
-		#Using all genes that are germline + recurrent (VERY likely negative)
-		if gene not in germlineRecurrentGenes:
-			negativeRecurrentStatus = False
-			
-	#An SV is only in the negative set if it does not affect ANY gene that is not unique to germline/recurrent	
-	if negativeStatus == True:
-		negativeBags.append(svBagContents[sv])
-	if negativeRecurrentStatus == True:
-		negativeFeatures.append(svBagContents[sv][0])
-		recurrentNegativeBags.append(svBagContents[sv])
-		genes.append(gene)
-	
-print "Number of SVs in negative set using only genes unique to germline: ", len(negativeBags)
-print "Number of SVs in negative set using only genes unique to germline AND recurrent: ", len(recurrentNegativeBags)
-
-#How many SVs do we get in the positive set?
-
-svBagContents = dict()
-genesPerBag = dict() #genes per bag, to later link back to instances in the correct order
-for geneSVPair in somaticScores:
-	
-	features = [float(i) for i in geneSVPair[1:len(geneSVPair)-1]]
-	score = False
-	for feature in features:
-		if feature > 0:
-			score = True
-			break
-		
-	splitScore = geneSVPair[0].split("_")
-	
-	pair = splitScore[0] + "_" + splitScore[len(splitScore)-1]	
-
-	if score == True:	
-		splitGeneSVPairName = geneSVPair[0].split("_")
-		geneName = splitGeneSVPairName[0]
-		
-		#The first element will be the gene name, the rest is the SV information
-		splitGeneSVPairName.pop(0) #remove first element
-		sv = "_".join(splitGeneSVPairName)
-		
-		if sv not in genesPerBag:
-			genesPerBag[sv] = []
-		genesPerBag[sv].append(geneName)
-
-		if sv not in svBagContents:
-			svBagContents[sv] = []
-		
-		svBagContents[sv].append(features)
-
-positiveBags = [] #based on genes unique to somatic
-recurrentPositiveBags = [] #based on genes unique to somatic that are also recurrent
-degPositiveBags = [] #based on genes unique to somatic that are also DEGs
-recurrentDegPositiveBags = []
-#features = []
-genes = []
-for sv in svBagContents:
-	
-	bagLabel = 0
-	#An SV is only in the positive set if it does not affect ANY gene that is not unique to somatic/recurrent
-	positiveStatus = True
-	positiveRecurrentStatus = True
-	positiveDegStatus = True
-	positiveRecurrentDegStatus = True
-	for gene in genesPerBag[sv]:	
-		
-		#get the patient ID
-		splitSVName = sv.split("_")
-		patientId = splitSVName[len(splitSVName)-1]
-		
-		#Using all genes unique to somatic
-		if gene not in somaticUniqueGenes:
-			positiveStatus = False
-		#Using all genes that are somatic + recurrent
-		if gene not in somaticRecurrentGenes:
-			positiveRecurrentStatus = False
-		if gene not in somaticUniqueDegs:
-			positiveDegStatus = False
-		if gene not in somaticUniqueDegs or gene not in somaticRecurrentGenes:
-			positiveRecurrentDegStatus = False
-		
-			
-	#An SV is only in the negative set if it does not affect ANY gene that is not unique to germline/recurrent	
-	if positiveStatus == True:
-		positiveBags.append(svBagContents[sv])
-		genes.append(gene)
-	if positiveRecurrentStatus == True:
-		recurrentPositiveBags.append(svBagContents[sv])
-	if positiveDegStatus == True:
-		degPositiveBags.append(svBagContents[sv])
-		
-	if positiveRecurrentDegStatus == True:
-		
-		recurrentDegPositiveBags.append(svBagContents[sv])
-
-print "Number of SVs in positive set using only genes unique to somatic: ", len(positiveBags)
-print "Number of SVs in positive set using only genes unique to somatic AND recurrent: ", len(recurrentPositiveBags)
-print "Number of SVs in positive set using only genes unique to somatic AND DEGs: ", len(degPositiveBags)
-print "Number of SVs in positive set using only genes unique to somatic AND DEGs AND recurrent: ", len(recurrentDegPositiveBags)
-exit()
-#Load the pairs at the left & right side of the PCA
-leftPairs = np.load('Output/similarityMatrices/uniqueSomaticGermlineRecurrentLeftPairs.txt.npy')
-rightPairs = np.load('Output/similarityMatrices/uniqueSomaticGermlineRecurrentRightPairs.txt.npy')
-
-leftGenes = []
-for pair in leftPairs:
-	splitPair = pair.split("_")
-	leftGenes.append(splitPair[0])
-leftGenes = np.unique(leftGenes)
-np.savetxt('Output/leftGenes.txt', leftGenes, fmt="%s")
-
-rightGenes = []
-for pair in rightPairs:
-	splitPair = pair.split("_")
-	rightGenes.append(splitPair[0])
-rightGenes = np.unique(rightGenes)
-np.savetxt('Output/rightGenes.txt', rightGenes, fmt="%s")
-exit()
-
-#Gather the features of these pairs specifically
-rightFeatures = []
-leftFeatures = []
-for pair in leftPairs:
-	if pair in somaticScores[:,0]:
-		pairScores = somaticScores[somaticScores[:,0] == pair,1:somaticScores.shape[1]-1]
-		leftFeatures.append(pairScores[0])
-	if pair in germlineScores[:,0]:
-		pairScores = germlineScores[germlineScores[:,0] == pair,1:germlineScores.shape[1]-1]
-		leftFeatures.append(pairScores[0])
-
-for pair in rightPairs:
-	if pair in somaticScores[:,0]:
-		pairScores = somaticScores[somaticScores[:,0] == pair,1:somaticScores.shape[1]-1]
-		rightFeatures.append(pairScores[0])
-	if pair in germlineScores[:,0]:
-		pairScores = germlineScores[germlineScores[:,0] == pair,1:germlineScores.shape[1]-1]
-		rightFeatures.append(pairScores[0])
-
-
-leftFeatures = np.array(leftFeatures)
-rightFeatures = np.array(rightFeatures)
 
 #Make a plot showing how frequently each feature is gained or lost in these sets
 eQTLLosses = leftFeatures[:,0].astype(float)
@@ -353,13 +360,14 @@ lossData = lossData / float(leftFeatures.shape[0] + rightFeatures.shape[0])
 lossData = -np.log(lossData)
 print lossData
 
-plt.bar(np.arange(len(lossData)) + width, lossData, width, label='Right', color='red')
+plt.bar(np.arange(len(lossData)) + width, lossData, width, label='Right pairs', color='yellow')
 plt.xticks(np.arange(len(lossData) + width / 2),
 		   ['eQTLs', 'enhancers', 'promoters', 'CpG', 'TF', 'HiC', 'h3k9me3', 'h3k4me3', 'h3k27ac', 'h3k27me3', 'h3k4me1', 'h3k36me3', 'DNAseI'], rotation=90)
 plt.ylim([0,10])
 plt.legend(loc='best')
 plt.tight_layout()
-plt.savefig('Output/leftRight_losses.svg')
+plt.show()
+#plt.savefig('Output/leftRight_losses.svg')
 
 #Gains
 
@@ -413,15 +421,16 @@ gainData = gainData / float(leftFeatures.shape[0] + rightFeatures.shape[0])
 gainData = -np.log(gainData)
 
 print gainData
-plt.clf()
-plt.bar(np.arange(len(gainData)) + width, gainData, width, label='Right',color='red')
+
+plt.bar(np.arange(len(gainData)) + width, gainData, width, label='Right pairs',color='yellow')
 plt.xticks(np.arange(len(gainData) + width / 2),
 		   ['eQTLs', 'enhancers', 'promoters', 'CpG', 'TF', 'HiC', 'h3k9me3', 'h3k4me3', 'h3k27ac', 'h3k27me3', 'h3k4me1', 'h3k36me3', 'DNAseI'], rotation=90)
 
 plt.ylim([0,10])
 plt.legend(loc='best')
 plt.tight_layout()
-plt.savefig('Output/leftRight_gains.svg')
+plt.show()
+#plt.savefig('Output/leftRight_gains.svg')
 
 exit()
 

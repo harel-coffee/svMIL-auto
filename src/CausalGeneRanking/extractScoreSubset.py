@@ -12,7 +12,9 @@ print subset
 
 subsetScores = []
 
-for gene in subset[:,0]:
+for gene in scores[:,0]:
+	if gene in subset:
+		continue
 	geneScores = scores[np.where(scores[:,0] == gene)[0],:][0]
 	#subsetScores.append([geneScores[0], geneScores[30]])
 	subsetScores.append(geneScores)

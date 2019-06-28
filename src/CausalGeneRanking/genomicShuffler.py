@@ -157,6 +157,7 @@ class GenomicShuffler:
 			
 			minimumStart1 = 1	
 			
+			###Based on random positions
 			
 			#If the chromosomes are the same, use the maximum start for chr1. Otherwise use different chromosomes.
 			if chromosome1 == chromosome2:
@@ -164,7 +165,7 @@ class GenomicShuffler:
 				svLength = start2 - start1
 				
 				maximumStart1 = chr1Length - svLength #do not use the end here, because that is the end of the original SV. It can be anywhere, depending on the length. 
-
+			
 				newStart1 = random.randint(minimumStart1, maximumStart1)
 				newEnd1 = newStart1 + chr1Difference
 						
@@ -172,7 +173,7 @@ class GenomicShuffler:
 				newEnd2 = newStart2 + chr2Difference
 				
 			else: #If the chromosomes are not the same, the start and end coordinates do not necessarily need to be equidistant. Here we can randomly sample the start on both chromosomes 		
-
+			
 				maximumStart1 = chr1Length - chr1Difference #use the end on the first chromosome
 				newStart1 = random.randint(minimumStart1, maximumStart1)
 				
@@ -188,7 +189,6 @@ class GenomicShuffler:
 				#The same for s2 and e2, on chromosome 2.
 				newEnd2 = newStart2 + chr2Difference
 
-				
 			#Sample name and cancer type can be copied from the other SV. Chromosome information also remains the same.
 			#Keep in mind that the sample name and cancer type are reversed in the SV object beause that order makes more sense. 
 			newSvObj = SV(chromosome1, newStart1, newEnd1, sv[8].o1, chromosome2, newStart2, newEnd2, sv[8].o2, sv[7], sv[6], sv[8].svType)

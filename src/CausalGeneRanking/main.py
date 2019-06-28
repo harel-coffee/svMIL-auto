@@ -41,7 +41,7 @@ from inputParser import InputParser
 from genomicShuffler import GenomicShuffler
 from channelVisualizer import ChannelVisualizer
 from outputWriter import OutputWriter
-from genome import Genome
+# from genome import Genome
 import settings
 
 
@@ -69,6 +69,7 @@ if mode == "SV":
 	print "Reading SV data"
 	svFile = settings.files['svFile']
 	svData = InputParser().getSVsFromFile(svFile, "all")
+	
 
 if mode == "SNV":
 	print "Reading SNV data"

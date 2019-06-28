@@ -128,6 +128,10 @@ class OutputWriter:
 				
 				perGeneScores[row][30] = np.sum(perGeneScores[row][4:30])
 				perGeneScores[row][31] = samples
+				
+				
+				if gene.name == "FOXO4":
+					print perGeneScores[row]
 		
 			#Also rank the output by highest total score (recurrence)
 			perGeneScores = perGeneScores[perGeneScores[:,30].argsort()[::-1]] #Select the column  to rank by

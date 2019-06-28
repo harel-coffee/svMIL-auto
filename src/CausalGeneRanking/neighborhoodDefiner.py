@@ -8,9 +8,9 @@ from tad import TAD
 from sv import SV
 from gene import Gene
 from element import Element
-from snv import SNV
+# from snv import SNV
 from derivativeTADMaker import DerivativeTADMaker
-from genome import Genome
+# from genome import Genome
 from genomicShuffler import GenomicShuffler
 from inputParser import InputParser
 
@@ -159,6 +159,42 @@ class NeighborhoodDefiner:
 
 			print "mapping TADs to genes"
 			self.mapTADsToGenes(genes[:,3], tadData)
+		
+		#For every SV, find the TADs on the left and right
+		
+		#Compute how large this window is in total and report that (sum left TAD + right TAD for translocations)
+		# windowSizes = []
+		# for sv in svData:
+		# 	
+		# 	tadChr1Subset = tadData[tadData[:,0] == sv[0]]
+		# 	tadChr2Subset = tadData[tadData[:,0] == sv[3]]
+		# 
+		# 	#Get the TAD that is overlapped by the left part of the SV
+		# 	leftTad = tadChr1Subset[(tadChr1Subset[:,1] <= sv[1]) * (tadChr1Subset[:,2] >= sv[1])]
+		# 	rightTad = tadChr2Subset[(tadChr2Subset[:,1] <= sv[4]) * (tadChr2Subset[:,2] >= sv[4])]
+		# 	
+		# 	if len(leftTad) < 1 or len(rightTad) < 1:
+		# 		continue
+		# 	
+		# 	leftTad = leftTad[0]
+		# 	rightTad = rightTad[0]
+		# 	
+		# 	if leftTad[3] == rightTad[3]:
+		# 		continue
+		# 	
+		# 	leftTadSize = leftTad[2] - leftTad[1]
+		# 	rightTadSize = rightTad[2] - rightTad[1]
+		# 	
+		# 	windowSizes.append(leftTadSize + rightTadSize)
+		# 
+		# 
+		# print windowSizes
+		# import matplotlib.pyplot as plt
+		# 
+		# plt.hist(windowSizes)
+		# plt.show()
+		# exit()
+		
 			
 		#2. Get eQTLs from the eQTL file, and map eQTLs to genes. 
 		eQTLData = [] #Keep empty by default in case we do not use eQTLs
@@ -266,8 +302,7 @@ class NeighborhoodDefiner:
 			print "Mapping SNVs to the neighborhood"
 			self.mapSNVsToNeighborhood(genes, snvData, eQTLData)
 
-			
-		# 
+
 		# samplesPerTad = dict()
 		# samplesPerGene = dict()
 		# for tad in tadData:
@@ -289,12 +324,22 @@ class NeighborhoodDefiner:
 		# 	if len(tadSamples) not in samplesPerTad:
 		# 		samplesPerTad[len(tadSamples)] = 0
 		# 	samplesPerTad[len(tadSamples)] += 1
+		# 	
+		# 	#Check which TADs are recurrently affected
+		# 	if len(tadSamples) > 15:
+		# 		print tad
 		# 		
 		# 	#Count the number of samples that are affected per gene
-		# 
+		# exit()
 		# #Frequency
 		# print samplesPerTad
-		# print samplesPerGene
+		# 
+		# 
+		
+		
+		
+		# np.save('Output/samplesPerTad_somatic_dup.npy', samplesPerTad)
+		# 
 		# import matplotlib.pyplot as plt
 		# plt.bar(samplesPerTad.keys(), samplesPerTad.values())
 		# plt.show()

@@ -32,32 +32,41 @@ for tad in tads:
 	nearestRightFromEnd = []
 	nearestRightDist = float("inf")
 	for tad2 in tads:
-		if tad2[3] == tad[3]:
+		if tad2[0] == tad[0] and tad[1] == tad2[1] and tad[2] == tad2[2]:
 			continue
 		
 		if tad[0] != tad2[0]: #don't compare TADs on different chromosomes
 			continue
 		
 		startDistance = tad[1] - tad2[2]
+
 		if startDistance < 0:
 			continue #This TAD is not on the left
 		if startDistance < nearestLeftDist:
 			nearestLeftDist = startDistance
 			nearestLeftFromStart = tad2
+	for tad2 in tads:
+		if tad2[0] == tad[0] and tad[1] == tad2[1] and tad[2] == tad2[2]:
+			continue
+		
+		if tad[0] != tad2[0]: #don't compare TADs on different chromosomes
+			continue
 		
 		endDistance = tad2[1] - tad[2]
+		
 		if endDistance < 0:
 			continue #This TAD is not on the right
 		if endDistance < nearestRightDist:
 			nearestRightDist = endDistance
 			nearestRightFromEnd = tad2
 	
+		
 	#if either value is empty, this is the farmost left or right TAD, so look at all SVs smaller or larger than that.
 	#thus the left dist can be set  to 0, and the right can stay infinite,assuming that SVs don't go outside chromosomes
 	if len(nearestLeftFromStart) == 0:
 		nearestLeftDist = 0
 	
-	maxWindow = 1000
+	maxWindow = float("inf")
 	
 	
 	### TAD START ###
@@ -178,29 +187,48 @@ for tad in tads:
 			coordinates[distance] = 0
 		coordinates[distance] += 1
 
+
+
+
 #Bin the values for visualization
 print max(coordinates.keys())
 print min(coordinates.keys())
 
-print coordinates
+print max(coordinates.values())
+print min(coordinates.values())
+exit()
 
-binSize = 5
+#print coordinates
+import math
+binSize = 50
 binnedCoordinates = dict()
 sortedCoordinates = np.sort(coordinates.keys())
 currentBinStart = sortedCoordinates[0]
 binnedCoordinates = dict()
-currentBin = int(round(-((max(coordinates.keys()) - min(coordinates.keys())) / float(binSize)) / 2)) #oof
-for coordinate in sortedCoordinates:
-	
-	if coordinate < (currentBinStart + binSize):
-		if currentBin not in binnedCoordinates:
-			binnedCoordinates[currentBin] = 0
-		binnedCoordinates[currentBin] += 1
-	else:
-		currentBinStart += binSize
-		currentBin += 1
+currentBin = int(math.ceil(-((max(coordinates.keys()) - min(coordinates.keys())) / float(binSize)) / 2)) #oof
+binCount = int(math.ceil(((max(coordinates.keys()) - min(coordinates.keys())) / float(binSize))))
 
-print binnedCoordinates
+
+binMap = dict() #keep a map to determine where each coordinate goes
+
+#initialize all bins
+currentCoordinateStart = sortedCoordinates[0]
+for binInd in range(0,binCount):
+	
+	binnedCoordinates[currentBin + binInd] = 0
+	for coordinate in range(currentCoordinateStart, (currentCoordinateStart+binSize)+1):
+		binMap[coordinate] = currentBin + binInd
+		
+	currentCoordinateStart += binSize
+print binMap
+
+#Fill the correct bins with the number of SVs
+for coordinate in coordinates:
+	
+	#find the right bin that this coordinate is in base on the map
+	coordinateBin = binMap[coordinate]
+	binnedCoordinates[coordinateBin] = coordinates[coordinate]
+
 print "plotting"		
 plt.bar(binnedCoordinates.keys(), binnedCoordinates.values())
 plt.show()

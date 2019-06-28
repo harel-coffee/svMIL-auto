@@ -23,10 +23,10 @@ import re
 import time
 import glob
 import pickle
-
+import sys
 ### Settings ###
 
-hiCFolder = "../../../../../Data/HiC/HUVEC_intrachromosomal/5kb_resolution_intrachromosomal/" #Main folder from which all directories will be read
+hiCFolder = sys.argv[1] #Main folder from which all directories will be read
 fileExtension = "/MAPQG0/*.RAWobserved" #In the directories of the folder specified above, we further search at this path for files with the fiven extension
 interactionType = "intrachromosomal"
 

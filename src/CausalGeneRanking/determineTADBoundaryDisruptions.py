@@ -11,21 +11,27 @@ import matplotlib.pyplot as plt
 
 somaticSVs = InputParser().getSVsFromFile(sys.argv[1], "all")
 
-#Shuffling SVs randomly
-print "Shuffling variants"
-genomicShuffler = GenomicShuffler()
-#Shuffle the variants, provide the mode such that the function knows how to permute
-somaticSVs = genomicShuffler.shuffleSVs(somaticSVs)
+# # Shuffling SVs randomly
+# print "Shuffling variants"
+# genomicShuffler = GenomicShuffler()
+# #Shuffle the variants, provide the mode such that the function knows how to permute
+# somaticSVs = genomicShuffler.shuffleSVs(somaticSVs)
 
 
 filteredSomaticSVs = [] #first filter the SVs to remove the translocations, there are not relevant here
 for somaticSV in somaticSVs:
 	if somaticSV[0] == somaticSV[3]:
 		filteredSomaticSVs.append(somaticSV)
-filteredSomaticSVs = np.array(filteredSomaticSVs, dtype="object")	
+filteredSomaticSVs = np.array(filteredSomaticSVs, dtype="object")
+
+
 tads = InputParser().getTADsFromFile(sys.argv[2])
 
-tadDisruptions = [] #keep the number of samples across each TAD. 
+tadDisruptions = [] #keep the number of samples across each TAD.
+tadDisruptionsDict = dict()
+
+for i in range(0,28):
+	tadDisruptionsDict[i] = 0
 
 for tad in tads:
 	
@@ -52,11 +58,18 @@ for tad in tads:
 				svTypes[sv[8].svType] = 0
 			svTypes[sv[8].svType] += 1	
 
-		
+		tadDisruptionsDict[len(samples)] += 1
 		tadDisruptions.append(len(samples))
+	else:
+		tadDisruptionsDict[0] += 1
+		tadDisruptions.append(0)
+
+print np.sum(tadDisruptionsDict.values())
 		
-plt.hist(tadDisruptions)
-plt.ylim(0,1000)
+#plt.hist(tadDisruptions)
+plt.bar(tadDisruptionsDict.keys(), tadDisruptionsDict.values())
+plt.ylim(0,3300)
+plt.xlim(-1,28)
 plt.show()
 
 

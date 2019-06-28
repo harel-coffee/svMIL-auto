@@ -3,6 +3,7 @@
 #Or just write to a BED file and see how it works with multiple samples.  
 import sys
 import numpy as np
+import re
 
 variantsFile = sys.argv[1]
 outFile = sys.argv[2]
@@ -42,8 +43,16 @@ with open(variantsFile, 'rb') as f:
 		sampleName = splitLine[sampleNameIndex]
 		svType = splitLine[svTypeIndex]
 		
+		# if svType != "del" and svType != "invers" and svType != "tandem_dup":
+		# 	continue
 		if svType != "del" and svType != "invers" and svType != "tandem_dup":
-			continue
+			
+			interChrTypeMatch = re.search("chr", svType, re.IGNORECASE)
+			transTypeMatch = re.search("trans", svType, re.IGNORECASE)
+			rangeTypeMatch = re.search("range", svType, re.IGNORECASE)
+			if interChrTypeMatch is None and transTypeMatch is None and rangeTypeMatch is None:
+				continue
+
 		
 		#If the coordinates are missing on the second chromosome, we use the coordinates of the first chromosome unless chr 1 and chr 2 are different.
 		if splitLine[chr1Index] == splitLine[chr2Index]:

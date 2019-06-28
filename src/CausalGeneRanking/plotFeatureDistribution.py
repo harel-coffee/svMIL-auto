@@ -46,7 +46,8 @@ ax.set_xticklabels(['eQTLs', 'enhancers', 'promoters', 'CpG', 'TF', 'HiC', 'h3k9
 ax.set_ylim(0,18)
 plt.xticks(rotation=70)
 # Save the figure
-plt.savefig("lasso2Patients/losses_miles_lasso.png", bbox_inches='tight')
+#plt.show()
+plt.savefig("Output/RankedGenes/1/BRCA/rest_losses.png", bbox_inches='tight')
 
 
 #Repeat but then for gains
@@ -76,7 +77,8 @@ ax.set_xticklabels(['eQTLs', 'enhancers', 'promoters', 'CpG', 'TF', 'HiC', 'h3k9
 plt.xticks(rotation=70)
 ax.set_ylim(0,18)
 # Save the figure
-plt.savefig("lasso2Patients/gains_miles_lasso.png", bbox_inches='tight')
+#plt.show()
+plt.savefig("Output/RankedGenes/1/BRCA/rest_gains.png", bbox_inches='tight')
 
 
 

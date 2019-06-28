@@ -25,7 +25,7 @@ for gene in geneScores:
 		sampleCounts[len(samples)] += 1
 
 plt.bar(sampleCounts.keys(), sampleCounts.values())
-plt.show()
+# plt.show()
 
 #Make the gene subsets given a threshold of number of samples
 threshold = 2
@@ -121,14 +121,20 @@ for gene in filteredGenes:
 	
 	
 	#Do a t-test and compute the p-value for this gene
-	posMean = np.mean(sampleExpressionValues)
-	posStd = np.std(sampleExpressionValues)
-	negMean = np.mean(negativeSampleExpressionValues)
-	negStd = np.std(negativeSampleExpressionValues)
+	z = (np.mean(sampleExpressionValues) - np.mean(negativeSampleExpressionValues)) / float(np.std(negativeSampleExpressionValues))
+			
+	pValue = stats.norm.sf(abs(z))*2
 	
-	pValue = stats.ttest_ind_from_stats(posMean, posStd, len(sampleExpressionValues), negMean, negStd, len(negativeSampleExpressionValues))[1]
+	# posMean = np.mean(sampleExpressionValues)
+	# posStd = np.std(sampleExpressionValues)
+	# negMean = np.mean(negativeSampleExpressionValues)
+	# negStd = np.std(negativeSampleExpressionValues)
+	# 
+	# pValue = stats.ttest_ind_from_stats(posMean, posStd, len(sampleExpressionValues), negMean, negStd, len(negativeSampleExpressionValues))[1]
 	pValues.append([gene[0], pValue])
 	
+	
+
 
 pValues = np.array(pValues, dtype="object")
 
