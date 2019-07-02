@@ -191,7 +191,7 @@ class GeneRanking:
 			
 			pairScoresWithPairIds = pairScoresWithPairIds[pairScoresWithPairIds[:,27].argsort()[::-1]] #Select the column  to rank by
 			print pairScoresWithPairIds
-			np.savetxt("Output/geneSVPairs_germline_filtered.txt", pairScoresWithPairIds, delimiter='\t', fmt='%s')
+			np.savetxt("Output/geneSVPairs_somatic_me_02072019.txt", pairScoresWithPairIds, delimiter='\t', fmt='%s')
 			
 				
 				
@@ -300,6 +300,16 @@ class GeneRanking:
 				else:
 					samples = ",".join(samples)
 				
+				codingSampleIndices = list(np.where(geneScoringMatrix[:,geneInd] == 1)[0])
+				
+				codingSamples = []
+				for sampleInd in codingSampleIndices:
+					codingSamples.append(reverseSampleMap[sampleInd])
+				if len(codingSamples) < 1:
+					codingSamples = "None"
+				else:
+					codingSamples = ",".join(codingSamples)
+				
 				
 				# geneScores.append([gene, geneGeneMatrix[geneInd], eQTLGainsGeneMatrix[geneInd], eQTLLossesGeneMatrix[geneInd],
 				# 				   enhancerGainsGeneMatrix[geneInd], enhancerLossesGeneMatrix[geneInd], promoterGainsGeneMatrix[geneInd], promoterLossesGeneMatrix[geneInd],
@@ -321,7 +331,7 @@ class GeneRanking:
 								   np.sum(h3k9me3GainsScoringMatrix[:,geneInd]), np.sum(h3k9me3LossesScoringMatrix[:,geneInd]), np.sum(h3k4me3GainsScoringMatrix[:,geneInd]), np.sum(h3k4me3LossesScoringMatrix[:,geneInd]),
 								   np.sum(h3k27acGainsScoringMatrix[:,geneInd]), np.sum(h3k27acLossesScoringMatrix[:,geneInd]), np.sum(h3k27me3GainsScoringMatrix[:,geneInd]), np.sum(h3k27me3LossesScoringMatrix[:,geneInd]),
 								   np.sum(h3k4me1GainsScoringMatrix[:,geneInd]), np.sum(h3k4me1LossesScoringMatrix[:,geneInd]), np.sum(h3k36me3GainsScoringMatrix[:,geneInd]), np.sum(h3k36me3LossesScoringMatrix[:,geneInd]),
-								   np.sum(dnaseIGainsScoringMatrix[:,geneInd]), np.sum(dnaseILossesScoringMatrix[:,geneInd]), samples])
+								   np.sum(dnaseIGainsScoringMatrix[:,geneInd]), np.sum(dnaseILossesScoringMatrix[:,geneInd]), samples, codingSamples])
 				
 				
 				

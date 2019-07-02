@@ -17,7 +17,6 @@ somaticSVs = InputParser().getSVsFromFile(sys.argv[1], "all")
 # #Shuffle the variants, provide the mode such that the function knows how to permute
 # somaticSVs = genomicShuffler.shuffleSVs(somaticSVs)
 
-
 filteredSomaticSVs = [] #first filter the SVs to remove the translocations, there are not relevant here
 for somaticSV in somaticSVs:
 	if somaticSV[0] == somaticSV[3]:

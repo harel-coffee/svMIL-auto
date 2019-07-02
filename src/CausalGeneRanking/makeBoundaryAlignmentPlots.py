@@ -7,16 +7,26 @@
 import sys
 import numpy as np
 import matplotlib.pyplot as plt
+from genomicShuffler import GenomicShuffler
 from inputParser import InputParser
 
 
-somaticSVs = np.load(sys.argv[1])
+#somaticSVs = np.load(sys.argv[1])
+somaticSVs = InputParser().getSVsFromFile(sys.argv[1], "all")
+# 
+# filteredSomaticSVs = [] #first filter the SVs to remove the translocations, there are not relevant here
+# for somaticSV in somaticSVs:
+# 	if somaticSV[0] == somaticSV[3]:
+# 		filteredSomaticSVs.append(somaticSV)
+# filteredSomaticSVs = np.array(filteredSomaticSVs, dtype="object")
+filteredSomaticSVs = somaticSVs
 
-filteredSomaticSVs = [] #first filter the SVs to remove the translocations, there are not relevant here
-for somaticSV in somaticSVs:
-	if somaticSV[0] == somaticSV[3]:
-		filteredSomaticSVs.append(somaticSV)
-filteredSomaticSVs = np.array(filteredSomaticSVs, dtype="object")
+#Shuffle SVs
+# 
+# print "Shuffling variants"
+# genomicShuffler = GenomicShuffler()
+# #Shuffle the variants, provide the mode such that the function knows how to permute
+# filteredSomaticSVs = genomicShuffler.shuffleSVs(filteredSomaticSVs)
 
 tads = InputParser().getTADsFromFile(sys.argv[2])
 
@@ -60,14 +70,14 @@ for tad in tads:
 			nearestRightDist = endDistance
 			nearestRightFromEnd = tad2
 	
-		
 	#if either value is empty, this is the farmost left or right TAD, so look at all SVs smaller or larger than that.
 	#thus the left dist can be set  to 0, and the right can stay infinite,assuming that SVs don't go outside chromosomes
 	if len(nearestLeftFromStart) == 0:
 		nearestLeftDist = 0
 	
-	maxWindow = float("inf")
-	
+	maxWindow = 10000000
+	nearestLeftDist = maxWindow
+	nearestRightDist = maxWindow
 	
 	### TAD START ###
 	
@@ -75,8 +85,8 @@ for tad in tads:
 	
 	svChrMatches = filteredSomaticSVs[filteredSomaticSVs[:,0] == tad[0]]
 	
-	startMatches = svChrMatches[(svChrMatches[:,1] >= nearestLeftDist) * (svChrMatches[:,1] <= tad[1])]
-	endMatches = svChrMatches[(svChrMatches[:,5] >= nearestLeftDist) * (svChrMatches[:,5] <= tad[1])]
+	startMatches = svChrMatches[(svChrMatches[:,1] >= tad[1]-nearestLeftDist) * (svChrMatches[:,1] <= tad[1])]
+	endMatches = svChrMatches[(svChrMatches[:,5] >= tad[1]-nearestLeftDist) * (svChrMatches[:,5] <= tad[1])]
 	
 	#Get all the positions at which these breakpoints are and use these as x coordinates
 	for match in startMatches:
@@ -90,33 +100,35 @@ for tad in tads:
 			coordinates[distance] = 0
 		coordinates[distance] += 1
 	
-	for match in endMatches:
-		bp = match[5]
-		#The distance is relative to the TAD start
-		distance = bp - tad[1]
-		if distance < -maxWindow: #exclude positions too far away.	
-			continue
-		if distance not in coordinates:
-			coordinates[distance] = 0
-		coordinates[distance] += 1
-	#Repeat but then for the right side of the right TAD boundary
+	# for match in endMatches:
+	# 	bp = match[5]
+	# 	#The distance is relative to the TAD start
+	# 	distance = bp - tad[1]
+	# 	if distance < -maxWindow: #exclude positions too far away.	
+	# 		continue
+	# 	if distance not in coordinates:
+	# 		coordinates[distance] = 0
+	# 	coordinates[distance] += 1
+	#Repeat but then for the right side
 	
 	svChrMatches = filteredSomaticSVs[filteredSomaticSVs[:,0] == tad[0]]
 	
 	startMatches = svChrMatches[(svChrMatches[:,1] <= tad[2]) * (svChrMatches[:,1] >= tad[1])]
 	endMatches = svChrMatches[(svChrMatches[:,5] <= tad[2]) * (svChrMatches[:,5] >= tad[1])]
 	
-	#Get all the positions at which these breakpoints are and use these as x coordinates
-	for match in startMatches:
-		bp = match[1]
-		#The distance is relative to the TAD start
-		distance = bp - tad[1]
-		if distance > maxWindow: #exclude positions too far away. 
-			continue
-		if distance not in coordinates:
-			coordinates[distance] = 0
-		coordinates[distance] += 1 
 	
+	
+	#Get all the positions at which these breakpoints are and use these as x coordinates
+	# for match in startMatches:
+	# 	bp = match[1]
+	# 	#The distance is relative to the TAD start
+	# 	distance = bp - tad[1]
+	# 	if distance > maxWindow: #exclude positions too far away.
+	# 		continue
+	# 	if distance not in coordinates:
+	# 		coordinates[distance] = 0
+	# 	coordinates[distance] += 1 
+	# 
 	for match in endMatches:
 		bp = match[5]
 		#The distance is relative to the TAD start
@@ -148,34 +160,34 @@ for tad in tads:
 			coordinates[distance] = 0
 		coordinates[distance] += 1
 	
-	for match in endMatches:
-		bp = match[5]
-		#The distance is relative to the TAD start
-		distance = bp - tad[2]
-		if distance < -maxWindow: #exclude positions too far away. 
-			continue
-		if distance not in coordinates:
-			coordinates[distance] = 0
-		coordinates[distance] += 1
+	# for match in endMatches:
+	# 	bp = match[5]
+	# 	#The distance is relative to the TAD start
+	# 	distance = bp - tad[2]
+	# 	if distance < -maxWindow: #exclude positions too far away. 
+	# 		continue
+	# 	if distance not in coordinates:
+	# 		coordinates[distance] = 0
+	# 	coordinates[distance] += 1
 	
 	#Repeat but then for the right side of the right TAD boundary
 	
 	svChrMatches = filteredSomaticSVs[filteredSomaticSVs[:,0] == tad[0]]
 	
-	startMatches = svChrMatches[(svChrMatches[:,1] <= nearestRightDist) * (svChrMatches[:,1] >= tad[2])]
-	endMatches = svChrMatches[(svChrMatches[:,5] <= nearestRightDist) * (svChrMatches[:,5] >= tad[2])]
+	startMatches = svChrMatches[(svChrMatches[:,1] <= tad[2]+nearestRightDist) * (svChrMatches[:,1] >= tad[2])]
+	endMatches = svChrMatches[(svChrMatches[:,5] <= tad[2]+nearestRightDist) * (svChrMatches[:,5] >= tad[2])]
 	
 	#Get all the positions at which these breakpoints are and use these as x coordinates
-	for match in startMatches:
-		bp = match[1]
-		#The distance is relative to the TAD start
-		distance = bp - tad[2]
-		if distance > maxWindow: #exclude positions too far away.
-			
-			continue
-		if distance not in coordinates:
-			coordinates[distance] = 0
-		coordinates[distance] += 1
+	# for match in startMatches:
+	# 	bp = match[1]
+	# 	#The distance is relative to the TAD start
+	# 	distance = bp - tad[2]
+	# 	if distance > maxWindow: #exclude positions too far away.
+	# 		
+	# 		continue
+	# 	if distance not in coordinates:
+	# 		coordinates[distance] = 0
+	# 	coordinates[distance] += 1
 	
 	for match in endMatches:
 		bp = match[5]
@@ -188,26 +200,15 @@ for tad in tads:
 		coordinates[distance] += 1
 
 
-
-
-#Bin the values for visualization
-print max(coordinates.keys())
-print min(coordinates.keys())
-
-print max(coordinates.values())
-print min(coordinates.values())
-exit()
-
 #print coordinates
 import math
-binSize = 50
+binSize = 50000
 binnedCoordinates = dict()
 sortedCoordinates = np.sort(coordinates.keys())
 currentBinStart = sortedCoordinates[0]
 binnedCoordinates = dict()
 currentBin = int(math.ceil(-((max(coordinates.keys()) - min(coordinates.keys())) / float(binSize)) / 2)) #oof
 binCount = int(math.ceil(((max(coordinates.keys()) - min(coordinates.keys())) / float(binSize))))
-
 
 binMap = dict() #keep a map to determine where each coordinate goes
 
@@ -220,15 +221,17 @@ for binInd in range(0,binCount):
 		binMap[coordinate] = currentBin + binInd
 		
 	currentCoordinateStart += binSize
-print binMap
 
 #Fill the correct bins with the number of SVs
 for coordinate in coordinates:
 	
 	#find the right bin that this coordinate is in base on the map
 	coordinateBin = binMap[coordinate]
-	binnedCoordinates[coordinateBin] = coordinates[coordinate]
+	binnedCoordinates[coordinateBin] += coordinates[coordinate]
+
+
 
 print "plotting"		
 plt.bar(binnedCoordinates.keys(), binnedCoordinates.values())
+plt.ylim(0,4500)
 plt.show()

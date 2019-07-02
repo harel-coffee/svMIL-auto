@@ -54,7 +54,7 @@ class OutputWriter:
 			cancerTypeScores = geneRanking.scores[cancerType]
 
 			#Store all the gene scores in here. 
-			perGeneScores = np.empty([len(genes), 32], dtype="object") #store by gene name because it is easiest to match back later
+			perGeneScores = np.empty([len(genes), 33], dtype="object") #store by gene name because it is easiest to match back later
 			
 			for row in range(0, cancerTypeScores.shape[0]):
 				gene = cancerTypeScores[row][0]
@@ -90,6 +90,7 @@ class OutputWriter:
 				dnaseIGainScore = cancerTypeScores[row,26]
 				dnaseILossScore = cancerTypeScores[row,27]
 				samples = cancerTypeScores[row,28]
+				codingSamples = cancerTypeScores[row,29]
 				
 				
 				perGeneScores[row][0] = geneName
@@ -128,10 +129,8 @@ class OutputWriter:
 				
 				perGeneScores[row][30] = np.sum(perGeneScores[row][4:30])
 				perGeneScores[row][31] = samples
+				perGeneScores[row][32] = codingSamples
 				
-				
-				if gene.name == "FOXO4":
-					print perGeneScores[row]
 		
 			#Also rank the output by highest total score (recurrence)
 			perGeneScores = perGeneScores[perGeneScores[:,30].argsort()[::-1]] #Select the column  to rank by
@@ -147,7 +146,7 @@ class OutputWriter:
 			else:
 				outfileName = cancerTypeFolder + "/realSVs_geneScores_chr.txt"
 			
-			header = "geneName\tgeneScore\teQTLGains\teQTLLosses\tenhancerGains\tenhancerLosses\tpromoterGains\tpromoterLosses\tcpgGains\tcpgLosses\ttfGains\ttfLosses\thicGains\thicLosses\th3k9me3Gains\th3k9me3Losses\th3k4me3Gains\th3k4me3Losses\th3k27acGains\th3k27acLosses\th3k27me3Gains\th3k27me3Losses\th3k4me1Gains\th3k4me1Losses\th3k36me3Gains\th3k36me3Losses\tdnaseIGains\tdnaseILosses\ttotal\tsamples"
+			header = "geneName\tchromosome\tstart\tgeneScore\teQTLGains\teQTLLosses\tenhancerGains\tenhancerLosses\tpromoterGains\tpromoterLosses\tcpgGains\tcpgLosses\ttfGains\ttfLosses\thicGains\thicLosses\th3k9me3Gains\th3k9me3Losses\th3k4me3Gains\th3k4me3Losses\th3k27acGains\th3k27acLosses\th3k27me3Gains\th3k27me3Losses\th3k4me1Gains\th3k4me1Losses\th3k36me3Gains\th3k36me3Losses\tdnaseIGains\tdnaseILosses\ttotal\tsamples\tcodingSamples"
 				
 			#Write to numpy output file	
 			np.savetxt(outfileName, perGeneScores, delimiter='\t', fmt='%s', header=header)

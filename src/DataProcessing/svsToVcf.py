@@ -45,13 +45,13 @@ with open(variantsFile, 'rb') as f:
 		
 		# if svType != "del" and svType != "invers" and svType != "tandem_dup":
 		# 	continue
-		if svType != "del" and svType != "invers" and svType != "tandem_dup":
-			
-			interChrTypeMatch = re.search("chr", svType, re.IGNORECASE)
-			transTypeMatch = re.search("trans", svType, re.IGNORECASE)
-			rangeTypeMatch = re.search("range", svType, re.IGNORECASE)
-			if interChrTypeMatch is None and transTypeMatch is None and rangeTypeMatch is None:
-				continue
+		# if svType != "del" and svType != "invers" and svType != "tandem_dup":
+		# 	
+		# 	interChrTypeMatch = re.search("chr", svType, re.IGNORECASE)
+		# 	transTypeMatch = re.search("trans", svType, re.IGNORECASE)
+		# 	rangeTypeMatch = re.search("range", svType, re.IGNORECASE)
+		# 	if interChrTypeMatch is None and transTypeMatch is None and rangeTypeMatch is None:
+		# 		continue
 
 		
 		#If the coordinates are missing on the second chromosome, we use the coordinates of the first chromosome unless chr 1 and chr 2 are different.

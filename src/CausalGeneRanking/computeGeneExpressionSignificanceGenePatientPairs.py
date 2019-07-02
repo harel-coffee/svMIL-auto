@@ -162,7 +162,7 @@ for rejectedInd in range(0, len(reject)):
 		
 print filteredPValues
 
-with open("genePatientPairPValues_filtered_me.txt", 'w') as outF:
+with open(geneScoreFile + "_perPatientSign.txt", 'w') as outF:
 	for genePatientPair in filteredPValues:
 		outF.write(genePatientPair + "\t" + str(filteredPValues[genePatientPair]) + "\n")	
 	

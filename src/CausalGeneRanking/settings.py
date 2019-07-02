@@ -30,9 +30,9 @@ files = dict(
 general = dict(
 	
 	mode = 'SV', #Options are: SV, SNV or SV+SNV
-	cancerType = 'BRCA', #Use to specify which cancer type the data should be filtered by
+	cancerType = 'germline', #Use to specify which cancer type the data should be filtered by
 	nonCoding = True, #Should we count gains/losses for genes that are affected by non-coding SVS?
-	coding = True, #Should we include gains and losses of non-coding elements, or only genes that are directly affected by SVs? 
+	coding = False, #Should we include gains and losses of non-coding elements, or only genes that are directly affected by SVs? 
 	tads = True, #Include TADs in the ranking yes/no, only to rank by how often TAD boundaries themselves are disrupted by SVs. (we are getting very dependent on TADs, so perhaps force this as always required)
 	eQTLs = True, #Include eQTLs in the ranking yes/no
 	enhancers = True, #Include enhancers in the ranking yes/no
