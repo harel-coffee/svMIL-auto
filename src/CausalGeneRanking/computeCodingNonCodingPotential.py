@@ -8,6 +8,7 @@ import sys
 import numpy as np
 import matplotlib.pyplot as plt
 import re
+from scipy import stats
 
 nonCodingPairs = np.loadtxt(sys.argv[1], dtype="object")
 codingPairs = np.loadtxt(sys.argv[2], dtype="object")
@@ -126,67 +127,84 @@ for pair in codingPairs:
 		geneSampleRef[gene] = []
 	geneSampleRef[gene].append(sample)
 
-for pair in nonCodingPairs[:,0]:
-	splitPair = pair.split("_")
-	gene = splitPair[0]
-	pairSample = splitPair[len(splitPair)-1]
-	shortPairSampleName = pairSample.split("brca")[1]
-	
-	if gene not in expressionData[:,0]:
-		continue
-	
-	geneExpression = expressionData[expressionData[:,0] == gene][0]
-	sampleExpressionValue = 0 #expression values of this gene in all samples
-	
-	geneSamples = geneSampleRef[gene] #all samples in which this gene is affected by an SV, whether coding or non-coding
-	
-	matchedFullSampleNames = []
-	for geneSample in geneSamples:
 
-		shortSampleName = geneSample.split("brca")[1]
+
+def getDEPairs(pairs, geneSampleRef, epressionData, perPairDifferentialExpression):
+	
+	for pair in pairs:
+		splitPair = pair.split("_")
+		gene = splitPair[0]
+		pairSample = splitPair[len(splitPair)-1]
+		shortPairSampleName = pairSample.split("brca")[1]
+		sv = "_".join(splitPair[1:])
+		if gene not in expressionData[:,0]:
+			continue
 		
-		#match the sample name with the expression sample name
-		for sampleInd in range(0, len(samples)):
-			sample = samples[sampleInd]
-			if re.search(shortSampleName, sample, re.IGNORECASE) is not None:
-				
-				matchedFullSampleNames.append(sample) #All samples that should be excluded from the null distribution
+		geneExpression = expressionData[expressionData[:,0] == gene][0]
+		sampleExpressionValue = 0 #expression values of this gene in all samples
+		
+		geneSamples = geneSampleRef[gene] #all samples in which this gene is affected by an SV, whether coding or non-coding
+		
+		matchedFullSampleNames = []
+		for geneSample in geneSamples:
+	
+			shortSampleName = geneSample.split("brca")[1]
 			
-			#Also find the expression for the current pair sample
-			if re.search(shortPairSampleName, sample, re.IGNORECASE) is not None:
-				#Get the last 2 numbers
-				splitSample = sample.split("-")
-				code = int(splitSample[len(splitSample)-1])
-				
-				if code < 10: #above 9 are the normal samples, which we do not want to include here
-					sampleInd = samples.index(sample)
+			#match the sample name with the expression sample name
+			for sampleInd in range(0, len(samples)):
+				sample = samples[sampleInd]
+				if re.search(shortSampleName, sample, re.IGNORECASE) is not None:
 					
-					sampleExpressionValue = float(geneExpression[sampleInd])
+					matchedFullSampleNames.append(sample) #All samples that should be excluded from the null distribution
 				
-				
-	#Get all the samples without an SV for this gene
-	unmatchedSamples = np.setdiff1d(samples[1:len(samples)-1], matchedFullSampleNames) #exclude hybrid ref
-	negativeSamples = []
-	for sample in unmatchedSamples: #sample tumor samples, exclude normals
-		splitSample = sample.split("-")
-		code = int(splitSample[len(splitSample)-1])
+				#Also find the expression for the current pair sample
+				if re.search(shortPairSampleName, sample, re.IGNORECASE) is not None:
+					#Get the last 2 numbers
+					splitSample = sample.split("-")
+					code = int(splitSample[len(splitSample)-1])
+					
+					if code < 10: #above 9 are the normal samples, which we do not want to include here
+						sampleInd = samples.index(sample)
+						
+						sampleExpressionValue = float(geneExpression[sampleInd])
+					
+					
+		#Get all the samples without an SV for this gene
+		unmatchedSamples = np.setdiff1d(samples[1:len(samples)-1], matchedFullSampleNames) #exclude hybrid ref
+		negativeSamples = []
+		for sample in unmatchedSamples: #sample tumor samples, exclude normals
+			splitSample = sample.split("-")
+			code = int(splitSample[len(splitSample)-1])
+			
+			if code < 10: 
+				negativeSamples.append(sample)
+			
+		#Get the expression of these samples
+		negativeSampleExpressionValues = []
+		for sample in negativeSamples:
+			sampleInd = samples.index(sample)				
+			negativeSampleExpressionValues.append(float(geneExpression[sampleInd]))
 		
-		if code < 10: 
-			negativeSamples.append(sample)
-		
-	#Get the expression of these samples
-	negativeSampleExpressionValues = []
-	for sample in negativeSamples:
-		sampleInd = samples.index(sample)				
-		negativeSampleExpressionValues.append(float(geneExpression[sampleInd]))
+		#Get the expression z-score for this pair
+		if np.std(negativeSampleExpressionValues) == 0:
+			continue
 	
-	#Get the expression z-score for this pair
-	if np.std(negativeSampleExpressionValues) == 0:
-		continue
+		z = (sampleExpressionValue - np.mean(negativeSampleExpressionValues)) / float(np.std(negativeSampleExpressionValues))
+		pValue = stats.norm.sf(abs(z))*2
+	
+		perPairDifferentialExpression[pair] = pValue
+		
+	return perPairDifferentialExpression
 
-	z = (sampleExpressionValue - np.mean(negativeSampleExpressionValues)) / float(np.std(negativeSampleExpressionValues))
-	print pair
-	print z
+#Get the p-value for each pair in coding & non-coding
+perPairDifferentialExpression = getDEPairs(nonCodingPairs[:,0], geneSampleRef, expressionData, dict())
+perPairDifferentialExpression = getDEPairs(codingPairs, geneSampleRef, expressionData, perPairDifferentialExpression)
+
+#Do multiple testing correction
+print perPairDifferentialExpression
+
+#For every pair, assign a +1 to the SV if it has a DEG gene
+
 
 exit()
 #### append the expression z-score as another column
