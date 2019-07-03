@@ -766,7 +766,8 @@ class NeighborhoodDefiner:
 				
 				matchingGenes = geneChrSubset[startMatches * endMatches]
 				for gene in matchingGenes[:,3]:
-					gene.SVs[sv[7]] = 1
+					svEntry = sv[0] + "_" + str(sv[1]) + "_" + str(sv[2]) + "_" + sv[3] + "_" + str(sv[4]) + "_" + str(sv[5]) + "_" + sv[8].sampleName
+					gene.SVs[svEntry] = 1
 				
 			else: #interchromosomal SV
 				
@@ -777,7 +778,8 @@ class NeighborhoodDefiner:
 				
 				matchingGenes = geneChr1Subset[startMatches * endMatches]
 				for gene in matchingGenes[:,3]:
-					gene.SVs[sv[7]] = 1
+					svEntry = sv[0] + "_" + str(sv[1]) + "_" + str(sv[2]) + "_" + sv[3] + "_" + str(sv[4]) + "_" + str(sv[5]) + "_" + sv[8].sampleName
+					gene.SVs[svEntry] = 1
 				
 				geneChr2Subset = genes[sv[3] == genes[:,0]]
 				#Find all genes overlapped by this SV. 
@@ -786,7 +788,8 @@ class NeighborhoodDefiner:
 				
 				matchingGenes = geneChr2Subset[startMatches * endMatches]
 				for gene in matchingGenes[:,3]:
-					gene.SVs[sv[7]] = 1
+					svEntry = sv[0] + "_" + str(sv[1]) + "_" + str(sv[2]) + "_" + sv[3] + "_" + str(sv[4]) + "_" + str(sv[5]) + "_" + sv[8].sampleName
+					gene.SVs[svEntry] = 1
 			
 		
 		

@@ -111,9 +111,7 @@ class GeneRanking:
 			pairIds = []
 			for ind in range(0, len(svGeneIndices)):
 				sv = svGeneIndices[ind]
-				
-				 
-				
+
 				pairIds.append(sv)
 				if sv in eQTLLossScores:
 					pairScores[ind,0] = eQTLLossScores[sv]
@@ -191,9 +189,16 @@ class GeneRanking:
 			
 			pairScoresWithPairIds = pairScoresWithPairIds[pairScoresWithPairIds[:,27].argsort()[::-1]] #Select the column  to rank by
 			print pairScoresWithPairIds
-			np.savetxt("Output/geneSVPairs_somatic_me_02072019.txt", pairScoresWithPairIds, delimiter='\t', fmt='%s')
+			np.savetxt("Output/geneSVPairs_somatic_me_03072019.txt", pairScoresWithPairIds, delimiter='\t', fmt='%s')
 			
-				
+			#Also output the coding pairs
+			codingPairs = []
+			for gene in genes:
+				for sv in gene.SVs:
+					
+					codingPairs.append(gene.name + "_" + sv)
+			codingPairs = np.array(codingPairs, dtype="object")
+			np.savetxt("Output/geneCodingSVPairs_somatic_me_03072019.txt", codingPairs, delimiter='\t', fmt='%s')		
 				
 			
 			
@@ -425,7 +430,8 @@ class GeneRanking:
 			for sv in geneSVs:
 
 				#check the sample of this sv and get the right position of the samples in the scoring matrix
-				sampleName = sv
+				splitSV = sv.split("_")
+				sampleName = splitSV[len(splitSV)-1]
 				sampleInd = sampleMap[sampleName]
 
 				scoringMatrix[sampleInd][matrixGeneInd] = 1 #set the score to 1 to ensure that per sample we count only 1 SV.
