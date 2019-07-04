@@ -153,7 +153,8 @@ for gene in filteredGenes:
 
 from statsmodels.sandbox.stats.multicomp import multipletests
 reject, pAdjusted, _, _ = multipletests(pValues.values(), method='bonferroni')
-
+print(pAdjusted)
+exit()
 filteredPValues = dict()
 for rejectedInd in range(0, len(reject)):
 	

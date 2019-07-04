@@ -99,6 +99,10 @@ if permutationYN == "True":
 		svData = genomicShuffler.shuffleSVs(svData)
 		snvData = genomicShuffler.shuffleSNVs(snvData)
 
+permutationRound = ""
+if permutationYN == "True":
+	permutationRound = sys.argv[3]
+
 #2. Get the neighborhood for these genes based on the SVs or SNVs
 if mode == "SV":
 	print "Defining the neighborhood for the causal genes and the SVs"
@@ -113,7 +117,7 @@ if mode == "SV+SNV":
 
 #3. Do ranking of the genes and report the causal SVs
 print "Ranking the genes for the variants"
-geneRanking = GeneRanking(causalGenes[:,3], svData, mode)
+geneRanking = GeneRanking(causalGenes[:,3], svData, mode, permutationRound)
 
 #Save the causal genes up until here and load them for faster development of the deep learning part
 # import pickle
@@ -129,9 +133,7 @@ geneRanking = GeneRanking(causalGenes[:,3], svData, mode)
 
 
 #Output the ranking scores to a file. 
-permutationRound = None
-if permutationYN == "True":
-	permutationRound = sys.argv[3]
+
 
 OutputWriter().writeOutput(geneRanking, causalGenes, uuid, permutationYN, permutationRound)
 
