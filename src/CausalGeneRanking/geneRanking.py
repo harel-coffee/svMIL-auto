@@ -458,12 +458,13 @@ class GeneRanking:
 		for geneInd in range(0, len(genes)):
 			
 			gene = genes[geneInd]
+			geneSVSamples = []
+			for sv in gene.SVs:
+				splitSV = sv.split("_")
+				geneSVSamples.append(splitSV[len(splitSV)-1])
 
 			matrixGeneInd = geneMap[gene]
 			
-			if gene.name == 'DKK2':
-				print "gains: "
-				print gene.gainedElements
 			
 			if len(gene.gainedElements) > 0: #if the gene has gained elements
 				for sample in gene.gainedElements:
@@ -471,7 +472,13 @@ class GeneRanking:
 					#If mutually exclusive mode, skip genes that also have coding SVs in the same sample. 
 					if settings.general['nonCoding'] == True and settings.general['coding'] == False:
 						
-						if sample in gene.SVs:
+						
+						
+						if gene.name == "MED24":
+							print "MED24: ", geneSVSamples
+							print gene.gainedElements, " of ", elementType
+							
+						if sample in geneSVSamples:
 							continue
 					
 					gain = False #Make sure that we only focus on gained elements of the provided type. 
@@ -506,20 +513,23 @@ class GeneRanking:
 		for geneInd in range(0, len(genes)):
 			
 			gene = genes[geneInd]
+			geneSVSamples = []
+			for sv in gene.SVs:
+				splitSV = sv.split("_")
+				geneSVSamples.append(splitSV[len(splitSV)-1])
 
 			matrixGeneInd = geneMap[gene]
 			
-			if gene.name == 'DKK2':
-				print gene.lostElements
-				
-				
 			
 			if len(gene.lostElements) > 0:
 				for sample in gene.lostElements:
 					#If mutually exclusive mode, skip genes that also have coding SVs in the same sample. 
 					if settings.general['nonCoding'] == True and settings.general['coding'] == False:
+						if gene.name == "MED24":
+							print "MED24: ", geneSVSamples
+							print gene.lostElements, " of ", elementType
 					
-						if sample in gene.SVs:
+						if sample in geneSVSamples:
 							continue
 					
 					

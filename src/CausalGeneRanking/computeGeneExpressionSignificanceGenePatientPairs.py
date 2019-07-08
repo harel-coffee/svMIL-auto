@@ -80,9 +80,9 @@ for gene in filteredGenes:
 	
 	geneSamples = gene[31].split(",")
 	
-	if gene[0] == "CLN6":
+	if gene[0] == "ITGA3":
 		print geneSamples
-		
+		exit()	
 	
 	matchedFullSampleNames = []
 	for geneSample in geneSamples:
@@ -94,7 +94,7 @@ for gene in filteredGenes:
 			sample = samples[sampleInd]
 			if re.search(shortSampleName, sample, re.IGNORECASE) is not None:
 				
-				if gene[0] == "CLN6":
+				if gene[0] == "ITGA3":
 					print "matched on expr sample: ", sample
 				
 				matchedFullSampleNames.append(sample) #keep this to check later for the negative set
@@ -153,13 +153,12 @@ for gene in filteredGenes:
 
 from statsmodels.sandbox.stats.multicomp import multipletests
 reject, pAdjusted, _, _ = multipletests(pValues.values(), method='bonferroni')
-print(pAdjusted)
-exit()
+
 filteredPValues = dict()
 for rejectedInd in range(0, len(reject)):
 	
 	if reject[rejectedInd] == 1:
-		filteredPValues[pValues.keys()[rejectedInd]] = pValues.values()[rejectedInd]
+		filteredPValues[pValues.keys()[rejectedInd]] = pAdjusted[rejectedInd]
 		
 print filteredPValues
 
