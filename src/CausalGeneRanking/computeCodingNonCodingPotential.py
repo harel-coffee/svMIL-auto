@@ -216,7 +216,7 @@ print svEffects
 # svSignificanceCorrected = np.array(svSignificanceCorrected, dtype="object")	
 # 	
 # np.savetxt('Output/significantNCProportion_multipleTestCorrected.txt', svSignificanceCorrected, fmt='%s', delimiter='\t')
-# 
+
 # perPairDifferentialExpressionArrayFiltered = np.load('codingNonCodingPairDEGs.npy')
 # print perPairDifferentialExpressionArrayFiltered.shape
 # 
@@ -232,7 +232,16 @@ print svEffects
 # 			svEffects[pairInd,3] += 1
 # plt.scatter(svEffects[:,2], svEffects[:,1], c=svEffects[:,3]) #c=colors
 # 
-#Do overlay because the colormap is not working separately
+# #Do overlay because the colormap is not working separately
+# svSignificanceCorrected = np.loadtxt('Output/significantNCProportion_multipleTestCorrected.txt', dtype="object")
+# for svInd in range(0, svEffects.shape[0]):
+# 	sv = svEffects[svInd,0]
+# 	
+# 	if sv in svSignificanceCorrected[:,0]:
+# 		plt.scatter(svEffects[svInd,2], svEffects[svInd,1], marker="*", color='red') #plot the significant SVs
+# plt.show()
+# exit()
+
 svSignificanceCorrected = np.loadtxt('Output/significantNCProportion_multipleTestCorrected.txt', dtype="object")
 print "Number of significant gene SV pairs: ", svSignificanceCorrected.shape
 
@@ -275,37 +284,45 @@ for svInd in range(0, svEffects.shape[0]):
 		for gene in genes:
 			pair = gene + "_" + sv
 			if pair in degPairs[:,0]:
-				print "deg pair: ", pair
+				#print "deg pair: ", pair
 				degCount += 1
 				signNCDegPairs[sv].append(pair)
 				degGenes.append(gene)
 				degPairsSign.append(gene + "_" + splitSV[len(splitSV)-1])
 				degPairsFull.append(gene + "_" + sv)
 				
-				# if gene == "CDH1":
-				# 	print "CDH1: ", sv
-				# if gene == "ERBB2":
-				# 	print "ERBB2: ", sv
-				# if gene == "COL1A1":
-				# 	print "COL1A1: ", sv
-				# if gene == "SPOP":
-				# 	print "SPOP: ", sv
-				# if gene == "H3F3B":
-				# 	print "H3F3B: ", sv
-				
-				#coding
 				if gene == "CDH1":
 					print "CDH1: ", sv
-				if gene == "RNF43":
-					print "RNF43: ", sv
-				if gene == "CLTC":
-					print "CLTC: ", sv
-				if gene == "DDX5":
-					print "DDX5: ", sv
-				if gene == "PRKAR1A":
-					print "PRKAR1A: ", sv
-				if gene == "CDK12":
-					print "CDK12: ", sv
+				if gene == "CD74":
+					print "CD74: ", sv
+				if gene == "COL1A1":
+					print "COL1A1: ", sv
+				if gene == "SPOP":
+					print "SPOP: ", sv
+				if gene == "H3F3B":
+					print "H3F3B: ", sv
+				if gene == "SEPT6":
+					print "SEPT6: ", sv
+				if gene == "CIITA":
+					print "CIITA: ", sv
+				if gene == "PDGFRB":
+					print "PDGFRB: ", sv
+				
+				#coding
+				# if gene == "CDH1":
+				# 	print "CDH1: ", sv
+				# if gene == "RNF43":
+				# 	print "RNF43: ", sv
+				# if gene == "CLTC":
+				# 	print "CLTC: ", sv
+				# if gene == "DDX5":
+				# 	print "DDX5: ", sv
+				# if gene == "PRKAR1A":
+				# 	print "PRKAR1A: ", sv
+				# if gene == "SEPT6":
+				# 	print "SEPT6: ", sv
+				# if gene == "CIITA":
+				# 	print "CIITA: ", sv			
 				
 				
 print "Number of significant nc potential that are also linked to DEG genes: ", degCount
@@ -378,16 +395,16 @@ print notFoundCount
 
 
 exit()
-
 # 
-# exit()
-# 		
-# 		#plt.scatter(svEffects[svInd,2], svEffects[svInd,1], marker="*", color='red') #plot the significant SVs
-# 	
-# #plt.show()
-# 
-# 
-# exit()
+# # 
+# # exit()
+# # 		
+# # 		#
+# # 	
+# # #plt.show()
+# # 
+# # 
+# # exit()
 
 
 
@@ -524,25 +541,25 @@ def getDEPairs(pairs, geneSampleRef, epressionData, perPairDifferentialExpressio
 		
 	return perPairDifferentialExpression
 
-# #Get the p-value for each pair in coding & non-coding
-# perPairDifferentialExpression = getDEPairs(nonCodingPairs[:,0], geneSampleRef, expressionData, dict(), geneSampleExpr, negativeExpr)
-# print "done"
-# perPairDifferentialExpression = getDEPairs(codingPairs, geneSampleRef, expressionData, perPairDifferentialExpression, geneSampleExpr, negativeExpr)
-# print "coding done"
-# #Do multiple testing correction
-# #print perPairDifferentialExpression
-# 
-# perPairDifferentialExpressionArray = np.empty([len(perPairDifferentialExpression), 2], dtype="object")
-# perPairDifferentialExpressionArray[:,0] = perPairDifferentialExpression.keys()
-# perPairDifferentialExpressionArray[:,1] = perPairDifferentialExpression.values()
-# 
-# 
-# from statsmodels.sandbox.stats.multicomp import multipletests
-# reject, pAdjusted, _, _ = multipletests(perPairDifferentialExpressionArray[:,1], method='bonferroni')
-# 
-# perPairDifferentialExpressionArrayFiltered = perPairDifferentialExpressionArray[reject]
-# 
-# np.save('codingNonCodingPairDEGs_shuffled.npy', perPairDifferentialExpressionArrayFiltered)
+#Get the p-value for each pair in coding & non-coding
+perPairDifferentialExpression = getDEPairs(nonCodingPairs[:,0], geneSampleRef, expressionData, dict(), geneSampleExpr, negativeExpr)
+print "done"
+perPairDifferentialExpression = getDEPairs(codingPairs, geneSampleRef, expressionData, perPairDifferentialExpression, geneSampleExpr, negativeExpr)
+print "coding done"
+#Do multiple testing correction
+#print perPairDifferentialExpression
+
+perPairDifferentialExpressionArray = np.empty([len(perPairDifferentialExpression), 2], dtype="object")
+perPairDifferentialExpressionArray[:,0] = perPairDifferentialExpression.keys()
+perPairDifferentialExpressionArray[:,1] = perPairDifferentialExpression.values()
+
+
+from statsmodels.sandbox.stats.multicomp import multipletests
+reject, pAdjusted, _, _ = multipletests(perPairDifferentialExpressionArray[:,1], method='bonferroni')
+
+perPairDifferentialExpressionArrayFiltered = perPairDifferentialExpressionArray[reject]
+
+np.save('codingNonCodingPairDEGs.npy', perPairDifferentialExpressionArrayFiltered)
 
 # Output DEG pairs for non-coding only
 perPairDifferentialExpression = getDEPairs(nonCodingPairs[:,0], geneSampleRef, expressionData, dict(), geneSampleExpr, negativeExpr)
