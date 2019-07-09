@@ -568,6 +568,11 @@ class GeneRanking:
 				for sv in gene.lostElementsSVs:
 					pairId = gene.name + "_" + sv
 					
+					#If mutually exclusive mode, skip genes that also have coding SVs in the same sample. 
+					if settings.general['nonCoding'] == True and settings.general['coding'] == False:
+						if sv in gene.SVs:
+							continue
+					
 					if pairId not in svGeneMap: #Check if we already used this index for a different feature
 						svInd = len(svGeneIndices)
 						svGeneMap[pairId] = svInd
@@ -608,6 +613,11 @@ class GeneRanking:
 				for sv in gene.gainedElementsSVs:
 					pairId = gene.name + "_" + sv
 					
+					#If mutually exclusive mode, skip genes that also have coding SVs in the same sample. 
+					if settings.general['nonCoding'] == True and settings.general['coding'] == False:
+						if sv in gene.SVs:
+							continue
+						
 					if pairId not in svGeneMap: #Check if we already used this index for a different feature
 						svInd = len(svGeneIndices)
 						svGeneMap[pairId] = svInd
