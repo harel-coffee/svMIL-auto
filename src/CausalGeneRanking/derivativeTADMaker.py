@@ -106,22 +106,52 @@ class DerivativeTADMaker:
 			return
 			svGroups: (dictionary) the keys are the first SV object that is part of the chain of SVs. The values are the SV objects that are part of this group. 
 		"""
+		
+		sampleGroups = dict()
+		svGroups = dict()
+		for sv in tadsPerSV:
+			if sv.sampleName not in sampleGroups:
+				sampleGroups[sv.sampleName] = []
+			sampleGroups[sv.sampleName].append([sv.s1, sv])
+		
+		for sampleGroup in sampleGroups:
+			currentGroup = np.array(sampleGroups[sampleGroup], dtype="object")
+			currentGroupSorted = currentGroup[currentGroup[:,0].argsort()]
+			
+			groupList = []
+			for sv in currentGroupSorted:
+				groupList.append(sv[1])
+			
+			svGroups[currentGroupSorted[0,1]] = groupList
+					
+		
+		for sv in svGroups:
+			print "new group: "
+			for sv1 in svGroups[sv]:
+				print sv1.chr1 + "_" + str(sv1.s1) + "_" + str(sv1.e1) + "_" + sv1.chr2 + "_" + str(sv1.s2) + "_" + str(sv1.e2) + "_" + sv1.sampleName
+		
+		return svGroups	
 
 		svGroups = dict()
 		tadsPerSVKeys = tadsPerSV.keys()
+		uniqueSVs = []
 		for svInd in range(0, len(tadsPerSV)):
 			sv1 = tadsPerSVKeys[svInd]
 			
-			#Make sure that the breakpoint/sv is not taking palce entirely within one tad
+			sv1Str = sv1.chr1 + "_" + str(sv1.s1) + "_" + str(sv1.e1) + "_" + sv1.chr2 + "_" + str(sv1.s2) + "_" + str(sv1.e2) + "_" + sv1.sampleName
+		
+			
+			#Make sure that the breakpoint/sv is not taking place entirely within one tad
 			if tadsPerSV[sv1][0][0][3] == tadsPerSV[sv1][1][0][3]:
 				continue
 			
 			currentGroup = []
 			currentGroupReversed = []
-			uniqueSVs = []
-			for sv2Ind in range(svInd+1, len(tadsPerSV)):
+			
+			for sv2Ind in range(svInd, len(tadsPerSV)):
 				
 				sv2 = tadsPerSVKeys[sv2Ind]
+				sv2Str = sv2.chr1 + "_" + str(sv2.s1) + "_" + str(sv2.e1) + "_" + sv2.chr2 + "_" + str(sv2.s2) + "_" + str(sv2.e2) + "_" + sv2.sampleName
 				
 				if sv1.sampleName != sv2.sampleName:
 					continue
@@ -133,20 +163,45 @@ class DerivativeTADMaker:
 				if tadsPerSV[sv2][0][0][3] == tadsPerSV[sv2][1][0][3]:
 					continue
 					
+				#The SVs are in the same group if any is in the same TAD
+				firstTadSV1 = tadsPerSV[sv1][0][0][3]
+				secondTadSV1 = tadsPerSV[sv1][1][0][3]
 				
-				firstTad = tadsPerSV[sv1][1][0][3]
-				secondTad = tadsPerSV[sv2][0][0][3]
-				if firstTad == secondTad:
+				firstTadSV2 = tadsPerSV[sv2][0][0][3]
+				secondTadSV2 = tadsPerSV[sv2][1][0][3]
+				sv2Tads = [firstTadSV2, secondTadSV2]
+				
+				# if sv2Str == "chr17_63606343_63606343_chr3_119556122_119556122_brcaA03L":
+				# 	print sv2Str
+				# 	print firstTad.start, firstTad.end, firstTad.chromosome
+				# 	print secondTad.start, secondTad.end, secondTad.chromosome
+				# 
+				if firstTadSV1 in sv2Tads or secondTadSV1 in sv2Tads:
 					
-					if sv1 not in uniqueSVs:
+					# if sv1Str == "chr12_5624085_5624085_chr17_63557184_63557184_brcaA03L":
+					# 	print sv2Str
+					# 	print firstTad.start, firstTad.end, firstTad.chromosome
+					# 	print secondTad.start, secondTad.end, secondTad.chromosome
+						
+					
+					if sv1Str not in uniqueSVs:
 						currentGroup.append([sv1.s1, sv1])
 						currentGroupReversed.append(sv1)
-						uniqueSVs.append(sv1)
-					if sv2 not in uniqueSVs:
+						uniqueSVs.append(sv1Str)
+					if sv2Str not in uniqueSVs:
+						if sv2Str == "chr17_63606343_63606343_chr3_119556122_119556122_brcaA03L":
+							print "adding SV"
 						currentGroup.append([sv2.s1, sv2])
 						currentGroupReversed.append(sv2)
-						uniqueSVs.append(sv2)
-					
+						uniqueSVs.append(sv2Str)
+						# if sv2.sampleName == "brcaA03L":
+						# 	print "unique SVs:"
+						# 	print sv2Str
+						# 	for svA in uniqueSVs:
+						# 		svStr = svA.chr1 + "_" + str(svA.s1) + "_" + str(svA.e1) + "_" + svA.chr2 + "_" + str(svA.s2) + "_" + str(svA.e2) + "_" + svA.sampleName
+						# 		if svA.sampleName == "brcaA03L":
+						# 			print svStr
+						# 
 			
 			if len(currentGroup) > 0:
 				#sort the current group by position
@@ -160,6 +215,21 @@ class DerivativeTADMaker:
 				
 				svGroups[sv1] = groupList
 				
+				if sv1.sampleName == "brcaA03L":
+					
+					
+					
+					
+					print len(svGroups[sv1])
+					for svA in svGroups[sv1]:
+						svStr = svA.chr1 + "_" + str(svA.s1) + "_" + str(svA.e1) + "_" + svA.chr2 + "_" + str(svA.s2) + "_" + str(svA.e2) + "_" + svA.sampleName
+		
+						print svStr
+						
+				
+		
+		
+		exit()		
 		return svGroups
 
 	def matchTADsWithTranslocations(self, svData, tadData):
@@ -532,6 +602,7 @@ class DerivativeTADMaker:
 			for group in svGroups:
 				print "Group: ", group
 				
+				
 				gains = dict()
 				losses = dict()
 				
@@ -836,6 +907,7 @@ class DerivativeTADMaker:
 						
 						
 					if sv.o1 == "-" and sv.o2 == "-":
+
 						#This is the left part of chr1
 						leftSideElements = leftTad.getElementsByRange(sv.s1, leftTad.end)
 						leftSideGenes = leftTad.getGenesByRange(sv.s1, leftTad.end)
@@ -852,6 +924,8 @@ class DerivativeTADMaker:
 						
 						remainingElementsRight = rightTad.getElementsByRange(rightTad.start, sv.e2)
 						remainingGenesRight = rightTad.getGenesByRange(rightTad.start, sv.e2)
+						
+					
 						
 						
 						#3. Make derivative TADs from the SV and add elements, keeping the reference positions.
@@ -917,7 +991,7 @@ class DerivativeTADMaker:
 				#For each of the TADs, see which genes are in them and are affected, and determine their eQTL interactions.
 				
 				######	
-				
+					
 					allTads = updatedTads + fullNewTads
 					for tad in allTads:
 						
@@ -925,6 +999,7 @@ class DerivativeTADMaker:
 							continue
 						
 						for gene in tad[3].genes:
+							
 							
 							#Get the elements that are inside this TAD for this gene	
 							elementsInTad = []
@@ -934,42 +1009,73 @@ class DerivativeTADMaker:
 								#elementsInTad.append([element.chromosome, element.start, element])
 								elementsInTad.append(elementStr)
 							
-							originalTadElements = []
-							for element in gene.leftTAD.elements: #assume left TAD is the same as the right TAD, because the gene is within a TAD
-								elementStr = element[0] + "_" + str(element[1]) + "_" + str(element[2]) + "_" + str(element[3]) + "_" + str(element[4])
-								originalTadElements.append(elementStr)
-							
+							# originalTadElements = []
+							# if gene.leftTAD is not None:
+							# 	for element in gene.leftTAD.elements: #assume left TAD is the same as the right TAD, because the gene is within a TAD
+							# 		
+							# 		elementStr = element[0] + "_" + str(element[1]) + "_" + str(element[2]) + "_" + str(element[3]) + "_" + str(element[4])
+							# 		#originalTadElements.append(elementStr)
+							# else:
+							# 	# if gene.leftTAD is None and gene.rightTAD is not None:
+							# 	# 	for element in gene.rightTAD.elements: #assume left TAD is the same as the right TAD, because the gene is within a TAD
+							# 	# 		1
+							# 	# 		#elementStr = element[0] + "_" + str(element[1]) + "_" + str(element[2]) + "_" + str(element[3]) + "_" + str(element[4])
+							# 	# 		#originalTadElements.append(elementStr)
+							# 	# else:
+							# 		continue
 							#Get all elements that are now in this TAD
+							# newElements = []
+							# for element in tad[3].elements:
+							# 	
+							# 	#if eQTL not in gene.leftTAD.eQTLInteractions:
+							# 	elementStr = element[0] + "_" + str(element[1]) + "_" + str(element[2]) + "_" + str(element[3]) + "_" + str(element[4])
+							# 	
+							# 	newElements.append(elementStr)
+							# 
+							# 
+							# filteredNewElements = np.setdiff1d(newElements, originalTadElements)
+							# 
+							# gainedElements = []
+							# for element in filteredNewElements:
+							# 	if element not in elementsInTad:
+							# 		#if eQTL[2] not in gene.leftTAD.eQTLInteractions: #Also do this check to make sure that we do not add eQTLs that were in the oroginal TAD of the gene, which are simply not associated to the gene. 
+							# 		gainedElements.append(element.split("_"))
+							# 
+							# if len(gainedElements) < 1:
+							# 	continue
+							
+							
 							newElements = []
-							for element in tad[3].elements:
-								#if eQTL not in gene.leftTAD.eQTLInteractions:
-								elementStr = element[0] + "_" + str(element[1]) + "_" + str(element[2]) + "_" + str(element[3]) + "_" + str(element[4])
-								
-								newElements.append(elementStr)
-							
-							
-							filteredNewElements = np.setdiff1d(newElements, originalTadElements)
-							#Make the derivative, determine which eQTLs are gained and lost for this gene.
-							lostElements = []
-							for element in elementsInTad:
-								if element not in newElements: #this eQTL has been lost. 
-									lostElements.append(element.split("_"))
-							
-							gene.addLostElements(lostElements, sv.sampleName)
-							gene.addLostElementsSVs(lostElements, sv.chr1 + "_" + str(sv.s1) + "_" + str(sv.e1) + "_" + sv.chr2 + "_" + str(sv.s2) + "_" + str(sv.e2) + "_" + sv.sampleName)
-							
 							gainedElements = []
-							for element in filteredNewElements:
-								if element not in elementsInTad:
-									#if eQTL[2] not in gene.leftTAD.eQTLInteractions: #Also do this check to make sure that we do not add eQTLs that were in the oroginal TAD of the gene, which are simply not associated to the gene. 
-									gainedElements.append(element.split("_"))
+							for element in tad[3].elements: #all elements in the newly formed TAD
+								
+								if element not in gene.leftTAD.elements: #if this element was not in the original TAD, it is a gain
+									if element not in elementsInTad: #it is only really gained if it was not already in the same TAD as the gene
+										elementStr = element[0] + "_" + str(element[1]) + "_" + str(element[2]) + "_" + str(element[3]) + "_" + str(element[4])
+										gainedElements.append(elementStr.split("_"))
+								
+								
+								#loss????
+								#elementStr = element[0] + "_" + str(element[1]) + "_" + str(element[2]) + "_" + str(element[3]) + "_" + str(element[4])
+								#newElements.append(elementStr)
 							
-							if len(gainedElements) < 1:
-								continue
 							
-							gene.addGainedElements(gainedElements, sv.sampleName)
-							gene.addGainedElementsSVs(gainedElements, sv.chr1 + "_" + str(sv.s1) + "_" + str(sv.e1) + "_" + sv.chr2 + "_" + str(sv.s2) + "_" + str(sv.e2) + "_" + sv.sampleName)
-		
+							
+							
+							# gene.addGainedElements(gainedElements, sv.sampleName)
+							# gene.addGainedElementsSVs(gainedElements, sv.chr1 + "_" + str(sv.s1) + "_" + str(sv.e1) + "_" + sv.chr2 + "_" + str(sv.s2) + "_" + str(sv.e2) + "_" + sv.sampleName)
+							# 
+							# 
+							# #Make the derivative, determine which eQTLs are gained and lost for this gene.
+							# lostElements = []
+							# for element in elementsInTad:
+							# 	if element not in newElements: #this eQTL has been lost. 
+							# 		lostElements.append(element.split("_"))
+							# 
+							# gene.addLostElements(lostElements, sv.sampleName)
+							# gene.addLostElementsSVs(lostElements, sv.chr1 + "_" + str(sv.s1) + "_" + str(sv.e1) + "_" + sv.chr2 + "_" + str(sv.s2) + "_" + str(sv.e2) + "_" + sv.sampleName)
+							# 
+							# 
 		### DELETIONS ###
 		if svType == "del":
 			

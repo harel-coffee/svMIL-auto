@@ -216,7 +216,7 @@ print svEffects
 # svSignificanceCorrected = np.array(svSignificanceCorrected, dtype="object")	
 # 	
 # np.savetxt('Output/significantNCProportion_multipleTestCorrected.txt', svSignificanceCorrected, fmt='%s', delimiter='\t')
-
+# 
 # perPairDifferentialExpressionArrayFiltered = np.load('codingNonCodingPairDEGs.npy')
 # print perPairDifferentialExpressionArrayFiltered.shape
 # 
@@ -230,8 +230,10 @@ print svEffects
 # 		
 # 		if sv == pair:
 # 			svEffects[pairInd,3] += 1
+# print "plotting pairs"
 # plt.scatter(svEffects[:,2], svEffects[:,1], c=svEffects[:,3]) #c=colors
 # 
+# print "plotting significance: "
 # #Do overlay because the colormap is not working separately
 # svSignificanceCorrected = np.loadtxt('Output/significantNCProportion_multipleTestCorrected.txt', dtype="object")
 # for svInd in range(0, svEffects.shape[0]):
@@ -291,43 +293,38 @@ for svInd in range(0, svEffects.shape[0]):
 				degPairsSign.append(gene + "_" + splitSV[len(splitSV)-1])
 				degPairsFull.append(gene + "_" + sv)
 				
-				if gene == "CDH1":
-					print "CDH1: ", sv
-				if gene == "CD74":
-					print "CD74: ", sv
-				if gene == "COL1A1":
-					print "COL1A1: ", sv
-				if gene == "SPOP":
-					print "SPOP: ", sv
-				if gene == "H3F3B":
-					print "H3F3B: ", sv
-				if gene == "SEPT6":
-					print "SEPT6: ", sv
-				if gene == "CIITA":
-					print "CIITA: ", sv
-				if gene == "PDGFRB":
-					print "PDGFRB: ", sv
-				
+				# if gene == "ERBB2":
+				# 	print "ERBB2: ", sv
+				# if gene == "EPAS1":
+				# 	print "EPAS1: ", sv
+				# if gene == "COL1A1":
+				# 	print "COL1A1: ", sv
+				# if gene == "SPOP":
+				# 	print "SPOP: ", sv
+				# if gene == "H3F3B":
+				# 	print "H3F3B: ", sv
+				# 
 				#coding
-				# if gene == "CDH1":
-				# 	print "CDH1: ", sv
-				# if gene == "RNF43":
-				# 	print "RNF43: ", sv
-				# if gene == "CLTC":
-				# 	print "CLTC: ", sv
-				# if gene == "DDX5":
-				# 	print "DDX5: ", sv
-				# if gene == "PRKAR1A":
-				# 	print "PRKAR1A: ", sv
-				# if gene == "SEPT6":
-				# 	print "SEPT6: ", sv
-				# if gene == "CIITA":
-				# 	print "CIITA: ", sv			
-				
+				if gene == "NBN":
+					print "NBN: ", sv
+				if gene == "CLTC":
+					print "CLTC: ", sv
+				if gene == "CDK12":
+					print "CDK12: ", sv
+				if gene == "DDX5":
+					print "DDX5: ", sv
+				if gene == "PRKAR1A":
+					print "PRKAR1A: ", sv
+				if gene == "CCND1":
+					print "CCND1: ", sv
+				if gene == "NUMA1":
+					print "NUMA1: ", sv			
+				if gene == "PICALM":
+					print "PICALM: ", sv		
 				
 print "Number of significant nc potential that are also linked to DEG genes: ", degCount
 
-#np.savetxt("Output/ncPotentialDEGGenesCoding.txt", np.array(degGenes, dtype="object"), delimiter="\t", fmt="%s")
+np.savetxt("Output/ncPotentialDEGGenesCoding.txt", np.array(degGenes, dtype="object"), delimiter="\t", fmt="%s")
 
 #Check for the DEG pairs which is also found in the 'naive' method
 

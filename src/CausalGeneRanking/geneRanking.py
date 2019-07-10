@@ -473,10 +473,6 @@ class GeneRanking:
 					if settings.general['nonCoding'] == True and settings.general['coding'] == False:
 						
 						
-						
-						if gene.name == "MED24":
-							print "MED24: ", geneSVSamples
-							print gene.gainedElements, " of ", elementType
 							
 						if sample in geneSVSamples:
 							continue
@@ -525,9 +521,7 @@ class GeneRanking:
 				for sample in gene.lostElements:
 					#If mutually exclusive mode, skip genes that also have coding SVs in the same sample. 
 					if settings.general['nonCoding'] == True and settings.general['coding'] == False:
-						if gene.name == "MED24":
-							print "MED24: ", geneSVSamples
-							print gene.lostElements, " of ", elementType
+						
 					
 						if sample in geneSVSamples:
 							continue
@@ -563,14 +557,33 @@ class GeneRanking:
 		for geneInd in range(0, len(genes)):
 			gene = genes[geneInd]
 			
+			geneSVSamples = []
+			for sv in gene.SVs:
+				splitSV = sv.split("_")
+				geneSVSamples.append(splitSV[len(splitSV)-1])
+			
+			if gene.name == "TPP1":
+				print "lost elements: "
+				print gene.lostElementsSVs
+				print gene.lostElements
+				print geneSVSamples
+			
 			if len(gene.lostElementsSVs) > 0:
 				
 				for sv in gene.lostElementsSVs:
 					pairId = gene.name + "_" + sv
 					
+					geneSVSamples = []
+					for geneSV in gene.SVs:
+						splitSV = geneSV.split("_")
+						geneSVSamples.append(splitSV[len(splitSV)-1])
+					
 					#If mutually exclusive mode, skip genes that also have coding SVs in the same sample. 
 					if settings.general['nonCoding'] == True and settings.general['coding'] == False:
-						if sv in gene.SVs:
+						
+						splitSV = sv.split("_")
+
+						if splitSV[len(splitSV)-1] in geneSVSamples:
 							continue
 					
 					if pairId not in svGeneMap: #Check if we already used this index for a different feature
@@ -585,6 +598,9 @@ class GeneRanking:
 						if element == elementType:
 							loss = True
 					if loss == True:
+						if gene.name == "TPP1":
+							print "loss: ", pairId
+							print elementType
 						pairScores[pairId] = 1 #assume that each SV can disrupt a gene only once
 					
 						
@@ -608,14 +624,24 @@ class GeneRanking:
 		for geneInd in range(0, len(genes)):
 			gene = genes[geneInd]
 			
+			
+			
 			if len(gene.gainedElementsSVs) > 0:
 				
 				for sv in gene.gainedElementsSVs:
 					pairId = gene.name + "_" + sv
 					
+					geneSVSamples = []
+					for geneSV in gene.SVs:
+						splitSV = geneSV.split("_")
+						geneSVSamples.append(splitSV[len(splitSV)-1])
+					
 					#If mutually exclusive mode, skip genes that also have coding SVs in the same sample. 
 					if settings.general['nonCoding'] == True and settings.general['coding'] == False:
-						if sv in gene.SVs:
+						
+						splitSV = sv.split("_")
+
+						if splitSV[len(splitSV)-1] in geneSVSamples:
 							continue
 						
 					if pairId not in svGeneMap: #Check if we already used this index for a different feature
