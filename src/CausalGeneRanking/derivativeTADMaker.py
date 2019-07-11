@@ -109,28 +109,33 @@ class DerivativeTADMaker:
 		
 		sampleGroups = dict()
 		svGroups = dict()
+		samples = []
 		for sv in tadsPerSV:
 			if sv.sampleName not in sampleGroups:
 				sampleGroups[sv.sampleName] = []
 			sampleGroups[sv.sampleName].append([sv.s1, sv])
 		
+		svGroups = []
 		for sampleGroup in sampleGroups:
 			currentGroup = np.array(sampleGroups[sampleGroup], dtype="object")
 			currentGroupSorted = currentGroup[currentGroup[:,0].argsort()]
-			
+			samples.append(sampleGroup)
 			groupList = []
 			for sv in currentGroupSorted:
 				groupList.append(sv[1])
 			
-			svGroups[currentGroupSorted[0,1]] = groupList
-					
+			svGroups.append(groupList)
+				
+		#sort by sample name
 		
-		for sv in svGroups:
-			print "new group: "
-			for sv1 in svGroups[sv]:
-				print sv1.chr1 + "_" + str(sv1.s1) + "_" + str(sv1.e1) + "_" + sv1.chr2 + "_" + str(sv1.s2) + "_" + str(sv1.e2) + "_" + sv1.sampleName
+		samples = np.array(samples)
+		svGroups = np.array(svGroups)
+		sortedInd = np.argsort(samples)
 		
-		return svGroups	
+		
+			
+
+		return svGroups[sortedInd]	
 
 		svGroups = dict()
 		tadsPerSVKeys = tadsPerSV.keys()
@@ -600,7 +605,10 @@ class DerivativeTADMaker:
 			updatedTadPos = dict() #keep the TADs and the new start/ends after 
 			
 			for group in svGroups:
-				print "Group: ", group
+				print group[0].sampleName
+				
+				if group[0].sampleName != "brcaA1PC":
+					continue
 				
 				
 				gains = dict()
@@ -610,7 +618,7 @@ class DerivativeTADMaker:
 				#From this list we then need to later on at the first iteration determine which ones are affected
 				#Then in the code itself we will copy the TADs if these are not affected and will remain as-is. 
 				allInvolvedTads = []
-				for sv in svGroups[group]:
+				for sv in group:
 					for tad in range(0, len(tadsPerSV[sv])):
 						if tadsPerSV[sv][tad][0][3] not in allInvolvedTads:
 							allInvolvedTads.append(tadsPerSV[sv][tad][0][3])
@@ -619,7 +627,7 @@ class DerivativeTADMaker:
 				updatedTads = []
 				fullNewTads = [] #Keep the TADs as a result of one translocation separate. This is a test for now, assuming that there are not more than 1 translocations re-affecting these TADs
 				previousPieces = [] #Keep all previously remaining parts, to check if a previous SV already put these back together or not. 
-				for sv in svGroups[group]:
+				for sv in group:
 					#print "SV: ", sv.chr1, sv.s1, sv.e1, sv.chr2, sv.s2, sv.e2, sv.sampleName, sv.o1, sv.o2
 					
 					#Failsafe to make sure that we never use the TADs from the previous iteration here
@@ -679,7 +687,7 @@ class DerivativeTADMaker:
 					#For --, genes in the right side of chr1 gain eQTLs from the inverted right side of chr2, so starting from the breakpoint until the TAD end. Vice versa for the genes in the other part.
 
 					if sv.o1 == "+" and sv.o2 == "-": #These are the same scenarios, but with the cases above we have already determined the correct TADs. 
-
+						
 						#2. Get the elements on the left of the breakpoint and the right of the breakpoint
 						leftSideElements = leftTad.getElementsByRange(leftTad.start, sv.s1)
 						leftSideGenes = leftTad.getGenesByRange(leftTad.start, sv.s1)
@@ -701,7 +709,7 @@ class DerivativeTADMaker:
 						
 						
 						#add the elements to the TAD
-						newTad[3].setElements(leftSideElements + rightSideElements)
+						newTad[3].setElementsStr(leftSideElements + rightSideElements)
 						newTad[3].setGenes(leftSideGenes + rightSideGenes)
 						
 						#Also set the elements to the remaining parts
@@ -711,7 +719,7 @@ class DerivativeTADMaker:
 						
 						#The right part of the first chromosome
 						remainingPart1 = [leftTad.chromosome, sv.s1, leftTad.end, TAD(leftTad.chromosome, sv.s1, leftTad.end)]
-						remainingPart1[3].setElements(remainingElementsLeft)
+						remainingPart1[3].setElementsStr(remainingElementsLeft)
 						remainingPart1[3].setGenes(remainingGenesLeft)
 						
 						if [leftTad.chromosome, leftTad.start, leftTad.end, leftTad] in updatedTads:
@@ -720,6 +728,7 @@ class DerivativeTADMaker:
 							
 							ind = updatedTads.index([leftTad.chromosome, leftTad.start, leftTad.end, leftTad])
 							del updatedTads[ind]
+							
 						#But only re-add the remaining part if it is not exactly the same as a previous TAD (untouched)
 						else:
 						#if remainingPart1 not in updatedTads and remainingPart1 not in previousPieces:
@@ -728,12 +737,12 @@ class DerivativeTADMaker:
 						
 						
 						remainingPart2 = [rightTad.chromosome, rightTad.start, sv.e2, TAD(rightTad.chromosome, rightTad.start, sv.e2)]
-						remainingPart2[3].setElements(remainingElementsRight)
+						remainingPart2[3].setElementsStr(remainingElementsRight)
 						remainingPart2[3].setGenes(remainingGenesRight)
 						
 						#Also remove the old TADs if necessary
 						if [rightTad.chromosome, rightTad.start, rightTad.end, rightTad] in updatedTads:
-							
+						
 							#Remove the remaining part, it was now added to another part of DNA.
 							
 							ind = updatedTads.index([rightTad.chromosome, rightTad.start, rightTad.end, rightTad])
@@ -744,18 +753,25 @@ class DerivativeTADMaker:
 
 						#Also make sure that we remove the previously made TADs if these are updated again. 
 						if [leftTad.chromosome, leftTad.start, leftTad.end, leftTad] in fullNewTads:
+						
 							ind = fullNewTads.index([leftTad.chromosome, leftTad.start, leftTad.end, leftTad])
 							del fullNewTads[ind]
 						if [rightTad.chromosome, rightTad.start, rightTad.end, rightTad] in fullNewTads:
+							
 							ind = fullNewTads.index([rightTad.chromosome, rightTad.start, rightTad.end, rightTad])
 							del fullNewTads[ind]
 							
 						#4. Store the new TADs.
 					
 						#Copy all TADs but the left and right affected one to a new set of TADs.
+						# print "adding new tad: ", newTad
+						# print fullNewTads
+						# print " "
 						fullNewTads.append(newTad)
+				
 					
 					if sv.o1 == "-" and sv.o2 == "+":
+				
 						#2. Get the elements on the left of the breakpoint and the right of the breakpoint
 						#Left side is the first chromosome, right side the second chromosome. 
 						leftSideElements = leftTad.getElementsByRange(sv.s1, leftTad.end)
@@ -778,7 +794,7 @@ class DerivativeTADMaker:
 						
 						
 						#add the elements to the TAD
-						newTad[3].setElements(leftSideElements + rightSideElements)
+						newTad[3].setElementsStr(leftSideElements + rightSideElements)
 						newTad[3].setGenes(leftSideGenes + rightSideGenes)
 						
 						#Also set the elements to the remaining parts
@@ -792,7 +808,7 @@ class DerivativeTADMaker:
 						
 						#The left part of the first chromosome
 						remainingPart1 = [leftTad.chromosome, leftTad.start, sv.s1, TAD(leftTad.chromosome, leftTad.start, sv.s1)]
-						remainingPart1[3].setElements(remainingElementsLeft)
+						remainingPart1[3].setElementsStr(remainingElementsLeft)
 						remainingPart1[3].setGenes(remainingGenesLeft)
 						
 						if [leftTad.chromosome, leftTad.start, leftTad.end, leftTad] in updatedTads:
@@ -806,7 +822,7 @@ class DerivativeTADMaker:
 							updatedTads.append(remainingPart1)
 							
 						remainingPart2 = [rightTad.chromosome, sv.e2, rightTad.end, TAD(rightTad.chromosome, sv.e2, rightTad.end)]
-						remainingPart2[3].setElements(remainingElementsRight)
+						remainingPart2[3].setElementsStr(remainingElementsRight)
 						remainingPart2[3].setGenes(remainingGenesRight)
 						
 						#Also remove the old TADs if necessary
@@ -833,7 +849,8 @@ class DerivativeTADMaker:
 						#Copy all TADs but the left and right affected one to a new set of TADs.
 						fullNewTads.append(newTad)
 						
-					if sv.o1 == "+" and sv.o2 == "+": 
+					if sv.o1 == "+" and sv.o2 == "+":
+					
 						leftSideElements = leftTad.getElementsByRange(leftTad.start, sv.s1)
 						leftSideGenes = leftTad.getGenesByRange(leftTad.start, sv.s1)
 						
@@ -856,7 +873,7 @@ class DerivativeTADMaker:
 						newTad1 = [leftTad.chromosome, leftTad.start, rightTad.start, TAD(leftTad.chromosome, leftTad.start, rightTad.start)]
 						
 						#add the elements to the TAD
-						newTad1[3].setElements(leftSideElements + rightSideElements)
+						newTad1[3].setElementsStr(leftSideElements + rightSideElements)
 						newTad1[3].setGenes(leftSideGenes + rightSideGenes)
 						
 						#Also set the elements to the remaining parts
@@ -864,7 +881,7 @@ class DerivativeTADMaker:
 						#There are always 2 remaining parts, on both ends (in case of interchromosomal translocations)
 						
 						remainingPart1 = [leftTad.chromosome, sv.s1, leftTad.end, TAD(leftTad.chromosome, sv.s1, leftTad.end)]
-						remainingPart1[3].setElements(remainingElementsLeft)
+						remainingPart1[3].setElementsStr(remainingElementsLeft)
 						remainingPart1[3].setGenes(remainingGenesLeft)
 						
 						if [leftTad.chromosome, leftTad.start, leftTad.end, leftTad] in updatedTads:
@@ -878,11 +895,12 @@ class DerivativeTADMaker:
 							updatedTads.append(remainingPart1)
 							
 						remainingPart2 = [rightTad.chromosome, sv.e2, rightTad.end, TAD(rightTad.chromosome, sv.e2, rightTad.end)]
-						remainingPart2[3].setElements(remainingElementsRight)
+						remainingPart2[3].setElementsStr(remainingElementsRight)
 						remainingPart2[3].setGenes(remainingGenesRight)
 						
 						#Also remove the old TADs if necessary
 						if [rightTad.chromosome, rightTad.start, rightTad.end, rightTad] in updatedTads:
+							
 							
 							#Remove the remaining part, it was now added to another part of DNA.
 							
@@ -893,9 +911,11 @@ class DerivativeTADMaker:
 							updatedTads.append(remainingPart2)
 						#Also make sure that we remove the previously made TADs if these are updated again. 
 						if [leftTad.chromosome, leftTad.start, leftTad.end, leftTad] in fullNewTads:
+						
 							ind = fullNewTads.index([leftTad.chromosome, leftTad.start, leftTad.end, leftTad])
 							del fullNewTads[ind]
 						if [rightTad.chromosome, rightTad.start, rightTad.end, rightTad] in fullNewTads:
+						
 							ind = fullNewTads.index([rightTad.chromosome, rightTad.start, rightTad.end, rightTad])
 							del fullNewTads[ind]
 						
@@ -907,6 +927,7 @@ class DerivativeTADMaker:
 						
 						
 					if sv.o1 == "-" and sv.o2 == "-":
+						
 
 						#This is the left part of chr1
 						leftSideElements = leftTad.getElementsByRange(sv.s1, leftTad.end)
@@ -935,13 +956,13 @@ class DerivativeTADMaker:
 						newTad1 = [leftTad.chromosome, rightTad.end, leftTad.end, TAD(leftTad.chromosome, rightTad.end, leftTad.end)]
 						
 						#add the elements to the TAD
-						newTad1[3].setElements(leftSideElements + rightSideElements)
+						newTad1[3].setElementsStr(leftSideElements + rightSideElements)
 						newTad1[3].setGenes(leftSideGenes + rightSideGenes)
 						
 						#There are always 2 remaining parts, on both ends (in case of interchromosomal translocations)
 						
 						remainingPart1 = [leftTad.chromosome, leftTad.start, sv.s1, TAD(leftTad.chromosome, leftTad.start, sv.s1)]
-						remainingPart1[3].setElements(remainingElementsLeft)
+						remainingPart1[3].setElementsStr(remainingElementsLeft)
 						remainingPart1[3].setGenes(remainingGenesLeft)
 						
 						if [leftTad.chromosome, leftTad.start, leftTad.end, leftTad] in updatedTads:
@@ -955,13 +976,14 @@ class DerivativeTADMaker:
 
 							
 						remainingPart2 = [rightTad.chromosome, rightTad.start, sv.e2, TAD(rightTad.chromosome, rightTad.start, sv.e2)]
-						remainingPart2[3].setElements(remainingElementsRight)
+						remainingPart2[3].setElementsStr(remainingElementsRight)
 						remainingPart2[3].setGenes(remainingGenesRight)
 						
 						#Also remove the old TADs if necessary
 						
+						
 						if [rightTad.chromosome, rightTad.start, rightTad.end, rightTad] in updatedTads:
-							
+						
 							#Remove the remaining part, it was now added to another part of DNA.
 						
 							ind = updatedTads.index([rightTad.chromosome, rightTad.start, rightTad.end, rightTad])
@@ -972,9 +994,11 @@ class DerivativeTADMaker:
 						
 						#Also make sure that we remove the previously made TADs if these are updated again. 
 						if [leftTad.chromosome, leftTad.start, leftTad.end, leftTad] in fullNewTads:
+							
 							ind = fullNewTads.index([leftTad.chromosome, leftTad.start, leftTad.end, leftTad])
 							del fullNewTads[ind]
 						if [rightTad.chromosome, rightTad.start, rightTad.end, rightTad] in fullNewTads:
+							
 							ind = fullNewTads.index([rightTad.chromosome, rightTad.start, rightTad.end, rightTad])
 							del fullNewTads[ind]
 						
@@ -992,90 +1016,53 @@ class DerivativeTADMaker:
 				
 				######	
 					
-					allTads = updatedTads + fullNewTads
-					for tad in allTads:
+				allTads = updatedTads + fullNewTads
+				
+				for tad in allTads:
+					
+					
+					if tad[1] == tad[2]: #skip TADs that have no length
+						continue
+
+					for gene in tad[3].genes:
 						
-						if tad[1] == tad[2]: #skip TADs that have no length
-							continue
+						lostElements = []
+						geneElements = dict()
+						for element in gene.elements:
+							elementStr = element[0] + "_" + str(element[1]) + "_" + str(element[2]) + "_" + str(element[3]) + "_" + str(element[4])
+							geneElements[elementStr] = 0
+							if elementStr not in tad[3].elementsStr:
+							
+								lostElements.append(elementStr.split("_"))
 						
-						for gene in tad[3].genes:
+					
 							
+									
+						gene.addLostElements(lostElements, sv.sampleName)
+						#gene.addLostElementsSVs(lostElements, sv.chr1 + "_" + str(sv.s1) + "_" + str(sv.e1) + "_" + sv.chr2 + "_" + str(sv.s2) + "_" + str(sv.e2) + "_" + sv.sampleName)
+						
+						
+						#Gained elements
+						#Elements that are in the TAD but not linked to the gene.
+						gainedElements = []
+						for elementStr in tad[3].elementsStr:
+							if elementStr not in geneElements:
+								gainedElements.append(elementStr.split("_"))
+						
+						gene.addGainedElements(gainedElements, sv.sampleName)
+						#gene.addGainedElementsSVs(gainedElements, sv.chr1 + "_" + str(sv.s1) + "_" + str(sv.e1) + "_" + sv.chr2 + "_" + str(sv.s2) + "_" + str(sv.e2) + "_" + sv.sampleName)
+						
+						
+						if gene.name == "KCNA4":
+							print tad
+							print gainedElements
+						
+						# if gene.name == "SNRPB2":
+						# 	print "gains:"
+						# 	if len(gainedElements) > 0:
+						# 		print gainedElements
 							
-							#Get the elements that are inside this TAD for this gene	
-							elementsInTad = []
-							for element in gene.elements:
-								elementStr = element[0] + "_" + str(element[1]) + "_" + str(element[2]) + "_" + str(element[3]) + "_" + str(element[4])
-								
-								#elementsInTad.append([element.chromosome, element.start, element])
-								elementsInTad.append(elementStr)
-							
-							# originalTadElements = []
-							# if gene.leftTAD is not None:
-							# 	for element in gene.leftTAD.elements: #assume left TAD is the same as the right TAD, because the gene is within a TAD
-							# 		
-							# 		elementStr = element[0] + "_" + str(element[1]) + "_" + str(element[2]) + "_" + str(element[3]) + "_" + str(element[4])
-							# 		#originalTadElements.append(elementStr)
-							# else:
-							# 	# if gene.leftTAD is None and gene.rightTAD is not None:
-							# 	# 	for element in gene.rightTAD.elements: #assume left TAD is the same as the right TAD, because the gene is within a TAD
-							# 	# 		1
-							# 	# 		#elementStr = element[0] + "_" + str(element[1]) + "_" + str(element[2]) + "_" + str(element[3]) + "_" + str(element[4])
-							# 	# 		#originalTadElements.append(elementStr)
-							# 	# else:
-							# 		continue
-							#Get all elements that are now in this TAD
-							# newElements = []
-							# for element in tad[3].elements:
-							# 	
-							# 	#if eQTL not in gene.leftTAD.eQTLInteractions:
-							# 	elementStr = element[0] + "_" + str(element[1]) + "_" + str(element[2]) + "_" + str(element[3]) + "_" + str(element[4])
-							# 	
-							# 	newElements.append(elementStr)
-							# 
-							# 
-							# filteredNewElements = np.setdiff1d(newElements, originalTadElements)
-							# 
-							# gainedElements = []
-							# for element in filteredNewElements:
-							# 	if element not in elementsInTad:
-							# 		#if eQTL[2] not in gene.leftTAD.eQTLInteractions: #Also do this check to make sure that we do not add eQTLs that were in the oroginal TAD of the gene, which are simply not associated to the gene. 
-							# 		gainedElements.append(element.split("_"))
-							# 
-							# if len(gainedElements) < 1:
-							# 	continue
-							
-							
-							newElements = []
-							gainedElements = []
-							for element in tad[3].elements: #all elements in the newly formed TAD
-								
-								if element not in gene.leftTAD.elements: #if this element was not in the original TAD, it is a gain
-									if element not in elementsInTad: #it is only really gained if it was not already in the same TAD as the gene
-										elementStr = element[0] + "_" + str(element[1]) + "_" + str(element[2]) + "_" + str(element[3]) + "_" + str(element[4])
-										gainedElements.append(elementStr.split("_"))
-								
-								
-								#loss????
-								#elementStr = element[0] + "_" + str(element[1]) + "_" + str(element[2]) + "_" + str(element[3]) + "_" + str(element[4])
-								#newElements.append(elementStr)
-							
-							
-							
-							
-							# gene.addGainedElements(gainedElements, sv.sampleName)
-							# gene.addGainedElementsSVs(gainedElements, sv.chr1 + "_" + str(sv.s1) + "_" + str(sv.e1) + "_" + sv.chr2 + "_" + str(sv.s2) + "_" + str(sv.e2) + "_" + sv.sampleName)
-							# 
-							# 
-							# #Make the derivative, determine which eQTLs are gained and lost for this gene.
-							# lostElements = []
-							# for element in elementsInTad:
-							# 	if element not in newElements: #this eQTL has been lost. 
-							# 		lostElements.append(element.split("_"))
-							# 
-							# gene.addLostElements(lostElements, sv.sampleName)
-							# gene.addLostElementsSVs(lostElements, sv.chr1 + "_" + str(sv.s1) + "_" + str(sv.e1) + "_" + sv.chr2 + "_" + str(sv.s2) + "_" + str(sv.e2) + "_" + sv.sampleName)
-							# 
-							# 
+						
 		### DELETIONS ###
 		if svType == "del":
 			
