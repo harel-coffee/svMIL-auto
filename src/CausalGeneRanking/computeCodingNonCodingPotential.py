@@ -74,149 +74,240 @@ for sv in codingSVCounts:
 
 
 print svEffects
-# 
-# #Get the properties of SVs beforehand to match these later
-# svProperties = []
-# 
-# for sv in svEffects[:,0]:
-# 	
-# 	splitSV = sv.split("_")
-# 	chrom = splitSV[0]
-# 	size = int(splitSV[5]) - int(splitSV[1])
-# 	sample = splitSV[6]
-# 	
-# 	
-# 	
-# 	svProperties.append([sv, chrom + "_" + str(size) + "_" + sample])
-# 
-# svProperties = np.array(svProperties, dtype="object")
-# print svProperties
-# 
-# #Go through the shuffled files coding & non-coding and compute how often the real noncoding/coding is higher for that SV
-# 
-# import glob
-# 
-# #First determine non-coding potential
-# shuffledNCFiles = glob.glob(sys.argv[3] + "/geneSV*")
-# 
-# #For each file, 
-# #Find which SV it is in SV effects
-# #See if the score of that SV is higher or not
-# #Keep the total number of times that it is higher in the shuffled case
-# #Compute a p-value per SV and mark the original SVs in the plot
-# 
-# nonCodingEnrichment = dict() #For every SV, set if the nc/coding is higher in the random case than in the true case
-# nonCodingEnrichmentTrueSV = dict()
-# fileCount = 0
-# for shuffledFile in shuffledNCFiles:
-# 	print "shuffled file: ", fileCount
-# 
-# 	if shuffledFile == ".DS_Store":
-# 		continue
-# 	
-# 	nonCodingPairs = np.loadtxt(shuffledFile, dtype="object")
-# 	
-# 	nonCodingSVCounts = dict()
-# 	for pair in nonCodingPairs:
-# 		
-# 		splitPair = pair[0].split("_")
-# 		svEntries = splitPair[1:]
-# 		sv = "_".join(svEntries)
-# 		
-# 		if sv not in nonCodingSVCounts:
-# 			nonCodingSVCounts[sv] = 0
-# 		nonCodingSVCounts[sv] += 1
-# 
-# 	#Get the corresponding coding file
-# 	splitFileName = shuffledFile.split("_")
-# 	permutationId = splitFileName[len(splitFileName)-1]
-# 	
-# 	codingPairsFile = glob.glob(sys.argv[3] + "/geneCoding*_" + permutationId)[0]
-# 	
-# 	codingPairs = np.loadtxt(codingPairsFile, dtype="object")
-# 	
-# 	codingSVCounts = dict()
-# 	for pair in codingPairs:
-# 		
-# 		splitPair = pair.split("_")
-# 		svEntries = splitPair[1:]
-# 		sv = "_".join(svEntries)
-# 		
-# 		if sv not in codingSVCounts:
-# 			codingSVCounts[sv] = 0
-# 		codingSVCounts[sv] += 1
-# 		
-# 	allSVs = np.union1d(nonCodingSVCounts.keys(), codingSVCounts.keys())
-# 	for sv in allSVs:
-# 		
-# 		ncPotential = 0
-# 		if sv in nonCodingSVCounts and sv in codingSVCounts:
-# 			
-# 			ncPotential = nonCodingSVCounts[sv] / float(codingSVCounts[sv])
-# 		
-# 		#Match to the true SV
-# 		splitSV = sv.split("_")
-# 		svSize = int(splitSV[5]) - int(splitSV[1])
-# 		svMatchCode = splitSV[0] + "_" + str(svSize) + "_" + splitSV[6]
-# 		
-# 		trueSV = svProperties[svProperties[:,1] == svMatchCode]
-# 		
-# 		if len(trueSV) > 0: #SV match found
-# 			
-# 			#Is the nc/coding higher in the true case than in this random case?
-# 			trueSVEffects = svEffects[svEffects[:,0] == trueSV[0][0]][0]
-# 			
-# 			ncPotentialTrueSV = 0
-# 			if trueSVEffects[2] > 0:
-# 				ncPotentialTrueSV = trueSVEffects[1] / float(trueSVEffects[2])
-# 			enrichment = False
-# 			if ncPotential > ncPotentialTrueSV:
-# 				enrichment = True
-# 			
-# 			if trueSVEffects[0] not in nonCodingEnrichment:
-# 				nonCodingEnrichment[trueSVEffects[0]] = []
-# 			nonCodingEnrichment[trueSVEffects[0]].append(ncPotential)
-# 			
-# 			if trueSVEffects[0] not in nonCodingEnrichmentTrueSV:
-# 				nonCodingEnrichmentTrueSV[trueSVEffects[0]] = ncPotentialTrueSV
-# 	
-# 	fileCount += 1		
-# 		
-# #for every SV, compute the p-value
-# svSignificance = []
-# for sv in nonCodingEnrichment:
-# 	#trueCount = [int(i) for i in nonCodingEnrichment[sv]]
-# 	#trueCount = sum(trueCount)
-# 	
-# 	if np.std(nonCodingEnrichment[sv]) == 0:
-# 		continue
-# 	
-# 	z = (nonCodingEnrichmentTrueSV[sv] - np.mean(nonCodingEnrichment[sv])) / float(np.std(nonCodingEnrichment[sv]))	
-# 	pValue = stats.norm.sf(abs(z))*2
-# 	
-# 	#proportion = (trueCount + 1) / float(len(nonCodingEnrichment[sv]) + 1)
-# 	svSignificance.append([sv, pValue])
-# 	
-# svSignificance = np.array(svSignificance, dtype="object")
-# 
-# np.savetxt('Output/significantNCProportion.txt', svSignificance, fmt='%s', delimiter='\t')
-# 
-# #Do multiple testing correction
-# 
-# from statsmodels.sandbox.stats.multicomp import multipletests
-# reject, pAdjusted, _, _ = multipletests(svSignificance[:,1], method='bonferroni')
-# 
-# svSignificanceCorrected = []
-# for svInd in range(0, svSignificance.shape[0]):
-# 	
-# 	if reject[svInd] == True:
-# 		svSignificanceCorrected.append([svSignificance[svInd,0], pAdjusted[svInd]])
-# 	
-# 
-# svSignificanceCorrected = np.array(svSignificanceCorrected, dtype="object")	
-# 	
-# np.savetxt('Output/significantNCProportion_multipleTestCorrected.txt', svSignificanceCorrected, fmt='%s', delimiter='\t')
-# 
+
+#Get the properties of SVs beforehand to match these later
+svProperties = []
+
+for sv in svEffects[:,0]:
+	
+	splitSV = sv.split("_")
+	chrom = splitSV[0]
+	size = int(splitSV[5]) - int(splitSV[1])
+	sample = splitSV[6]
+	
+	
+	
+	svProperties.append([sv, chrom + "_" + str(size) + "_" + sample])
+
+svProperties = np.array(svProperties, dtype="object")
+print svProperties
+
+#Go through the shuffled files coding & non-coding and compute how often the real noncoding/coding is higher for that SV
+
+import glob
+
+#First determine non-coding potential
+shuffledNCFiles = glob.glob(sys.argv[3] + "/geneSV*")
+degPairs = np.load(sys.argv[4]) #pairs that are differentially expressed in both coding & nonCoding when used together
+
+degPairsLookup = dict()
+for pair in degPairs[:,0]:
+	splitPair = pair.split("_")
+	sv = "_".join(splitPair[1:])
+	if splitPair[0] not in degPairsLookup:
+		degPairsLookup[splitPair[0]] = []
+	degPairsLookup[splitPair[0]].append(sv)
+
+print "made lookup"
+
+#Get the number of DEGs in the original non-coding & coding pairs
+#Get the number of DEGs per SV
+nonCodingPairDegs = dict()
+for pair in nonCodingPairs:
+	
+	splitPair = pair[0].split("_")
+	svEntries = splitPair[1:]
+	sv = "_".join(svEntries)
+	
+	if sv not in nonCodingPairDegs:
+		nonCodingPairDegs[sv] = 0
+	
+	if splitPair[0] in degPairsLookup:
+			
+		if sv in degPairsLookup[splitPair[0]]:
+			nonCodingPairDegs[sv] += 1
+		
+codingPairDegs = dict()
+for pair in codingPairs:
+	splitPair = pair.split("_")
+	svEntries = splitPair[1:]
+	sv = "_".join(svEntries)
+	
+	if sv not in codingPairDegs:
+		codingPairDegs[sv] = 0
+	
+	if splitPair[0] in degPairsLookup:
+		if sv in degPairsLookup[splitPair[0]]:
+			codingPairDegs[sv] += 1
+
+#set the properties of the pairs in the DEG way
+
+totalSVs = np.union1d(nonCodingPairDegs.keys(), codingPairDegs.keys())
+print len(totalSVs)
+
+svEffects = np.empty([len(totalSVs), 4], dtype="object")
+svEffects[:,1] = 0
+svEffects[:,2] = 0
+ind = 0
+for sv in nonCodingSVCounts:
+	svEffects[ind,0] = sv
+	svEffects[ind,1] = nonCodingPairDegs[sv]
+	ind += 1
+	
+for sv in codingSVCounts:
+	
+	if sv in svEffects[:,0]:
+		rowInd = svEffects[:,0] == sv
+		svEffects[rowInd,2] = codingPairDegs[sv]
+	else:
+		svEffects[ind,0] = sv
+		svEffects[ind,2] = codingPairDegs[sv]
+		ind += 1
+	
+#For each file, 
+#Find which SV it is in SV effects
+#See if the score of that SV is higher or not
+#Keep the total number of times that it is higher in the shuffled case
+#Compute a p-value per SV and mark the original SVs in the plot
+
+nonCodingEnrichment = dict() #For every SV, set if the nc/coding is higher in the random case than in the true case
+nonCodingEnrichmentTrueSV = dict()
+fileCount = 0
+for shuffledFile in shuffledNCFiles:
+	print "shuffled file: ", fileCount
+
+	if shuffledFile == ".DS_Store":
+		continue
+	
+	nonCodingPairs = np.loadtxt(shuffledFile, dtype="object")
+	
+	nonCodingSVCounts = dict()
+	for pair in nonCodingPairs:
+		
+		splitPair = pair[0].split("_")
+		svEntries = splitPair[1:]
+		sv = "_".join(svEntries)
+		
+		#Find out which SV this shuffled one originally is so that we can match back to the DEG pairs
+		svMatchCode = splitSV[0] + "_" + str(svSize) + "_" + splitSV[6]
+		trueSV = svProperties[svProperties[:,1] == svMatchCode]
+		
+		#Make the plot based on the number of DEGs that this SV is linked to
+		if splitPair[0] in degPairsLookup:
+			if sv in degPairsLookup[splitPair[0]]:
+				codingPairDegs[sv] += 1
+				
+		if pair[0] in degPairs[:,0]:
+			splitPair = pair[0].split("_")
+			svEntries = splitPair[1:]
+			sv = "_".join(svEntries)
+			if sv not in nonCodingSVCounts:
+				nonCodingSVCounts[sv] = 0
+	
+			nonCodingSVCounts[sv] += 1
+		
+		
+		#This is to make the plot based on number of genes
+		# if sv not in nonCodingSVCounts:
+		# 	nonCodingSVCounts[sv] = 0
+		# nonCodingSVCounts[sv] += 1
+
+	#Get the corresponding coding file
+	splitFileName = shuffledFile.split("_")
+	permutationId = splitFileName[len(splitFileName)-1]
+	
+	codingPairsFile = glob.glob(sys.argv[3] + "/geneCoding*_" + permutationId)[0]
+	
+	codingPairs = np.loadtxt(codingPairsFile, dtype="object")
+	
+	codingSVCounts = dict()
+	for pair in codingPairs:
+		
+		if pair in degPairs[:,0]:
+			splitPair = pair.split("_")
+			svEntries = splitPair[1:]
+			sv = "_".join(svEntries)
+			
+			if sv not in codingSVCounts:
+				codingSVCounts[sv] = 0
+	
+			codingSVCounts[sv] += 1
+			
+			# if sv not in codingSVCounts:
+			# 	codingSVCounts[sv] = 0
+			# codingSVCounts[sv] += 1
+		
+	allSVs = np.union1d(nonCodingSVCounts.keys(), codingSVCounts.keys())
+	for sv in allSVs:
+		
+		ncPotential = 0
+		if sv in nonCodingSVCounts and sv in codingSVCounts:
+			
+			ncPotential = nonCodingSVCounts[sv] / float(codingSVCounts[sv])
+		
+		#Match to the true SV
+		splitSV = sv.split("_")
+		svSize = int(splitSV[5]) - int(splitSV[1])
+		svMatchCode = splitSV[0] + "_" + str(svSize) + "_" + splitSV[6]
+		
+		trueSV = svProperties[svProperties[:,1] == svMatchCode]
+		
+		if len(trueSV) > 0: #SV match found
+			
+			#Is the nc/coding higher in the true case than in this random case?
+			trueSVEffects = svEffects[svEffects[:,0] == trueSV[0][0]][0]
+			
+			ncPotentialTrueSV = 0
+			if trueSVEffects[2] > 0:
+				ncPotentialTrueSV = trueSVEffects[1] / float(trueSVEffects[2])
+			enrichment = False
+			if ncPotential > ncPotentialTrueSV:
+				enrichment = True
+			
+			if trueSVEffects[0] not in nonCodingEnrichment:
+				nonCodingEnrichment[trueSVEffects[0]] = []
+			nonCodingEnrichment[trueSVEffects[0]].append(ncPotential)
+			
+			if trueSVEffects[0] not in nonCodingEnrichmentTrueSV:
+				nonCodingEnrichmentTrueSV[trueSVEffects[0]] = ncPotentialTrueSV
+	
+	fileCount += 1		
+		
+#for every SV, compute the p-value
+svSignificance = []
+for sv in nonCodingEnrichment:
+	#trueCount = [int(i) for i in nonCodingEnrichment[sv]]
+	#trueCount = sum(trueCount)
+	
+	if np.std(nonCodingEnrichment[sv]) == 0:
+		continue
+	
+	z = (nonCodingEnrichmentTrueSV[sv] - np.mean(nonCodingEnrichment[sv])) / float(np.std(nonCodingEnrichment[sv]))	
+	pValue = stats.norm.sf(abs(z))*2
+	
+	#proportion = (trueCount + 1) / float(len(nonCodingEnrichment[sv]) + 1)
+	svSignificance.append([sv, pValue])
+	
+svSignificance = np.array(svSignificance, dtype="object")
+
+np.savetxt('Output/significantNCProportion_DEG.txt', svSignificance, fmt='%s', delimiter='\t')
+
+#Do multiple testing correction
+
+from statsmodels.sandbox.stats.multicomp import multipletests
+reject, pAdjusted, _, _ = multipletests(svSignificance[:,1], method='bonferroni')
+
+svSignificanceCorrected = []
+for svInd in range(0, svSignificance.shape[0]):
+	
+	if reject[svInd] == True:
+		svSignificanceCorrected.append([svSignificance[svInd,0], pAdjusted[svInd]])
+	
+
+svSignificanceCorrected = np.array(svSignificanceCorrected, dtype="object")	
+	
+np.savetxt('Output/significantNCProportion_multipleTestCorrected_DEG.txt', svSignificanceCorrected, fmt='%s', delimiter='\t')
+exit()
 # perPairDifferentialExpressionArrayFiltered = np.load('codingNonCodingPairDEGs.npy')
 # print perPairDifferentialExpressionArrayFiltered.shape
 # 
@@ -402,200 +493,5 @@ exit()
 # # 
 # # 
 # # exit()
-
-
-
-
-# Get the expression z-scores for every SV. 
-
-expressionFile = sys.argv[3]
-
-expressionData = []
-samples = []
-with open(expressionFile, 'r') as inF:
-	lineCount = 0
-	for line in inF:
-		line = line.strip()
-		if lineCount == 0:
-			samples = line.split("\t")
-			lineCount += 1
-			continue
-		if lineCount < 2:
-			lineCount += 1
-			continue
-		splitLine = line.split("\t")
-		fullGeneName = splitLine[0]
-		geneName = fullGeneName.split("|")[0]
-
-		data = splitLine[1:len(splitLine)-1] 
-		fixedData = [geneName]
-		fixedData += data
-		expressionData.append(fixedData)
-
-expressionData = np.array(expressionData, dtype="object")	
-print expressionData
-
-#Get the z-scores for every pair
-
-#For every gene, get a list of all samples in which this gene is affected to exclude these and make a null distribution
-geneSampleRef = dict()
-for pair in nonCodingPairs[:,0]:
-	splitPair = pair.split("_")
-	gene = splitPair[0]
-	sample = splitPair[len(splitPair)-1]
-	
-	if gene not in geneSampleRef:
-		geneSampleRef[gene] = []
-	geneSampleRef[gene].append(sample)
-
-for pair in codingPairs:
-	splitPair = pair.split("_")
-	gene = splitPair[0]
-	sample = splitPair[len(splitPair)-1]
-	
-	if gene not in geneSampleRef:
-		geneSampleRef[gene] = []
-	geneSampleRef[gene].append(sample)
-
-#Set for every gene the expression values in all possible samples for lookup
-geneSampleExpr = dict()
-for gene in geneSampleRef:
-	
-	if gene not in expressionData[:,0]:
-		continue
-	
-	geneSamples = geneSampleRef[gene]
-	geneSampleExpr[gene] = dict()
-	geneExpression = expressionData[expressionData[:,0] == gene][0]
-	for geneSample in geneSamples:
-		
-		shortSampleName = geneSample.split("brca")[1]
-		
-		#match the sample name with the expression sample name
-		for sampleInd in range(0, len(samples)):
-			sample = samples[sampleInd]
-			if re.search(shortSampleName, sample, re.IGNORECASE) is not None:
-				
-				splitSample = sample.split("-")
-				code = int(splitSample[len(splitSample)-1])
-				
-				if code < 10: #above 9 are the normal samples, which we do not want to include here
-					sampleInd = samples.index(sample)
-					
-					geneSampleExpr[gene][geneSample] = float(geneExpression[sampleInd])
-print "done getting expr for samples"
-
-#Also set the negative set for every gene consisting of the expression of all samples wthout any SV
-negativeExpr = dict()
-for gene in geneSampleExpr:
-	matchedFullSampleNames = geneSampleExpr[gene].keys()
-	
-	#Get all the samples without an SV for this gene
-	unmatchedSamples = np.setdiff1d(samples[1:len(samples)-1], matchedFullSampleNames) #exclude hybrid ref
-	negativeSamples = []
-	for sample in unmatchedSamples: #sample tumor samples, exclude normals
-		splitSample = sample.split("-")
-		code = int(splitSample[len(splitSample)-1])
-		
-		if code < 10: 
-			negativeSamples.append(sample)
-		
-	#Get the expression of these samples
-	negativeSampleExpressionValues = []
-	for sample in negativeSamples:
-		sampleInd = samples.index(sample)				
-		negativeSampleExpressionValues.append(float(geneExpression[sampleInd]))
-	
-	negativeExpr[gene] = negativeSampleExpressionValues
-print "negative expr done"
-
-def getDEPairs(pairs, geneSampleRef, epressionData, perPairDifferentialExpression, geneSampleExpr, negativeExpr):
-									
-	for pair in pairs:
-		splitPair = pair.split("_")
-		gene = splitPair[0]
-		pairSample = splitPair[len(splitPair)-1]
-		shortPairSampleName = pairSample.split("brca")[1]
-		sv = "_".join(splitPair[1:])
-		if gene not in expressionData[:,0]:
-			continue
-		
-		
-		sampleExpressionValue = geneSampleExpr[gene][pairSample] #expression values of this gene in all samples
-		matchedFullSampleNames = geneSampleExpr[gene].keys()
-					
-		
-		negativeSampleExpressionValues = negativeExpr[gene]
-		
-		#Get the expression z-score for this pair
-		if np.std(negativeSampleExpressionValues) == 0:
-			continue
-	
-		z = (sampleExpressionValue - np.mean(negativeSampleExpressionValues)) / float(np.std(negativeSampleExpressionValues))
-		pValue = stats.norm.sf(abs(z))*2
-	
-		perPairDifferentialExpression[pair] = pValue
-		
-	return perPairDifferentialExpression
-
-#Get the p-value for each pair in coding & non-coding
-perPairDifferentialExpression = getDEPairs(nonCodingPairs[:,0], geneSampleRef, expressionData, dict(), geneSampleExpr, negativeExpr)
-print "done"
-perPairDifferentialExpression = getDEPairs(codingPairs, geneSampleRef, expressionData, perPairDifferentialExpression, geneSampleExpr, negativeExpr)
-print "coding done"
-#Do multiple testing correction
-#print perPairDifferentialExpression
-
-perPairDifferentialExpressionArray = np.empty([len(perPairDifferentialExpression), 2], dtype="object")
-perPairDifferentialExpressionArray[:,0] = perPairDifferentialExpression.keys()
-perPairDifferentialExpressionArray[:,1] = perPairDifferentialExpression.values()
-
-
-from statsmodels.sandbox.stats.multicomp import multipletests
-reject, pAdjusted, _, _ = multipletests(perPairDifferentialExpressionArray[:,1], method='bonferroni')
-
-perPairDifferentialExpressionArrayFiltered = perPairDifferentialExpressionArray[reject]
-
-np.save('codingNonCodingPairDEGs.npy', perPairDifferentialExpressionArrayFiltered)
-
-# Output DEG pairs for non-coding only
-perPairDifferentialExpression = getDEPairs(nonCodingPairs[:,0], geneSampleRef, expressionData, dict(), geneSampleExpr, negativeExpr)
-print "done"
-
-perPairDifferentialExpressionArray = np.empty([len(perPairDifferentialExpression), 2], dtype="object")
-perPairDifferentialExpressionArray[:,0] = perPairDifferentialExpression.keys()
-perPairDifferentialExpressionArray[:,1] = perPairDifferentialExpression.values()
-
-from statsmodels.sandbox.stats.multicomp import multipletests
-reject, pAdjusted, _, _ = multipletests(perPairDifferentialExpressionArray[:,1], method='bonferroni')
-
-perPairDifferentialExpressionArrayFiltered = perPairDifferentialExpressionArray[reject]
-
-np.save('nonCodingPairDEGs.npy', perPairDifferentialExpressionArrayFiltered)
-exit()
-
-
-# # exit()
-# 
-# #perPairDifferentialExpressionArrayFiltered = np.load('codingNonCodingPairDEGs.npy')
-# print perPairDifferentialExpressionArrayFiltered.shape
-# 
-# #For every pair, assign a +1 to the SV if it has a DEG gene
-# svEffects[:,3] = 0
-# for pairInd in range(0, svEffects.shape[0]):
-# 	pair = svEffects[pairInd,0]
-# 	for degPair in perPairDifferentialExpressionArrayFiltered[:,0]:
-# 		splitDegPair = degPair.split("_")
-# 		sv = "_".join(splitDegPair[1:])
-# 		
-# 		if sv == pair:
-# 			svEffects[pairInd,3] += 1
-# 		
-# 	#Find how often this SV is linked to a DEG gene
-# 	
-# #Plot
-# plt.scatter(svEffects[:,2], svEffects[:,1], c=svEffects[:,3]) #c=colors
-# plt.colorbar()
-# plt.show()
 
 
