@@ -189,7 +189,7 @@ class GeneRanking:
 			
 			pairScoresWithPairIds = pairScoresWithPairIds[pairScoresWithPairIds[:,27].argsort()[::-1]] #Select the column  to rank by
 			print pairScoresWithPairIds
-			np.savetxt("Output/geneSVPairs_somatic_me_04072019_shuffled.txt_" + str(permutationRound), pairScoresWithPairIds, delimiter='\t', fmt='%s')
+			np.savetxt("Output/geneSVPairs_somatic_me_12072019_shuffled.txt_" + str(permutationRound), pairScoresWithPairIds, delimiter='\t', fmt='%s')
 			
 			#Also output the coding pairs
 			codingPairs = []
@@ -198,7 +198,7 @@ class GeneRanking:
 					
 					codingPairs.append(gene.name + "_" + sv)
 			codingPairs = np.array(codingPairs, dtype="object")
-			np.savetxt("Output/geneCodingSVPairs_somatic_me_04072019_shuffled.txt_" + permutationRound, codingPairs, delimiter='\t', fmt='%s')		
+			np.savetxt("Output/geneCodingSVPairs_somatic_me_12072019_shuffled.txt_" + permutationRound, codingPairs, delimiter='\t', fmt='%s')		
 				
 			
 			

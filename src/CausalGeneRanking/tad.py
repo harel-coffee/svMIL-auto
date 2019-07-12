@@ -14,6 +14,7 @@ class TAD:
 		self.SVs = None
 		self.SNVs = None
 		self.elements = []
+		self.elementsStr = dict()
 		self.genes = []
 		
 	def setSVs(self, SVs): #All SVs that overlap with this TAD boundary (left or right depending on the gene. Is that safe?)
@@ -27,7 +28,14 @@ class TAD:
 	def setElements(self, elements): #All genomic elements found inside this TAD
 		self.elements = elements
 	
+	def setElementsStr(self, elements):
+		for element in elements:
+			elementStr = element[0] + "_" + str(element[1]) + "_" + str(element[2]) + "_" + str(element[3]) + "_" + str(element[4])
+			self.elementsStr[elementStr] = 0
+			
+	
 	def addElements(self, elements):
+		self.elementsStr = dict()
 		for element in elements:
 			self.elements.append(list(element))
 		

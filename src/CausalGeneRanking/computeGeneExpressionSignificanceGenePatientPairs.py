@@ -80,9 +80,6 @@ for gene in filteredGenes:
 	
 	geneSamples = gene[31].split(",")
 	
-	if gene[0] == "ITGA3":
-		print geneSamples
-		exit()	
 	
 	matchedFullSampleNames = []
 	for geneSample in geneSamples:
