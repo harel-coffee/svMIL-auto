@@ -160,22 +160,38 @@ perPairDifferentialExpressionArrayFiltered = perPairDifferentialExpressionArray[
 #np.save('codingNonCodingPairDEGs.npy', perPairDifferentialExpressionArrayFiltered)
 
 #instead of writing the whole array to a file, write per SV which DEGs these are linked to
-svsAndDegs = dict()
+svsAndDegsNonCoding = dict()
+svsAndDegsCoding = dict()
 for pair in perPairDifferentialExpressionArrayFiltered[:,0]:
 	splitPair = pair.split("_")
 	svEntries = splitPair[1:]
 	sv = "_".join(svEntries)
 	
-	if sv not in svsAndDegs:
-		svsAndDegs[sv] = 0
-	svsAndDegs[sv] += 1
+	if sv not in svsAndDegsNonCoding:
+		svsAndDegsNonCoding[sv] = 0
+	if sv not in svsAndDegsCoding:
+		svsAndDegsCoding[sv] = 0
+		
+	if pair in nonCodingPairs[:,0]:
+		svsAndDegsNonCoding[sv] += 1
+	if pair in codingPairs:
+		svsAndDegsCoding[sv] += 1
 
-pairs = np.empty([len(svsAndDegs), 2], dtype="object")	
-for svInd in range(0, len(svsAndDegs)):
-	pairs[svInd, 0] = svsAndDegs.keys()[svInd]
-	pairs[svInd,1] = svsAndDegs[svsAndDegs.keys()[svInd]]
+pairs = np.empty([len(svsAndDegsNonCoding), 2], dtype="object")	
+for svInd in range(0, len(svsAndDegsNonCoding)):
+	pairs[svInd, 0] = svsAndDegsNonCoding.keys()[svInd]
+	pairs[svInd,1] = svsAndDegsNonCoding[svsAndDegsNonCoding.keys()[svInd]]
 
-np.savetxt(sys.argv[1] + "_degPairs.txt", pairs, delimiter="\t", fmt="%s")
+np.savetxt(sys.argv[1] + "_degPairsNonCoding.txt", pairs, delimiter="\t", fmt="%s")
+
+#repeat for coding
+pairs = np.empty([len(svsAndDegsCoding), 2], dtype="object")	
+for svInd in range(0, len(svsAndDegsCoding)):
+	pairs[svInd, 0] = svsAndDegsCoding.keys()[svInd]
+	pairs[svInd,1] = svsAndDegsCoding[svsAndDegsCoding.keys()[svInd]]
+
+np.savetxt(sys.argv[1] + "_degPairsCoding.txt", pairs, delimiter="\t", fmt="%s")
+
 
 # # Output DEG pairs for non-coding only
 # perPairDifferentialExpression = getDEPairs(nonCodingPairs[:,0], geneSampleRef, expressionData, dict(), geneSampleExpr, negativeExpr)
