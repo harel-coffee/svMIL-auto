@@ -91,149 +91,129 @@ svProperties = np.array(svProperties, dtype="object")
 print svProperties
 
 #Go through the shuffled files coding & non-coding and compute how often the real noncoding/coding is higher for that SV
-# 
-# import glob
-# 
-# #First determine non-coding potential
-# shuffledNCFiles = glob.glob(sys.argv[5] + "/*degPairsNonCoding.txt")
-# 
-# #For each file, 
-# #Find which SV it is in SV effects
-# #See if the score of that SV is higher or not
-# #Keep the total number of times that it is higher in the shuffled case
-# #Compute a p-value per SV and mark the original SVs in the plot
-# 
-# nonCodingEnrichment = dict() #For every SV, set if the nc/coding is higher in the random case than in the true case
-# nonCodingEnrichmentTrueSV = dict()
-# fileCount = 0
-# for shuffledFile in shuffledNCFiles:
-# 	print "shuffled file: ", fileCount
-# 
-# 	if shuffledFile == ".DS_Store":
-# 		continue
-# 	
-# 	nonCodingPairs = np.loadtxt(shuffledFile, dtype="object")
-# 	
-# 	nonCodingSVCounts = dict()
-# 	
-# 	for svInd in range(0, nonCodingPairs.shape[0]):
-# 		sv = nonCodingPairs[svInd,0]
-# 		splitSV = sv.split("_")
-# 		
-# 		#Find out which SV this shuffled one originally is so that we can match back to the DEG pairs
-# 		svSize = int(splitSV[5]) - int(splitSV[1])
-# 		svMatchCode = splitSV[0] + "_" + str(svSize) + "_" + splitSV[6]
-# 		trueSV = svProperties[svProperties[:,1] == svMatchCode]
-# 		
-# 		#Make the plot based on the number of DEGs that this SV is linked to
-# 		nonCodingSVCounts[sv] = int(nonCodingPairs[svInd,1])
-# 		
-# 	#Get the corresponding coding file
-# 	splitFileName = shuffledFile.split("_")
-# 	
-# 	codingPairsFile = "_".join(splitFileName[0:len(splitFileName)-1]) + "_degPairsCoding.txt" 
-# 	
-# 	codingPairs = np.loadtxt(codingPairsFile, dtype="object")
-# 	
-# 	codingSVCounts = dict()
-# 	for svInd in range(0, codingPairs.shape[0]):
-# 		sv = codingPairs[svInd,0]
-# 		
-# 		#Make the plot based on the number of DEGs that this SV is linked to
-# 		codingSVCounts[sv] = int(codingPairs[svInd,1])
-# 		
-# 	allSVs = np.union1d(nonCodingSVCounts.keys(), codingSVCounts.keys())
-# 	for sv in allSVs:
-# 		
-# 		ncPotential = 0
-# 		if sv in nonCodingSVCounts and sv in codingSVCounts:
-# 
-# 			if codingSVCounts[sv] > 0:
-# 				# delta = nonCodingSVCounts[sv] - float(codingSVCounts[sv])
-# 				# 
-# 				# if delta > 0:
-# 				# 	ncPotential = delta
-# 				# else:
-# 				# 	ncPotential = 0
-# 				ncPotential = nonCodingSVCounts[sv] / float(codingSVCounts[sv])
-# 			else:
-# 				ncPotential = nonCodingSVCounts[sv]
-# 		
-# 		#Match to the true SV
-# 		splitSV = sv.split("_")
-# 		svSize = int(splitSV[5]) - int(splitSV[1])
-# 		svMatchCode = splitSV[0] + "_" + str(svSize) + "_" + splitSV[6]
-# 		
-# 		trueSV = svProperties[svProperties[:,1] == svMatchCode]
-# 		
-# 		if len(trueSV) > 0: #SV match found
-# 			#Is the nc/coding higher in the true case than in this random case?
-# 			
-# 			
-# 			trueSVEffects = svEffects[svEffects[:,0] == trueSV[0][0]][0]
-# 			
-# 		
-# 			ncPotentialTrueSV = 0
-# 			if trueSVEffects[2] > 0:
-# 				
-# 				# delta = trueSVEffects[1] - float(trueSVEffects[2])
-# 				# 
-# 				# if delta > 0:
-# 				# 	ncPotentialTrueSV = delta
-# 				# else:
-# 				# 	ncPotentialTrueSV = 0
-# 				
-# 				ncPotentialTrueSV = trueSVEffects[1] / float(trueSVEffects[2])
-# 			enrichment = False
-# 			if ncPotential > ncPotentialTrueSV:
-# 				enrichment = True
-# 			
-# 			if trueSVEffects[0] not in nonCodingEnrichment:
-# 				nonCodingEnrichment[trueSVEffects[0]] = []
-# 			nonCodingEnrichment[trueSVEffects[0]].append(ncPotential)
-# 			
-# 			if trueSVEffects[0] not in nonCodingEnrichmentTrueSV:
-# 				nonCodingEnrichmentTrueSV[trueSVEffects[0]] = ncPotentialTrueSV
-# 				
-# 			
-# 	
-# 	fileCount += 1
-# 
-# #for every SV, compute the p-value
-# svSignificance = []
-# for sv in nonCodingEnrichment:
-# 	#trueCount = [int(i) for i in nonCodingEnrichment[sv]]
-# 	#trueCount = sum(trueCount)
-# 	
-# 	if np.std(nonCodingEnrichment[sv]) == 0:
-# 		continue
-# 	
-# 	z = (nonCodingEnrichmentTrueSV[sv] - np.mean(nonCodingEnrichment[sv])) / float(np.std(nonCodingEnrichment[sv]))	
-# 	pValue = stats.norm.sf(abs(z))*2
-# 	
-# 	#proportion = (trueCount + 1) / float(len(nonCodingEnrichment[sv]) + 1)
-# 	svSignificance.append([sv, pValue])
-# 	
-# svSignificance = np.array(svSignificance, dtype="object")
-# 
-# np.savetxt('Output/significantNCProportion_DEG.txt', svSignificance, fmt='%s', delimiter='\t')
-# 
-# #Do multiple testing correction
-# 
-# from statsmodels.sandbox.stats.multicomp import multipletests
-# reject, pAdjusted, _, _ = multipletests(svSignificance[:,1], method='bonferroni')
-# 
-# svSignificanceCorrected = []
-# for svInd in range(0, svSignificance.shape[0]):
-# 	
-# 	if reject[svInd] == True:
-# 		svSignificanceCorrected.append([svSignificance[svInd,0], pAdjusted[svInd]])
-# 	
-# 
-# svSignificanceCorrected = np.array(svSignificanceCorrected, dtype="object")	
-# 	
-# np.savetxt('Output/significantNCProportion_multipleTestCorrected_DEG.txt', svSignificanceCorrected, fmt='%s', delimiter='\t')
-# # exit()
+
+import glob
+
+#First determine non-coding potential
+shuffledNCFiles = glob.glob(sys.argv[5] + "/*degPairsNonCoding.txt")
+
+#For each file, 
+#Find which SV it is in SV effects
+#See if the score of that SV is higher or not
+#Keep the total number of times that it is higher in the shuffled case
+#Compute a p-value per SV and mark the original SVs in the plot
+
+nonCodingEnrichment = dict() #For every SV, set if the nc/coding is higher in the random case than in the true case
+nonCodingEnrichmentTrueSV = dict()
+fileCount = 0
+for shuffledFile in shuffledNCFiles:
+	print "shuffled file: ", fileCount
+
+	if shuffledFile == ".DS_Store":
+		continue
+	
+	nonCodingPairs = np.loadtxt(shuffledFile, dtype="object")
+	
+	nonCodingSVCounts = dict()
+	
+	for svInd in range(0, nonCodingPairs.shape[0]):
+		sv = nonCodingPairs[svInd,0]
+		splitSV = sv.split("_")
+		
+		#Find out which SV this shuffled one originally is so that we can match back to the DEG pairs
+		svSize = int(splitSV[5]) - int(splitSV[1])
+		svMatchCode = splitSV[0] + "_" + str(svSize) + "_" + splitSV[6]
+		trueSV = svProperties[svProperties[:,1] == svMatchCode]
+		
+		#Make the plot based on the number of DEGs that this SV is linked to
+		nonCodingSVCounts[sv] = int(nonCodingPairs[svInd,1])
+		
+	#Get the corresponding coding file
+	splitFileName = shuffledFile.split("_")
+	
+	codingPairsFile = "_".join(splitFileName[0:len(splitFileName)-1]) + "_degPairsCoding.txt" 
+	
+	codingPairs = np.loadtxt(codingPairsFile, dtype="object")
+	
+	codingSVCounts = dict()
+	for svInd in range(0, codingPairs.shape[0]):
+		sv = codingPairs[svInd,0]
+		
+		#Make the plot based on the number of DEGs that this SV is linked to
+		codingSVCounts[sv] = int(codingPairs[svInd,1])
+		
+	allSVs = np.union1d(nonCodingSVCounts.keys(), codingSVCounts.keys())
+	for sv in allSVs:
+		
+		ncPotential = 0
+		if sv in nonCodingSVCounts and sv in codingSVCounts:
+
+			ncPotential = nonCodingSVCounts[sv]
+		
+		#Match to the true SV
+		splitSV = sv.split("_")
+		svSize = int(splitSV[5]) - int(splitSV[1])
+		svMatchCode = splitSV[0] + "_" + str(svSize) + "_" + splitSV[6]
+		
+		trueSV = svProperties[svProperties[:,1] == svMatchCode]
+		
+		if len(trueSV) > 0: #SV match found
+			#Is the nc/coding higher in the true case than in this random case?
+			
+			
+			trueSVEffects = svEffects[svEffects[:,0] == trueSV[0][0]][0]
+
+			ncPotentialTrueSV = trueSVEffects[1]
+			enrichment = False
+			if ncPotential > ncPotentialTrueSV:
+				enrichment = True
+			
+			if trueSVEffects[0] not in nonCodingEnrichment:
+				nonCodingEnrichment[trueSVEffects[0]] = []
+			nonCodingEnrichment[trueSVEffects[0]].append(ncPotential)
+			
+			if trueSVEffects[0] not in nonCodingEnrichmentTrueSV:
+				nonCodingEnrichmentTrueSV[trueSVEffects[0]] = ncPotentialTrueSV
+				
+			
+	
+	fileCount += 1
+
+#for every SV, compute the p-value
+svSignificance = []
+for sv in nonCodingEnrichment:
+	#trueCount = [int(i) for i in nonCodingEnrichment[sv]]
+	#trueCount = sum(trueCount)
+	
+	if np.std(nonCodingEnrichment[sv]) == 0:
+		continue
+	
+	z = (nonCodingEnrichmentTrueSV[sv] - np.mean(nonCodingEnrichment[sv])) / float(np.std(nonCodingEnrichment[sv]))	
+	pValue = stats.norm.sf(abs(z))*2
+	
+	#proportion = (trueCount + 1) / float(len(nonCodingEnrichment[sv]) + 1)
+	svSignificance.append([sv, pValue])
+	
+svSignificance = np.array(svSignificance, dtype="object")
+
+np.savetxt('Output/significantNCProportion_DEG.txt', svSignificance, fmt='%s', delimiter='\t')
+
+#Do multiple testing correction
+
+from statsmodels.sandbox.stats.multicomp import multipletests
+reject, pAdjusted, _, _ = multipletests(svSignificance[:,1], method='bonferroni')
+
+svSignificanceCorrected = []
+for svInd in range(0, svSignificance.shape[0]):
+	
+	if reject[svInd] == True:
+		svSignificanceCorrected.append([svSignificance[svInd,0], pAdjusted[svInd]])
+	
+
+svSignificanceCorrected = np.array(svSignificanceCorrected, dtype="object")	
+	
+np.savetxt('Output/significantNCProportion_multipleTestCorrected_DEG.txt', svSignificanceCorrected, fmt='%s', delimiter='\t')
+exit()
 # print "plotting pairs"
 # plt.scatter(svEffects[:,2], svEffects[:,1]) #c=colors
 # 
