@@ -107,10 +107,27 @@ class DerivativeTADMaker:
 			svGroups: (dictionary) the keys are the first SV object that is part of the chain of SVs. The values are the SV objects that are part of this group. 
 		"""
 		
+		#For every TAD, if there is more than 1 SV in this TAD, ignore these SVs.
+		svsPerTad = dict()
+		for sv in tadsPerSV:
+			if tadsPerSV[sv][0][0][3] not in svsPerTad:
+				svsPerTad[tadsPerSV[sv][0][0][3]] = []
+			svsPerTad[tadsPerSV[sv][0][0][3]].append(sv)
+			if tadsPerSV[sv][1][0][3] not in svsPerTad:
+				svsPerTad[tadsPerSV[sv][1][0][3]] = []
+			svsPerTad[tadsPerSV[sv][1][0][3]].append(sv)
+		
+		filteredSVs = dict()
+		for tad in svsPerTad:
+			if len(svsPerTad[tad]) == 1:
+				sv = svsPerTad[tad][0]
+				
+				filteredSVs[sv] = tadsPerSV[sv]
+		
 		sampleGroups = dict()
 		svGroups = dict()
 		samples = []
-		for sv in tadsPerSV:
+		for sv in filteredSVs:
 			if sv.sampleName not in sampleGroups:
 				sampleGroups[sv.sampleName] = []
 			sampleGroups[sv.sampleName].append([sv.s1, sv])
@@ -131,111 +148,9 @@ class DerivativeTADMaker:
 		samples = np.array(samples)
 		svGroups = np.array(svGroups)
 		sortedInd = np.argsort(samples)
-		
-		
-			
 
 		return svGroups[sortedInd]	
 
-		svGroups = dict()
-		tadsPerSVKeys = tadsPerSV.keys()
-		uniqueSVs = []
-		for svInd in range(0, len(tadsPerSV)):
-			sv1 = tadsPerSVKeys[svInd]
-			
-			sv1Str = sv1.chr1 + "_" + str(sv1.s1) + "_" + str(sv1.e1) + "_" + sv1.chr2 + "_" + str(sv1.s2) + "_" + str(sv1.e2) + "_" + sv1.sampleName
-		
-			
-			#Make sure that the breakpoint/sv is not taking place entirely within one tad
-			if tadsPerSV[sv1][0][0][3] == tadsPerSV[sv1][1][0][3]:
-				continue
-			
-			currentGroup = []
-			currentGroupReversed = []
-			
-			for sv2Ind in range(svInd, len(tadsPerSV)):
-				
-				sv2 = tadsPerSVKeys[sv2Ind]
-				sv2Str = sv2.chr1 + "_" + str(sv2.s1) + "_" + str(sv2.e1) + "_" + sv2.chr2 + "_" + str(sv2.s2) + "_" + str(sv2.e2) + "_" + sv2.sampleName
-				
-				if sv1.sampleName != sv2.sampleName:
-					continue
-				
-				#If the 2nd SV starts in the same TAD as the 1st ends in, cluster them together
-				#Here we then assume that the first SV in the list is actually the smallest SV on the smaller chromosme (the data is sorted so this should work fine)
-				
-				#Make sure that neither of the SVs starts and ends entirely within the same TAD.
-				if tadsPerSV[sv2][0][0][3] == tadsPerSV[sv2][1][0][3]:
-					continue
-					
-				#The SVs are in the same group if any is in the same TAD
-				firstTadSV1 = tadsPerSV[sv1][0][0][3]
-				secondTadSV1 = tadsPerSV[sv1][1][0][3]
-				
-				firstTadSV2 = tadsPerSV[sv2][0][0][3]
-				secondTadSV2 = tadsPerSV[sv2][1][0][3]
-				sv2Tads = [firstTadSV2, secondTadSV2]
-				
-				# if sv2Str == "chr17_63606343_63606343_chr3_119556122_119556122_brcaA03L":
-				# 	print sv2Str
-				# 	print firstTad.start, firstTad.end, firstTad.chromosome
-				# 	print secondTad.start, secondTad.end, secondTad.chromosome
-				# 
-				if firstTadSV1 in sv2Tads or secondTadSV1 in sv2Tads:
-					
-					# if sv1Str == "chr12_5624085_5624085_chr17_63557184_63557184_brcaA03L":
-					# 	print sv2Str
-					# 	print firstTad.start, firstTad.end, firstTad.chromosome
-					# 	print secondTad.start, secondTad.end, secondTad.chromosome
-						
-					
-					if sv1Str not in uniqueSVs:
-						currentGroup.append([sv1.s1, sv1])
-						currentGroupReversed.append(sv1)
-						uniqueSVs.append(sv1Str)
-					if sv2Str not in uniqueSVs:
-						if sv2Str == "chr17_63606343_63606343_chr3_119556122_119556122_brcaA03L":
-							print "adding SV"
-						currentGroup.append([sv2.s1, sv2])
-						currentGroupReversed.append(sv2)
-						uniqueSVs.append(sv2Str)
-						# if sv2.sampleName == "brcaA03L":
-						# 	print "unique SVs:"
-						# 	print sv2Str
-						# 	for svA in uniqueSVs:
-						# 		svStr = svA.chr1 + "_" + str(svA.s1) + "_" + str(svA.e1) + "_" + svA.chr2 + "_" + str(svA.s2) + "_" + str(svA.e2) + "_" + svA.sampleName
-						# 		if svA.sampleName == "brcaA03L":
-						# 			print svStr
-						# 
-			
-			if len(currentGroup) > 0:
-				#sort the current group by position
-				currentGroup = np.array(currentGroup)
-				
-				currentGroupSorted = currentGroup[currentGroup[:,0].argsort()]
-				
-				groupList = []
-				for sv in currentGroupSorted:
-					groupList.append(sv[1])
-				
-				svGroups[sv1] = groupList
-				
-				if sv1.sampleName == "brcaA03L":
-					
-					
-					
-					
-					print len(svGroups[sv1])
-					for svA in svGroups[sv1]:
-						svStr = svA.chr1 + "_" + str(svA.s1) + "_" + str(svA.e1) + "_" + svA.chr2 + "_" + str(svA.s2) + "_" + str(svA.e2) + "_" + svA.sampleName
-		
-						print svStr
-						
-				
-		
-		
-		exit()		
-		return svGroups
 
 	def matchTADsWithTranslocations(self, svData, tadData):
 		"""

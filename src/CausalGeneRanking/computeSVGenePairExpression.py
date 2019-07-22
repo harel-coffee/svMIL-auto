@@ -78,7 +78,7 @@ for gene in geneSampleRef:
 			if re.search(shortSampleName, sample, re.IGNORECASE) is not None:
 				
 				splitSample = sample.split("-")
-				code = int(splitSample[len(splitSample)-1])
+				code = int("".join(list(splitSampleName[3])[0:2]))
 				
 				if code < 10: #above 9 are the normal samples, which we do not want to include here
 					sampleInd = samples.index(sample)
@@ -96,7 +96,7 @@ for gene in geneSampleExpr:
 	negativeSamples = []
 	for sample in unmatchedSamples: #sample tumor samples, exclude normals
 		splitSample = sample.split("-")
-		code = int(splitSample[len(splitSample)-1])
+		code = int("".join(list(splitSampleName[3])[0:2]))
 		
 		if code < 10: 
 			negativeSamples.append(sample)

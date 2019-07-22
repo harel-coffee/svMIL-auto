@@ -93,7 +93,7 @@ for gene in filteredGenes:
 				matchedFullSampleNames.append(sample) #keep this to check later for the negative set
 				#Get the last 2 numbers
 				splitSample = sample.split("-")
-				code = int(splitSample[len(splitSample)-1])
+				code = int("".join(list(splitSampleName[3])[0:2]))
 				
 				if code < 10: #above 9 are the normal samples, which we do not want to include here
 					sampleInd = samples.index(sample)
@@ -106,7 +106,7 @@ for gene in filteredGenes:
 	negativeSamples = []
 	for sample in unmatchedSamples: #sample tumor samples, exclude normals
 		splitSample = sample.split("-")
-		code = int(splitSample[len(splitSample)-1])
+		code = int("".join(list(splitSampleName[3])[0:2]))
 		
 		if code < 10: 
 			negativeSamples.append(sample)
