@@ -229,6 +229,269 @@ print svProperties
 # exit()
 
 svSignificanceCorrected = np.loadtxt('Output/significantNCProportion_multipleTestCorrected_DEG.txt', dtype="object")
+
+###1. Set threshold on high/low coding effects
+codingThreshold = 20
+
+#filter by threshold
+filteredSVs = []
+otherSVs = []
+filteredSignificantSVs = []
+for sv in svEffects:
+
+	if sv[2] <= codingThreshold and sv[1] > 0:
+		filteredSVs.append(sv)
+		if sv[0] in svSignificanceCorrected[:,0]:
+			filteredSignificantSVs.append(sv)
+	elif sv[1] > 0:
+		otherSVs.append(sv)
+
+filteredSVs = np.array(filteredSVs, dtype='object')
+otherSVs = np.array(otherSVs, dtype='object')
+filteredSignificantSVs = np.array(filteredSignificantSVs, dtype='object')
+
+### Check the DEG genes of these groups
+degPairs = np.load(sys.argv[1] + "_nonCodingPairDEGs.npy")
+
+degs = dict()
+allDegGenes = []
+allDegGenesHighCoding = []
+allDegGenesSignificant = []
+allDegGenesSignificantThreshold = []
+for pair in degPairs:
+	splitPair = pair[0].split("_")
+	sv = "_".join(splitPair[1:])
+	
+	if sv in filteredSVs[:,0]:
+		if sv not in degs:
+			degs[sv] = []
+		degs[sv].append(splitPair[0])
+		if splitPair[0] not in allDegGenes:
+			allDegGenes.append(splitPair[0])
+	
+	if sv in otherSVs[:,0]:
+		if sv not in degs:
+			degs[sv] = []
+		degs[sv].append(splitPair[0])
+		if splitPair[0] not in allDegGenesHighCoding:
+			allDegGenesHighCoding.append(splitPair[0])
+
+	if sv in svSignificanceCorrected[:,0]:
+		
+		if splitPair[0] not in allDegGenesSignificant:
+			allDegGenesSignificant.append(splitPair[0])
+	
+	if sv in filteredSignificantSVs[:,0]:
+		
+		if splitPair[0] not in allDegGenesSignificantThreshold:
+			allDegGenesSignificantThreshold.append(splitPair[0])
+
+print len(allDegGenes)
+print len(allDegGenesHighCoding)
+print len(allDegGenesSignificant)
+print len(allDegGenesSignificantThreshold)
+
+np.savetxt('Output/allDegGenesLowCoding.txt', allDegGenes, delimiter='\t', fmt='%s')
+np.savetxt('Output/allDegGenesHighCoding.txt', allDegGenesHighCoding, delimiter='\t', fmt='%s')
+np.savetxt('Output/allDegGenesSignificant.txt', allDegGenesSignificant, delimiter='\t', fmt='%s')
+np.savetxt('Output/allDegGenesSignificantThreshold.txt', allDegGenesSignificantThreshold, delimiter='\t', fmt='%s')
+
+#Check for every DEG gene linked to the significant SVs if there are also other samples in which this gene is affected (in coding way)
+codingDegPairs = np.load(sys.argv[1] + "_codingPairDEGs.npy")
+svsWithOtherSampleEvidence = dict()
+for pair in degPairs:
+	splitPair = pair[0].split("_")
+	sv = "_".join(splitPair[1:])
+	gene = splitPair[0]
+
+	if sv in svSignificanceCorrected[:,0]:
+		#check if the gene linked to the SV is found more often
+		sample = splitPair[len(splitPair)-1]
+		for pair2 in codingDegPairs:
+			splitPair = pair2[0].split("_")
+			sv2 = "_".join(splitPair[1:])
+			sample2 = splitPair[len(splitPair)-1]
+
+			#we are looking for effects in other samples, so the SV should not be the same
+			if sample != sample2: #if the samples are not the same, the SV is also never the same
+				#check if the gene is the same
+				gene2 = splitPair[0]
+				if gene == gene2:
+					if sv not in svsWithOtherSampleEvidence:
+						svsWithOtherSampleEvidence[sv] = []
+					svsWithOtherSampleEvidence[sv].append(gene2)
+
+print svsWithOtherSampleEvidence
+exit()
+
+
+## Make a file with the scores of the filtered SVs vs the rest
+#1. Get the scores of the filteredSVs
+lowCodingFeatures = []
+highCodingFeatures = []
+for pair in nonCodingPairs:
+	splitPair = pair[0].split("_")
+	svEntries = splitPair[1:]
+	sv = "_".join(svEntries)
+	if sv in filteredSVs:
+		lowCodingFeatures.append(pair)
+	if sv in otherSVs:
+		highCodingFeatures.append(pair)
+
+lowCodingFeatures = np.array(lowCodingFeatures, dtype="object")
+highCodingFeatures = np.array(highCodingFeatures, dtype='object')
+
+leftFeatures = lowCodingFeatures[:,1:]
+rightFeatures = highCodingFeatures[:,1:]
+
+#Check for the significant SVs vs the rest with low coding
+# svSignificanceCorrected = np.loadtxt('Output/significantNCProportion_multipleTestCorrected_DEG.txt', dtype="object")
+# significantFeatures = []
+# for pair in nonCodingPairs:
+# 	splitPair = pair[0].split("_")
+# 	svEntries = splitPair[1:]
+# 	sv = "_".join(svEntries)
+# 	if sv in filteredSVs and sv not in svSignificanceCorrected[:,0]:
+# 		lowCodingFeatures.append(pair)
+# 	if sv in svSignificanceCorrected[:,0]:
+# 		significantFeatures.append(pair)
+# 		
+# lowCodingFeatures = np.array(lowCodingFeatures, dtype="object")
+# significantFeatures = np.array(significantFeatures, dtype='object')
+# 
+# leftFeatures = lowCodingFeatures[:,1:]
+# rightFeatures = significantFeatures[:,1:]
+
+
+#Make a plot showing how frequently each feature is gained or lost in these sets
+eQTLLosses = leftFeatures[:,0].astype(float)
+enhancerLosses = leftFeatures[:,1].astype(float)
+promoterLosses = leftFeatures[:,2].astype(float)
+cpgLosses = leftFeatures[:,3].astype(float)
+tfLosses = leftFeatures[:,4].astype(float)
+hicLosses = leftFeatures[:,5].astype(float)
+h3k9me3Losses = leftFeatures[:,6].astype(float)
+h3k4me3Losses = leftFeatures[:,7].astype(float)
+h3k27acLosses = leftFeatures[:,8].astype(float)
+h3k27me3Losses = leftFeatures[:,9].astype(float)
+h3k4me1Losses = leftFeatures[:,10].astype(float)
+h3k36me3Losses = leftFeatures[:,11].astype(float)
+dnaseLosses = leftFeatures[:,12].astype(float)	
+	
+
+lossData = [np.sum(eQTLLosses), np.sum(enhancerLosses), np.sum(promoterLosses), np.sum(cpgLosses),
+			np.sum(tfLosses), np.sum(hicLosses), np.sum(h3k9me3Losses), np.sum(h3k4me3Losses), np.sum(h3k27acLosses),
+			np.sum(h3k27me3Losses), np.sum(h3k4me1Losses), np.sum(h3k36me3Losses), np.sum(dnaseLosses)]
+lossData = np.array(lossData)
+#lossData = lossData / float(leftFeatures.shape[0] + rightFeatures.shape[0])
+#lossData = -np.log(lossData)
+print lossData
+
+width = 0.35
+
+plt.bar(np.arange(len(lossData)), lossData, width, label='Low coding', color='blue')
+# plt.xticks(range(0, len(lossData)),
+	   # ['eQTLs', 'enhancers', 'promoters', 'CpG', 'TF', 'HiC', 'h3k9me3', 'h3k4me3', 'h3k27ac', 'h3k27me3', 'h3k4me1', 'h3k36me3', 'DNAseI'], rotation=90)
+# plt.show()
+
+eQTLLosses = rightFeatures[:,0].astype(float)
+enhancerLosses = rightFeatures[:,1].astype(float)
+promoterLosses = rightFeatures[:,2].astype(float)
+cpgLosses = rightFeatures[:,3].astype(float)
+tfLosses = rightFeatures[:,4].astype(float)
+hicLosses = rightFeatures[:,5].astype(float)
+h3k9me3Losses = rightFeatures[:,6].astype(float)
+h3k4me3Losses = rightFeatures[:,7].astype(float)
+h3k27acLosses = rightFeatures[:,8].astype(float)
+h3k27me3Losses = rightFeatures[:,9].astype(float)
+h3k4me1Losses = rightFeatures[:,10].astype(float)
+h3k36me3Losses = rightFeatures[:,11].astype(float)
+dnaseLosses = rightFeatures[:,12].astype(float)
+
+lossData = [np.sum(eQTLLosses), np.sum(enhancerLosses), np.sum(promoterLosses), np.sum(cpgLosses),
+			np.sum(tfLosses), np.sum(hicLosses), np.sum(h3k9me3Losses), np.sum(h3k4me3Losses), np.sum(h3k27acLosses),
+			np.sum(h3k27me3Losses), np.sum(h3k4me1Losses), np.sum(h3k36me3Losses), np.sum(dnaseLosses)]
+lossData = np.array(lossData)
+#lossData = lossData / float(leftFeatures.shape[0] + rightFeatures.shape[0])
+#lossData = -np.log(lossData)
+print lossData
+
+plt.bar(np.arange(len(lossData)) + width, lossData, width, label='High coding', color='red')
+plt.xticks(np.arange(len(lossData) + width / 2),
+		   ['eQTLs', 'enhancers', 'promoters', 'CpG', 'TF', 'HiC', 'h3k9me3', 'h3k4me3', 'h3k27ac', 'h3k27me3', 'h3k4me1', 'h3k36me3', 'DNAseI'], rotation=90)
+#plt.ylim([0,10])
+plt.legend(loc='best')
+plt.tight_layout()
+plt.show()
+#plt.savefig('Output/leftRight_losses.svg')
+
+#Gains
+
+eQTLGains = leftFeatures[:,13].astype(float)
+enhancerGains = leftFeatures[:,14].astype(float)
+promoterGains = leftFeatures[:,15].astype(float)
+cpgGains = leftFeatures[:,16].astype(float)
+tfGains = leftFeatures[:,17].astype(float)
+hicGains = leftFeatures[:,18].astype(float)
+h3k9me3Gains = leftFeatures[:,19].astype(float)
+h3k4me3Gains = leftFeatures[:,20].astype(float)
+h3k27acGains = leftFeatures[:,21].astype(float)
+h3k27me3Gains = leftFeatures[:,22].astype(float)
+h3k4me1Gains = leftFeatures[:,23].astype(float)
+h3k36me3Gains = leftFeatures[:,24].astype(float)
+dnaseGains = leftFeatures[:,25].astype(float)
+
+gainData = [np.sum(eQTLGains), np.sum(enhancerGains), np.sum(promoterGains), np.sum(cpgGains),
+			np.sum(tfGains), np.sum(hicGains), np.sum(h3k9me3Gains), np.sum(h3k4me3Gains), np.sum(h3k27acGains),
+			np.sum(h3k27me3Gains), np.sum(h3k4me1Gains), np.sum(h3k36me3Gains), np.sum(dnaseGains)]
+
+gainData = np.array(gainData)
+#gainData = gainData / float(leftFeatures.shape[0] + rightFeatures.shape[0])
+#gainData = -np.log(gainData)
+print gainData
+
+plt.bar(np.arange(len(gainData)), gainData, width, label='Low coding', color='blue')
+# plt.xticks(np.arange(len(gainData)),
+# 		   ['eQTLs', 'enhancers', 'promoters', 'CpG', 'TF', 'HiC', 'h3k9me3', 'h3k4me3', 'h3k27ac', 'h3k27me3', 'h3k4me1', 'h3k36me3', 'DNAseI'], rotation=90)
+# plt.show()
+	
+eQTLGains = rightFeatures[:,13].astype(float)
+enhancerGains = rightFeatures[:,14].astype(float)
+promoterGains = rightFeatures[:,15].astype(float)
+cpgGains = rightFeatures[:,16].astype(float)
+tfGains = rightFeatures[:,17].astype(float)
+hicGains = rightFeatures[:,18].astype(float)
+h3k9me3Gains = rightFeatures[:,19].astype(float)
+h3k4me3Gains = rightFeatures[:,20].astype(float)
+h3k27acGains = rightFeatures[:,21].astype(float)
+h3k27me3Gains = rightFeatures[:,22].astype(float)
+h3k4me1Gains = rightFeatures[:,23].astype(float)
+h3k36me3Gains = rightFeatures[:,24].astype(float)
+dnaseGains = rightFeatures[:,25].astype(float)
+
+gainData = [np.sum(eQTLGains), np.sum(enhancerGains), np.sum(promoterGains), np.sum(cpgGains),
+			np.sum(tfGains), np.sum(hicGains), np.sum(h3k9me3Gains), np.sum(h3k4me3Gains), np.sum(h3k27acGains),
+			np.sum(h3k27me3Gains), np.sum(h3k4me1Gains), np.sum(h3k36me3Gains), np.sum(dnaseGains)]
+
+gainData = np.array(gainData)
+#gainData = gainData / float(leftFeatures.shape[0] + rightFeatures.shape[0])
+#gainData = -np.log(gainData)
+
+print gainData
+
+plt.bar(np.arange(len(gainData)) + width, gainData, width, label='High coding',color='red')
+plt.xticks(np.arange(len(gainData) + width / 2),
+		   ['eQTLs', 'enhancers', 'promoters', 'CpG', 'TF', 'HiC', 'h3k9me3', 'h3k4me3', 'h3k27ac', 'h3k27me3', 'h3k4me1', 'h3k36me3', 'DNAseI'], rotation=90)
+
+#plt.ylim([0,10])
+plt.legend(loc='best')
+plt.tight_layout()
+plt.show()
+
+exit()
+
+
+svSignificanceCorrected = np.loadtxt('Output/significantNCProportion_multipleTestCorrected_DEG.txt', dtype="object")
 print "Number of significant gene SV pairs: ", svSignificanceCorrected.shape
 
 #Number of unique samples
@@ -255,127 +518,6 @@ print nonCodingPairs
 
 
 exit()
-
-degPairs = np.load(sys.argv[5])
-
-#Add in the plot which SVs are significant
-degCount = 0
-signNCDegPairs = dict()
-degGenes = []
-degPairsSign = []
-degPairsFull = []
-for svInd in range(0, svEffects.shape[0]):
-	sv = svEffects[svInd,0]
-	
-	if sv in svSignificanceCorrected[:,0]:
-		if sv not in signNCDegPairs:
-			signNCDegPairs[sv] = []
-		
-		#This SV is linked to more DEGs than by random chance
-		#Find which genes it is linked to
-		# genes = []
-		# for pair in codingPairs:
-		# 	splitPair = pair.split("_")
-		# 	svEntries = splitPair[1:]
-		# 	if "_".join(svEntries) == sv:
-		# 		genes.append(splitPair[0])
-		
-		genes = []
-		for pair in nonCodingPairs:
-			splitPair = pair[0].split("_")
-			svEntries = splitPair[1:]
-			if "_".join(svEntries) == sv:
-				genes.append(splitPair[0])
-		
-		#print "sv: ", sv
-		#print "genes: ", genes
-		
-		splitSV = sv.split("_")
-		#Find which genes are DEG in that sample
-		for gene in genes:
-			pair = gene + "_" + sv
-			if pair in degPairs[:,0]:
-				#print "deg pair: ", pair
-				degCount += 1
-				signNCDegPairs[sv].append(pair)
-				degGenes.append(gene)
-				degPairsSign.append(gene + "_" + splitSV[len(splitSV)-1])
-				degPairsFull.append(gene + "_" + sv)
-				
-				# if gene == "ERBB2":
-				# 	print "ERBB2: ", sv
-				# if gene == "EPAS1":
-				# 	print "EPAS1: ", sv
-				# if gene == "COL1A1":
-				# 	print "COL1A1: ", sv
-				# if gene == "SPOP":
-				# 	print "SPOP: ", sv
-				# if gene == "H3F3B":
-				# 	print "H3F3B: ", sv
-				# 
-				#coding
-				if gene == "NBN":
-					print "NBN: ", sv
-				if gene == "CLTC":
-					print "CLTC: ", sv
-				if gene == "CDK12":
-					print "CDK12: ", sv
-				if gene == "DDX5":
-					print "DDX5: ", sv
-				if gene == "PRKAR1A":
-					print "PRKAR1A: ", sv
-				if gene == "CCND1":
-					print "CCND1: ", sv
-				if gene == "NUMA1":
-					print "NUMA1: ", sv			
-				if gene == "PICALM":
-					print "PICALM: ", sv		
-				
-print "Number of significant nc potential that are also linked to DEG genes: ", degCount
-
-np.savetxt("Output/ncPotentialDEGGenesCoding.txt", np.array(degGenes, dtype="object"), delimiter="\t", fmt="%s")
-
-#Check for the DEG pairs which is also found in the 'naive' method
-
-#Show some stats on how many of the nc potential SVs are also linked to DEG genes, in how many different patients etc
-samples = []
-svWithGenes = 0
-geneCounts = []
-for signNCDegPair in signNCDegPairs:
-	splitPair = signNCDegPair.split("_")
-	if splitPair[len(splitPair)-1] not in samples:
-		samples.append(splitPair[len(splitPair)-1])
-
-	if len(signNCDegPairs[signNCDegPair]) > 0:
-		svWithGenes += 1
-	geneCounts.append(len(signNCDegPairs[signNCDegPair]))
-	
-	if len(signNCDegPairs[signNCDegPair]) > 15:
-		print signNCDegPair
-
-print "no of samples: ", len(samples), samples
-print "no of svs with at least 1 gene: ", svWithGenes
-print "gene counts per sv: ", geneCounts
-
-#Determine what their types are by searching through the original file
-from inputParser import InputParser
-
-sizes = []
-somaticSVs = InputParser().getSVsFromFile(sys.argv[5], "all")
-for signNCDegPair in signNCDegPairs:
-	
-	for sv in somaticSVs:
-		svStr = sv[0] + "_" + str(sv[1]) + "_" + str(sv[2]) + "_" + sv[3] + "_" + str(sv[4]) + "_" + str(sv[5]) + "_" + sv[7]
-		if signNCDegPair == svStr:
-			print sv
-			print "type: ", sv[8].svType
-			print sv[5] - sv[1]
-			sizes.append(sv[5] - sv[1])
-
-print sizes
-print min(sizes)
-print max(sizes)
-
 
 #Which of the significant pairs are also found in the naive way? any that is not found in that way?
 naiveDegPairs = np.loadtxt('naiveTadDisr_nonCodingDEGs.txt', dtype="object")

@@ -62,9 +62,9 @@ with open(rankedGenesFile, 'rb') as f:
 			continue
 		
 		#if float(splitLine[30]) > 0 and float(splitLine[1]) == 0:
-		if float(splitLine[30]) > 0:
+		#if float(splitLine[30]) > 0:
 		#if float(splitLine[1]) < 0.05:
-		#if splitLine:
+		if splitLine:
 			if splitLine[0] in cosmicGenes:
 				print "COSMIC gene: ", splitLine[0]
 				cosmicCountGoodScore += 1
@@ -129,9 +129,9 @@ with open(rankedGenesFile, 'rb') as f:
 			continue
 		
 		#if float(splitLine[28])> 0 and float(splitLine[1]) == 0:
-		#if splitLine:
+		if splitLine:
 		#if float(splitLine[1]) < 0.05:
-		if float(splitLine[30]) > 0:
+		#if float(splitLine[30]) > 0:
 			if splitLine[0] in snvGenes:
 				snvCountPos += 1
 			else:
@@ -182,10 +182,10 @@ with open(rankedGenesFile, 'rb') as f:
 			lineCount += 1
 			continue
 		
-		if float(splitLine[30]) > 0:
+		#if float(splitLine[30]) > 0:
 		#if float(splitLine[1]) < 0.05:
 		#if float(splitLine[28])> 0 and float(splitLine[1]) == 0:
-		#if splitLine:
+		if splitLine:
 			if splitLine[0] in degGenes:
 				degCountPos += 1
 			else:
@@ -231,10 +231,10 @@ with open(rankedGenesFile, 'rb') as f:
 			lineCount += 1
 			continue
 		
-		if float(splitLine[30]) > 0:
+		#if float(splitLine[30]) > 0:
 		#if float(splitLine[1]) < 0.05:
 		#if float(splitLine[28])> 0 and float(splitLine[1]) == 0:
-		#if splitLine:
+		if splitLine:
 			if splitLine[0] in degGenes:
 				#print "deg: ", splitLine[0]
 				degGenesPos.append(splitLine[0])

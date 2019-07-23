@@ -192,19 +192,32 @@ for svInd in range(0, len(svsAndDegsCoding)):
 
 np.savetxt(sys.argv[1] + "_degPairsCoding.txt", pairs, delimiter="\t", fmt="%s")
 
+# Output DEG pairs for non-coding only
+perPairDifferentialExpression = getDEPairs(nonCodingPairs[:,0], geneSampleRef, expressionData, dict(), geneSampleExpr, negativeExpr)
+print "done"
 
-# # Output DEG pairs for non-coding only
-# perPairDifferentialExpression = getDEPairs(nonCodingPairs[:,0], geneSampleRef, expressionData, dict(), geneSampleExpr, negativeExpr)
-# print "done"
-# 
-# perPairDifferentialExpressionArray = np.empty([len(perPairDifferentialExpression), 2], dtype="object")
-# perPairDifferentialExpressionArray[:,0] = perPairDifferentialExpression.keys()
-# perPairDifferentialExpressionArray[:,1] = perPairDifferentialExpression.values()
-# 
-# from statsmodels.sandbox.stats.multicomp import multipletests
-# reject, pAdjusted, _, _ = multipletests(perPairDifferentialExpressionArray[:,1], method='bonferroni')
-# 
-# perPairDifferentialExpressionArrayFiltered = perPairDifferentialExpressionArray[reject]
-# 
-# np.save('nonCodingPairDEGs.npy', perPairDifferentialExpressionArrayFiltered)
-# 
+perPairDifferentialExpressionArray = np.empty([len(perPairDifferentialExpression), 2], dtype="object")
+perPairDifferentialExpressionArray[:,0] = perPairDifferentialExpression.keys()
+perPairDifferentialExpressionArray[:,1] = perPairDifferentialExpression.values()
+
+from statsmodels.sandbox.stats.multicomp import multipletests
+reject, pAdjusted, _, _ = multipletests(perPairDifferentialExpressionArray[:,1], method='bonferroni')
+
+perPairDifferentialExpressionArrayFiltered = perPairDifferentialExpressionArray[reject]
+
+np.save(sys.argv[1] + '_nonCodingPairDEGs.npy', perPairDifferentialExpressionArrayFiltered)
+
+perPairDifferentialExpression = getDEPairs(nonCodingPairs[:,0], geneSampleRef, expressionData, dict(), geneSampleExpr, negativeExpr)
+print "done"
+
+perPairDifferentialExpressionArray = np.empty([len(perPairDifferentialExpression), 2], dtype="object")
+perPairDifferentialExpressionArray[:,0] = perPairDifferentialExpression.keys()
+perPairDifferentialExpressionArray[:,1] = perPairDifferentialExpression.values()
+
+from statsmodels.sandbox.stats.multicomp import multipletests
+reject, pAdjusted, _, _ = multipletests(perPairDifferentialExpressionArray[:,1], method='bonferroni')
+
+perPairDifferentialExpressionArrayFiltered = perPairDifferentialExpressionArray[reject]
+
+np.save(sys.argv[1] + '_codingPairDEGs.npy', perPairDifferentialExpressionArrayFiltered)
+
