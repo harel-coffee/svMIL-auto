@@ -230,6 +230,7 @@ print svProperties
 
 svSignificanceCorrected = np.loadtxt('Output/significantNCProportion_multipleTestCorrected_DEG.txt', dtype="object")
 
+
 ###1. Set threshold on high/low coding effects
 codingThreshold = 20
 
@@ -258,21 +259,18 @@ allDegGenes = []
 allDegGenesHighCoding = []
 allDegGenesSignificant = []
 allDegGenesSignificantThreshold = []
+signSVEffects = []
 for pair in degPairs:
 	splitPair = pair[0].split("_")
 	sv = "_".join(splitPair[1:])
 	
 	if sv in filteredSVs[:,0]:
-		if sv not in degs:
-			degs[sv] = []
-		degs[sv].append(splitPair[0])
+		
 		if splitPair[0] not in allDegGenes:
 			allDegGenes.append(splitPair[0])
 	
 	if sv in otherSVs[:,0]:
-		if sv not in degs:
-			degs[sv] = []
-		degs[sv].append(splitPair[0])
+		
 		if splitPair[0] not in allDegGenesHighCoding:
 			allDegGenesHighCoding.append(splitPair[0])
 
@@ -280,11 +278,19 @@ for pair in degPairs:
 		
 		if splitPair[0] not in allDegGenesSignificant:
 			allDegGenesSignificant.append(splitPair[0])
+			
+		if sv not in degs:
+			degs[sv] = []
+		degs[sv].append(splitPair[0])
+		
+		
+		
 	
 	if sv in filteredSignificantSVs[:,0]:
 		
 		if splitPair[0] not in allDegGenesSignificantThreshold:
 			allDegGenesSignificantThreshold.append(splitPair[0])
+
 
 print len(allDegGenes)
 print len(allDegGenesHighCoding)
@@ -299,12 +305,14 @@ np.savetxt('Output/allDegGenesSignificantThreshold.txt', allDegGenesSignificantT
 #Check for every DEG gene linked to the significant SVs if there are also other samples in which this gene is affected (in coding way)
 codingDegPairs = np.load(sys.argv[1] + "_codingPairDEGs.npy")
 svsWithOtherSampleEvidence = dict()
+signGeneSVPairs = []
 for pair in degPairs:
 	splitPair = pair[0].split("_")
 	sv = "_".join(splitPair[1:])
 	gene = splitPair[0]
 
-	if sv in svSignificanceCorrected[:,0]:
+	if sv in filteredSVs[:,0]:
+		signGeneSVPairs.append(gene + "_" + sv)
 		#check if the gene linked to the SV is found more often
 		sample = splitPair[len(splitPair)-1]
 		for pair2 in codingDegPairs:
@@ -321,9 +329,41 @@ for pair in degPairs:
 						svsWithOtherSampleEvidence[sv] = []
 					svsWithOtherSampleEvidence[sv].append(gene2)
 
-print svsWithOtherSampleEvidence
+print len(svsWithOtherSampleEvidence)
+multiSampleCount = 0
+genes = []
+for sv in svsWithOtherSampleEvidence:
+	if len(svsWithOtherSampleEvidence[sv]) != len(np.unique(svsWithOtherSampleEvidence[sv])):
+		print sv
+		print np.unique(svsWithOtherSampleEvidence[sv])
+		print "Number of genes also in coding: ", len(svsWithOtherSampleEvidence[sv])
+		print "Number of unique genes: ", len(np.unique(svsWithOtherSampleEvidence[sv]))
+		multiSampleCount += 1
+		genes += list(np.unique(svsWithOtherSampleEvidence[sv]))
+print multiSampleCount
+np.savetxt('Output/leftSideGenes_multiCoding.txt', np.unique(genes), fmt='%s')
 exit()
+#Which of the significant pairs are also found in the naive way? any that is not found in that way?
+naiveDegPairs = np.loadtxt('naiveTadDisr_nonCodingDEGs.txt', dtype="object")
 
+foundCount = 0
+notFoundCount = 0
+for degPair in signGeneSVPairs:
+	if degPair in naiveDegPairs[:,0]:
+		print "pair found: ", degPair
+		foundCount += 1
+	else:
+		print "pair not found: ", degPair
+		notFoundCount += 1
+		# for sv in somaticSVs:
+		# 	svStr = sv[0] + "_" + str(sv[1]) + "_" + str(sv[2]) + "_" + sv[3] + "_" + str(sv[4]) + "_" + str(sv[5]) + "_" + sv[7]
+		# 	splitPair = degPair.split("_")
+		# 	if svStr == "_".join(splitPair[1:]):
+		# 		print sv[8].svType
+		
+print foundCount
+print notFoundCount
+exit()
 
 ## Make a file with the scores of the filtered SVs vs the rest
 #1. Get the scores of the filteredSVs

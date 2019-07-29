@@ -104,6 +104,9 @@ obs = np.array([[cosmicCountGoodScore, cosmicCountBadScore], [allGenesGoodScore 
 g, p, dof, expctd = chi2_contingency(obs)
 print "COSMIC p-value: ", p
 
+obs = np.array([[bcCountGoodScore, bcCountBadScore], [allGenesGoodScore - bcCountGoodScore, allGenesBadScore - bcCountBadScore]])
+g, p, dof, expctd = chi2_contingency(obs)
+print "bc p-value: ", p
 #In addition, test how many of the genes also have SNVs affecting them in at least 1 sample
 snvGenes = []
 with open(snvFile, 'r') as inf:
