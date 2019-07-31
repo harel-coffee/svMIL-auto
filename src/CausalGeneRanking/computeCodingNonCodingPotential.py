@@ -344,6 +344,7 @@ for sv in svsWithOtherSampleEvidence:
 print multiSampleCount
 np.savetxt('Output/leftSideGenes_multiCoding.txt', np.unique(genes), fmt='%s')
 
+exit()
 #Which of the significant pairs are also found in the naive way? any that is not found in that way?
 naiveDegPairs = np.loadtxt('naiveTadDisr_nonCodingDEGs.txt', dtype="object")
 
@@ -361,7 +362,6 @@ for degPair in signGeneSVPairs:
 		# 	splitPair = degPair.split("_")
 		# 	if svStr == "_".join(splitPair[1:]):
 		# 		print sv[8].svType
-		
 
 ## Make a file with the scores of the filtered SVs vs the rest
 #1. Get the scores of the filteredSVs
