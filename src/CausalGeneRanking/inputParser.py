@@ -21,7 +21,7 @@ import settings
 
 class InputParser:
 	
-	def getSVsFromFile(self, svFile, typeFilter):
+	def getSVsFromFile(self, svFile, typeFilter, excludedSVs):
 		"""
 			Parse the SV data from the SV input file.
 			
@@ -176,12 +176,23 @@ class InputParser:
 					s1 = e1
 					e1 = tmpS1
 				
+	
 				if list(chr1)[0] == "c": #add the chr notation only when it is not already there
 					svObject = SV(chr1, s1, e1, o1, chr2, s2, e2, o2, sampleName, cancerType, svType)
+					
+					#Check if this SV needs to be exluded
+					svStr = chr1 + "_" + str(s1) + "_" + str(e1) + "_" + chr2 + "_" + str(s2) + "_" + str(e2) + "_" + sampleName
+					if svStr in excludedSVs:
+						continue
 					variantsList.append([chr1, s1, e1, chr2, s2, e2, cancerType, sampleName, svObject])
 					
 				else:
 					svObject = SV('chr' + chr1, s1, e1, o1, 'chr' + chr2, s2, e2, o2, sampleName, cancerType, svType)
+					
+					#Check if this SV needs to be exluded
+					svStr = 'chr' + chr1 + "_" + str(s1) + "_" + str(e1) + "_" + 'chr' + chr2 + "_" + str(s2) + "_" + str(e2) + "_" + sampleName
+					if svStr in excludedSVs:
+						continue
 					variantsList.append(['chr' + chr1, s1, e1, 'chr' + chr2, s2, e2, cancerType, sampleName, svObject])
 				#chr 1, start, end, chr2, start2, end2
 				
