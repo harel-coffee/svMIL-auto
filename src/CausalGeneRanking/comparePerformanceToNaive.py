@@ -10,17 +10,18 @@ import settings
 from inputParser import InputParser
 from neighborhoodDefiner import NeighborhoodDefiner
 from geneRanking import GeneRanking
+from scipy.stats import chi2_contingency
 
 #1. Filter SVs based on if these cause DEGs or affect COSMIC genes in the coding way
 
 def getSVsWithCodingEffects():
 	
 	codingPairs = np.loadtxt(sys.argv[1], dtype='object')
-	degPairs = np.load(sys.argv[1] + "_nonCodingPairDEGs.npy", allow_pickle=True)
-	cosmicGenesFile = sys.argv[2]
+	degPairs = np.load(sys.argv[2], allow_pickle=True)
+	cosmicGenesFile = sys.argv[3]
 	
 	codingSVGenes = dict()
-	for pair in codingPairs[:,0]:
+	for pair in codingPairs:
 		
 		splitPair = pair.split("_")
 		svEntries = splitPair[1:]
@@ -29,6 +30,7 @@ def getSVsWithCodingEffects():
 		if sv not in codingSVGenes:
 			codingSVGenes[sv] = []
 		codingSVGenes[sv].append(splitPair[0])
+	
 		
 	#get the COSMIC genes
 	
@@ -46,6 +48,8 @@ def getSVsWithCodingEffects():
 			cosmicGenes.append(geneName)
 
 	codingEffectSVs = []
+	genesAffectedByFilteredSVs = []
+	genesAffectedByCodingSVs = []
 	for sv in codingSVGenes:
 		
 		degCount = 0
@@ -56,19 +60,29 @@ def getSVsWithCodingEffects():
 		for gene in codingSVGenes[sv]:
 			pair = gene + "_" + sv
 			
+			if gene not in genesAffectedByCodingSVs:
+				genesAffectedByCodingSVs.append(gene)
+			
 			if gene in cosmicGenes or pair in degPairs[:,0]:
 				if sv not in codingEffectSVs:
 					codingEffectSVs.append(sv)
-
+				if gene not in genesAffectedByFilteredSVs: #look at all genes that are linked to the SVs. 
+					genesAffectedByFilteredSVs.append(gene)
+					
+	print "Number of genes affected in the coding way: ", len(genesAffectedByCodingSVs)
+	print "Number of genes affected in the coding way that are DEG or COSMIC: ", len(genesAffectedByFilteredSVs)
 	return codingEffectSVs
 	
-codingEffectSVs = getSVsWithCodingEffects()	
+codingEffectSVs = getSVsWithCodingEffects()
+print "Number of SVs filtered out with coding effects: ", len(codingEffectSVs)
+np.savetxt('codingEffectSVs.txt', codingEffectSVs, delimiter='\t', fmt='%s')
+
 
 #2. Find all genes within a window of the filtered SVs
 def findAffectedGenesWithinWindow():
 	
 	#Read all SVs and filter these for the coding effect SVs
-	somaticSVs = InputParser().getSVsFromFile(sys.argv[3], "all", codingEffectSVs)
+	somaticSVs = InputParser().getSVsFromFile(sys.argv[4], "all", codingEffectSVs)
 	causalGenes = InputParser().readCausalGeneFile(settings.files['causalGenesFile'])
 	nonCausalGenes = InputParser().readNonCausalGeneFile(settings.files['nonCausalGenesFile'], causalGenes) #In the same format as the causal genes.
 	
@@ -79,6 +93,7 @@ def findAffectedGenesWithinWindow():
 	window = 2000000
 	
 	affectedGenes = []
+	svGenePairs = []
 	#For every SV, look at 2 mb to the left of the left breakpoint, and look at 2 mb to the right of the right breakpoint.
 	for sv in somaticSVs:
 		
@@ -100,21 +115,20 @@ def findAffectedGenesWithinWindow():
 		for gene in matchingGenes:
 			if gene[3].name not in affectedGenes:
 				affectedGenes.append(gene[3].name)
-				
+				svStr = sv[0] + "_" + str(sv[1]) + "_" + str(sv[2]) + "_" + sv[3] + "_" + str(sv[4]) + "_" + str(sv[5]) + "_" + sv[7]
+			svGenePairs.append(gene[3].name + "_" + svStr)
 	
-	return affectedGenes
+	return affectedGenes, svGenePairs
 	
-#affectedGenes = findAffectedGenesWithinWindow()
-#print "Number of affected genes in windowed approach: ", len(affectedGenes)
-
-	
-
+affectedGenesWindowed, svGenePairsWindowed = findAffectedGenesWithinWindow()
+np.savetxt("Output/windowedSVs.txt", svGenePairsWindowed, delimiter='\t', fmt='%s')
+print "Number of affected genes in windowed approach: ", len(affectedGenesWindowed)
 
 #3. Find all genes within the TAD of the filtered SVs
 def findAffectedGenesByTadDisruptions(codingEffectSVs):
 		
-	somaticSVs = InputParser().getSVsFromFile(sys.argv[3], "all", codingEffectSVs)
-	tads = InputParser().getTADsFromFile(sys.argv[4])
+	somaticSVs = InputParser().getSVsFromFile(sys.argv[4], "all", codingEffectSVs)
+	tads = InputParser().getTADsFromFile(sys.argv[5])
 	causalGenes = InputParser().readCausalGeneFile(settings.files['causalGenesFile'])
 	nonCausalGenes = InputParser().readNonCausalGeneFile(settings.files['nonCausalGenesFile'], causalGenes) #In the same format as the causal genes.
 	
@@ -130,6 +144,7 @@ def findAffectedGenesByTadDisruptions(codingEffectSVs):
 	
 	#For each TAD, determine which SVs start or end within the TAD, and cover the boundary
 	affectedGenes = []
+	svGenePairs = []
 	nonCodingSamples = dict()
 	for tad in tads:
 		
@@ -159,12 +174,16 @@ def findAffectedGenesByTadDisruptions(codingEffectSVs):
 				if gene[3].name not in nonCodingSamples:
 					nonCodingSamples[gene[3].name] = []
 				nonCodingSamples[gene[3].name].append(sv[7])
+				
+				svGenePairs.append(gene[3].name + "_" + svStr)
 	
-	return affectedGenes
+	return affectedGenes, svGenePairs
 
-tadAffectedGenes = findAffectedGenesByTadDisruptions(codingEffectSVs)
+tadAffectedGenes, tadSVGenePairs = findAffectedGenesByTadDisruptions(codingEffectSVs)
+np.savetxt("Output/tadSVs.txt", tadSVGenePairs, delimiter='\t', fmt='%s')
+
 print "TAD affected genes: ", len(tadAffectedGenes)
-exit()
+
 #4. Run the rule-based method on the filtered SVs
 
 #here I wil bypass main for simplicity, but could be much neater I think. the issue is passing the exlucded SVs.
@@ -175,7 +194,7 @@ def getGenesWithRuleBasedApproach():
 	#Combine the genes into one set. 
 	causalGenes = np.concatenate((causalGenes, nonCausalGenes), axis=0)
 	
-	svData = InputParser().getSVsFromFile(sys.argv[3], "all", codingEffectSVs)
+	svData = InputParser().getSVsFromFile(sys.argv[4], "all", codingEffectSVs)
 	
 	NeighborhoodDefiner(causalGenes, svData, None, 'SV') #Provide the mode to ensure that the right variant type is used (different positions used in annotation)
 	
@@ -201,5 +220,179 @@ def getGenesWithRuleBasedApproach():
 
 ruleBasedAffectedGenes = getGenesWithRuleBasedApproach()
 print "rule-based affected genes: ", len(ruleBasedAffectedGenes)
+ruleSvGenePairs = np.loadtxt('Output/geneSVPairs_somatic_me_12072019_shuffled.txt_none', dtype='object')
+np.savetxt('Output/ruleSVs.txt', ruleSvGenePairs[:,0], delimiter='\t', fmt='%s')
 
-#5. Compare the resulting genes between the two sets. 
+
+#5. Compare the resulting genes between the approaches
+
+#For each set, how many of the genes are in COSMIC?
+#get the COSMIC genes
+
+cosmicGenesFile = sys.argv[3]
+cosmicGenes = []
+with open(cosmicGenesFile, 'rb') as f:
+	lineCount = 0
+	for line in f:
+		if lineCount == 0:
+			lineCount += 1
+			continue
+		
+		splitLine = line.split("\t")
+		
+		geneName = splitLine[0]
+		cosmicGenes.append(geneName)
+
+windowedGenesCosmic = []
+for gene in affectedGenesWindowed:
+	if gene in cosmicGenes:
+		windowedGenesCosmic.append(gene)
+
+tadGenesCosmic = []
+for gene in tadAffectedGenes:
+	if gene in cosmicGenes:
+		tadGenesCosmic.append(gene)
+
+ruleGenesCosmic = []
+for gene in ruleBasedAffectedGenes:
+	if gene in cosmicGenes:
+		ruleGenesCosmic.append(gene)
+		
+print "Number of cosmic genes in the windowed approach: ", len(windowedGenesCosmic)
+print "Number of cosmic genes in the tad approach: ", len(tadGenesCosmic)
+print "Number of cosmic genes in the rule approach: ", len(ruleGenesCosmic)
+
+#Compute the chi2 p-values for these findings
+#Because we are looking at all other genes, the number of cosmic genes - genes in the true group is the negative.
+# 
+obs = np.array([[len(windowedGenesCosmic), len(cosmicGenes) - len(windowedGenesCosmic)], [len(affectedGenesWindowed) - len(windowedGenesCosmic), (19286 - len(affectedGenesWindowed)- (len(cosmicGenes) - len(windowedGenesCosmic)))]])
+print obs
+g, p, dof, expctd = chi2_contingency(obs)
+print "COSMIC p-value windowed: ", p
+
+obs = np.array([[len(tadGenesCosmic), len(cosmicGenes) - len(tadGenesCosmic)], [len(tadAffectedGenes) - len(tadGenesCosmic), (19286 - len(tadAffectedGenes) - (len(cosmicGenes) - len(tadGenesCosmic)))]])
+g, p, dof, expctd = chi2_contingency(obs)
+print "COSMIC p-value tad: ", p
+
+obs = np.array([[len(ruleGenesCosmic), len(cosmicGenes) - len(ruleGenesCosmic)], [len(ruleBasedAffectedGenes) - len(ruleGenesCosmic), (19286 - len(ruleBasedAffectedGenes) - (len(cosmicGenes) - len(ruleGenesCosmic)))]])
+g, p, dof, expctd = chi2_contingency(obs)
+print "COSMIC p-value rules: ", p
+#To get the DEGs, we actually need to re-compute the DEGs based on the gene-SV pairs that we get for each method. Otherwise we are biasing towards the rule-based approach. 
+
+#For now, simply load in the data
+windowSVsDegPairs = np.load('Output/ShuffledCodingNonCoding/geneCodingSVPairs_somatic_me_12072019_shuffled.txt__windowedSVs.txt_degPairs.npy', allow_pickle=True)
+tadSVsDegPairs = np.load('Output/ShuffledCodingNonCoding/geneCodingSVPairs_somatic_me_12072019_shuffled.txt__tadSVs.txt_degPairs.npy', allow_pickle=True)
+ruleSVsDegPairs = np.load('Output/ShuffledCodingNonCoding/geneCodingSVPairs_somatic_me_12072019_shuffled.txt__ruleSVs.txt_degPairs.npy', allow_pickle=True)
+
+
+windowedDegGenes = []
+for pair in svGenePairsWindowed:
+	if pair in windowSVsDegPairs[:,0]:
+		splitPair = pair.split("_")
+		if splitPair[0] not in windowedDegGenes:
+			windowedDegGenes.append(splitPair[0])
+
+tadDegGenes = []
+for pair in tadSVGenePairs:
+	if pair in tadSVsDegPairs[:,0]:
+		splitPair = pair.split("_")
+		if splitPair[0] not in tadDegGenes:
+			tadDegGenes.append(splitPair[0])
+			
+#For the rule based method, we need to look at a separate output file to get the gene-SV pairs. This may be fixed in the actual tool output later.
+ruleSvGenePairs = np.loadtxt('Output/geneSVPairs_somatic_me_12072019_shuffled.txt_none', dtype='object')
+
+ruleDegGenes = []
+for pair in ruleSvGenePairs[:,0]:
+	if pair in ruleSVsDegPairs[:,0]:
+		splitPair = pair.split("_")
+		if splitPair[0] not in ruleDegGenes:
+			ruleDegGenes.append(splitPair[0])
+			
+print "Number of DEG genes in the windowed approach: ", len(windowedDegGenes)
+print "Number of DEG genes in the TAD approach: ", len(tadDegGenes)
+print "number of DEG genes in the rule approach: ", len(ruleDegGenes)
+
+#Compute the chi2 p-values for these findings
+# obs = np.array([[len(windowedDegGenes), len(cosmicGenes) - len(windowedDegGenes)], [len(affectedGenesWindowed) - len(windowedDegGenes), (19286 - len(affectedGenesWindowed)- (len(cosmicGenes) - len(windowedDegGenes)))]])
+# g, p, dof, expctd = chi2_contingency(obs)
+# print "DEG p-value windowed: ", p
+# 
+# obs = np.array([[len(tadDegGenes), len(cosmicGenes) - len(tadDegGenes)], [len(tadAffectedGenes) - len(tadDegGenes), (19286 - len(tadAffectedGenes) - (len(cosmicGenes) - len(tadDegGenes)))]])
+# g, p, dof, expctd = chi2_contingency(obs)
+# print "DEG p-value tad: ", p
+# 
+# obs = np.array([[len(ruleDegGenes), len(cosmicGenes) - len(ruleDegGenes)], [len(ruleBasedAffectedGenes) - len(ruleDegGenes), (19286 - len(ruleBasedAffectedGenes) - (len(cosmicGenes) - len(ruleDegGenes)))]])
+# g, p, dof, expctd = chi2_contingency(obs)
+# print "DEG p-value rules: ", p
+
+#Make a venn diagram
+
+#For the genes that are found
+allCriteriaIntersect = list(set(affectedGenesWindowed) & set(tadAffectedGenes) & set(ruleBasedAffectedGenes))
+windowTadIntersect = list(set(affectedGenesWindowed) & set(tadAffectedGenes))
+windowRuleIntersect = list(set(affectedGenesWindowed) & set(ruleBasedAffectedGenes))
+tadRuleIntersect = list(set(tadAffectedGenes) & set(ruleBasedAffectedGenes))
+print "Number of genes that are in all 3 nc-based methods: ", len(allCriteriaIntersect)
+print "Number of genes that are in the windowed and TAD approaches: ", len(windowTadIntersect)
+print "Number of genes that are in windowed and rule approaches: ", len(windowRuleIntersect)
+print "Number of genes that are in the TAD and rule approahes: ", len(tadRuleIntersect)
+
+import pylab as plt
+from matplotlib_venn import venn3, venn3_circles
+
+v = venn3(subsets=(len(affectedGenesWindowed),len(tadAffectedGenes),len(windowTadIntersect), len(ruleBasedAffectedGenes),len(windowRuleIntersect), len(tadRuleIntersect),len(allCriteriaIntersect)),
+		  set_labels=('Windowed', 'TAD', 'Rules'))
+v.get_label_by_id('100').set_text(len(affectedGenesWindowed))
+v.get_label_by_id('010').set_text(len(tadAffectedGenes))
+v.get_label_by_id('001').set_text(len(ruleBasedAffectedGenes))
+plt.title("Overlapping genes in the nc-based approaches")
+plt.show()
+
+#Repeat for COSMIC
+
+allCriteriaIntersect = list(set(windowedGenesCosmic) & set(tadGenesCosmic) & set(ruleGenesCosmic))
+windowTadIntersect = list(set(windowedGenesCosmic) & set(tadGenesCosmic))
+windowRuleIntersect = list(set(windowedGenesCosmic) & set(ruleGenesCosmic))
+tadRuleIntersect = list(set(tadGenesCosmic) & set(ruleGenesCosmic))
+print "Number of genes that are in all 3 nc-based methods: ", len(allCriteriaIntersect)
+print "Number of genes that are in the windowed and TAD approaches: ", len(windowTadIntersect)
+print "Number of genes that are in windowed and rule approaches: ", len(windowRuleIntersect)
+print "Number of genes that are in the TAD and rule approahes: ", len(tadRuleIntersect)
+
+import pylab as plt
+from matplotlib_venn import venn3, venn3_circles
+
+v = venn3(subsets=(len(windowedGenesCosmic),len(tadGenesCosmic),len(windowTadIntersect), len(ruleGenesCosmic),len(windowRuleIntersect), len(tadRuleIntersect),len(allCriteriaIntersect)),
+		  set_labels=('Windowed', 'TAD', 'Rules'))
+v.get_label_by_id('100').set_text(len(windowedGenesCosmic))
+v.get_label_by_id('010').set_text(len(tadGenesCosmic))
+v.get_label_by_id('001').set_text(len(ruleGenesCosmic))
+plt.title("Overlapping COSMIC in the nc-based approaches")
+plt.show()
+
+#Repeat for DEG genes
+
+allCriteriaIntersect = list(set(windowedDegGenes) & set(tadDegGenes) & set(ruleDegGenes))
+windowTadIntersect = list(set(windowedDegGenes) & set(tadDegGenes))
+windowRuleIntersect = list(set(windowedDegGenes) & set(ruleDegGenes))
+tadRuleIntersect = list(set(tadDegGenes) & set(ruleDegGenes))
+print "Number of genes that are in all 3 nc-based methods: ", len(allCriteriaIntersect)
+print "Number of genes that are in the windowed and TAD approaches: ", len(windowTadIntersect)
+print "Number of genes that are in windowed and rule approaches: ", len(windowRuleIntersect)
+print "Number of genes that are in the TAD and rule approahes: ", len(tadRuleIntersect)
+
+import pylab as plt
+from matplotlib_venn import venn3, venn3_circles
+
+v = venn3(subsets=(len(windowedDegGenes),len(tadDegGenes),len(windowTadIntersect), len(ruleDegGenes),len(windowRuleIntersect), len(tadRuleIntersect),len(allCriteriaIntersect)),
+		  set_labels=('Windowed', 'TAD', 'Rules'))
+v.get_label_by_id('100').set_text(len(windowedDegGenes))
+v.get_label_by_id('010').set_text(len(tadDegGenes))
+v.get_label_by_id('001').set_text(len(ruleDegGenes))
+plt.title("Overlapping DEG genes in the nc-based approaches")
+plt.show()
+
+
+
+
