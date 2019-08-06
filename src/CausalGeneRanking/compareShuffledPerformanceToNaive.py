@@ -380,9 +380,6 @@ np.savetxt('Output/RankedGenes/naive_shuffled/BRCA/svGenePairsWindowed.txt_' + p
 np.savetxt('Output/RankedGenes/naive_shuffled/BRCA/tadSVGenePairs.txt_' + permutationRound, tadSVGenePairs, delimiter='\t', fmt='%s')
 np.savetxt('Output/RankedGenes/naive_shuffled/BRCA/ruleSvGenePairs.txt_' + permutationRound, ruleSvGenePairs[:,0], delimiter='\t', fmt='%s')
 
-
-
-
 #Collect the number of COSMIC and BC genes
 
 #For each set, how many of the genes are in COSMIC?
@@ -484,14 +481,14 @@ for pair in ruleSvGenePairs[:,0]:
 
 #Write all counts to output files
 
-np.savetxt('Output/RankedGenes/naive_shuffled/BRCA/Counts/windowedCosmic.txt_' + permutationRound, len(windowedGenesCosmic), fmt='%s')
-np.savetxt('Output/RankedGenes/naive_shuffled/BRCA/Counts/tadCosmic.txt_' + permutationRound, len(tadGenesCosmic), fmt='%s')
-np.savetxt('Output/RankedGenes/naive_shuffled/BRCA/Counts/rulesCosmic.txt_' + permutationRound, len(ruleGenesCosmic), fmt='%s')
+np.savetxt('Output/RankedGenes/naive_shuffled/BRCA/Counts/windowedCosmic.txt_' + permutationRound, np.array([len(windowedGenesCosmic)]), fmt='%s')
+np.savetxt('Output/RankedGenes/naive_shuffled/BRCA/Counts/tadCosmic.txt_' + permutationRound, np.array([len(tadGenesCosmic)]), fmt='%s')
+np.savetxt('Output/RankedGenes/naive_shuffled/BRCA/Counts/rulesCosmic.txt_' + permutationRound, np.array([len(ruleGenesCosmic)]), fmt='%s')
 
-np.savetxt('Output/RankedGenes/naive_shuffled/BRCA/Counts/windowedBc.txt_' + permutationRound, len(windowedGenesBc), fmt='%s')
-np.savetxt('Output/RankedGenes/naive_shuffled/BRCA/Counts/tadBc.txt_' + permutationRound, len(tadGenesBc), fmt='%s')
-np.savetxt('Output/RankedGenes/naive_shuffled/BRCA/Counts/rulesBc.txt_' + permutationRound, len(ruleGenesBc), fmt='%s')
+np.savetxt('Output/RankedGenes/naive_shuffled/BRCA/Counts/windowedBc.txt_' + permutationRound, np.array([len(windowedGenesBc)]), fmt='%s')
+np.savetxt('Output/RankedGenes/naive_shuffled/BRCA/Counts/tadBc.txt_' + permutationRound, np.array([len(tadGenesBc)]), fmt='%s')
+np.savetxt('Output/RankedGenes/naive_shuffled/BRCA/Counts/rulesBc.txt_' + permutationRound, np.array([len(ruleGenesBc)]), fmt='%s')
 
-np.savetxt('Output/RankedGenes/naive_shuffled/BRCA/Counts/windowedDeg.txt_' + permutationRound, len(windowedDegGenes), fmt='%s')
-np.savetxt('Output/RankedGenes/naive_shuffled/BRCA/Counts/tadDeg.txt_' + permutationRound, len(tadDegGenes), fmt='%s')
-np.savetxt('Output/RankedGenes/naive_shuffled/BRCA/Counts/rulesDeg.txt_' + permutationRound, len(ruleDegGenes), fmt='%s')
+np.savetxt('Output/RankedGenes/naive_shuffled/BRCA/Counts/windowedDeg.txt_' + permutationRound, np.array([len(windowedDegGenes)]), fmt='%s')
+np.savetxt('Output/RankedGenes/naive_shuffled/BRCA/Counts/tadDeg.txt_' + permutationRound, np.array([len(tadDegGenes)]), fmt='%s')
+np.savetxt('Output/RankedGenes/naive_shuffled/BRCA/Counts/rulesDeg.txt_' + permutationRound, np.array([len(ruleDegGenes)]), fmt='%s')
