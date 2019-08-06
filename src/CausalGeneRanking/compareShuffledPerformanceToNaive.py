@@ -377,7 +377,7 @@ ruleSvGenePairs = np.loadtxt('Output/RankedGenes/naive_shuffled/BRCA/nonCoding_g
 #output the sv-gene pairs for this permutation
 np.savetxt('Output/RankedGenes/naive_shuffled/BRCA/svGenePairsWindowed.txt_' + permutationRound, svGenePairsWindowed, delimiter='\t', fmt='%s')
 np.savetxt('Output/RankedGenes/naive_shuffled/BRCA/tadSVGenePairs.txt_' + permutationRound, tadSVGenePairs, delimiter='\t', fmt='%s')
-np.savetxt('Output/RankedGenes/naive_shuffled/BRCA/ruleSvGenePairs.txt_' + permutationRound, ruleSvGenePairs, delimiter='\t', fmt='%s')
+np.savetxt('Output/RankedGenes/naive_shuffled/BRCA/ruleSvGenePairs.txt_' + permutationRound, ruleSvGenePairs[:,0], delimiter='\t', fmt='%s')
 
 
 
@@ -458,6 +458,7 @@ os.system(rulesExprCall)
 windowSVsDegPairs = np.load("Output/RankedGenes/naive_shuffled/BRCA/svGenePairsWindowed.txt_" + permutationRound + "_degPairs.npy", allow_pickle=True)
 tadSVsDegPairs = np.load("Output/RankedGenes/naive_shuffled/BRCA/tadSVGenePairs.txt_" + permutationRound + "_degPairs.npy", allow_pickle=True)
 ruleSVsDegPairs = np.load("Output/RankedGenes/naive_shuffled/BRCA/ruleSvGenePairs.txt_" + permutationRound + "_degPairs.npy", allow_pickle=True)
+
 print "checking for DEG overlap"
 windowedDegGenes = []
 for pair in svGenePairsWindowed:
