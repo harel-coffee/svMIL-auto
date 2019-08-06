@@ -238,6 +238,7 @@ def findAffectedGenesByTadDisruptions(codingEffectSVs):
 				rightMatchingGenes = chr1GeneSubset[rightStartMatchingGenes]
 
 			#Get the unique genes
+			matchingGenes = []
 			if len(leftMatchingGenes) > 0 and len(rightMatchingGenes) > 0:
 				matchingGenes = np.concatenate((leftMatchingGenes, rightMatchingGenes))
 			if len(leftMatchingGenes) > 0 and len(rightMatchingGenes) == 0:
