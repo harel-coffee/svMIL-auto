@@ -454,10 +454,10 @@ rulesExprCall = "python computeSVGenePairExpression_oneSet.py Output/RankedGenes
 os.system(rulesExprCall)
 
 #Read the DEG pairs and determine how many genes are DEG in total
-svGenePairsWindowed = np.loadtxt("Output/windowedSVs.txt", dtype='object')
+#svGenePairsWindowed = np.loadtxt("Output/windowedSVs.txt", dtype='object')
 windowSVsDegPairs = np.load("Output/RankedGenes/naive_shuffled/BRCA/svGenePairsWindowed.txt_" + permutationRound + "_degPairs.npy", allow_pickle=True)
-#tadSVsDegPairs = np.load("Output/RankedGenes/naive_shuffled/BRCA/tadSVGenePairs.txt_" + permutationRound + "_degPairs.npy", allow_pickle=True)
-#ruleSVsDegPairs = np.load("Output/RankedGenes/naive_shuffled/BRCA/ruleSvGenePairs.txt_" + permutationRound + "_degPairs.npy", allow_pickle=True)
+tadSVsDegPairs = np.load("Output/RankedGenes/naive_shuffled/BRCA/tadSVGenePairs.txt_" + permutationRound + "_degPairs.npy", allow_pickle=True)
+ruleSVsDegPairs = np.load("Output/RankedGenes/naive_shuffled/BRCA/ruleSvGenePairs.txt_" + permutationRound + "_degPairs.npy", allow_pickle=True)
 print "checking for DEG overlap"
 windowedDegGenes = []
 for pair in svGenePairsWindowed:
