@@ -63,27 +63,15 @@ nonCausalGenes = InputParser().readNonCausalGeneFile(settings.files['nonCausalGe
 #Combine the genes into one set. 
 causalGenes = np.concatenate((causalGenes, nonCausalGenes), axis=0)
 
+#provide list of SVs that should be excluded from the model. 
+excludedSVs = np.loadtxt(settings.files['excludedSVs'], dtype='object')
+
 #2. Read the SVs or SNVs depending on the mode.
 variantData = []
 if mode == "SV":
 	print "Reading SV data"
 	svFile = settings.files['svFile']
-	svData = InputParser().getSVsFromFile(svFile, "all")
-	
-
-if mode == "SNV":
-	print "Reading SNV data"
-	snvFile = settings.files['snvFile']
-	snvData = InputParser().getSNVsFromFile(snvFile)
-	
-#This can be done better with an array of parameters,but this is quick and dirty for now	
-if mode == "SV+SNV":
-	print "Reading SV data"
-	svFile = settings.files['svFile']
-	svData = InputParser().getSVsFromFile(svFile, "deletion")
-	print "Reading SNV data"
-	snvFile = settings.files['snvFile']
-	snvData = InputParser().getSNVsFromFile(snvFile)
+	svData = InputParser().getSVsFromFile(svFile, "all", excludedSVs)
 	
 	
 #3. If this is a permutation run, we wish to shuffle these SVs or SNVs.
@@ -117,7 +105,7 @@ if mode == "SV+SNV":
 
 #3. Do ranking of the genes and report the causal SVs
 print "Ranking the genes for the variants"
-geneRanking = GeneRanking(causalGenes[:,3], svData, mode, permutationRound)
+geneRanking = GeneRanking(causalGenes[:,3], svData, mode, sys.argv[1], permutationRound)
 
 #Save the causal genes up until here and load them for faster development of the deep learning part
 # import pickle

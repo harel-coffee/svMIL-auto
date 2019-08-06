@@ -1,5 +1,6 @@
 import numpy as np
 import settings
+import sys
 
 class GeneRanking:
 	"""
@@ -20,7 +21,7 @@ class GeneRanking:
 	
 	"""
 	
-	def __init__(self, genes, svData, mode, permutationRound):
+	def __init__(self, genes, svData, mode, runId, permutationRound):
 		"""
 			genes: (numpy array) array with the genes and their information. chr	start	end	Gene (object)
 			
@@ -28,10 +29,10 @@ class GeneRanking:
 			- svData and mode are currently not used, need to be added later if we include SNVs. 
 			
 		"""
-		self.scoreGenes(genes, svData, permutationRound)
+		self.scoreGenes(genes, svData, runId, permutationRound)
 	
 			
-	def scoreGenes(self, genes, svData, permutationRound):
+	def scoreGenes(self, genes, svData, runId, permutationRound):
 		"""
 			Score the provided genes. Currently we score by:
 				- SVs in genes
@@ -189,7 +190,7 @@ class GeneRanking:
 			
 			pairScoresWithPairIds = pairScoresWithPairIds[pairScoresWithPairIds[:,27].argsort()[::-1]] #Select the column  to rank by
 			print pairScoresWithPairIds
-			np.savetxt("Output/geneSVPairs_somatic_me_12072019_shuffled.txt_" + str(permutationRound), pairScoresWithPairIds, delimiter='\t', fmt='%s')
+			np.savetxt(settings.files['rankedGeneScoreDir'] + '/' + runId+ '/' + cancerType + "/nonCoding_geneSVPairs.txt_" + str(permutationRound), pairScoresWithPairIds, delimiter='\t', fmt='%s')
 			
 			#Also output the coding pairs
 			codingPairs = []
@@ -198,7 +199,7 @@ class GeneRanking:
 					
 					codingPairs.append(gene.name + "_" + sv)
 			codingPairs = np.array(codingPairs, dtype="object")
-			np.savetxt("Output/geneCodingSVPairs_somatic_me_12072019_shuffled.txt_" + permutationRound, codingPairs, delimiter='\t', fmt='%s')		
+			np.savetxt(settings.files['rankedGeneScoreDir'] + '/' + runId + '/' + cancerType + "/coding_geneSVPairs.txt_" + str(permutationRound), codingPairs, delimiter='\t', fmt='%s')		
 				
 			
 			

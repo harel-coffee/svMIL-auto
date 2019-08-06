@@ -53,18 +53,29 @@ codingDegPairs = np.loadtxt(sys.argv[4], dtype="object")
 totalSVs = np.union1d(nonCodingDegPairs[:,0], codingDegPairs[:,0])
 print len(totalSVs)
 
+#get the excluded SVs from the coding potential
+codingEffectSVs = np.loadtxt('codingEffectSVs.txt', dtype='object')
+
+
 svEffects = np.empty([len(totalSVs), 4], dtype="object")
 svEffects[:,1] = 0
 svEffects[:,2] = 0
 ind = 0
 for svInd in range(0, nonCodingDegPairs.shape[0]):
+	if nonCodingDegPairs[svInd,0] in codingEffectSVs: #do not include this SV if it is in the list of SVs that likely have coding effects
+		continue
+
 	svEffects[ind,0] = nonCodingDegPairs[svInd,0]
 	svEffects[ind,1] = int(nonCodingDegPairs[svInd,1])
-	print int(nonCodingDegPairs[svInd,1])
 	ind += 1
 
 for svInd in range(0, codingDegPairs.shape[0]):
+	
 	sv = codingDegPairs[svInd,0]
+	
+	if sv in codingEffectSVs: #do not include this SV if it is in the list of SVs that likely have coding effects
+		continue
+	
 	if sv in svEffects[:,0]:
 		rowInd = svEffects[:,0] == sv
 		svEffects[rowInd,2] = int(codingDegPairs[svInd,1])
@@ -74,6 +85,14 @@ for svInd in range(0, codingDegPairs.shape[0]):
 		ind += 1
 	
 print svEffects
+
+#Filter out None rows
+filteredSVEffects = []
+for sv in svEffects:
+	if sv[0] is not None:
+		filteredSVEffects.append(sv)
+
+svEffects = np.array(filteredSVEffects, dtype='object')
 
 #Get the properties of SVs beforehand to match these later
 svProperties = []
@@ -215,18 +234,18 @@ print svProperties
 # np.savetxt('Output/significantNCProportion_multipleTestCorrected_DEG.txt', svSignificanceCorrected, fmt='%s', delimiter='\t')
 # exit()
 # print "plotting pairs"
-# plt.scatter(svEffects[:,2], svEffects[:,1]) #c=colors
-# 
-# print "plotting significance: "
-# #Do overlay because the colormap is not working separately
-# svSignificanceCorrected = np.loadtxt('Output/significantNCProportion_multipleTestCorrected_DEG.txt', dtype="object")
-# for svInd in range(0, svEffects.shape[0]):
-# 	sv = svEffects[svInd,0]
-# 	
-# 	if sv in svSignificanceCorrected[:,0]:
-# 		plt.scatter(svEffects[svInd,2], svEffects[svInd,1], marker="*", color='red') #plot the significant SVs
-# plt.show()
-# exit()
+plt.scatter(svEffects[:,2], svEffects[:,1]) #c=colors
+
+print "plotting significance: "
+#Do overlay because the colormap is not working separately
+svSignificanceCorrected = np.loadtxt('Output/significantNCProportion_multipleTestCorrected_DEG.txt', dtype="object")
+for svInd in range(0, svEffects.shape[0]):
+	sv = svEffects[svInd,0]
+	
+	if sv in svSignificanceCorrected[:,0]:
+		plt.scatter(svEffects[svInd,2], svEffects[svInd,1], marker="*", color='red') #plot the significant SVs
+plt.show()
+exit()
 
 svSignificanceCorrected = np.loadtxt('Output/significantNCProportion_multipleTestCorrected_DEG.txt', dtype="object")
 

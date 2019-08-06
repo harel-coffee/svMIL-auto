@@ -207,7 +207,7 @@ perPairDifferentialExpressionArrayFiltered = perPairDifferentialExpressionArray[
 
 np.save(sys.argv[1] + '_nonCodingPairDEGs.npy', perPairDifferentialExpressionArrayFiltered)
 
-perPairDifferentialExpression = getDEPairs(nonCodingPairs[:,0], geneSampleRef, expressionData, dict(), geneSampleExpr, negativeExpr)
+perPairDifferentialExpression = getDEPairs(codingPairs, geneSampleRef, expressionData, dict(), geneSampleExpr, negativeExpr)
 print "done"
 
 perPairDifferentialExpressionArray = np.empty([len(perPairDifferentialExpression), 2], dtype="object")
