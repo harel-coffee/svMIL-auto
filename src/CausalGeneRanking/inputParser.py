@@ -9,6 +9,8 @@
 	Each of these input files will require a specific format with at least some required fields. 
 
 """
+from __future__ import absolute_import
+from __future__ import print_function
 from gene import Gene
 from sv import SV
 # from snv import SNV
@@ -682,7 +684,7 @@ class InputParser:
 		
 		tfs = []
 		with open(tfFile, 'rb') as f:
-			print tfFile
+			print(tfFile)
 			lineCount = 0
 			for line in f:
 				if lineCount < 1:

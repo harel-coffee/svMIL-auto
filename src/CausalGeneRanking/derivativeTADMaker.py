@@ -12,12 +12,15 @@
 
 """
 
+from __future__ import absolute_import
+from __future__ import print_function
 import re
 import numpy as np
 from tad import TAD
 from sv import SV
 from gene import Gene
 from element import Element
+from six.moves import range
 
 class DerivativeTADMaker:
 	
@@ -41,7 +44,7 @@ class DerivativeTADMaker:
 			
 			
 		"""
-		print "Linking SV effects to genes"
+		print("Linking SV effects to genes")
 		invCount = 0
 		dupCount = 0
 		delCount = 0
@@ -52,7 +55,7 @@ class DerivativeTADMaker:
 			if typeMatch is not None:
 				self.determineDerivativeTADs(sv, tadData, "inv")
 				invCount += 1
-				print "inversion count: ", invCount
+				print("inversion count: ", invCount)
 		
 		
 		#Duplications
@@ -62,7 +65,7 @@ class DerivativeTADMaker:
 				
 				self.determineDerivativeTADs(sv, tadData, "dup")
 				dupCount += 1
-				print "duplication count: ", dupCount
+				print("duplication count: ", dupCount)
 				
 		#Deletions		
 		for sv in svData:
@@ -71,27 +74,27 @@ class DerivativeTADMaker:
 				
 				self.determineDerivativeTADs(sv, tadData, "del")
 				delCount += 1
-				print "deletion count: ", delCount		
+				print("deletion count: ", delCount)		
 				
 				
 		#For the translocations separately
 		# 1. For each SV, determine which TAD the SVs are in
-		print "matching TADs with translocations"
+		print("matching TADs with translocations")
 		tadsPerSV = self.matchTADsWithTranslocations(svData, tadData)
 		
 		#2. Group the SVs that form a 'chain' and have at least 1 TAD in overlap
-		print "making SV groups"
+		print("making SV groups")
 		svGroups = self.defineGroupsOfTranslocations(tadsPerSV)
 		
-		print "determine derivative TADs"
+		print("determine derivative TADs")
 		#3. Call the derivative TAD maker on this group of SVs and let it assign the gains/losses to the genes
 		import time
 		startTime = time.time()
 		self.determineDerivativeTADs([svGroups, tadsPerSV], tadData, "trans")
 		endTime = time.time()
-		print "Took ", endTime - startTime, " to determine the derivative TADs"
+		print("Took ", endTime - startTime, " to determine the derivative TADs")
 		
-		print "done making derivative TADs"
+		print("done making derivative TADs")
 	
 	def defineGroupsOfTranslocations(self, tadsPerSV):
 		"""
@@ -520,7 +523,7 @@ class DerivativeTADMaker:
 			updatedTadPos = dict() #keep the TADs and the new start/ends after 
 			
 			for group in svGroups:
-				print group[0].sampleName
+				print(group[0].sampleName)
 				
 				gains = dict()
 				losses = dict()

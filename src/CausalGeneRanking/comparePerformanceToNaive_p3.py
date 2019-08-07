@@ -470,7 +470,7 @@ for gene in diffGenes:
 
 cosmicGenesFile = sys.argv[3]
 cosmicGenes = []
-with open(cosmicGenesFile, 'rb') as f:
+with open(cosmicGenesFile, 'r') as f:
 	lineCount = 0
 	for line in f:
 		if lineCount == 0:
@@ -576,40 +576,40 @@ print("BC p-value rules: ", p)
 # rulesExprCall = "python computeSVGenePairExpression_oneSet.py ruleSvGenePairs.txt " + sys.argv[8] 
 # os.system(rulesExprCall)
 
-#Read the DEG pairs and determine how many genes are DEG in total
-#svGenePairsWindowed = np.loadtxt("Output/windowedSVs.txt", dtype='object')
-# windowSVsDegPairs = np.load("svGenePairsWindowed.txt_degPairs.npy", allow_pickle=True)
-# tadSVsDegPairs = np.load("tadSVGenePairs.txt_degPairs.npy", allow_pickle=True)
-# ruleSVsDegPairs = np.load("ruleSvGenePairs.txt_degPairs.npy", allow_pickle=True)
-# 
-# 
-# windowedDegGenes = []
-# for pair in svGenePairsWindowed:
-# 	if pair in windowSVsDegPairs[:,0]:
-# 		splitPair = pair.split("_")
-# 		if splitPair[0] not in windowedDegGenes:
-# 			windowedDegGenes.append(splitPair[0])
-# 
-# tadDegGenes = []
-# for pair in tadSVGenePairs:
-# 	if pair in tadSVsDegPairs[:,0]:
-# 		splitPair = pair.split("_")
-# 		if splitPair[0] not in tadDegGenes:
-# 			tadDegGenes.append(splitPair[0])
-# 			
-# #For the rule based method, we need to look at a separate output file to get the gene-SV pairs. This may be fixed in the actual tool output later.
-# ruleSvGenePairs = np.loadtxt('ruleSvGenePairs.txt', dtype='object')
-# 
-# ruleDegGenes = []
-# for pair in ruleSvGenePairs:
-# 	if pair in ruleSVsDegPairs[:,0]:
-# 		splitPair = pair.split("_")
-# 		if splitPair[0] not in ruleDegGenes:
-# 			ruleDegGenes.append(splitPair[0])
-# 			
-# print "Number of DEG genes in the windowed approach: ", len(windowedDegGenes)
-# print "Number of DEG genes in the TAD approach: ", len(tadDegGenes)
-# print "number of DEG genes in the rule approach: ", len(ruleDegGenes)
+# Read the DEG pairs and determine how many genes are DEG in total
+svGenePairsWindowed = np.loadtxt("Output/windowedSVs.txt", dtype='object')
+windowSVsDegPairs = np.load("svGenePairsWindowed.txt_degPairs.npy", allow_pickle=True, encoding='latin1')
+tadSVsDegPairs = np.load("tadSVGenePairs.txt_degPairs.npy", allow_pickle=True, encoding='latin1')
+ruleSVsDegPairs = np.load("ruleSvGenePairs.txt_degPairs.npy", allow_pickle=True, encoding='latin1')
+
+
+windowedDegGenes = []
+for pair in svGenePairsWindowed:
+	if pair in windowSVsDegPairs[:,0]:
+		splitPair = pair.split("_")
+		if splitPair[0] not in windowedDegGenes:
+			windowedDegGenes.append(splitPair[0])
+
+tadDegGenes = []
+for pair in tadSVGenePairs:
+	if pair in tadSVsDegPairs[:,0]:
+		splitPair = pair.split("_")
+		if splitPair[0] not in tadDegGenes:
+			tadDegGenes.append(splitPair[0])
+			
+#For the rule based method, we need to look at a separate output file to get the gene-SV pairs. This may be fixed in the actual tool output later.
+ruleSvGenePairs = np.loadtxt('ruleSvGenePairs.txt', dtype='object')
+
+ruleDegGenes = []
+for pair in ruleSvGenePairs:
+	if pair in ruleSVsDegPairs[:,0]:
+		splitPair = pair.split("_")
+		if splitPair[0] not in ruleDegGenes:
+			ruleDegGenes.append(splitPair[0])
+			
+print("Number of DEG genes in the windowed approach: ", len(windowedDegGenes))
+print("Number of DEG genes in the TAD approach: ", len(tadDegGenes))
+print("number of DEG genes in the rule approach: ", len(ruleDegGenes))
 
 
 #Compute enrichment for gene sets and GO terms
@@ -617,7 +617,11 @@ print("doing enrichment: ")
 
 import gseapy as gp
 import pandas as pd
+pd.set_option('display.max_columns', 500)
 import matplotlib.pyplot as plt
+from matplotlib import interactive
+interactive(True)
+
 # 
 # bm = Biomart(verbose=False, host="asia.ensembl.org")
 # results = bm.query(dataset='hsapiens_gene_ensembl',
@@ -628,15 +632,17 @@ import matplotlib.pyplot as plt
 # 
 # print results.head()
 
-enr = gp.enrichr(gene_list=ruleBasedAffectedGenes,
+enr = gp.enrichr(gene_list=list(ruleDegGenes),
                  description='ruleBasedGenes',
                  gene_sets=['KEGG_2016','KEGG_2013'],
-                 outdir='ruleBased/enrichr_kegg',
-                 cutoff=0.5
+                 outdir='ruleBased/enrichr_kegg'
                 )
 
 print(enr.results.head())
 
+from gseapy.plot import barplot, dotplot
+a = barplot(enr.res2d,title='KEGG_2013',ofname='test.png')
+print(a)
 exit()
 
 

@@ -1,3 +1,5 @@
+from __future__ import absolute_import
+from __future__ import print_function
 from sv import SV
 from tad import TAD
 import numpy as np
@@ -137,10 +139,10 @@ class GenomicShuffler:
 			chromosome2 = sv[3]
 			
 			if chromosome1 not in self.hg19Coordinates:
-				print chromosome1
+				print(chromosome1)
 				continue
 			if chromosome2 not in self.hg19Coordinates:
-				print chromosome2
+				print(chromosome2)
 				continue
 			
 			chr1Length = self.hg19Coordinates[chromosome1]

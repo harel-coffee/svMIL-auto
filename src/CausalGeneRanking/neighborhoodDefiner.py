@@ -1,3 +1,5 @@
+from __future__ import absolute_import
+from __future__ import print_function
 import numpy as np
 import json
 import pickle as pkl
@@ -15,6 +17,7 @@ from genomicShuffler import GenomicShuffler
 from inputParser import InputParser
 
 import settings
+from six.moves import range
 
 class NeighborhoodDefiner:
 	"""
@@ -78,11 +81,11 @@ class NeighborhoodDefiner:
 		if settings.general['tads'] == True or settings.general['gainOfInteractions'] == True: #Gain of interactions is dependent on TADs
 			tadFile = settings.files['tadFile']
 			
-			print "Getting TADs"
+			print("Getting TADs")
 			tadData = InputParser().getTADsFromFile(tadFile)
 			
 			#Filter the SVs out that overlap more than 10 TADs. (temporarily)
-			print "original number of svs:", svData.shape
+			print("original number of svs:", svData.shape)
 			
 			
 			# filteredSvData = []
@@ -157,7 +160,7 @@ class NeighborhoodDefiner:
 				genomicShuffler = GenomicShuffler()
 				tadData = genomicShuffler.shuffleTADs(tadData)
 
-			print "mapping TADs to genes"
+			print("mapping TADs to genes")
 			self.mapTADsToGenes(genes[:,3], tadData)
 		
 		#For every SV, find the TADs on the left and right
@@ -210,7 +213,7 @@ class NeighborhoodDefiner:
 			# 		eQTLData = pkl.load(h)
 			
 			eQTLFile = settings.files['eQTLFile']
-			print "getting eQTLs"
+			print("getting eQTLs")
 			eQTLData = InputParser().getEQTLsFromFile(eQTLFile, genes[:,3], self)
 
 			# with open('eQTLData.pkl', 'wb') as h:
@@ -226,14 +229,14 @@ class NeighborhoodDefiner:
 		tadData = self.mapGenesToTads(genes, tadData) 
 		
 		#3. Get enhancers
-		print "getting enhancers"
+		print("getting enhancers")
 		if settings.general['enhancers'] == True:
 			enhancerData = InputParser().getEnhancersFromFile(settings.files['enhancerFile'], genes[:,3], self)
 			#Add the enhancers to TADs & genes as well	
 			tadData = self.mapElementsToTads(enhancerData, tadData)	
 		
 		#4. Get promoters
-		print "getting promoters"
+		print("getting promoters")
 		if settings.general['promoters'] == True:
 			promoterData = InputParser().getPromotersFromFile(settings.files['promoterFile'], genes[:,3], self)
 			
@@ -242,7 +245,7 @@ class NeighborhoodDefiner:
 		
 		#5. Get CpG islands
 		if settings.general['cpgIslands'] == True:
-			print "Getting cpg islands"
+			print("Getting cpg islands")
 			cpgData = InputParser().getCpgIslandsFromFile(settings.files['cpgFile'])
 		
 			#Add the CpG sites to the TADs
@@ -250,7 +253,7 @@ class NeighborhoodDefiner:
 		
 		#6. Get Transcription factors
 		if settings.general['transcriptionFactors'] == True:
-			print "Getting transcription factors"
+			print("Getting transcription factors")
 
 			tfData = InputParser().getTranscriptionFactorsFromFile(settings.files['tfFile'])
 	
@@ -260,7 +263,7 @@ class NeighborhoodDefiner:
 		
 		#7. Get Hi-C data
 		if settings.general['hiC'] == True:
-			print "Getting Hi-C data"
+			print("Getting Hi-C data")
 			hicData = InputParser().getHiCInteractionsFromFile(settings.files['hicFile'])
 			
 			#Map the interactions to TADs as elements
@@ -268,7 +271,7 @@ class NeighborhoodDefiner:
 		
 		#8. Get histone marks
 		if settings.general['histones'] == True:
-			print "Getting histone marks"
+			print("Getting histone marks")
 			files = [settings.files['h3k9me3'], settings.files['h3k4me3'], settings.files['h3k27ac'], settings.files['h3k27me3'],
 					 settings.files['h3k4me1'], settings.files['h3k36me3']]
 			types = ['h3k9me3', 'h3k4me3', 'h3k27ac', 'h3k27me3', 'h3k4me1', 'h3k36me3']
@@ -280,7 +283,7 @@ class NeighborhoodDefiner:
 		
 		#9. Get DNAse I hypersensitivty sites
 		if settings.general['dnaseI'] == True:
-			print "Getting DNAse I hypersensitivity sites"
+			print("Getting DNAse I hypersensitivity sites")
 			
 			dnaseIData = InputParser().getDNAseIFromFile(settings.files['dnaseIFile'])
 			
@@ -290,16 +293,16 @@ class NeighborhoodDefiner:
 		
 		#3. Map SVs to all neighborhood elements
 		if mode == "SV":
-			print "Mapping SVs to the neighborhood"
+			print("Mapping SVs to the neighborhood")
 			self.mapSVsToNeighborhood(genes, svData, tadData)
 		if mode == "SNV":
-			print "Mapping SNVs to the neighborhood"
+			print("Mapping SNVs to the neighborhood")
 			self.mapSNVsToNeighborhood(genes, snvData, eQTLData)
 		if mode == "SV+SNV": #in this case map both
-			print "Mapping SVs to the neighborhood"
+			print("Mapping SVs to the neighborhood")
 			self.mapSVsToNeighborhood(genes, svData, tadData)
 			
-			print "Mapping SNVs to the neighborhood"
+			print("Mapping SNVs to the neighborhood")
 			self.mapSNVsToNeighborhood(genes, snvData, eQTLData)
 
 
@@ -384,7 +387,7 @@ class NeighborhoodDefiner:
 			- This function may be deprecated, I don't really use it anymore in the code but leave it here in case it is useful at a later point. 
 			
 		"""
-		print tadData
+		print(tadData)
 		#For each gene, check which TADs are on the correct chromosome.
 		
 		#Then see which ones are directly on the left and directly on the right of the gene.
@@ -568,7 +571,7 @@ class NeighborhoodDefiner:
 		hicOut = "../../data/hic/hic.bed"
 		with open(hicOut, 'w') as outF:
 			
-			print "mapping to tads"
+			print("mapping to tads")
 			uniqueElements = dict()
 			for tadStr in interactionsByTad:
 				
@@ -750,7 +753,7 @@ class NeighborhoodDefiner:
 		if settings.general['gainOfInteractions'] == True:
 			self.determineGainedInteractions(svData, tadData)
 		
-		print "mapping SVs to genes"
+		print("mapping SVs to genes")
 		#Map SVs to genes that these overlap
 		for sv in svData:
 			
@@ -793,7 +796,7 @@ class NeighborhoodDefiner:
 			
 		
 		
-		print "Done mapping SVs"
+		print("Done mapping SVs")
 		
 	def mapSNVsToNeighborhood(self, genes, snvData, elementData):
 		"""
@@ -932,8 +935,8 @@ class NeighborhoodDefiner:
 				
 				endTime = time.time()
 				
-				print "new chromosome: ", gene.chromosome
-				print "time for one chromosome: ", endTime - startTime
+				print("new chromosome: ", gene.chromosome)
+				print("time for one chromosome: ", endTime - startTime)
 				startTime = time.time()
 				# matchingChrInd = snvData[:,0] == str(gene.chromosome)
 		
