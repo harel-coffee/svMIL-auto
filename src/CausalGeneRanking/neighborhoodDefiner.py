@@ -108,7 +108,7 @@ class NeighborhoodDefiner:
 			# print "number of svs: ", svData.shape
 			# 
 			# #temporarily write to a file
-			# testOut = "../../data/TPTNTestSet/brca_2TADs.txt"
+			# testOut = "unshuffledSVs.txt"
 			# header = "chr1\ts1\te1\to1\tchr2\ts2\te2\to2\tsource\tsample_name\tsv_type\tcancer_type\n"
 			# 
 			# with open(testOut, 'w') as outF:

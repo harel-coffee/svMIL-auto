@@ -1,6 +1,7 @@
 import numpy as np
 import settings
 import sys
+import os
 
 class GeneRanking:
 	"""
@@ -182,7 +183,12 @@ class GeneRanking:
 			print pairScores	
 			pairIds = np.array(pairIds)
 			
-			
+			if not os.path.exists(settings.files['rankedGeneScoreDir']):
+				os.makedirs(settings.files['rankedGeneScoreDir'])
+			if not os.path.exists(settings.files['rankedGeneScoreDir'] + "/" + runId):
+				os.makedirs(settings.files['rankedGeneScoreDir'] + "/" + runId)
+			if not os.path.exists(settings.files['rankedGeneScoreDir'] + "/" + runId + '/' + cancerType):
+				os.makedirs(settings.files['rankedGeneScoreDir'] + "/" + runId + '/' + cancerType)
 			
 			pairScoresWithPairIds = np.empty([len(svGeneIndices), 28], dtype="object")
 			pairScoresWithPairIds[:,0] = pairIds

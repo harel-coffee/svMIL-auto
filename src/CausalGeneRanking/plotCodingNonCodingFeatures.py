@@ -17,10 +17,6 @@ codingFeatures = codingFeatureData[:,1:]
 leftFeatures = nonCodingFeatures
 rightFeatures = codingFeatures
 
-print leftFeatures.shape
-print rightFeatures.shape
-exit()
-
 eQTLLosses = leftFeatures[:,0].astype(float)
 enhancerLosses = leftFeatures[:,1].astype(float)
 promoterLosses = leftFeatures[:,2].astype(float)
@@ -40,7 +36,7 @@ lossData = [np.sum(eQTLLosses), np.sum(enhancerLosses), np.sum(promoterLosses), 
 			np.sum(tfLosses), np.sum(hicLosses), np.sum(h3k9me3Losses), np.sum(h3k4me3Losses), np.sum(h3k27acLosses),
 			np.sum(h3k27me3Losses), np.sum(h3k4me1Losses), np.sum(h3k36me3Losses), np.sum(dnaseLosses)]
 lossData = np.array(lossData)
-lossData = (lossData / float(leftFeatures.shape[0] + rightFeatures.shape[0])) * 100
+#lossData = (lossData / float(leftFeatures.shape[0] + rightFeatures.shape[0])) * 100
 #lossData = -np.log(lossData)
 print lossData
 
@@ -69,7 +65,7 @@ lossData = [np.sum(eQTLLosses), np.sum(enhancerLosses), np.sum(promoterLosses), 
 			np.sum(tfLosses), np.sum(hicLosses), np.sum(h3k9me3Losses), np.sum(h3k4me3Losses), np.sum(h3k27acLosses),
 			np.sum(h3k27me3Losses), np.sum(h3k4me1Losses), np.sum(h3k36me3Losses), np.sum(dnaseLosses)]
 lossData = np.array(lossData)
-lossData = (lossData / float(leftFeatures.shape[0] + rightFeatures.shape[0])) * 100
+#lossData = (lossData / float(leftFeatures.shape[0] + rightFeatures.shape[0])) * 100
 #lossData = -np.log(lossData)
 print lossData
 
@@ -103,7 +99,7 @@ gainData = [np.sum(eQTLGains), np.sum(enhancerGains), np.sum(promoterGains), np.
 			np.sum(h3k27me3Gains), np.sum(h3k4me1Gains), np.sum(h3k36me3Gains), np.sum(dnaseGains)]
 
 gainData = np.array(gainData)
-gainData = (gainData / float(leftFeatures.shape[0] + rightFeatures.shape[0])) * 100
+#gainData = (gainData / float(leftFeatures.shape[0] + rightFeatures.shape[0])) * 100
 #gainData = -np.log(gainData)
 print gainData
 
@@ -131,7 +127,7 @@ gainData = [np.sum(eQTLGains), np.sum(enhancerGains), np.sum(promoterGains), np.
 			np.sum(h3k27me3Gains), np.sum(h3k4me1Gains), np.sum(h3k36me3Gains), np.sum(dnaseGains)]
 
 gainData = np.array(gainData)
-gainData = (gainData / float(leftFeatures.shape[0] + rightFeatures.shape[0])) * 100
+#gainData = (gainData / float(leftFeatures.shape[0] + rightFeatures.shape[0])) * 100
 #gainData = -np.log(gainData)
 
 print gainData
@@ -145,7 +141,6 @@ plt.legend(loc='best')
 plt.tight_layout()
 plt.show()
 
-exit()
 
 
 

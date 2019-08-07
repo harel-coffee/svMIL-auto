@@ -127,9 +127,8 @@ class GenomicShuffler:
 		"""
 		
 		shuffledSvs = []
-		
 		for sv in svData:
-	
+			
 			#1. Get the min max bounds for the chromosomes (2 in case of translocation)
 			#The minimum start coordinate is just 1, the maximum start is the length-start
 			#The end coordinate is just start + length
@@ -138,67 +137,64 @@ class GenomicShuffler:
 			chromosome2 = sv[3]
 			
 			if chromosome1 not in self.hg19Coordinates:
+				print chromosome1
 				continue
 			if chromosome2 not in self.hg19Coordinates:
+				print chromosome2
 				continue
 			
 			chr1Length = self.hg19Coordinates[chromosome1]
 			chr2Length = self.hg19Coordinates[chromosome2]
 			
-			start1 = int(sv[1])
-			end1 = int(sv[2])
+			start = int(sv[1])
+			end = int(sv[5])
 			
-			chr1Difference = end1 - start1
-			
-			start2 = int(sv[4])
-			end2 = int(sv[5])
-			
-			chr2Difference = end2 - start2
-			
-			minimumStart1 = 1	
+			minimumStart = 1	
 			
 			###Based on random positions
 			
 			#If the chromosomes are the same, use the maximum start for chr1. Otherwise use different chromosomes.
-			if chromosome1 == chromosome2:
+			if chromosome1 == chromosome2 and start < end:
 				
-				svLength = start2 - start1
+				svLength = end - start
 				
-				maximumStart1 = chr1Length - svLength #do not use the end here, because that is the end of the original SV. It can be anywhere, depending on the length. 
+				maximumStart = chr1Length - svLength #do not use the end here, because that is the end of the original SV. It can be anywhere, depending on the length. 
+				
+				newStart = random.randint(minimumStart, maximumStart)
+				newEnd = newStart + svLength
+	
+			elif chromosome1 != chromosome2: #If the chromosomes are not the same, the start and end coordinates do not necessarily need to be equidistant. Here we can randomly sample the start on both chromosomes 		
 			
-				newStart1 = random.randint(minimumStart1, maximumStart1)
-				newEnd1 = newStart1 + chr1Difference
-						
-				newStart2 = newStart1 + svLength
-				newEnd2 = newStart2 + chr2Difference
+				maximumStart1 = chr1Length #use the end on the first chromosome
+				newStart = random.randint(minimumStart, maximumStart1)
 				
-			else: #If the chromosomes are not the same, the start and end coordinates do not necessarily need to be equidistant. Here we can randomly sample the start on both chromosomes 		
-			
-				maximumStart1 = chr1Length - chr1Difference #use the end on the first chromosome
-				newStart1 = random.randint(minimumStart1, maximumStart1)
-				
-				maximumStart2 = chr2Length - chr2Difference
+				maximumStart2 = chr2Length
 				
 				#The end coordinate here is actually the start coordinate for chromosome 2.
-				newStart2 = random.randint(minimumStart1, maximumStart2) #chr2 has the same start coordinate as chr 1
+				newEnd = random.randint(minimumStart, maximumStart2) #chr2 has the same start coordinate as chr 1
+			else: #intrachromosomal translocation, also randomly sample new positions here, equidistant can mean that the SV will go outside of the chromosome
+				maximumStart1 = chr1Length #use the end on the first chromosome
+				newStart = random.randint(minimumStart, maximumStart1)
 				
-				#s1 and e1 are the bounds on chromosome 1.
-				#The new e1 needs to have the same difference from s1.
-				newEnd1 = newStart1 + chr1Difference
+				maximumStart2 = chr2Length
 				
-				#The same for s2 and e2, on chromosome 2.
-				newEnd2 = newStart2 + chr2Difference
-
+				#The end coordinate here is actually the start coordinate for chromosome 2.
+				newEnd = random.randint(minimumStart, maximumStart2) #chr2 has the same start coordinate as chr 1
+			
 			#Sample name and cancer type can be copied from the other SV. Chromosome information also remains the same.
-			#Keep in mind that the sample name and cancer type are reversed in the SV object beause that order makes more sense. 
+			#Keep in mind that the sample name and cancer type are reversed in the SV object beause that order makes more sense.
+			newStart1 = newStart
+			newEnd1 = newStart
+			newStart2 = newEnd
+			newEnd2 = newEnd
 			newSvObj = SV(chromosome1, newStart1, newEnd1, sv[8].o1, chromosome2, newStart2, newEnd2, sv[8].o2, sv[7], sv[6], sv[8].svType)
 			newSv = [chromosome1, newStart1, newEnd1, chromosome2, newStart2, newEnd2, sv[6], sv[7], newSvObj]	
 			shuffledSvs.append(newSv)	
-	
+		
 		shuffledSvs = np.array(shuffledSvs, dtype="object")	
 		
 		#Temporarily write the shuffled SVs to a VCF file for testing
-		# 
+		
 		# outVcf = "test_shuffledSVs.vcf"
 		# with open(outVcf, 'w') as outF:
 		# 	
@@ -226,12 +222,12 @@ class GenomicShuffler:
 		# 		else:
 		# 			end = str(sv[2])
 		# 
-		# 		info = 'CHR2=' + chr2 + ";S2=" + s2 + ";E1=" + e1 + ";SAMPLE=" + sample + ";END=" + end
+		# 		info = 'CHR2=' + chr2 + ";S2=" + s2 + ";E1=" + e1 + ";SAMPLE=" + sample + ";END=" + end + ';SVTYPE=' + sv[8].svType
 		# 	
 		# 		shuffledSvLine = chr1 + "\t" + pos + "\t" + empty + "\t" + ref + "\t" + empty + "\t" + empty + "\t" + empty + "\t" + info + "\n"
 		# 		outF.write(shuffledSvLine)		
 		# 	
-		#exit()
+		# exit()
 		
 		return shuffledSvs
 
