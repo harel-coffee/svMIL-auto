@@ -6,9 +6,12 @@
 
 """
 
+from __future__ import absolute_import
+from __future__ import print_function
 import numpy as np
 import matplotlib.pyplot as plt
 import sys
+from six.moves import range
 # 
 # #Plot recurrence of concept genes
 # conceptGenes = np.loadtxt(sys.argv[1], dtype="object")
@@ -170,12 +173,12 @@ for pair in pairNames:
 	if shortPairName in degPairs:
 		ax.scatter(projected[:,0][pairInd],projected[:,1][pairInd],c='yellow',s=40)
 		#if projected[:,0][pairInd] > 2000:
-		print pair
+		print(pair)
 		added +=1
 	
 	pairInd += 1
 	
-print added
+print(added)
 
 #plt.scatter(projected[:, 0], projected[:, 1], c=colorLabels)
 
@@ -219,7 +222,7 @@ ymin = np.min(projected[:,1])
 ymax = np.max(projected[:,1])
 
 #Define the box size and how many boxes we should make
-print xmin, xmax, ymin, ymax
+print(xmin, xmax, ymin, ymax)
 
 #round the values to get covering boxes
 xmin = round(xmin)
@@ -284,7 +287,7 @@ for yInd in range(0, yBoxNum):
 plotGrid = np.ma.masked_where(plotGrid == 0, plotGrid)
 cmap = plt.cm.seismic
 cmap.set_bad(color='white')
-print plotGrid
+print(plotGrid)
 plt.imshow(plotGrid, cmap=cmap, interpolation='nearest')		
 plt.show()
 exit()
@@ -297,7 +300,7 @@ from matplotlib import pyplot as plt
 sigma = [3, 3]
 y = sp.ndimage.filters.gaussian_filter(projected, sigma, mode='constant')
 
-print projected.shape
+print(projected.shape)
 exit()
 
 plt.scatter(y[:,0], y[:,1], c=colorLabels)
@@ -331,7 +334,7 @@ for j in y:
 z = np.array(logScaled)
 
 Z = z.reshape(x.shape[0], y.shape[0])
-print Z
+print(Z)
 # print Z
 plt.imshow(Z, cmap='hot', interpolation='nearest')
 plt.show()
@@ -416,8 +419,8 @@ conceptSimilarities = similarityMatrix[:,conceptIndices]
 positiveIndices = np.where(np.array(labels) == 1)[0]
 negativeIndices = np.where(np.array(labels) == -1)[0]
 
-print len(positiveIndices)
-print len(negativeIndices)
+print(len(positiveIndices))
+print(len(negativeIndices))
 exit()
 positiveConceptSimilarities = conceptSimilarities[positiveIndices,:]
 negativeConceptSimilarities = conceptSimilarities[negativeIndices,:]

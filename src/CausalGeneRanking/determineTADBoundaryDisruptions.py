@@ -3,11 +3,14 @@
 
 """
 
+from __future__ import absolute_import
+from __future__ import print_function
 from inputParser import InputParser
 from genomicShuffler import GenomicShuffler
 import sys
 import numpy as np
 import matplotlib.pyplot as plt
+from six.moves import range
 
 somaticSVs = InputParser().getSVsFromFile(sys.argv[1], "all")
 
@@ -63,10 +66,10 @@ for tad in tads:
 		tadDisruptionsDict[0] += 1
 		tadDisruptions.append(0)
 
-print np.sum(tadDisruptionsDict.values())
+print(np.sum(list(tadDisruptionsDict.values())))
 		
 #plt.hist(tadDisruptions)
-plt.bar(tadDisruptionsDict.keys(), tadDisruptionsDict.values())
+plt.bar(list(tadDisruptionsDict.keys()), list(tadDisruptionsDict.values()))
 plt.ylim(0,3300)
 plt.xlim(-1,28)
 plt.show()

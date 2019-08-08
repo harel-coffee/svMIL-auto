@@ -1,8 +1,11 @@
 
+from __future__ import absolute_import
+from __future__ import print_function
 import sys
 import numpy as np
 import re
 from scipy import stats
+from six.moves import range
 
 # Get the expression z-scores for every SV. 
 
@@ -34,7 +37,7 @@ with open(expressionFile, 'r') as inF:
 		expressionData.append(fixedData)
 
 expressionData = np.array(expressionData, dtype="object")	
-print expressionData
+print(expressionData)
 
 #Get the z-scores for every pair
 
@@ -84,12 +87,12 @@ for gene in geneSampleRef:
 					sampleInd = samples.index(sample)
 					
 					geneSampleExpr[gene][geneSample] = float(geneExpression[sampleInd])
-print "done getting expr for samples"
+print("done getting expr for samples")
 
 #Also set the negative set for every gene consisting of the expression of all samples wthout any SV
 negativeExpr = dict()
 for gene in geneSampleExpr:
-	matchedFullSampleNames = geneSampleExpr[gene].keys()
+	matchedFullSampleNames = list(geneSampleExpr[gene].keys())
 	
 	#Get all the samples without an SV for this gene
 	unmatchedSamples = np.setdiff1d(samples[1:len(samples)-1], matchedFullSampleNames) #exclude hybrid ref
@@ -108,7 +111,7 @@ for gene in geneSampleExpr:
 		negativeSampleExpressionValues.append(float(geneExpression[sampleInd]))
 	
 	negativeExpr[gene] = negativeSampleExpressionValues
-print "negative expr done"
+print("negative expr done")
 
 def getDEPairs(pairs, geneSampleRef, epressionData, perPairDifferentialExpression, geneSampleExpr, negativeExpr):
 									
@@ -123,7 +126,7 @@ def getDEPairs(pairs, geneSampleRef, epressionData, perPairDifferentialExpressio
 		
 		
 		sampleExpressionValue = geneSampleExpr[gene][pairSample] #expression values of this gene in all samples
-		matchedFullSampleNames = geneSampleExpr[gene].keys()
+		matchedFullSampleNames = list(geneSampleExpr[gene].keys())
 					
 		
 		negativeSampleExpressionValues = negativeExpr[gene]
@@ -141,15 +144,15 @@ def getDEPairs(pairs, geneSampleRef, epressionData, perPairDifferentialExpressio
 
 #Get the p-value for each pair in coding & non-coding
 perPairDifferentialExpression = getDEPairs(nonCodingPairs[:,0], geneSampleRef, expressionData, dict(), geneSampleExpr, negativeExpr)
-print "done"
+print("done")
 perPairDifferentialExpression = getDEPairs(codingPairs, geneSampleRef, expressionData, perPairDifferentialExpression, geneSampleExpr, negativeExpr)
-print "coding done"
+print("coding done")
 #Do multiple testing correction
 #print perPairDifferentialExpression
 
 perPairDifferentialExpressionArray = np.empty([len(perPairDifferentialExpression), 2], dtype="object")
-perPairDifferentialExpressionArray[:,0] = perPairDifferentialExpression.keys()
-perPairDifferentialExpressionArray[:,1] = perPairDifferentialExpression.values()
+perPairDifferentialExpressionArray[:,0] = list(perPairDifferentialExpression.keys())
+perPairDifferentialExpressionArray[:,1] = list(perPairDifferentialExpression.values())
 
 
 from statsmodels.sandbox.stats.multicomp import multipletests
@@ -179,26 +182,26 @@ for pair in perPairDifferentialExpressionArrayFiltered[:,0]:
 
 pairs = np.empty([len(svsAndDegsNonCoding), 2], dtype="object")	
 for svInd in range(0, len(svsAndDegsNonCoding)):
-	pairs[svInd, 0] = svsAndDegsNonCoding.keys()[svInd]
-	pairs[svInd,1] = svsAndDegsNonCoding[svsAndDegsNonCoding.keys()[svInd]]
+	pairs[svInd, 0] = list(svsAndDegsNonCoding.keys())[svInd]
+	pairs[svInd,1] = svsAndDegsNonCoding[list(svsAndDegsNonCoding.keys())[svInd]]
 
 np.savetxt(sys.argv[1] + "_degPairsNonCoding.txt", pairs, delimiter="\t", fmt="%s")
 
 #repeat for coding
 pairs = np.empty([len(svsAndDegsCoding), 2], dtype="object")	
 for svInd in range(0, len(svsAndDegsCoding)):
-	pairs[svInd, 0] = svsAndDegsCoding.keys()[svInd]
-	pairs[svInd,1] = svsAndDegsCoding[svsAndDegsCoding.keys()[svInd]]
+	pairs[svInd, 0] = list(svsAndDegsCoding.keys())[svInd]
+	pairs[svInd,1] = svsAndDegsCoding[list(svsAndDegsCoding.keys())[svInd]]
 
 np.savetxt(sys.argv[1] + "_degPairsCoding.txt", pairs, delimiter="\t", fmt="%s")
 
 # Output DEG pairs for non-coding only
 perPairDifferentialExpression = getDEPairs(nonCodingPairs[:,0], geneSampleRef, expressionData, dict(), geneSampleExpr, negativeExpr)
-print "done"
+print("done")
 
 perPairDifferentialExpressionArray = np.empty([len(perPairDifferentialExpression), 2], dtype="object")
-perPairDifferentialExpressionArray[:,0] = perPairDifferentialExpression.keys()
-perPairDifferentialExpressionArray[:,1] = perPairDifferentialExpression.values()
+perPairDifferentialExpressionArray[:,0] = list(perPairDifferentialExpression.keys())
+perPairDifferentialExpressionArray[:,1] = list(perPairDifferentialExpression.values())
 
 from statsmodels.sandbox.stats.multicomp import multipletests
 reject, pAdjusted, _, _ = multipletests(perPairDifferentialExpressionArray[:,1], method='bonferroni')
@@ -208,11 +211,11 @@ perPairDifferentialExpressionArrayFiltered = perPairDifferentialExpressionArray[
 np.save(sys.argv[1] + '_nonCodingPairDEGs.npy', perPairDifferentialExpressionArrayFiltered)
 
 perPairDifferentialExpression = getDEPairs(codingPairs, geneSampleRef, expressionData, dict(), geneSampleExpr, negativeExpr)
-print "done"
+print("done")
 
 perPairDifferentialExpressionArray = np.empty([len(perPairDifferentialExpression), 2], dtype="object")
-perPairDifferentialExpressionArray[:,0] = perPairDifferentialExpression.keys()
-perPairDifferentialExpressionArray[:,1] = perPairDifferentialExpression.values()
+perPairDifferentialExpressionArray[:,0] = list(perPairDifferentialExpression.keys())
+perPairDifferentialExpressionArray[:,1] = list(perPairDifferentialExpression.values())
 
 from statsmodels.sandbox.stats.multicomp import multipletests
 reject, pAdjusted, _, _ = multipletests(perPairDifferentialExpressionArray[:,1], method='bonferroni')

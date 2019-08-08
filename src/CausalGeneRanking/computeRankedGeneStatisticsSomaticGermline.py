@@ -3,7 +3,10 @@
 	Compute ranked gene statistics but then for 2 groups, also showing the overlap between somatic and germline and their overlap with the groups. 
 """
 
+from __future__ import absolute_import
+from __future__ import print_function
 import sys
+from six.moves import range
 
 
 somaticFile = sys.argv[1]
@@ -27,7 +30,7 @@ with open(cosmicGenesFile, 'rb') as f:
 		geneName = splitLine[0]
 		cosmicGenes.append(geneName)
 
-print "total number of cosmic genes: ", len(cosmicGenes)		
+print("total number of cosmic genes: ", len(cosmicGenes))		
 	
 #Also read the breast cancer genes specifically
 
@@ -91,7 +94,7 @@ def getSomaticSVSubset(rankedGenesFile, sampleThreshold):
 
 def getGermlineSVSubset(rankedGenesFile, svCount):
 	
-	print "Somatic SV count: ", svCount
+	print("Somatic SV count: ", svCount)
 	
 	germlineSubset = []
 	
@@ -132,7 +135,7 @@ def getGermlineSVSubset(rankedGenesFile, svCount):
 		germlineSVSubset.append(score)
 		germlineSVCount += len(splitSamples)
 	
-	print "Germline SV count: ", svCount
+	print("Germline SV count: ", svCount)
 	return germlineSVSubset					 
 	#return germlineSubset
 	
@@ -228,7 +231,7 @@ def computeSignificance(somaticGenes, germlineGenes, categoryGenes):
 	print(table)
 	#stat, p, dof, expected = chi2_contingency(table)
 	odds, p = fisher_exact(table)
-	print p
+	print(p)
 	# print('dof=%d' % dof)
 	# print(expected)
 	# # interpret p-value
@@ -244,7 +247,7 @@ def computeSignificance(somaticGenes, germlineGenes, categoryGenes):
 pValues = np.zeros([18,7])
 maxThreshold = 18 #there are no genes with more samples than this
 for threshold in range(0, maxThreshold):
-	print "Threshold: ", threshold
+	print("Threshold: ", threshold)
 	
 	somaticSVs, svCount = getSomaticSVSubset(somaticFile, threshold)
 	germlineSVs = getGermlineSVSubset(germlineFile, svCount)
@@ -253,24 +256,24 @@ for threshold in range(0, maxThreshold):
 	allGenesPosS, allGenesNegS = computeCategoryOverlap(somaticSVs)
 	allGenesPosG, allGenesNegG = computeCategoryOverlap(germlineSVs)
 	
-	print "No of somatic genes: ", len(allGenesPosS)
-	print "No of germline genes: ", len(allGenesPosG)
+	print("No of somatic genes: ", len(allGenesPosS))
+	print("No of germline genes: ", len(allGenesPosG))
 		
-	print "COSMIC:"
+	print("COSMIC:")
 	cosmic = computeSignificance(allGenesPosS, allGenesPosG, cosmicGenes)
-	print "DEG:"
+	print("DEG:")
 	deg = computeSignificance(allGenesPosS, allGenesPosG, degGenes)
-	print "SNV:"
+	print("SNV:")
 	snv = computeSignificance(allGenesPosS, allGenesPosG, snvGenes)
 	
-	print "COSMIC+DEG:"
+	print("COSMIC+DEG:")
 	cosmicDeg = computeSignificance(allGenesPosS, allGenesPosG, list(set(cosmicGenes) & set(degGenes)))
-	print "COSMIC+SNVs:"
+	print("COSMIC+SNVs:")
 	cosmicSnv = computeSignificance(allGenesPosS, allGenesPosG, list(set(cosmicGenes) & set(snvGenes)))
-	print "SNVs+DEGs:"
+	print("SNVs+DEGs:")
 	snvDeg = computeSignificance(allGenesPosS, allGenesPosG, list(set(degGenes) & set(snvGenes)))
 	
-	print "COSMIC+DEGs+SNVs:"
+	print("COSMIC+DEGs+SNVs:")
 	cosmicSnvDeg = computeSignificance(allGenesPosS, allGenesPosG, list(set(cosmicGenes) & set(degGenes) & set(snvGenes)))											
 	
 	pValues[threshold, 0] = cosmic
@@ -282,26 +285,26 @@ for threshold in range(0, maxThreshold):
 	pValues[threshold, 6] = cosmicSnvDeg
 	
 	table = getCategoryOverlapCounts(allGenesPosS, allGenesNegS, degGt3Genes)
-	print "DEGs for current threshold: "
-	print table
+	print("DEGs for current threshold: ")
+	print(table)
 	
 
-print pValues
+print(pValues)
 
 
-print pValues.flatten()
+print(pValues.flatten())
 flattenedPValues = list(pValues.flatten())
 
 from statsmodels.sandbox.stats.multicomp import multipletests
 reject, pAdjusted, _, _ = multipletests(flattenedPValues, method='fdr_bh') #fdr_bh
 
-print pAdjusted
-print reject
+print(pAdjusted)
+print(reject)
 #reshape the pvalues
 pAdjustedReshaped = np.reshape(pAdjusted, pValues.shape)
 rejectReshaped = np.reshape(reject, pValues.shape)
 
-print pAdjustedReshaped[rejectReshaped]
+print(pAdjustedReshaped[rejectReshaped])
 
 #Output a table to a file
 np.savetxt("categoryOverlap_sign.txt", pAdjustedReshaped, delimiter='\t', fmt='%s')
@@ -341,14 +344,14 @@ allCriteriaIntersect = list(set(degGenesPos) & set(cosmicGenesPos) & set(snvGene
 cosmicSNVsIntersect = list(set(cosmicGenesPos) & set(snvGenesPos))
 cosmicDEGsIntersect = list(set(cosmicGenesPos) & set(degGenesPos))
 snvDEGsIntersect = list(set(snvGenesPos) & set(degGenesPos))
-print "Number of genes that are in COSMIC, have SNVs and are DEG: ", len(allCriteriaIntersect)
-print "Number of genes that are in COSMIC and have SNVs: ", len(cosmicSNVsIntersect)
-print "Number of genes that are in COSMIC and are DEG: ", len(cosmicDEGsIntersect)
-print "Number of genes that have SNV and are DEG: ", len(snvDEGsIntersect)
+print("Number of genes that are in COSMIC, have SNVs and are DEG: ", len(allCriteriaIntersect))
+print("Number of genes that are in COSMIC and have SNVs: ", len(cosmicSNVsIntersect))
+print("Number of genes that are in COSMIC and are DEG: ", len(cosmicDEGsIntersect))
+print("Number of genes that have SNV and are DEG: ", len(snvDEGsIntersect))
 
 
-print "genes in the total intersect: "
-print allCriteriaIntersect
+print("genes in the total intersect: ")
+print(allCriteriaIntersect)
 intersectScores = []
 with open(rankedGenesFile, 'rb') as f:
 	lineCount = 0
@@ -389,11 +392,11 @@ allCriteriaIntersect = list(set(degGenesNeg) & set(cosmicGenesNeg) & set(snvGene
 cosmicSNVsIntersect = list(set(cosmicGenesNeg) & set(snvGenesNeg))
 cosmicDEGsIntersect = list(set(cosmicGenesNeg) & set(degGenesNeg))
 snvDEGsIntersect = list(set(snvGenesNeg) & set(degGenesNeg))
-print "Negative set:"
-print "Number of genes that are in COSMIC, have SNVs and are DEG: ", len(allCriteriaIntersect)
-print "Number of genes that are in COSMIC and have SNVs: ", len(cosmicSNVsIntersect)
-print "Number of genes that are in COSMIC and are DEG: ", len(cosmicDEGsIntersect)
-print "Number of genes that have SNV and are DEG: ", len(snvDEGsIntersect)
+print("Negative set:")
+print("Number of genes that are in COSMIC, have SNVs and are DEG: ", len(allCriteriaIntersect))
+print("Number of genes that are in COSMIC and have SNVs: ", len(cosmicSNVsIntersect))
+print("Number of genes that are in COSMIC and are DEG: ", len(cosmicDEGsIntersect))
+print("Number of genes that have SNV and are DEG: ", len(snvDEGsIntersect))
 
 
 v = venn3(subsets=(len(cosmicGenesNeg),len(snvGenesNeg),len(cosmicSNVsIntersect), len(degGenesNeg),len(cosmicDEGsIntersect), len(snvDEGsIntersect),len(allCriteriaIntersect)),

@@ -4,6 +4,8 @@
 	3. Try a random forest classifier
 """
 
+from __future__ import absolute_import
+from __future__ import print_function
 import sys
 import numpy as np
 from sklearn.ensemble import RandomForestClassifier
@@ -152,19 +154,19 @@ with open(degFile, 'r') as degF:
 			pValues[splitLine[0]] = 1
 		else:
 			pValues[splitLine[0]] = 0
-print len(pValues)
-print geneScores.shape
+print(len(pValues))
+print(geneScores.shape)
 count = 0
 for gene in geneScores:
 	if count % 10000 == 0:
-		print "count: ", count
+		print("count: ", count)
 	if gene[0] in pValues:
 		labels.append(pValues[gene[0]])
 	else:
 		labels.append(0)
 	count += 1
 
-print labels
+print(labels)
 
 excludedSampleData = np.loadtxt(sys.argv[3], dtype="object")
 
@@ -219,14 +221,14 @@ for genePair in geneScores:
 #print testFeatureMatrix
 #print labels
 
-print len(np.where(np.array(labels) == 1)[0])
-print len(np.where(np.array(labels) == 0)[0])
+print(len(np.where(np.array(labels) == 1)[0]))
+print(len(np.where(np.array(labels) == 0)[0]))
 exit()
 clf = RandomForestClassifier()
 
 clf.fit(trainingFeatureMatrix, list(labels))
 score = clf.score(testFeatureMatrix, list(labels))
-print("Classification score: ", score)
+print(("Classification score: ", score))
 import sklearn.metrics as metrics
 probs = clf.predict_proba(testFeatureMatrix)
 preds = probs[:,1]

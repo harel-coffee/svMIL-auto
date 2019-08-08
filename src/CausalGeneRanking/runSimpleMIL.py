@@ -2,6 +2,8 @@
 
 
 #Shuffle the labels
+from __future__ import absolute_import
+from __future__ import print_function
 import random
 import os
 import sys
@@ -187,8 +189,8 @@ classifier = misvm.STK()
 classifier.fit(bags, labels)
 bag_labels, instance_labels = classifier.predict(bags, instancePrediction=True)
 
-print len(labels)
-print len(np.where(instance_labels == 1)[0])
+print(len(labels))
+print(len(np.where(instance_labels == 1)[0]))
 exit()
 
 

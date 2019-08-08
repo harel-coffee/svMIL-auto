@@ -7,11 +7,14 @@
 
 """
 
+from __future__ import absolute_import
+from __future__ import print_function
 import sys
 import numpy as np
 import matplotlib.pyplot as plt
 import re
 from scipy import stats
+from six.moves import range
 
 #Plot the number of samples that every gene has in a histogram
 geneScoreFile = sys.argv[1]
@@ -69,7 +72,7 @@ with open(expressionFile, 'r') as inF:
 		expressionData.append(fixedData)
 
 expressionData = np.array(expressionData, dtype="object")	
-print expressionData
+print(expressionData)
 
 pValues = dict()
 for gene in filteredGenes:
@@ -92,7 +95,7 @@ for gene in filteredGenes:
 			if re.search(shortSampleName, sample, re.IGNORECASE) is not None:
 				
 				if gene[0] == "ITGA3":
-					print "matched on expr sample: ", sample
+					print("matched on expr sample: ", sample)
 				
 				matchedFullSampleNames.append(sample) #keep this to check later for the negative set
 				#Get the last 2 numbers
@@ -127,7 +130,7 @@ for gene in filteredGenes:
 	for geneSample in geneSamples:
 		genePatientPair = gene[0] + "_" + geneSample
 		if gene[0] == "CLN6":
-			print "pair: ", genePatientPair
+			print("pair: ", genePatientPair)
 		
 		if np.std(negativeSampleExpressionValues) == 0:
 			continue
@@ -149,15 +152,15 @@ for gene in filteredGenes:
 	# pValues.append([gene[0], pValue])
 
 from statsmodels.sandbox.stats.multicomp import multipletests
-reject, pAdjusted, _, _ = multipletests(pValues.values(), method='bonferroni')
+reject, pAdjusted, _, _ = multipletests(list(pValues.values()), method='bonferroni')
 
 filteredPValues = dict()
 for rejectedInd in range(0, len(reject)):
 	
 	if reject[rejectedInd] == 1:
-		filteredPValues[pValues.keys()[rejectedInd]] = pAdjusted[rejectedInd]
+		filteredPValues[list(pValues.keys())[rejectedInd]] = pAdjusted[rejectedInd]
 		
-print filteredPValues
+print(filteredPValues)
 
 with open(geneScoreFile + "_perPatientSign.txt", 'w') as outF:
 	for genePatientPair in filteredPValues:
@@ -169,7 +172,7 @@ exit()
 pValues = np.array(pValues, dtype="object")
 
 pValues = pValues[pValues[:,1].argsort()] 
-print pValues.shape
+print(pValues.shape)
 signGenes = []
 signCount = 0
 for pValue in pValues:
@@ -178,9 +181,9 @@ for pValue in pValues:
 		gene = filteredGenes[filteredGenes[:,0] == pValue[0]][0]
 		signGenes.append(gene)
 		
-		print pValue
+		print(pValue)
 		signCount += 1
-print "Number of significant genes: ", signCount
+print("Number of significant genes: ", signCount)
 
 signGenes = np.array(signGenes)
 #Write to outfile to check cosmic overlap etc

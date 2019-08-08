@@ -3,14 +3,17 @@
 
 """
 
+from __future__ import absolute_import
+from __future__ import print_function
 import sys
 import numpy as np
+from six.moves import range
 
 scoreFile = sys.argv[1]
 outfileName = sys.argv[2]
 
 scores = np.loadtxt(scoreFile, dtype="object")
-print scores
+print(scores)
 
 correlation = np.empty(scores.shape, dtype="object")
 

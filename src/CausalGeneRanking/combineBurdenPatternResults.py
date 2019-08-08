@@ -1,6 +1,9 @@
 
+from __future__ import absolute_import
+from __future__ import print_function
 import sys
 import numpy as np
+from six.moves import range
 
 burdenFile = sys.argv[1]
 patternFile = sys.argv[2]
@@ -35,7 +38,7 @@ for row in range(0, burden.shape[0]):
 	
 burdenTotal = [float(burden) for burden in burden[:,28]]
 patternTotal = [float(pattern) for pattern in pattern[:,28]]
-print np.corrcoef(burdenTotal, patternTotal)
+print(np.corrcoef(burdenTotal, patternTotal))
 
 
 combined = combined[combined[:,28].argsort()[::-1]] #Select the column  to rank by	

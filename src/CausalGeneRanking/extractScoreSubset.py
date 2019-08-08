@@ -3,12 +3,14 @@
 
 """
 
+from __future__ import absolute_import
+from __future__ import print_function
 import sys
 import numpy as np
 
 scores = np.loadtxt(sys.argv[1], dtype='object')
 subset = np.loadtxt(sys.argv[2], dtype='object')
-print subset
+print(subset)
 
 subsetScores = []
 
@@ -30,7 +32,7 @@ subsetScores[:,30] = subsetScores[:,30].astype(float)
 subsetScores = subsetScores[subsetScores[:,30].argsort()[::-1]] #Select the column  to rank by
 
 np.savetxt(sys.argv[3], subsetScores, delimiter='\t', fmt='%s')
-print subsetScores
+print(subsetScores)
 exit()
 
 #Count the number of samples that these subset genes have
@@ -43,7 +45,7 @@ for gene in subsetScores:
 	sampleLengths.append(len(splitSamples))
 	rankings.append(gene[30])
 
-print sampleLengths
+print(sampleLengths)
 
 import matplotlib.pyplot as plt
 

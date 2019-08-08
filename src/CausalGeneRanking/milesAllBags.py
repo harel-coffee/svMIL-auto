@@ -1,6 +1,9 @@
+from __future__ import absolute_import
+from __future__ import print_function
 import sys
 import numpy as np
 import matplotlib.pyplot as plt
+from six.moves import range
 
 # Combining DEGs, recurrence and germline
 
@@ -59,10 +62,10 @@ for geneSVPair in germlineScores:
 		if splitScore[0] not in germlineGenes:
 			germlineGenes.append(splitScore[0])
 
-print len(somaticGenes)
-print len(germlineGenes)
+print(len(somaticGenes))
+print(len(germlineGenes))
 
-print len(np.intersect1d(somaticGenes, germlineGenes))
+print(len(np.intersect1d(somaticGenes, germlineGenes)))
 somaticUniqueGenes = np.setdiff1d(somaticGenes, germlineGenes)
 germlineUniqueGenes = np.setdiff1d(germlineGenes, somaticGenes)
 
@@ -83,9 +86,9 @@ for gene in somaticRanks:
 		
 		somaticRecurrentGenes.append(gene[0])
 
-print "Number of somatic recurrent genes: ", len(somaticRecurrentGenes)
+print("Number of somatic recurrent genes: ", len(somaticRecurrentGenes))
 somaticUniqueDegs = np.intersect1d(somaticUniqueGenes, degs)
-print "Number of somatic unique genes that are DEG: ", len(somaticUniqueDegs)
+print("Number of somatic unique genes that are DEG: ", len(somaticUniqueDegs))
 
 #Of the germline unique genes, which are recurrent and which are DEG? 
 recurrenceThreshold = 3
@@ -104,8 +107,8 @@ for gene in germlineRanks:
 		
 		germlineRecurrentGenes.append(gene[0])
 
-print "Number of germline genes that are recurrent: ", len(germlineRecurrentGenes)
-print "Number of germline unique genes that are DEG: ", len(np.intersect1d(germlineUniqueGenes, degs))
+print("Number of germline genes that are recurrent: ", len(germlineRecurrentGenes))
+print("Number of germline unique genes that are DEG: ", len(np.intersect1d(germlineUniqueGenes, degs)))
 
 #How many SVs do we get when we only use the ones that are linked to the unique germline set?
 
@@ -182,8 +185,8 @@ for sv in svBagContents:
 		negativePairNames.append(gene + "_" + sv)
 		
 		
-print "Number of SVs in negative set using only genes unique to germline: ", len(negativeBags)
-print "Number of SVs in negative set using only genes unique to germline AND recurrent: ", len(recurrentNegativeBags)
+print("Number of SVs in negative set using only genes unique to germline: ", len(negativeBags))
+print("Number of SVs in negative set using only genes unique to germline AND recurrent: ", len(recurrentNegativeBags))
 
 #How many SVs do we get in the positive set?
 
@@ -271,10 +274,10 @@ for sv in svBagContents:
 	if positiveRecurrentDegStatus == True:
 		recurrentDegPositiveBags.append(svBagContents[sv])
 	
-print "Number of SVs in positive set using only genes unique to somatic: ", len(positiveBags)
-print "Number of SVs in positive set using only genes unique to somatic AND recurrent: ", len(recurrentPositiveBags)
-print "Number of SVs in positive set using only genes unique to somatic AND DEGs: ", len(degPositiveBags)
-print "Number of SVs in positive set using only genes unique to somatic AND DEGs AND recurrent: ", len(recurrentDegPositiveBags)
+print("Number of SVs in positive set using only genes unique to somatic: ", len(positiveBags))
+print("Number of SVs in positive set using only genes unique to somatic AND recurrent: ", len(recurrentPositiveBags))
+print("Number of SVs in positive set using only genes unique to somatic AND DEGs: ", len(degPositiveBags))
+print("Number of SVs in positive set using only genes unique to somatic AND DEGs AND recurrent: ", len(recurrentDegPositiveBags))
 
 #Combine the bags and set labels
 
@@ -741,7 +744,7 @@ instances = np.vstack(bags)
 
 #np.random.shuffle(labels)
 
-print "generating similarity matrix"
+print("generating similarity matrix")
 
 #Unfold the training bags so that we can compute the distance matrix at once to all genes
 bagMap = dict()
@@ -757,10 +760,10 @@ for bagInd in range(0, bags.shape[0]):
 
 
 similarityMatrix = np.zeros([bags.shape[0], instances.shape[0]])
-print "Number of bags: ", bags.shape[0]
+print("Number of bags: ", bags.shape[0])
 for bagInd in range(0, bags.shape[0]):
 	
-	print bagInd
+	print(bagInd)
 	
 	#Get the indices of the instances that are in this bag
 	instanceIndices = reverseBagMap[bagInd]
@@ -1030,10 +1033,10 @@ plt.xlim([0.0, 1.0])
 #plt.savefig('lasso2RecurrencePP/lasso.svg')
 
 
-print "acc: ", test_score
-print "predsDiff: ", predsDiff
-print "auprc: ", aucScore
-print "coeffs: ", coeff_used
+print("acc: ", test_score)
+print("predsDiff: ", predsDiff)
+print("auprc: ", aucScore)
+print("coeffs: ", coeff_used)
 
 
 geneIndices = np.where(lasso.coef_ !=0)[0]
@@ -1048,8 +1051,8 @@ for index in geneIndices:
 		positiveGenes[geneName] = 0
 	positiveGenes[geneName] += 1
 
-print len(positivePairs)
-print len(positiveGenes)
+print(len(positivePairs))
+print(len(positiveGenes))
 # 
 # milesConceptGenesOut = "lasso2RecurrencePP/milesConceptGenes_nonRandom.txt"
 # with open(milesConceptGenesOut, 'w') as outF:

@@ -4,11 +4,14 @@
 
 """
 
+from __future__ import absolute_import
+from __future__ import print_function
 import sys
 import numpy as np
 import matplotlib.pyplot as plt
 import re
 from scipy import stats
+from six.moves import range
 
 nonCodingPairs = np.loadtxt(sys.argv[1], dtype="object")
 codingPairs = np.loadtxt(sys.argv[2], dtype="object")
@@ -25,7 +28,7 @@ for pair in nonCodingPairs:
 		nonCodingSVCounts[sv] = 0
 	nonCodingSVCounts[sv] += 1
 	
-print nonCodingSVCounts	
+print(nonCodingSVCounts)	
 
 #Repeat for the coding pairs
 codingSVCounts = dict()
@@ -39,7 +42,7 @@ for pair in codingPairs:
 		codingSVCounts[sv] = 0
 	codingSVCounts[sv] += 1
 	
-print codingSVCounts
+print(codingSVCounts)
 
 #Plot counts as scatter
 #Make x and y axis with values in the same entries.
@@ -51,7 +54,7 @@ codingDegPairs = np.loadtxt(sys.argv[4], dtype="object")
 
 
 totalSVs = np.union1d(nonCodingDegPairs[:,0], codingDegPairs[:,0])
-print len(totalSVs)
+print(len(totalSVs))
 
 #get the excluded SVs from the coding potential
 codingEffectSVs = np.loadtxt('codingEffectSVs.txt', dtype='object')
@@ -84,7 +87,7 @@ for svInd in range(0, codingDegPairs.shape[0]):
 		svEffects[ind,2] = int(codingDegPairs[svInd,1])
 		ind += 1
 	
-print svEffects
+print(svEffects)
 
 #Filter out None rows
 filteredSVEffects = []
@@ -107,7 +110,7 @@ for sv in svEffects[:,0]:
 	svProperties.append([sv, chrom + "_" + str(size) + "_" + sample])
 
 svProperties = np.array(svProperties, dtype="object")
-print svProperties
+print(svProperties)
 
 #Go through the shuffled files coding & non-coding and compute how often the real noncoding/coding is higher for that SV
 # 
@@ -236,7 +239,7 @@ print svProperties
 # print "plotting pairs"
 plt.scatter(svEffects[:,2], svEffects[:,1]) #c=colors
 
-print "plotting significance: "
+print("plotting significance: ")
 #Do overlay because the colormap is not working separately
 svSignificanceCorrected = np.loadtxt('Output/significantNCProportion_multipleTestCorrected_DEG.txt', dtype="object")
 for svInd in range(0, svEffects.shape[0]):
@@ -312,10 +315,10 @@ for pair in degPairs:
 			allDegGenesSignificantThreshold.append(splitPair[0])
 
 
-print len(allDegGenes)
-print len(allDegGenesHighCoding)
-print len(allDegGenesSignificant)
-print len(allDegGenesSignificantThreshold)
+print(len(allDegGenes))
+print(len(allDegGenesHighCoding))
+print(len(allDegGenesSignificant))
+print(len(allDegGenesSignificantThreshold))
 
 np.savetxt('Output/allDegGenesLowCoding.txt', allDegGenes, delimiter='\t', fmt='%s')
 np.savetxt('Output/allDegGenesHighCoding.txt', allDegGenesHighCoding, delimiter='\t', fmt='%s')
@@ -349,18 +352,18 @@ for pair in degPairs:
 						svsWithOtherSampleEvidence[sv] = []
 					svsWithOtherSampleEvidence[sv].append(gene2)
 
-print len(svsWithOtherSampleEvidence)
+print(len(svsWithOtherSampleEvidence))
 multiSampleCount = 0
 genes = []
 for sv in svsWithOtherSampleEvidence:
 	if len(svsWithOtherSampleEvidence[sv]) != len(np.unique(svsWithOtherSampleEvidence[sv])):
-		print sv
-		print np.unique(svsWithOtherSampleEvidence[sv])
-		print "Number of genes also in coding: ", len(svsWithOtherSampleEvidence[sv])
-		print "Number of unique genes: ", len(np.unique(svsWithOtherSampleEvidence[sv]))
+		print(sv)
+		print(np.unique(svsWithOtherSampleEvidence[sv]))
+		print("Number of genes also in coding: ", len(svsWithOtherSampleEvidence[sv]))
+		print("Number of unique genes: ", len(np.unique(svsWithOtherSampleEvidence[sv])))
 		multiSampleCount += 1
 		genes += list(np.unique(svsWithOtherSampleEvidence[sv]))
-print multiSampleCount
+print(multiSampleCount)
 np.savetxt('Output/leftSideGenes_multiCoding.txt', np.unique(genes), fmt='%s')
 
 exit()
@@ -371,10 +374,10 @@ foundCount = 0
 notFoundCount = 0
 for degPair in signGeneSVPairs:
 	if degPair in naiveDegPairs[:,0]:
-		print "pair found: ", degPair
+		print("pair found: ", degPair)
 		foundCount += 1
 	else:
-		print "pair not found: ", degPair
+		print("pair not found: ", degPair)
 		notFoundCount += 1
 		# for sv in somaticSVs:
 		# 	svStr = sv[0] + "_" + str(sv[1]) + "_" + str(sv[2]) + "_" + sv[3] + "_" + str(sv[4]) + "_" + str(sv[5]) + "_" + sv[7]
@@ -499,7 +502,7 @@ lossData = [np.sum(eQTLLosses), np.sum(enhancerLosses), np.sum(promoterLosses), 
 lossData = np.array(lossData)
 #lossData = lossData / float(leftFeatures.shape[0] + rightFeatures.shape[0])
 #lossData = -np.log(lossData)
-print lossData
+print(lossData)
 
 width = 0.35
 
@@ -528,7 +531,7 @@ lossData = [np.sum(eQTLLosses), np.sum(enhancerLosses), np.sum(promoterLosses), 
 lossData = np.array(lossData)
 lossData = lossData / float(leftFeatures.shape[0] + rightFeatures.shape[0])
 lossData = -np.log(lossData)
-print lossData
+print(lossData)
 
 plt.bar(np.arange(len(lossData)) + width, lossData, width, label='High coding', color='red')
 plt.xticks(np.arange(len(lossData) + width / 2),
@@ -562,7 +565,7 @@ gainData = [np.sum(eQTLGains), np.sum(enhancerGains), np.sum(promoterGains), np.
 gainData = np.array(gainData)
 gainData = gainData / float(leftFeatures.shape[0] + rightFeatures.shape[0])
 gainData = -np.log(gainData)
-print gainData
+print(gainData)
 
 plt.bar(np.arange(len(gainData)), gainData, width, label='Low coding', color='blue')
 # plt.xticks(np.arange(len(gainData)),
@@ -591,7 +594,7 @@ gainData = np.array(gainData)
 #gainData = gainData / float(leftFeatures.shape[0] + rightFeatures.shape[0])
 #gainData = -np.log(gainData)
 
-print gainData
+print(gainData)
 
 plt.bar(np.arange(len(gainData)) + width, gainData, width, label='High coding',color='red')
 plt.xticks(np.arange(len(gainData) + width / 2),
@@ -606,7 +609,7 @@ exit()
 
 
 svSignificanceCorrected = np.loadtxt('Output/significantNCProportion_multipleTestCorrected_DEG.txt', dtype="object")
-print "Number of significant gene SV pairs: ", svSignificanceCorrected.shape
+print("Number of significant gene SV pairs: ", svSignificanceCorrected.shape)
 
 #Number of unique samples
 
@@ -618,17 +621,17 @@ for sv in svSignificanceCorrected:
 	if splitSV[len(splitSV)-1] not in samples:
 		samples.append(splitSV[len(splitSV)-1])
 
-print "no of samples: ", len(samples), samples
+print("no of samples: ", len(samples), samples)
 
 #Check which SVs have nc potential but no coding SVs
 for sv in svSignificanceCorrected:
 	
 	svEffect = svEffects[svEffects[:,0] == sv[0]]
-	print svEffect
+	print(svEffect)
 
 
 #Find the DEG genes that these SVs are linked to
-print nonCodingPairs
+print(nonCodingPairs)
 
 
 exit()
@@ -640,19 +643,19 @@ foundCount = 0
 notFoundCount = 0
 for degPair in degPairsFull:
 	if degPair in naiveDegPairs[:,0]:
-		print "pair found: ", degPair
+		print("pair found: ", degPair)
 		foundCount += 1
 	else:
-		print "pair not found: ", degPair
+		print("pair not found: ", degPair)
 		notFoundCount += 1
 		for sv in somaticSVs:
 			svStr = sv[0] + "_" + str(sv[1]) + "_" + str(sv[2]) + "_" + sv[3] + "_" + str(sv[4]) + "_" + str(sv[5]) + "_" + sv[7]
 			splitPair = degPair.split("_")
 			if svStr == "_".join(splitPair[1:]):
-				print sv[8].svType
+				print(sv[8].svType)
 		
-print foundCount
-print notFoundCount
+print(foundCount)
+print(notFoundCount)
 
 
 

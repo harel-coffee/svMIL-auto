@@ -5,6 +5,8 @@
 
 #Read all SVs
 
+from __future__ import absolute_import
+from __future__ import print_function
 from inputParser import InputParser
 from tad import TAD
 from gene import Gene
@@ -65,8 +67,8 @@ for sv in svData:
 # print allPatients
 # print np.unique(np.array(tadOverlappingSVs)[:,7])
 
-print np.unique(patientsWithSV.keys())
-print len(allPatients.keys())
+print(np.unique(list(patientsWithSV.keys())))
+print(len(list(allPatients.keys())))
 
 
 

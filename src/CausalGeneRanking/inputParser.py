@@ -37,7 +37,7 @@ class InputParser:
 			
 		variantsList = []
 		
-		with open(svFile, 'rb') as f:
+		with open(svFile, 'r') as f:
 			
 			lineCount = 0
 			header = []
@@ -217,7 +217,7 @@ class InputParser:
 		"""
 		snvList = []
 		
-		with open(snvFile, 'rb') as f:
+		with open(snvFile, 'r') as f:
 			
 			lineCount = 0
 			header = []
@@ -434,7 +434,7 @@ class InputParser:
 		
 		
 		eQTLs = []
-		with open(eQTLFile, 'rb') as f:
+		with open(eQTLFile, 'r') as f:
 			
 			lineCount = 0
 			for line in f:
@@ -482,7 +482,7 @@ class InputParser:
 		
 		
 		lncRNAs = []
-		with open(lncRNAFile, 'rb') as f:
+		with open(lncRNAFile, 'r') as f:
 			
 			for line in f:
 				line = line.strip()
@@ -518,7 +518,7 @@ class InputParser:
 		
 		
 		enhancers = []
-		with open(enhancerFile, 'rb') as f:
+		with open(enhancerFile, 'r') as f:
 			
 			lineCount = 0
 			for line in f:
@@ -586,7 +586,7 @@ class InputParser:
 		
 		
 		promoters = []
-		with open(promoterFile, 'rb') as f:
+		with open(promoterFile, 'r') as f:
 			
 			lineCount = 0
 			for line in f:
@@ -641,7 +641,7 @@ class InputParser:
 		"""
 		
 		cpgIslands = []
-		with open(cpgFile, 'rb') as f:
+		with open(cpgFile, 'r') as f:
 			
 			lineCount = 0
 			for line in f:
@@ -683,7 +683,7 @@ class InputParser:
 		"""
 		
 		tfs = []
-		with open(tfFile, 'rb') as f:
+		with open(tfFile, 'r') as f:
 			print(tfFile)
 			lineCount = 0
 			for line in f:
@@ -753,7 +753,7 @@ class InputParser:
 			histoneMarks: (numpy array) array with histone mark elements. chr, start, end, ElementObject
 		"""
 		histoneMarks = []
-		with open(histoneFile, 'rb') as f:
+		with open(histoneFile, 'r') as f:
 			
 			lineCount = 0
 			for line in f:
@@ -791,7 +791,7 @@ class InputParser:
 		"""
 		
 		dnaseISites = []
-		with open(dnaseIFile, 'rb') as f:
+		with open(dnaseIFile, 'r') as f:
 			
 			lineCount = 0
 			for line in f:

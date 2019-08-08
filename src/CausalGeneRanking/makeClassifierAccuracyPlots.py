@@ -3,8 +3,10 @@
 
 """
 
+from __future__ import absolute_import
 import matplotlib.pyplot as plt
 import numpy as np
+from six.moves import range
 
 #For > 2 DEG labels
 alphas = ['1e-15', '1e-10', '1e-8', '1e-4', '1e-3', '1e-2', '1', '5', '10', '20']
@@ -14,7 +16,7 @@ conceptPairs = [81996.9, 81921.2, 79934.3, 1544.8, 733.9, 1023.2, 0, 0,0,0]
 
 fig, ax = plt.subplots(1)
 plt.bar(np.arange(len(alphas)), meanAcc)
-index = range(len(alphas))
+index = list(range(len(alphas)))
 plt.xticks(index, alphas)
 plt.show()
 
@@ -42,7 +44,7 @@ conceptPairs = [87276.1, 87264.9, 84471.0, 859.4, 668.2, 179.5, 0, 0, 0, 0]
 
 fig, ax = plt.subplots(1)
 plt.bar(np.arange(len(alphas)), meanAcc)
-index = range(len(alphas))
+index = list(range(len(alphas)))
 plt.xticks(index, alphas)
 plt.show()
 
@@ -50,12 +52,12 @@ exit()
 
 fig, ax = plt.subplots(1)
 plt.bar(np.arange(len(alphas)), meanAuc)
-index = range(len(alphas))
+index = list(range(len(alphas)))
 plt.xticks(index, alphas)
 plt.show()
 
 fig, ax = plt.subplots(1)
 plt.bar(np.arange(len(alphas)), conceptPairs)
-index = range(len(alphas))
+index = list(range(len(alphas)))
 plt.xticks(index, alphas)
 plt.show()

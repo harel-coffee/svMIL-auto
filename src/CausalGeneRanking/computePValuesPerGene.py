@@ -9,6 +9,8 @@
 
 """
 
+from __future__ import absolute_import
+from __future__ import print_function
 import sys
 import os
 from os import listdir
@@ -16,6 +18,7 @@ from os import listdir
 from os.path import isfile, join
 import numpy as np
 import matplotlib.pyplot as plt
+from six.moves import range
 
 #1. For each folder in the gene ranking related to this particular run (provide uuid), read the files for the real case and the permutations
 
@@ -89,7 +92,7 @@ for geneScoreFile in geneScoreFiles:
 
 #Check how many of the permutation scores for this gene are larger than the observed gene score for this gene.
 #We can compute this separately per layer, and then rank them based on having the highest score in most columns. 
-print "Computing p-values and ranking genes: " 	
+print("Computing p-values and ranking genes: ") 	
 
 
 cancerTypePValues = np.empty(nonPermutedScores.shape, dtype="object") #for all genes, store the gene identifier, and 3 columns for the layers.  

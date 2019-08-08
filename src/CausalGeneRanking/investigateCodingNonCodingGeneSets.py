@@ -3,8 +3,11 @@
 	Later also add coding SNVs. 
 """
 
+from __future__ import absolute_import
+from __future__ import print_function
 import sys
 import numpy as np
+from six.moves import range
 
 
 nonCodingRanks = np.loadtxt(sys.argv[1], dtype="object")
@@ -50,9 +53,9 @@ ncOnly = 0
 codingOnly = 0
 
 effectsTable = np.empty([len(effects), 3], dtype="object") #Turn dictionary into readable tsv table
-effectsTable[:,0] = effects.keys()
+effectsTable[:,0] = list(effects.keys())
 for geneInd in range(0, len(effects)):
-	gene = effects.keys()[geneInd]
+	gene = list(effects.keys())[geneInd]
 	if "Non-coding" in effects[gene]:
 		effectsTable[geneInd,1] = 1
 	else:
@@ -72,9 +75,9 @@ for geneInd in range(0, len(effects)):
 	if effectsTable[geneInd,1] == 1 and effectsTable[geneInd,2] == 1: #in coding, but not in non-coding
 		mixedOnly += 1
 
-print mixedOnly
-print ncOnly
-print codingOnly
+print(mixedOnly)
+print(ncOnly)
+print(codingOnly)
 
 effectsTable = effectsTable[effectsTable[:,1].argsort()][::-1]
 		
@@ -101,8 +104,8 @@ nonCodingDrivers = np.array(nonCodingDrivers, dtype="object")
 
 nonCodingDrivers = nonCodingDrivers[np.argsort(nonCodingDrivers[:,1])]
 
-print nonCodingDrivers
-print len(nonCodingDrivers)
+print(nonCodingDrivers)
+print(len(nonCodingDrivers))
 exit()
 genes = []			
 for pair in nonCodingDrivers:
@@ -110,9 +113,9 @@ for pair in nonCodingDrivers:
 	splitPair = pair.split("_")
 	if splitPair[0] not in genes:
 		genes.append(splitPair[0])
-		print splitPair[0]
+		print(splitPair[0])
 
-print len(genes)
+print(len(genes))
 		
 		
 		

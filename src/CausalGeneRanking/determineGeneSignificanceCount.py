@@ -3,6 +3,8 @@
 
 """
 
+from __future__ import absolute_import
+from __future__ import print_function
 import sys
 import numpy as np
 
@@ -20,14 +22,14 @@ for pair in pValues[:,0]:
 	
 
 geneCountsArray = np.empty([len(geneCounts), 2], dtype="object")
-geneCountsArray[:,0] = geneCounts.keys()
-geneCountsArray[:,1] = geneCounts.values()
+geneCountsArray[:,0] = list(geneCounts.keys())
+geneCountsArray[:,1] = list(geneCounts.values())
 
 geneCountsArray[:,1] = geneCountsArray[:,1].astype(float)
 
 geneCountsArray = geneCountsArray[geneCountsArray[:,1].argsort()][::-1]
 
-print geneCountsArray
-print geneCountsArray.shape
-print len(np.where(geneCountsArray[:,1] > 1)[0])
+print(geneCountsArray)
+print(geneCountsArray.shape)
+print(len(np.where(geneCountsArray[:,1] > 1)[0]))
 

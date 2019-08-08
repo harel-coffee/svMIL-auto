@@ -2,6 +2,8 @@
 	Every time SVs are shuffled, see if there is indeed an SV in the same TAD as a BC gene. 
 
 """
+from __future__ import absolute_import
+from __future__ import print_function
 import sys
 import numpy as np
 from inputParser import InputParser
@@ -45,7 +47,7 @@ cosmicGenes = np.array(cosmicGenes, dtype='object')
 #show positions of BC genes
 for gene in cosmicGenes:
 	if gene[0] in breastCancerGenes:
-		print gene
+		print(gene)
 		
 		
 #Get the TADs that these genes are in
@@ -66,8 +68,8 @@ for gene in cosmicGenes:
 		
 		#get which tad the gene is in: gene start < tad end, gene end > tad start
 		matchingTads = tadChrSubset[(gene[2] <= tadChrSubset[:,2]) * (gene[3] >= tadChrSubset[:,1])]
-		print gene
-		print matchingTads
+		print(gene)
+		print(matchingTads)
 		
 		#Check which SVs are in this TAD, and of which type these are.
 		svsInTad = []
@@ -96,9 +98,9 @@ for gene in cosmicGenes:
 							svsInTad.append(svStr)
 							geneSVCounts[gene[0]] += 1
 	
-		print np.array(svsInTad)
+		print(np.array(svsInTad))
 		
-print geneSVCounts
+print(geneSVCounts)
 
 #If we get all SVs, how often do we find SVs in the same TAD as these genes?
 tadTrans = dict()
@@ -124,8 +126,8 @@ for sv in somaticSVs:
 					tadTrans[tad[3]].append(svStr)
 					tadTransCounts[tad[3]] += 1
 
-print tadTrans
-print tadTransCounts
+print(tadTrans)
+print(tadTransCounts)
 	
 import matplotlib.pyplot as plt
 
@@ -136,7 +138,7 @@ for value in tadTransCounts.values():
 	freqs[value] += 1
 
 #plt.hist(tadTransCounts.values())
-plt.bar(freqs.keys(), freqs.values())
+plt.bar(list(freqs.keys()), list(freqs.values()))
 plt.show()
 
 

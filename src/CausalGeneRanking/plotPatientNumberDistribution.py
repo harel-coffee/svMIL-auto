@@ -1,5 +1,6 @@
 
 
+from __future__ import absolute_import
 import sys
 import numpy as np
 
@@ -29,7 +30,7 @@ for gene in subset[:,0]:
 
 import matplotlib.pyplot as plt
 
-plt.bar(patientDistribution.keys(), patientDistribution.values())
+plt.bar(list(patientDistribution.keys()), list(patientDistribution.values()))
 plt.show()
 
 

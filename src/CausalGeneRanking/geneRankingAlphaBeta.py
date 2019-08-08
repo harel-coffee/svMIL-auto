@@ -1,7 +1,10 @@
+from __future__ import absolute_import
+from __future__ import print_function
 import numpy as np
 import settings
 import math
 import matplotlib.pyplot as plt
+from six.moves import range
 
 class GeneRanking:
 	"""
@@ -46,7 +49,7 @@ class GeneRanking:
 		scores = dict() #save the final scores per gene per cancer type.
 		
 		
-		print "ordering genes by cancer types"
+		print("ordering genes by cancer types")
 		for gene in genes:
 			
 			samplesAndSVCounts = dict()
@@ -152,16 +155,16 @@ class GeneRanking:
 		
 		#Then do the scoring for the variants in each data type in the neighborhood individually
 		
-		print "doing the scoring"
-		print cancerTypes.keys()
+		print("doing the scoring")
+		print(list(cancerTypes.keys()))
 		for cancerType in cancerTypes:
-			print "current cancer type: ", cancerType
+			print("current cancer type: ", cancerType)
 			
 			
 			if cancerType != "breast": #focus on one cancer type for now, will later be a setting and we need to make sure to filter the variants early on if we restrict to cancer types. 
 				continue
 			
-			print "cancer type: ", cancerType
+			print("cancer type: ", cancerType)
 			cancerTypeSVs = cancerTypes[cancerType] #Get all variants (not just SVs anymore!!! update naming) found overlapping with a neighborhood element in this cancer type. 
 			
 			#Score the genes.
@@ -169,21 +172,21 @@ class GeneRanking:
 			#To compute alpha, count the number of SVs in the eQTL layer.
 			#Multiply the alpha and beta per gene.
 			
-			print "scoring eQTLs"
+			print("scoring eQTLs")
 			eQTLBasedGeneScores = self.scoreBySVsInEQTLs(cancerTypeSVs, sampleMap, geneMap, cancerType)
 			
 			#Sort by highest final score and report the names of the genes that are involved
-			print "sorting genes by eQTL scores"
+			print("sorting genes by eQTL scores")
 			sortedGenesInd = np.argsort(eQTLBasedGeneScores[:,0])[::-1]
 
 
 			#Now map the indices of the scoring matrix back to the actual genes, and report the scores in the different layers per gene. 
 			geneCount = 0
 			geneScores = []
-			print "obtaining scores"
+			print("obtaining scores")
 			for geneInd in sortedGenesInd:
 				
-				gene = geneMap.keys()[geneMap.values().index(geneInd)] #Isn't this the part that is going wrong? The best index is probably the index in the matrix? 
+				gene = list(geneMap.keys())[list(geneMap.values()).index(geneInd)] #Isn't this the part that is going wrong? The best index is probably the index in the matrix? 
 				gene = reverseGeneMap[geneInd]
 				
 				
@@ -195,7 +198,7 @@ class GeneRanking:
 			#print "total genes: ", geneCount
 			
 			
-		print "done scoring"	
+		print("done scoring")	
 		self.scores = scores #make it global for now because I of course can't return from here in the constructor.... When everything here is a proper function, this should be fixed. 
 			
 			
@@ -237,7 +240,7 @@ class GeneRanking:
 
 		#Also plot the scaled eQTL counts
 				
-		testX = range(-10,10)
+		testX = list(range(-10,10))
 		sigmoidValues = []
 		for x in testX:
 			sigmoidValues.append(self.sigmoid(x))
@@ -263,10 +266,10 @@ class GeneRanking:
 		selectedGene = None
 		
 		for geneInd in range(0, len(cancerTypeSVs["genes"])):
-			gene = cancerTypeSVs["genes"].keys()[geneInd]
+			gene = list(cancerTypeSVs["genes"].keys())[geneInd]
 			
 			if len(gene.eQTLs) > 0:
-				selectedGene = cancerTypeSVs["genes"].keys()[geneInd] #take a random gene for now with eQTLs
+				selectedGene = list(cancerTypeSVs["genes"].keys())[geneInd] #take a random gene for now with eQTLs
 				break
 			
 		
@@ -295,7 +298,7 @@ class GeneRanking:
 				distMat[eQTLInd][len(selectedGene.eQTLs)] = geneDistEnd
 				distMat[len(selectedGene.eQTLs)][eQTLInd] = geneDistEnd
 		
-		print distMat.shape
+		print(distMat.shape)
 		
 		#What do the data look like when we simply make a scatterplot?
 		
@@ -322,7 +325,7 @@ class GeneRanking:
 		distances = dict()
 		distancesList = []
 		for geneInd in range(0, len(cancerTypeSVs["genes"])):
-			gene = cancerTypeSVs["genes"].keys()[geneInd]
+			gene = list(cancerTypeSVs["genes"].keys())[geneInd]
 			
 			start = gene.start
 			end = gene.end
@@ -369,7 +372,7 @@ class GeneRanking:
 		zeroBetaSigmoid = 0
 		geneScores = np.zeros([len(geneMap),4])
 		for geneInd in range(0, len(cancerTypeSVs["genes"])):
-			gene = cancerTypeSVs["genes"].keys()[geneInd]
+			gene = list(cancerTypeSVs["genes"].keys())[geneInd]
 			eQTLCount = scaledEQTLCounts[geneInd] #use the counts scaled to a sigmoid range of -10, 10
 			
 			beta = 0
@@ -409,9 +412,9 @@ class GeneRanking:
 			geneInd = geneMap[gene]
 			geneScores[geneInd] = [geneScore, alpha, beta, len(gene.eQTLs)] #Also add the number of eQTLs
 			
-			print "alpha: ", alpha
-			print "beta: ", beta
-			print "score: ", geneScore
+			print("alpha: ", alpha)
+			print("beta: ", beta)
+			print("score: ", geneScore)
 		
 		# plt.hist(allBetas)
 		# plt.show()

@@ -1,9 +1,12 @@
 # Script for testing heat diffusion even when graphs are large
 
+from __future__ import absolute_import
+from __future__ import print_function
 import numpy as np
 import pickle as pkl
 from numpy import linalg
 from numpy.linalg import inv
+from six.moves import range
 
 #1. Read the data from regions.csv
 
@@ -70,10 +73,10 @@ for chrom in sortedRegions:
 		reverseRegionsLookup[chrom][currentIndex] = regionName
 		currentIndex += 1
 
-print "done making lookup"
+print("done making lookup")
 
-print "number of regions on chr X: "
-print len(regions['chrX'])
+print("number of regions on chr X: ")
+print(len(regions['chrX']))
 
 #1.2 Also read the relationships between the regions
 
@@ -102,12 +105,12 @@ with open(regionsRelFile, 'r') as inFile:
 			addedInd.append(relationIndex)
 		relations[chrom][regionIndex].append(relationIndex)
 
-print "done initializing relations"
+print("done initializing relations")
 
-print "len: ", len(relations['chrX'])
-print "ind: ", len(addedInd)
-print "max: ", max(addedInd)
-print "min: ", min(addedInd)
+print("len: ", len(relations['chrX']))
+print("ind: ", len(addedInd))
+print("max: ", max(addedInd))
+print("min: ", min(addedInd))
 #What are all the indices in relations?
 
 
@@ -124,10 +127,10 @@ scoreOutFile = "diffusionScores.txt"
 open(scoreOutFile, 'w').close()
 
 for chrom in relations:
-	print "chrom is: ", chrom
+	print("chrom is: ", chrom)
 	
 
-	print "processing: ", chrom
+	print("processing: ", chrom)
 		
 	
 	noOfRegions = len(regions[chrom]) 
@@ -143,8 +146,8 @@ for chrom in relations:
 	blockSize = int(noOfRegions / float(blockNum))
 	currentIndex = 0
 
-	print "max rel: "
-	print max(relations[chrom][max(relations[chrom])])
+	print("max rel: ")
+	print(max(relations[chrom][max(relations[chrom])]))
 
 	mat = np.zeros([noOfRegions, noOfRegions])
 	
@@ -157,7 +160,7 @@ for chrom in relations:
 			mat[regionId][relationId] = 1
 			mat[relationId][regionId] = 1
 	
-	print mat.shape
+	print(mat.shape)
 
 	### Block processing 
 	
@@ -169,7 +172,7 @@ for chrom in relations:
 	#Although one issue here is that these again may operate further away, and thus in steps we would still end up at the end of the chromosome.
 	#What is the distance between min and max within blocks?
 	
-	print "processing in blocks of size: ", blockSize
+	print("processing in blocks of size: ", blockSize)
 	
 	currentIndex = 0
 	heatPerRegion = dict()
@@ -177,7 +180,7 @@ for chrom in relations:
 		currentMax = currentIndex + blockSize
 		currentBlock = mat[currentIndex:currentMax, currentIndex:currentMax]
 		
-		print "exploring block ", currentIndex, " to ", currentMax 
+		print("exploring block ", currentIndex, " to ", currentMax) 
 		#currentIndex += int(blockSize * overlap) #make sure that blocks overlap
 		#continue
 		
@@ -228,7 +231,7 @@ for chrom in relations:
 		# print minRegion
 		# print maxRegion
 		
-		print "current block size: ", currentBlock.shape
+		print("current block size: ", currentBlock.shape)
 		
 		#Do the heat diffusion for each block separately
 		
@@ -239,7 +242,7 @@ for chrom in relations:
 		#subtract the weighted submatrix from the adjacency matrix
 		subtractedMatrices = currentBlock - weightedAdjSubmatrix
 		
-		print "inverting the matrix"
+		print("inverting the matrix")
 		#Compute the inverse on the subtracted submatrix
 		invertedMatrix = np.linalg.pinv(subtractedMatrices)
 

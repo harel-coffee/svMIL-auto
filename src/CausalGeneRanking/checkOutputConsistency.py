@@ -3,8 +3,11 @@
 
 """
 
+from __future__ import absolute_import
+from __future__ import print_function
 import sys
 import numpy as np
+from six.moves import range
 
 fileA = np.loadtxt(sys.argv[1], dtype="object")
 fileB = np.loadtxt(sys.argv[2], dtype="object")
@@ -18,14 +21,14 @@ for geneA in fileA:
 	for feature in range(0, len(geneA)):
 		if geneA[feature] != geneB[feature]:
 			diff = True
-			print "Genes are different for feature: ", geneA[feature], geneB[feature]
-			print geneA
-			print geneB
+			print("Genes are different for feature: ", geneA[feature], geneB[feature])
+			print(geneA)
+			print(geneB)
 	
 	
 	if diff == True:
 		diffGeneCount += 1
 		diffGenes.append(geneA[0])
 
-print diffGenes
-print diffGeneCount
+print(diffGenes)
+print(diffGeneCount)

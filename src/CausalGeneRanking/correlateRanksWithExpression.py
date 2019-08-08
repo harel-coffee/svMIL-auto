@@ -3,6 +3,8 @@
 	Do the genes with the highest ranking also show different expression patterns? 
 """
 
+from __future__ import absolute_import
+from __future__ import print_function
 import sys
 import numpy as np
 import matplotlib.pyplot as plt
@@ -67,17 +69,17 @@ for gene in geneScores:
 	
 	if geneScore > 300:
 		if gene in cosmicGenes:
-			print "gene in COSMIC:"
-		print gene
-		print expression
-		print geneScore
+			print("gene in COSMIC:")
+		print(gene)
+		print(expression)
+		print(geneScore)
 	
 	scoresAndExpression.append([geneScore, expression])
 
 exit()
 
 scoresAndExpression = np.array(scoresAndExpression)
-print scoresAndExpression
+print(scoresAndExpression)
 
 plt.scatter(scoresAndExpression[:,0], scoresAndExpression[:,1])
 plt.xlabel("Gene ranking scores")

@@ -3,6 +3,8 @@
 
 """
 
+from __future__ import absolute_import
+from __future__ import print_function
 import sys
 import numpy as np
 from glob import glob
@@ -59,6 +61,6 @@ with open('significantPairs.txt', 'w') as outF:
 			
 	
 significantPairs = np.array(significantPairs)
-print significantPairs.shape
-print len(genePairScores)
+print(significantPairs.shape)
+print(len(genePairScores))
 

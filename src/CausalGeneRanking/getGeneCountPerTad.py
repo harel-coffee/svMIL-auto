@@ -5,6 +5,8 @@
 	E.g., 5 genes are disrupted 100 times. 
 
 """
+from __future__ import absolute_import
+from __future__ import print_function
 import sys
 import numpy as np
 from inputParser import InputParser
@@ -177,7 +179,7 @@ for sv in svData:
 		if geneCount > 20:
 			disruptionDict['>20'] += 1
 
-print disruptions
+print(disruptions)
 
 #Make a histogram showing how frequently how many genes are disrupted
 import matplotlib.pyplot as plt

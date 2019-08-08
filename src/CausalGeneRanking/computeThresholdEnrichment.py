@@ -3,12 +3,15 @@
 
 """
 
+from __future__ import absolute_import
+from __future__ import print_function
 import sys
 import matplotlib.pyplot as plt
 import numpy as np
 import os
 from os import listdir
 from os.path import isfile, join
+from six.moves import range
 
 rankedGenesFileNum = int(sys.argv[1])-1
 cosmicGenesFile = sys.argv[2]
@@ -24,7 +27,7 @@ geneScoreFiles = [f for f in listdir(permutationDataFolder) if isfile(join(permu
 
 
 rankedGenesFile = geneScoreFiles[rankedGenesFileNum]
-print rankedGenesFile
+print(rankedGenesFile)
 #1. Get the ranked genes 
 #Read the ranking file
 geneScores = dict()
@@ -92,9 +95,9 @@ randomSNVGenes = []
 if random == "True":
 	
 	#1. For all genes, randomly select a subset that fall into either of the 3 categories, but keep the sizes the same. 
-	randomCosmicGenes = np.random.choice(geneScores.keys(), len(cosmicGenes), replace=False)
-	randomDEGs = np.random.choice(geneScores.keys(), len(degGenes), replace=False)
-	randomSNVGenes = np.random.choice(geneScores.keys(), len(snvGenes), replace=False)
+	randomCosmicGenes = np.random.choice(list(geneScores.keys()), len(cosmicGenes), replace=False)
+	randomDEGs = np.random.choice(list(geneScores.keys()), len(degGenes), replace=False)
+	randomSNVGenes = np.random.choice(list(geneScores.keys()), len(snvGenes), replace=False)
 
 	cosmicGenes = randomCosmicGenes
 	degGenes = randomDEGs

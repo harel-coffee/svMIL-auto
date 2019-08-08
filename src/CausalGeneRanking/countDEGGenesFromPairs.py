@@ -1,6 +1,8 @@
 
 
 
+from __future__ import absolute_import
+from __future__ import print_function
 import sys
 import numpy as np
 
@@ -13,5 +15,5 @@ for pair in pairs[:,0]:
 	genes[splitPair[0]] = 0
 	
 	
-print genes
-print len(genes)
+print(genes)
+print(len(genes))

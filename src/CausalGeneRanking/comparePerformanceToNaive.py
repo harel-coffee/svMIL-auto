@@ -3,6 +3,8 @@
 
 """
 	
+from __future__ import absolute_import
+from __future__ import print_function
 import sys
 import os
 import numpy as np
@@ -448,18 +450,18 @@ ruleSvGenePairs = np.loadtxt('ruleSvGenePairs.txt', dtype='object')
 #5. Compare the resulting genes between the approaches
 
 #Which genes are different between the TAD and rule based approach?
-print "rule-based unique genes not in TAD:"
+print("rule-based unique genes not in TAD:")
 diffGenes = np.setdiff1d(ruleBasedAffectedGenes, tadAffectedGenes)
 for gene in diffGenes:
-	print gene
-print "TAD unique genes not in window:"
+	print(gene)
+print("TAD unique genes not in window:")
 diffGenes = np.setdiff1d(tadAffectedGenes, affectedGenesWindowed)
 for gene in diffGenes:
-	print gene
-print "rule unique genes not in window:"
+	print(gene)
+print("rule unique genes not in window:")
 diffGenes = np.setdiff1d(ruleBasedAffectedGenes, affectedGenesWindowed)
 for gene in diffGenes:
-	print gene
+	print(gene)
 
 
 
@@ -495,25 +497,25 @@ for gene in ruleBasedAffectedGenes:
 	if gene in cosmicGenes:
 		ruleGenesCosmic.append(gene)
 		
-print "Number of cosmic genes in the windowed approach: ", len(windowedGenesCosmic)
-print "Number of cosmic genes in the tad approach: ", len(tadGenesCosmic)
-print "Number of cosmic genes in the rule approach: ", len(ruleGenesCosmic)
+print("Number of cosmic genes in the windowed approach: ", len(windowedGenesCosmic))
+print("Number of cosmic genes in the tad approach: ", len(tadGenesCosmic))
+print("Number of cosmic genes in the rule approach: ", len(ruleGenesCosmic))
 
 #Compute the chi2 p-values for these findings
 #Because we are looking at all other genes, the number of cosmic genes - genes in the true group is the negative.
 # 
 obs = np.array([[len(windowedGenesCosmic), len(cosmicGenes) - len(windowedGenesCosmic)], [len(affectedGenesWindowed) - len(windowedGenesCosmic), (19286 - len(affectedGenesWindowed)- (len(cosmicGenes) - len(windowedGenesCosmic)))]])
-print obs
+print(obs)
 g, p, dof, expctd = chi2_contingency(obs)
-print "COSMIC p-value windowed: ", p
+print("COSMIC p-value windowed: ", p)
 
 obs = np.array([[len(tadGenesCosmic), len(cosmicGenes) - len(tadGenesCosmic)], [len(tadAffectedGenes) - len(tadGenesCosmic), (19286 - len(tadAffectedGenes) - (len(cosmicGenes) - len(tadGenesCosmic)))]])
 g, p, dof, expctd = chi2_contingency(obs)
-print "COSMIC p-value tad: ", p
+print("COSMIC p-value tad: ", p)
 
 obs = np.array([[len(ruleGenesCosmic), len(cosmicGenes) - len(ruleGenesCosmic)], [len(ruleBasedAffectedGenes) - len(ruleGenesCosmic), (19286 - len(ruleBasedAffectedGenes) - (len(cosmicGenes) - len(ruleGenesCosmic)))]])
 g, p, dof, expctd = chi2_contingency(obs)
-print "COSMIC p-value rules: ", p
+print("COSMIC p-value rules: ", p)
 
 #Get the breast cancer specific genes
 breastCancerGenesFile = sys.argv[6]
@@ -542,25 +544,25 @@ for gene in ruleBasedAffectedGenes:
 	if gene in breastCancerGenes:
 		ruleGenesBc.append(gene)
 		
-print "Number of bc genes in the windowed approach: ", len(windowedGenesBc)
-print "Number of bc genes in the tad approach: ", len(tadGenesBc)
-print "Number of bc genes in the rule approach: ", len(ruleGenesBc)
+print("Number of bc genes in the windowed approach: ", len(windowedGenesBc))
+print("Number of bc genes in the tad approach: ", len(tadGenesBc))
+print("Number of bc genes in the rule approach: ", len(ruleGenesBc))
 
 #Compute the chi2 p-values for these findings
 #Because we are looking at all other genes, the number of cosmic genes - genes in the true group is the negative.
 # 
 obs = np.array([[len(windowedGenesBc), len(breastCancerGenes) - len(windowedGenesBc)], [len(affectedGenesWindowed) - len(windowedGenesBc), (19286 - len(affectedGenesWindowed)- (len(breastCancerGenes) - len(windowedGenesBc)))]])
-print obs
+print(obs)
 g, p, dof, expctd = chi2_contingency(obs)
-print "BC p-value windowed: ", p
+print("BC p-value windowed: ", p)
 
 obs = np.array([[len(tadGenesBc), len(breastCancerGenes) - len(tadGenesBc)], [len(tadAffectedGenes) - len(tadGenesBc), (19286 - len(tadAffectedGenes) - (len(breastCancerGenes) - len(tadGenesBc)))]])
 g, p, dof, expctd = chi2_contingency(obs)
-print "BC p-value tad: ", p
+print("BC p-value tad: ", p)
 
 obs = np.array([[len(ruleGenesBc), len(breastCancerGenes) - len(ruleGenesBc)], [len(ruleBasedAffectedGenes) - len(ruleGenesBc), (19286 - len(ruleBasedAffectedGenes) - (len(breastCancerGenes) - len(ruleGenesBc)))]])
 g, p, dof, expctd = chi2_contingency(obs)
-print "BC p-value rules: ", p
+print("BC p-value rules: ", p)
 
 
 
@@ -611,7 +613,7 @@ print "BC p-value rules: ", p
 
 
 #Compute enrichment for gene sets and GO terms
-print "doing enrichment: "
+print("doing enrichment: ")
 
 import gseapy as gp
 import pandas as pd
@@ -633,7 +635,7 @@ enr = gp.enrichr(gene_list=ruleBasedAffectedGenes,
                  cutoff=0.5
                 )
 
-print enr.results.head()
+print(enr.results.head())
 
 exit()
 
@@ -691,9 +693,9 @@ tadCosmicPValue = stats.norm.sf(abs(z))*2
 z = (len(ruleGenesCosmic) - np.mean(rulesCosmicCounts)) / float(np.std(rulesCosmicCounts))
 rulesCosmicPValue = stats.norm.sf(abs(z))*2
 
-print "Windowed p-value for COSMIC genes: ", windowCosmicPValue
-print "TAD p-value for COSMIC genes: ", tadCosmicPValue
-print "Rules p-value for COSMIC genes: ", rulesCosmicPValue
+print("Windowed p-value for COSMIC genes: ", windowCosmicPValue)
+print("TAD p-value for COSMIC genes: ", tadCosmicPValue)
+print("Rules p-value for COSMIC genes: ", rulesCosmicPValue)
 
 #BC
 z = (len(windowedGenesBc) - np.mean(windowedBcCounts)) / float(np.std(windowedBcCounts))
@@ -703,9 +705,9 @@ tadBcPValue = stats.norm.sf(abs(z))*2
 z = (len(ruleGenesBc) - np.mean(rulesBcCounts)) / float(np.std(rulesBcCounts))
 rulesBcPValue = stats.norm.sf(abs(z))*2
 
-print "Windowed p-value for BC genes: ", windowBcPValue
-print "TAD p-value for BC genes: ", tadBcPValue
-print "Rules p-value for BC genes: ", rulesBcPValue
+print("Windowed p-value for BC genes: ", windowBcPValue)
+print("TAD p-value for BC genes: ", tadBcPValue)
+print("Rules p-value for BC genes: ", rulesBcPValue)
 
 #DEGs
 z = (len(windowedDegGenes) - np.mean(windowedDegCounts)) / float(np.std(windowedDegCounts))
@@ -715,9 +717,9 @@ tadDegPValue = stats.norm.sf(abs(z))*2
 z = (len(ruleDegGenes) - np.mean(rulesDegCounts)) / float(np.std(rulesDegCounts))
 rulesDegPValue = stats.norm.sf(abs(z))*2
 
-print "Windowed p-value for DEG genes: ", windowDegPValue
-print "TAD p-value for DEG genes: ", tadDegPValue
-print "Rules p-value for DEG genes: ", rulesDegPValue
+print("Windowed p-value for DEG genes: ", windowDegPValue)
+print("TAD p-value for DEG genes: ", tadDegPValue)
+print("Rules p-value for DEG genes: ", rulesDegPValue)
 
 
 ##Do enrichment for gene sets/Go terms
@@ -748,10 +750,10 @@ windowTadIntersect = list(set(affectedGenesWindowed) & set(tadAffectedGenes))
 windowRuleIntersect = list(set(affectedGenesWindowed) & set(ruleBasedAffectedGenes))
 tadRuleIntersect = list(set(tadAffectedGenes) & set(ruleBasedAffectedGenes))
 
-print "Number of genes that are in all 3 nc-based methods: ", len(allCriteriaIntersect)
-print "Number of genes that are in the windowed and TAD approaches: ", len(windowTadIntersect)
-print "Number of genes that are in windowed and rule approaches: ", len(windowRuleIntersect)
-print "Number of genes that are in the TAD and rule approahes: ", len(tadRuleIntersect)
+print("Number of genes that are in all 3 nc-based methods: ", len(allCriteriaIntersect))
+print("Number of genes that are in the windowed and TAD approaches: ", len(windowTadIntersect))
+print("Number of genes that are in windowed and rule approaches: ", len(windowRuleIntersect))
+print("Number of genes that are in the TAD and rule approahes: ", len(tadRuleIntersect))
 
 #Determine the venn diagram values
 twr = len(allCriteriaIntersect)
@@ -778,10 +780,10 @@ allCriteriaIntersect = list(set(windowedGenesCosmic) & set(tadGenesCosmic) & set
 windowTadIntersect = list(set(windowedGenesCosmic) & set(tadGenesCosmic))
 windowRuleIntersect = list(set(windowedGenesCosmic) & set(ruleGenesCosmic))
 tadRuleIntersect = list(set(tadGenesCosmic) & set(ruleGenesCosmic))
-print "Number of genes that are in all 3 nc-based methods: ", len(allCriteriaIntersect)
-print "Number of genes that are in the windowed and TAD approaches: ", len(windowTadIntersect)
-print "Number of genes that are in windowed and rule approaches: ", len(windowRuleIntersect)
-print "Number of genes that are in the TAD and rule approahes: ", len(tadRuleIntersect)
+print("Number of genes that are in all 3 nc-based methods: ", len(allCriteriaIntersect))
+print("Number of genes that are in the windowed and TAD approaches: ", len(windowTadIntersect))
+print("Number of genes that are in windowed and rule approaches: ", len(windowRuleIntersect))
+print("Number of genes that are in the TAD and rule approahes: ", len(tadRuleIntersect))
 
 
 twr = len(allCriteriaIntersect)
@@ -804,10 +806,10 @@ allCriteriaIntersect = list(set(windowedGenesBc) & set(tadGenesBc) & set(ruleGen
 windowTadIntersect = list(set(windowedGenesBc) & set(tadGenesBc))
 windowRuleIntersect = list(set(windowedGenesBc) & set(ruleGenesBc))
 tadRuleIntersect = list(set(tadGenesBc) & set(ruleGenesBc))
-print "Number of genes that are in all 3 nc-based methods: ", len(allCriteriaIntersect)
-print "Number of genes that are in the windowed and TAD approaches: ", len(windowTadIntersect)
-print "Number of genes that are in windowed and rule approaches: ", len(windowRuleIntersect)
-print "Number of genes that are in the TAD and rule approahes: ", len(tadRuleIntersect)
+print("Number of genes that are in all 3 nc-based methods: ", len(allCriteriaIntersect))
+print("Number of genes that are in the windowed and TAD approaches: ", len(windowTadIntersect))
+print("Number of genes that are in windowed and rule approaches: ", len(windowRuleIntersect))
+print("Number of genes that are in the TAD and rule approahes: ", len(tadRuleIntersect))
 
 
 twr = len(allCriteriaIntersect)
@@ -833,10 +835,10 @@ windowTadIntersect = list(set(windowedDegGenes) & set(tadDegGenes))
 windowRuleIntersect = list(set(windowedDegGenes) & set(ruleDegGenes))
 tadRuleIntersect = list(set(tadDegGenes) & set(ruleDegGenes))
 
-print "Number of genes that are in all 3 nc-based methods: ", len(allCriteriaIntersect)
-print "Number of genes that are in the windowed and TAD approaches: ", len(windowTadIntersect)
-print "Number of genes that are in windowed and rule approaches: ", len(windowRuleIntersect)
-print "Number of genes that are in the TAD and rule approahes: ", len(tadRuleIntersect)
+print("Number of genes that are in all 3 nc-based methods: ", len(allCriteriaIntersect))
+print("Number of genes that are in the windowed and TAD approaches: ", len(windowTadIntersect))
+print("Number of genes that are in windowed and rule approaches: ", len(windowRuleIntersect))
+print("Number of genes that are in the TAD and rule approahes: ", len(tadRuleIntersect))
 
 twr = len(allCriteriaIntersect)
 tw = len(windowTadIntersect) - twr

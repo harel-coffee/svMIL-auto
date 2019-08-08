@@ -1,3 +1,5 @@
+from __future__ import absolute_import
+from __future__ import print_function
 import sys
 import numpy as np
 import matplotlib.pyplot as plt
@@ -329,7 +331,7 @@ lossData = [np.sum(eQTLLosses), np.sum(enhancerLosses), np.sum(promoterLosses), 
 lossData = np.array(lossData)
 lossData = lossData / float(leftFeatures.shape[0] + rightFeatures.shape[0])
 lossData = -np.log(lossData)
-print lossData
+print(lossData)
 
 width = 0.35
 
@@ -358,7 +360,7 @@ lossData = [np.sum(eQTLLosses), np.sum(enhancerLosses), np.sum(promoterLosses), 
 lossData = np.array(lossData)
 lossData = lossData / float(leftFeatures.shape[0] + rightFeatures.shape[0])
 lossData = -np.log(lossData)
-print lossData
+print(lossData)
 
 plt.bar(np.arange(len(lossData)) + width, lossData, width, label='Right pairs', color='yellow')
 plt.xticks(np.arange(len(lossData) + width / 2),
@@ -391,7 +393,7 @@ gainData = [np.sum(eQTLGains), np.sum(enhancerGains), np.sum(promoterGains), np.
 gainData = np.array(gainData)
 gainData = gainData / float(leftFeatures.shape[0] + rightFeatures.shape[0])
 gainData = -np.log(gainData)
-print gainData
+print(gainData)
 
 plt.bar(np.arange(len(gainData)), gainData, width, label='Left', color='blue')
 # plt.xticks(np.arange(len(gainData)),
@@ -420,7 +422,7 @@ gainData = np.array(gainData)
 gainData = gainData / float(leftFeatures.shape[0] + rightFeatures.shape[0])
 gainData = -np.log(gainData)
 
-print gainData
+print(gainData)
 
 plt.bar(np.arange(len(gainData)) + width, gainData, width, label='Right pairs',color='yellow')
 plt.xticks(np.arange(len(gainData) + width / 2),

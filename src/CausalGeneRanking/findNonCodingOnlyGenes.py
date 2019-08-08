@@ -3,6 +3,8 @@
 
 """
 
+from __future__ import absolute_import
+from __future__ import print_function
 import numpy as np
 import sys
 import matplotlib.pyplot as plt
@@ -32,10 +34,10 @@ for geneExpr in degGenes:
 		codingEvidence.append([geneName, nonCodingSamples, []])
 	
 codingEvidence = np.array(codingEvidence, dtype="object")
-print codingEvidence
+print(codingEvidence)
 
-print degGenes.shape
-print codingEvidence.shape
+print(degGenes.shape)
+print(codingEvidence.shape)
 	
 #make a bar plot showing how many genes have evidence
 
@@ -78,7 +80,7 @@ for geneExpr in degGenes:
 	if snv == True:
 		snvEvidence[geneName].append(sampleName)
 
-print snvEvidence
+print(snvEvidence)
 exit()
 		
 
@@ -94,9 +96,9 @@ for gene in codingEvidence:
 	
 	count += 1
 
-plt.bar(geneCodingEvidences.keys(), geneCodingEvidences.values(), color='b')
-plt.bar(geneNonCodingEvidences.keys(), geneNonCodingEvidences.values(), bottom = geneCodingEvidences.values(), color='g')
-plt.xticks(geneCodingEvidences.keys(), codingEvidence[:,0], rotation=90)
+plt.bar(list(geneCodingEvidences.keys()), list(geneCodingEvidences.values()), color='b')
+plt.bar(list(geneNonCodingEvidences.keys()), list(geneNonCodingEvidences.values()), bottom = list(geneCodingEvidences.values()), color='g')
+plt.xticks(list(geneCodingEvidences.keys()), codingEvidence[:,0], rotation=90)
 plt.show()
 	
 

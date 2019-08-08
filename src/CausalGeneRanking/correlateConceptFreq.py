@@ -3,8 +3,11 @@
 
 """
 
+from __future__ import absolute_import
+from __future__ import print_function
 import numpy as np
 import sys
+from six.moves import range
 
 
 #1. Correlate concept frequency with the total rank
@@ -26,7 +29,7 @@ for geneInd in range(0, conceptGenes.shape[0]):
 	ranksAndTotalScores[geneInd, 1] = float(geneScore[30])
 
 
-print np.corrcoef(ranksAndTotalScores[:,0], ranksAndTotalScores[:,1])
+print(np.corrcoef(ranksAndTotalScores[:,0], ranksAndTotalScores[:,1]))
 
 #Correlation with the number of samples
 
@@ -44,4 +47,4 @@ for geneInd in range(0, conceptGenes.shape[0]):
 	ranksAndTotalScores[geneInd, 1] = len(samples)
 
 
-print np.corrcoef(ranksAndTotalScores[:,0], ranksAndTotalScores[:,1])
+print(np.corrcoef(ranksAndTotalScores[:,0], ranksAndTotalScores[:,1]))

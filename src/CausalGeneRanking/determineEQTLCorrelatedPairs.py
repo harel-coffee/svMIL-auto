@@ -3,6 +3,8 @@
 	
 """
 
+from __future__ import absolute_import
+from __future__ import print_function
 import sys
 import numpy as np
 import random
@@ -16,6 +18,7 @@ from sv import SV
 from gene import Gene
 from eQTL import EQTL
 from variantShuffler import VariantShuffler
+from six.moves import range
 
 
 shuffle = sys.argv[1] #Shuffle switch for shuffling the SVs (should be clearer)
@@ -23,13 +26,13 @@ shuffleEQTLs = sys.argv[2] #Shuffle switch for the eQTL labels (gene names)
 uuid = sys.argv[3]
 permutationInd = sys.argv[4]
 
-print "folder is: ./RankedGenes/", uuid
+print("folder is: ./RankedGenes/", uuid)
 
 if not os.path.exists("./RankedGenes/" + uuid):
-	print "making folder"
+	print("making folder")
 	os.makedirs("./RankedGenes/" + uuid) #this should be unique, so I now avoid checking if the directory exists. Could later be a thing from the sh file
 else:
-	print "skipping folder ", uuid, shuffle, shuffleEQTLs, permutationInd
+	print("skipping folder ", uuid, shuffle, shuffleEQTLs, permutationInd)
 
 
 #Read the SV input file
@@ -84,7 +87,7 @@ def shuffleEQTLLabels(eQTLs):
 	return eQTLs
 
 if shuffleEQTLs == "True":
-	print "shuffling eQTL labels"
+	print("shuffling eQTL labels")
 	#shuffle the gene names of the eQTLs
 	shuffleEQTLLabels(eQTLData)
 
@@ -107,7 +110,7 @@ svData = InputParser().getSVsFromFile(svFile)
 
 
 if shuffle == "True":
-	print "shuffling SVs"
+	print("shuffling SVs")
 	variantShuffler = VariantShuffler()
 	svData = variantShuffler.shuffleSVs(svData)
 
@@ -145,9 +148,9 @@ for sv in svData:
 	
 	#Determine the pairs.
 	for uniqueGeneInd in range(0, len(uniqueGenes)):
-		uniqueGene = uniqueGenes.keys()[uniqueGeneInd]
+		uniqueGene = list(uniqueGenes.keys())[uniqueGeneInd]
 		for uniqueGene2Ind in range(uniqueGeneInd+1, len(uniqueGenes)):
-			uniqueGene2 = uniqueGenes.keys()[uniqueGene2Ind]
+			uniqueGene2 = list(uniqueGenes.keys())[uniqueGene2Ind]
 			if uniqueGene is not uniqueGene2:
 				genePairs[uniqueGene + "_" + uniqueGene2] += 1
 	
@@ -155,8 +158,8 @@ for sv in svData:
 
 
 #Rank the gene pairs
-genePairValues = np.array(genePairs.values())
-genePairKeys = genePairs.keys()
+genePairValues = np.array(list(genePairs.values()))
+genePairKeys = list(genePairs.keys())
 
 #sort the gene pair scores
 sortedGenesInd = np.argsort(genePairValues)[::-1]
@@ -166,10 +169,10 @@ sortedGenesInd = np.argsort(genePairValues)[::-1]
 
 fileType = "realSVs_counts.txt"
 if shuffle == "True":
-	print "writing to the shuffled out file"
+	print("writing to the shuffled out file")
 	fileType = "shuffledSVs_counts_" + permutationInd + ".txt"
 if shuffleEQTLs == "True":
-	print "writing to the shuffled eQTL out file"
+	print("writing to the shuffled eQTL out file")
 	fileType = "shuffledEQTL_counts_" + permutationInd + ".txt"
 outFile = "./RankedGenes/" + uuid + "/" + fileType
 

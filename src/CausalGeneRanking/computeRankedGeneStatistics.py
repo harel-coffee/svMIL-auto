@@ -3,6 +3,8 @@
 	Investigate how many of the top ranking genes are is COSMIC. 
 """
 
+from __future__ import absolute_import
+from __future__ import print_function
 import sys
 import numpy as np
 
@@ -31,7 +33,7 @@ with open(cosmicGenesFile, 'rb') as f:
 		geneName = splitLine[0]
 		cosmicGenes.append(geneName)
 
-print "total number of cosmic genes: ", len(cosmicGenes)		
+print("total number of cosmic genes: ", len(cosmicGenes))		
 	
 #Also read the breast cancer genes specifically
 
@@ -66,10 +68,10 @@ with open(rankedGenesFile, 'rb') as f:
 		#if float(splitLine[1]) < 0.05:
 		if splitLine:
 			if splitLine[0] in cosmicGenes:
-				print "COSMIC gene: ", splitLine[0]
+				print("COSMIC gene: ", splitLine[0])
 				cosmicCountGoodScore += 1
 			if splitLine[0] in breastCancerGenes:
-				print "BC gene: ", splitLine[0]
+				print("BC gene: ", splitLine[0])
 				bcCountGoodScore += 1
 			allGenesGoodScore += 1
 		else:
@@ -85,11 +87,11 @@ with open(rankedGenesFile, 'rb') as f:
 				bcCountBadScore += 1
 			allGenesBadScore += 1	
 				
-print cosmicCountGoodScore, " out of ", allGenesGoodScore, " are in COSMIC and score > 0"
-print cosmicCountBadScore, " out of ", allGenesBadScore, " are in COSMIC and score 0"
+print(cosmicCountGoodScore, " out of ", allGenesGoodScore, " are in COSMIC and score > 0")
+print(cosmicCountBadScore, " out of ", allGenesBadScore, " are in COSMIC and score 0")
 
-print bcCountGoodScore, " out of ", allGenesGoodScore, " are known breast cancer genes and score > 0"
-print bcCountBadScore, " out of ", allGenesBadScore, " are known breast cancer genes and score 0"
+print(bcCountGoodScore, " out of ", allGenesGoodScore, " are known breast cancer genes and score > 0")
+print(bcCountBadScore, " out of ", allGenesBadScore, " are known breast cancer genes and score 0")
 
 from scipy.stats import chi2_contingency
 
@@ -102,11 +104,11 @@ if allGenesBadScore == 0: #temporary simple fix
 # cosmic & negative non-cosmic & negative
 obs = np.array([[cosmicCountGoodScore, cosmicCountBadScore], [allGenesGoodScore - cosmicCountGoodScore, allGenesBadScore - cosmicCountBadScore]])
 g, p, dof, expctd = chi2_contingency(obs)
-print "COSMIC p-value: ", p
+print("COSMIC p-value: ", p)
 
 obs = np.array([[bcCountGoodScore, bcCountBadScore], [allGenesGoodScore - bcCountGoodScore, allGenesBadScore - bcCountBadScore]])
 g, p, dof, expctd = chi2_contingency(obs)
-print "bc p-value: ", p
+print("bc p-value: ", p)
 #In addition, test how many of the genes also have SNVs affecting them in at least 1 sample
 snvGenes = []
 with open(snvFile, 'r') as inf:
@@ -147,8 +149,8 @@ with open(rankedGenesFile, 'rb') as f:
 				nonSnvCountNeg += 1
 			allNeg += 1
 			
-print snvCountPos, " out of ", snvCountPos + nonSnvCountPos, " score > 0 and have SNVs"
-print snvCountNeg, " out of ", snvCountNeg + nonSnvCountNeg, " score 0 and have SNVs"
+print(snvCountPos, " out of ", snvCountPos + nonSnvCountPos, " score > 0 and have SNVs")
+print(snvCountNeg, " out of ", snvCountNeg + nonSnvCountNeg, " score 0 and have SNVs")
 
 if allNeg == 0: #temporary simple fix
 	allNeg = 19286 - allPos
@@ -159,7 +161,7 @@ if allNeg == 0: #temporary simple fix
 # cosmic & negative non-cosmic & negative
 obs = np.array([[snvCountPos, snvCountNeg], [allPos - snvCountPos, allNeg - snvCountNeg]])
 g, p, dof, expctd = chi2_contingency(obs)
-print "SNV p-value: ", p
+print("SNV p-value: ", p)
 
 #Then, determine how many of the genes are differentially expressed
 degGenes = []
@@ -201,8 +203,8 @@ with open(rankedGenesFile, 'rb') as f:
 				nonDegCountNeg += 1
 			allNeg += 1
 			
-print degCountPos, " out of ", degCountPos + nonDegCountPos, " score > 0 and are DEG"
-print degCountNeg, " out of ", degCountNeg + nonDegCountNeg, " score 0 and are DEG"
+print(degCountPos, " out of ", degCountPos + nonDegCountPos, " score > 0 and are DEG")
+print(degCountNeg, " out of ", degCountNeg + nonDegCountNeg, " score 0 and are DEG")
 
 if allNeg == 0: #temporary simple fix
 	allNeg = 19286 - allPos
@@ -213,7 +215,7 @@ if allNeg == 0: #temporary simple fix
 # cosmic & negative non-cosmic & negative
 obs = np.array([[degCountPos, degCountNeg], [allPos - degCountPos, allNeg - degCountNeg]])
 g, p, dof, expctd = chi2_contingency(obs)
-print "SNV p-value: ", p
+print("SNV p-value: ", p)
 
 #Finally, show how many of the genes have all of the above, these are likely the most interesting genes. 
 
@@ -259,10 +261,10 @@ allCriteriaIntersect = list(set(degGenesPos) & set(cosmicGenesPos) & set(snvGene
 cosmicSNVsIntersect = list(set(cosmicGenesPos) & set(snvGenesPos))
 cosmicDEGsIntersect = list(set(cosmicGenesPos) & set(degGenesPos))
 snvDEGsIntersect = list(set(snvGenesPos) & set(degGenesPos))
-print "Number of genes that are in COSMIC, have SNVs and are DEG: ", len(allCriteriaIntersect)
-print "Number of genes that are in COSMIC and have SNVs: ", len(cosmicSNVsIntersect)
-print "Number of genes that are in COSMIC and are DEG: ", len(cosmicDEGsIntersect)
-print "Number of genes that have SNV and are DEG: ", len(snvDEGsIntersect)
+print("Number of genes that are in COSMIC, have SNVs and are DEG: ", len(allCriteriaIntersect))
+print("Number of genes that are in COSMIC and have SNVs: ", len(cosmicSNVsIntersect))
+print("Number of genes that are in COSMIC and are DEG: ", len(cosmicDEGsIntersect))
+print("Number of genes that have SNV and are DEG: ", len(snvDEGsIntersect))
 
 # 
 # print "genes in the total intersect: "
@@ -308,11 +310,11 @@ allCriteriaIntersect = list(set(degGenesNeg) & set(cosmicGenesNeg) & set(snvGene
 cosmicSNVsIntersect = list(set(cosmicGenesNeg) & set(snvGenesNeg))
 cosmicDEGsIntersect = list(set(cosmicGenesNeg) & set(degGenesNeg))
 snvDEGsIntersect = list(set(snvGenesNeg) & set(degGenesNeg))
-print "Negative set:"
-print "Number of genes that are in COSMIC, have SNVs and are DEG: ", len(allCriteriaIntersect)
-print "Number of genes that are in COSMIC and have SNVs: ", len(cosmicSNVsIntersect)
-print "Number of genes that are in COSMIC and are DEG: ", len(cosmicDEGsIntersect)
-print "Number of genes that have SNV and are DEG: ", len(snvDEGsIntersect)
+print("Negative set:")
+print("Number of genes that are in COSMIC, have SNVs and are DEG: ", len(allCriteriaIntersect))
+print("Number of genes that are in COSMIC and have SNVs: ", len(cosmicSNVsIntersect))
+print("Number of genes that are in COSMIC and are DEG: ", len(cosmicDEGsIntersect))
+print("Number of genes that have SNV and are DEG: ", len(snvDEGsIntersect))
 
 
 v = venn3(subsets=(len(cosmicGenesNeg),len(snvGenesNeg),len(cosmicSNVsIntersect), len(degGenesNeg),len(cosmicDEGsIntersect), len(snvDEGsIntersect),len(allCriteriaIntersect)),

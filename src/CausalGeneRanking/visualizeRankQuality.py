@@ -7,7 +7,9 @@
 #the X axis is the rank
 #The number of SVs and number of eQTLs are on the y-axis
 
+from __future__ import absolute_import
 import sys
+from six.moves import range
 
 rankFile = sys.argv[1]
 
@@ -30,7 +32,7 @@ with open(rankFile, 'r') as inF:
 
 import matplotlib.pyplot as plt
 
-x = range(0, len(numberOfSVs))
+x = list(range(0, len(numberOfSVs)))
 #plt.scatter(x,numberOfSVs)
 
 plt.scatter(x, numberOfEQTLs)

@@ -4,11 +4,14 @@
 
 """
 
+from __future__ import absolute_import
+from __future__ import print_function
 import sys
 import numpy as np
 import matplotlib.pyplot as plt
 from genomicShuffler import GenomicShuffler
 from inputParser import InputParser
+from six.moves import range
 
 
 #somaticSVs = np.load(sys.argv[1])
@@ -204,7 +207,7 @@ for tad in tads:
 import math
 binSize = 50000
 binnedCoordinates = dict()
-sortedCoordinates = np.sort(coordinates.keys())
+sortedCoordinates = np.sort(list(coordinates.keys()))
 currentBinStart = sortedCoordinates[0]
 binnedCoordinates = dict()
 currentBin = int(math.ceil(-((max(coordinates.keys()) - min(coordinates.keys())) / float(binSize)) / 2)) #oof
@@ -231,7 +234,7 @@ for coordinate in coordinates:
 
 
 
-print "plotting"		
-plt.bar(binnedCoordinates.keys(), binnedCoordinates.values())
+print("plotting")		
+plt.bar(list(binnedCoordinates.keys()), list(binnedCoordinates.values()))
 plt.ylim(0,4500)
 plt.show()

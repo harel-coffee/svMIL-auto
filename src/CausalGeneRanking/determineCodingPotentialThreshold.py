@@ -5,6 +5,8 @@
 
 """
 
+from __future__ import absolute_import
+from __future__ import print_function
 import sys
 import numpy as np
 import matplotlib.pyplot as plt
@@ -24,7 +26,7 @@ for pair in codingPairs[:,0]:
 		codingSVGenes[sv] = []
 	codingSVGenes[sv].append(splitPair[0])
 	
-print codingSVGenes
+print(codingSVGenes)
 
 #get the COSMIC genes
 
@@ -76,9 +78,9 @@ for sv in codingSVGenes:
 	svDegAndCosmicCount.append(degAndCosmicCount)
 	svDegOrCosmicCount.append(degOrCosmicCount)
 
-print svDegCount
-print svCosmicCount
-print svDegAndCosmicCount
+print(svDegCount)
+print(svCosmicCount)
+print(svDegAndCosmicCount)
 
 
 svDegCount = np.array(svDegCount)
@@ -86,11 +88,11 @@ svCosmicCount = np.array(svCosmicCount)
 svDegAndCosmicCount = np.array(svDegAndCosmicCount)
 svDegOrCosmicCount = np.array(svDegOrCosmicCount)
 
-print len(np.where(svDegCount != 0)[0])
-print len(np.where(svCosmicCount != 0)[0])
-print len(np.where(svDegAndCosmicCount != 0)[0])
-print len(np.where(svDegOrCosmicCount != 0)[0])
-print len(codingSVGenes)
+print(len(np.where(svDegCount != 0)[0]))
+print(len(np.where(svCosmicCount != 0)[0]))
+print(len(np.where(svDegAndCosmicCount != 0)[0]))
+print(len(np.where(svDegOrCosmicCount != 0)[0]))
+print(len(codingSVGenes))
 
 exit()
 

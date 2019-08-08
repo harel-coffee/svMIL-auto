@@ -3,6 +3,8 @@
 	
 """
 
+from __future__ import absolute_import
+from __future__ import print_function
 import sys
 import numpy as np
 import matplotlib.pyplot as plt
@@ -64,18 +66,18 @@ for gene in geneScores:
 	snvCount = geneSnvCount[gene]
 	
 	if snvCount > 2000:
-		print gene
-		print snvCount
-		print geneScore
+		print(gene)
+		print(snvCount)
+		print(geneScore)
 		if gene in cosmicGenes:
-			print "gene in COSMIC"
+			print("gene in COSMIC")
 	
 	scoresAndSnvCounts.append([geneScore, snvCount])
 
 exit()
 
 scoresAndSnvCounts = np.array(scoresAndSnvCounts)
-print scoresAndSnvCounts
+print(scoresAndSnvCounts)
 
 plt.scatter(scoresAndSnvCounts[:,0], scoresAndSnvCounts[:,1])
 plt.xlabel("Gene ranking scores")

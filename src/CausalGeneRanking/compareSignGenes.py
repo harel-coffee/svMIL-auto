@@ -1,4 +1,6 @@
 
+from __future__ import absolute_import
+from __future__ import print_function
 import sys
 
 set1 = sys.argv[1]
@@ -30,8 +32,8 @@ with open(set2, 'r') as inF:
 #Number of genes in set1 that are also in set2
 import numpy as np
 intersect = np.intersect1d(set1Genes,set2Genes)
-print intersect
-print len(intersect)
+print(intersect)
+print(len(intersect))
 
 diff = np.setdiff1d(set1Genes,set2Genes)
-print diff
+print(diff)

@@ -1,5 +1,8 @@
+from __future__ import absolute_import
+from __future__ import print_function
 import sys
 import numpy as np
+from six.moves import range
 
 
 somaticScores = np.loadtxt(sys.argv[1], dtype="object")
@@ -135,7 +138,7 @@ for sv in svBagContents:
 
 bags = np.array(bags)
 from sklearn.model_selection import train_test_split
-indices = range(0,len(bags))
+indices = list(range(0,len(bags)))
 
 
 
@@ -168,12 +171,12 @@ predictions = SMILa.predict(testBags)
 predictions = SMILa.predict(instances)
 
 
-print np.average(instanceLabels == np.sign(predictions))
-print np.where(np.array(predictions) == 1)[0].shape
-print np.where(np.array(predictions) == -1)[0].shape
+print(np.average(instanceLabels == np.sign(predictions)))
+print(np.where(np.array(predictions) == 1)[0].shape)
+print(np.where(np.array(predictions) == -1)[0].shape)
 
 positiveInd = np.where(np.array(predictions) == 1)[0]
-print positiveInd
+print(positiveInd)
 
 positivePairs = []
 positiveGenes = dict()
@@ -185,9 +188,9 @@ for ind in positiveInd:
 		positiveGenes[geneName] = 0
 	positiveGenes[geneName] += 1
 
-print len(positiveGenes)
+print(len(positiveGenes))
 
 fpr, tpr, thresholds = metrics.roc_curve(instanceLabels, predictions, pos_label=1.)
-print metrics.auc(fpr, tpr)
+print(metrics.auc(fpr, tpr))
 
 

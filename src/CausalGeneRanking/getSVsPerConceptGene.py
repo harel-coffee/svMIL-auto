@@ -3,6 +3,8 @@
 
 """
 
+from __future__ import absolute_import
+from __future__ import print_function
 import sys
 import numpy as np
 
@@ -20,8 +22,8 @@ for gene in conceptGenes[:,0]:
 	svCount = len(splitPatients)
 	totalCounts.append(svCount)
 	
-print totalCounts
-print np.sum(totalCounts)
+print(totalCounts)
+print(np.sum(totalCounts))
 	
 
 

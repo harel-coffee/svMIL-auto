@@ -1,8 +1,11 @@
 
+from __future__ import absolute_import
+from __future__ import print_function
 import sys
 import re
 import numpy as np
 from scipy import stats
+from six.moves import range
 
 
 #1. Compute the differential expression matrix per sample
@@ -149,22 +152,22 @@ for row in range(1, featureMatrix.shape[0]):
 filteredFeatureMatrix = np.array(filteredFeatureMatrix, dtype="float") + 0.0001
 filteredPValueMatrix = np.array(filteredPValueMatrix,dtype="float") + 0.0001
 
-print filteredFeatureMatrix
-print filteredPValueMatrix
+print(filteredFeatureMatrix)
+print(filteredPValueMatrix)
 
 for row in range(0, filteredFeatureMatrix.shape[0]):
 	
 	#Check for this gene how many samples have a positive correlation
 	
-	print filteredFeatureMatrix[row,:]
-	print np.corrcoef(filteredFeatureMatrix[row,:], filteredPValueMatrix[row,:])[0,1]
+	print(filteredFeatureMatrix[row,:])
+	print(np.corrcoef(filteredFeatureMatrix[row,:], filteredPValueMatrix[row,:])[0,1])
 	
 
 
 
 #out = np.corrcoef(filteredFeatureMatrix,filteredPValueMatrix)
 out = np.dot(filteredFeatureMatrix,filteredPValueMatrix.T)
-print out
+print(out)
 
 
 

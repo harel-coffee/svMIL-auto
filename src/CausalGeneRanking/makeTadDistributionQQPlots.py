@@ -1,6 +1,8 @@
+from __future__ import absolute_import
 import numpy as np
 import pylab
 import sys
+from six.moves import range
 
 dataDict = np.load(sys.argv[1]).item()
 randomDataDict = np.load(sys.argv[2]).item()

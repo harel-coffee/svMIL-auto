@@ -4,6 +4,8 @@
 
 """
 
+from __future__ import absolute_import
+from __future__ import print_function
 import sys
 import matplotlib.pyplot as plt
 import numpy as np
@@ -37,8 +39,8 @@ plt.boxplot(deletionsLengths)
 #plt.show()
 
 #Some statistics
-print np.min(deletionsLengths)
-print np.max(deletionsLengths)
-print np.median(deletionsLengths)
+print(np.min(deletionsLengths))
+print(np.max(deletionsLengths))
+print(np.median(deletionsLengths))
 
-print "number of dels with length 0: ", deletionsLengthsDict[0]
+print("number of dels with length 0: ", deletionsLengthsDict[0])

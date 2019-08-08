@@ -27,6 +27,8 @@
 #############
 ###Imports###
 
+from __future__ import absolute_import
+from __future__ import print_function
 import sys
 import numpy as np
 import random
@@ -69,14 +71,14 @@ excludedSVs = np.loadtxt(settings.files['excludedSVs'], dtype='object')
 #2. Read the SVs or SNVs depending on the mode.
 variantData = []
 if mode == "SV":
-	print "Reading SV data"
+	print("Reading SV data")
 	svFile = settings.files['svFile']
 	svData = InputParser().getSVsFromFile(svFile, "all", excludedSVs)
 	
 	
 #3. If this is a permutation run, we wish to shuffle these SVs or SNVs.
 if permutationYN == "True":
-	print "Shuffling variants"
+	print("Shuffling variants")
 	genomicShuffler = GenomicShuffler()
 	#Shuffle the variants, provide the mode such that the function knows how to permute
 	if mode == "SV":
@@ -93,18 +95,18 @@ if permutationYN == "True":
 
 #2. Get the neighborhood for these genes based on the SVs or SNVs
 if mode == "SV":
-	print "Defining the neighborhood for the causal genes and the SVs"
+	print("Defining the neighborhood for the causal genes and the SVs")
 	NeighborhoodDefiner(causalGenes, svData, None, mode) #Provide the mode to ensure that the right variant type is used (different positions used in annotation)
 if mode == "SNV":
-	print "Defining the neighborhood for the causal genes and the SNVs"
+	print("Defining the neighborhood for the causal genes and the SNVs")
 	NeighborhoodDefiner(causalGenes, None, snvData, mode) #Provide the mode to ensure that the right variant type is used (different positions used in annotation)
 if mode == "SV+SNV":
-	print "Defining the neighborhood for the causal genes and the SVs and SNVs"
+	print("Defining the neighborhood for the causal genes and the SVs and SNVs")
 	NeighborhoodDefiner(causalGenes, svData, snvData, mode) #Provide the mode to ensure that the right variant type is used (different positions used in annotation)
 	
 
 #3. Do ranking of the genes and report the causal SVs
-print "Ranking the genes for the variants"
+print("Ranking the genes for the variants")
 geneRanking = GeneRanking(causalGenes[:,3], svData, mode, sys.argv[1], permutationRound)
 
 #Save the causal genes up until here and load them for faster development of the deep learning part
@@ -126,6 +128,6 @@ geneRanking = GeneRanking(causalGenes[:,3], svData, mode, sys.argv[1], permutati
 OutputWriter().writeOutput(geneRanking, causalGenes, uuid, permutationYN, permutationRound)
 
 endTime = time.time()
-print "The program took ", endTime-startTime, " seconds to complete"
+print("The program took ", endTime-startTime, " seconds to complete")
 
 	

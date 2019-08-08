@@ -2,11 +2,13 @@
 	For every gene, compute how often the features are higher than in the random case
 """
 
+from __future__ import absolute_import
 import sys
 import numpy as np
 import os
 from os import listdir
 from os.path import isfile, join
+from six.moves import range
 
 inFile = sys.argv[1]
 permutationFolder = sys.argv[2]

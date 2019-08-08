@@ -2,8 +2,11 @@
 	Compare the genes in the ranking between pattern and burden. 
 """
 
+from __future__ import absolute_import
+from __future__ import print_function
 import sys
 import numpy as np
+from six.moves import range
 
 burdenFile = sys.argv[1]
 patternFile = sys.argv[2]
@@ -25,10 +28,10 @@ for row in range(0,pattern.shape[0]):
 
 
 #compute set difference
-print "everything in burden not in pattern: ", np.setdiff1d(burdenGenes, patternGenes)
-print "everything in pattern not in burden: ", len(np.setdiff1d(patternGenes, burdenGenes))
+print("everything in burden not in pattern: ", np.setdiff1d(burdenGenes, patternGenes))
+print("everything in pattern not in burden: ", len(np.setdiff1d(patternGenes, burdenGenes)))
 
-print "overlap: ", len(np.intersect1d(burdenGenes, patternGenes))
-print "total burden & pattern: ", len(burdenGenes), len(patternGenes)
+print("overlap: ", len(np.intersect1d(burdenGenes, patternGenes)))
+print("total burden & pattern: ", len(burdenGenes), len(patternGenes))
 
 

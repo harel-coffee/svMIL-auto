@@ -3,11 +3,14 @@
 	the nearest TAD boundaries. 
 
 """
+from __future__ import absolute_import
+from __future__ import print_function
 import matplotlib.pyplot as plt
 import numpy as np
 import math
 
 import settings
+from six.moves import range
 
 class ChannelVisualizer:
 	
@@ -21,7 +24,7 @@ class ChannelVisualizer:
 		#for the genes that have losses/gains in the causal gene set, visualize the channels
 		#Does that look different from a random gene?
 		
-		print "loading genes"
+		print("loading genes")
 		knownBcGenes = self.loadBCGenes("../../data/Genes/breastCancerCausalGenes.txt")
 		causalGenes = self.loadCausalGenes('../../data/Genes/Census_allTue Apr 10 14_56_44 2018.tsv')
 		
@@ -69,7 +72,7 @@ class ChannelVisualizer:
 	
 	def makeFeatureMatrix(self, genes, causalGenes, genome):
 		
-		print "defining the feature matrix"
+		print("defining the feature matrix")
 		
 		#For the genes, make the channels with gains. But instead, make 200 bins across which the values are distributed.
 		#As labels, each gene in the COSMIC dataset is positive. Every sample that has gains from this set is also positive.
@@ -110,12 +113,12 @@ class ChannelVisualizer:
 		noOfSamples = []
 		for gene in genes:
 
-			if len(gene.lostEQTLs.keys()) < 1 and len(gene.gainedEQTLs.keys()) > 0:
-				samples = gene.gainedEQTLs.keys() 
-			elif len(gene.gainedEQTLs.keys()) < 1 and len(gene.lostEQTLs.keys()) > 0:
-				samples = gene.lostEQTLs.keys()
+			if len(list(gene.lostEQTLs.keys())) < 1 and len(list(gene.gainedEQTLs.keys())) > 0:
+				samples = list(gene.gainedEQTLs.keys()) 
+			elif len(list(gene.gainedEQTLs.keys())) < 1 and len(list(gene.lostEQTLs.keys())) > 0:
+				samples = list(gene.lostEQTLs.keys())
 			else: #combine the samples
-				samples = gene.lostEQTLs.keys() + gene.gainedEQTLs.keys()
+				samples = list(gene.lostEQTLs.keys()) + list(gene.gainedEQTLs.keys())
 
 			if len(samples) < 1:
 				gainChannel = np.zeros(noOfBins+1)
@@ -291,15 +294,15 @@ class ChannelVisualizer:
 				# 		negCount += 1
 				# 		labels.append(0)
 		
-		print "no samples: ", noSamples
-		print "no tad: ", noTad
-		print "no of samples: ", noOfSamples
-		print "neg count with gains/losses: ", negCount
+		print("no samples: ", noSamples)
+		print("no tad: ", noTad)
+		print("no of samples: ", noOfSamples)
+		print("neg count with gains/losses: ", negCount)
 		exit()
 		
-		print posCount
-		print negCount
-		print len(labels)
+		print(posCount)
+		print(negCount)
+		print(len(labels))
 		
 		lossChannels = np.array(lossChannels)
 		gainChannels = np.array(gainChannels)
@@ -309,12 +312,12 @@ class ChannelVisualizer:
 		#Simple classifiers
 		#stackedChannels = np.concatenate((lossChannels, gainChannels), axis=1)
 		
-		print stackedChannels
-		print labels
+		print(stackedChannels)
+		print(labels)
 		
-		print "data shapes: "
-		print stackedChannels.shape
-		print len(labels)
+		print("data shapes: ")
+		print(stackedChannels.shape)
+		print(len(labels))
 		
 				
 		# exit()			
@@ -331,7 +334,7 @@ class ChannelVisualizer:
 		# print negCount
 		# exit()
 		
-		print "Number of positive genes: ", posCount
+		print("Number of positive genes: ", posCount)
 		return stackedChannels, labels
 
 	def clusterGenes(self, channels, labelList):
@@ -484,12 +487,12 @@ class ChannelVisualizer:
 										  number_of_models = 2)
 		
 
-		models_to_print = range(len(models))
+		models_to_print = list(range(len(models)))
 		for i, item in enumerate(models):
 			if i in models_to_print:
 				model, params, model_types = item
 				print("-------------------------------------------------------------------------------------------------------")
-				print("Model " + str(i))
+				print(("Model " + str(i)))
 				print(" ")
 				print("Hyperparameters:")
 				print(params)
@@ -513,7 +516,7 @@ class ChannelVisualizer:
 																				   subset_size=300,
 																				   verbose=True,
 																				   outputfile=outputfile)
-		print('Details of the training process were stored in ',outputfile)
+		print(('Details of the training process were stored in ',outputfile))
 
 		
 		
@@ -542,11 +545,11 @@ class ChannelVisualizer:
 					else:
 						otherGenesWithSNVSVOverlap += 1
 			
-		print bcGenesWithOverlap
-		print otherGenesWithOverlap
+		print(bcGenesWithOverlap)
+		print(otherGenesWithOverlap)
 		
-		print "bc with both overlap: ", bcGenesWithSNVSVOverlap
-		print "other with both overlap: ", otherGenesWithSNVSVOverlap
+		print("bc with both overlap: ", bcGenesWithSNVSVOverlap)
+		print("other with both overlap: ", otherGenesWithSNVSVOverlap)
 				
 		
 		return
@@ -565,8 +568,8 @@ class ChannelVisualizer:
 					else:
 						otherGenesWithOverlap += 1	
 			
-		print bcGenesWithOverlap
-		print otherGenesWithOverlap
+		print(bcGenesWithOverlap)
+		print(otherGenesWithOverlap)
 				
 		exit()
 		return
@@ -589,12 +592,12 @@ class ChannelVisualizer:
 			# 	exit()
 			
 			#The losses and gains are per sample. Do we average across the samples?
-			if len(gene.lostEQTLs.keys()) < 1 and len(gene.gainedEQTLs.keys()) > 0:
-				samples = gene.gainedEQTLs.keys() 
-			elif len(gene.gainedEQTLs.keys()) < 1 and len(gene.lostEQTLs.keys()) > 0:
-				samples = gene.lostEQTLs.keys()
+			if len(list(gene.lostEQTLs.keys())) < 1 and len(list(gene.gainedEQTLs.keys())) > 0:
+				samples = list(gene.gainedEQTLs.keys()) 
+			elif len(list(gene.gainedEQTLs.keys())) < 1 and len(list(gene.lostEQTLs.keys())) > 0:
+				samples = list(gene.lostEQTLs.keys())
 			else: #combine the samples
-				samples = gene.lostEQTLs.keys() + gene.gainedEQTLs.keys()
+				samples = list(gene.lostEQTLs.keys()) + list(gene.gainedEQTLs.keys())
 			
 			#First aggregate across the samples? Count how often we see a gain or loss in total across all samples.
 			
@@ -612,14 +615,14 @@ class ChannelVisualizer:
 			
 			if len(totalLosses) > 0:
 				if gene.name in knownBcGenes:
-					print "gene ", gene.name, " loses eQTLs"
+					print("gene ", gene.name, " loses eQTLs")
 					bcLossCount += 1 
 				else:
 					otherLossCount += 1
 				
 			if len(totalGains) > 0:
 				if gene.name in knownBcGenes:
-					print "gene ", gene.name, " gains eQTLs"
+					print("gene ", gene.name, " gains eQTLs")
 					bcGainCount += 1
 				else:
 					otherGainCount += 1
@@ -627,14 +630,14 @@ class ChannelVisualizer:
 		
 		#Show the distribution
 		
-		print "bc loss: ", bcLossCount
-		print "bc gain: ", bcGainCount
-		print "other loss: ", otherLossCount
-		print "other gain: ", otherGainCount
+		print("bc loss: ", bcLossCount)
+		print("bc gain: ", bcGainCount)
+		print("other loss: ", otherLossCount)
+		print("other gain: ", otherGainCount)
 		
 		
-		print len(genes)
-		print len(knownBcGenes)
+		print(len(genes))
+		print(len(knownBcGenes))
 		
 		# 
 		
@@ -660,8 +663,8 @@ class ChannelVisualizer:
 			
 			distance = abs(gene.leftTAD.end - gene.rightTAD.start) #left comes before right
 			#at each eQTL position, add a +1.
-			tadRange = range(gene.leftTAD.end, gene.rightTAD.start)
-			plotRange = range(0, distance)
+			tadRange = list(range(gene.leftTAD.end, gene.rightTAD.start))
+			plotRange = list(range(0, distance))
 			
 			eQTLPositions = np.zeros([distance,1])
 			for eQTL in gene.eQTLs:
@@ -700,10 +703,10 @@ class ChannelVisualizer:
 			if gene.name != "CNTRL":
 				continue
 			else:
-				print gene.name
+				print(gene.name)
 			
-			print gene.gainedEQTLs
-			print gene.lostEQTLs
+			print(gene.gainedEQTLs)
+			print(gene.lostEQTLs)
 			
 			if len(gene.gainedEQTLs) < 1 and len(gene.lostEQTLs) < 1:
 				
@@ -725,13 +728,13 @@ class ChannelVisualizer:
 			#at each eQTL position, add a +1.
 			
 			if gene.rightTAD.end != gene.leftTAD.end:
-				tadRange = range(gene.leftTAD.end, gene.rightTAD.end)
+				tadRange = list(range(gene.leftTAD.end, gene.rightTAD.end))
 				distance = abs(gene.leftTAD.end - gene.rightTAD.end)
 			else:
-				tadRange = range(gene.leftTAD.end, gene.rightTAD.start)
+				tadRange = list(range(gene.leftTAD.end, gene.rightTAD.start))
 				distance = abs(gene.leftTAD.end - gene.rightTAD.start)
 			
-			plotRange = range(0, distance)
+			plotRange = list(range(0, distance))
 			
 			
 			
@@ -740,20 +743,20 @@ class ChannelVisualizer:
 			
 			
 			#Cover for the case when there are no gains, but losses and vv
-			if len(gene.lostEQTLs.keys()) < 1 and len(gene.gainedEQTLs.keys()) > 0:
-				samples = gene.gainedEQTLs.keys() 
-			elif len(gene.gainedEQTLs.keys()) < 1 and len(gene.lostEQTLs.keys()) > 0:
-				samples = gene.lostEQTLs.keys()
+			if len(list(gene.lostEQTLs.keys())) < 1 and len(list(gene.gainedEQTLs.keys())) > 0:
+				samples = list(gene.gainedEQTLs.keys()) 
+			elif len(list(gene.gainedEQTLs.keys())) < 1 and len(list(gene.lostEQTLs.keys())) > 0:
+				samples = list(gene.lostEQTLs.keys())
 			else: #combine the samples
-				samples = gene.lostEQTLs.keys() + gene.gainedEQTLs.keys()
+				samples = list(gene.lostEQTLs.keys()) + list(gene.gainedEQTLs.keys())
 			
 			if len(samples) > 1 and len(samples) < 10:
 				
 				startPlot = int(str(int(math.ceil(len(samples) / 2.0))) + "21")
-				print startPlot
+				print(startPlot)
 			elif len(samples) > 9:
 				startPlot = int(str(int(math.ceil(len(samples) / 2.0))) + "31")
-				print startPlot
+				print(startPlot)
 				
 			else:
 				startPlot = int(str(int(math.ceil(len(samples) / 2.0))) + "11")
@@ -770,21 +773,21 @@ class ChannelVisualizer:
 				
 				if sample in gene.lostEQTLs:
 					
-					print "sample ", sample, "lost: ", len(gene.lostEQTLs[sample])
+					print("sample ", sample, "lost: ", len(gene.lostEQTLs[sample]))
 				if sample in gene.gainedEQTLs:
 					
 				
-					print "sample ", sample, "gained: ", len(gene.gainedEQTLs[sample])
+					print("sample ", sample, "gained: ", len(gene.gainedEQTLs[sample]))
 					
 					#Get the TAD that the SV ends in. 
 					otherTAD = gene.gainedEQTLs[sample][1]
 					#The TAD range is the entire length of the TAD for now, but eventually we also need to take into account that inside this TAD some eQTLs are also deleted and are thus probably not gained. 
 					
-					print otherTAD
-					gainedTadRange = range(otherTAD.start, otherTAD.end)
+					print(otherTAD)
+					gainedTadRange = list(range(otherTAD.start, otherTAD.end))
 					gainedTadDistance = abs(otherTAD.start - otherTAD.end)
 				
-					gainedPlotRange = range(0, gainedTadDistance)
+					gainedPlotRange = list(range(0, gainedTadDistance))
 					gainedEQTLPositions = np.zeros(gainedTadDistance)
 				
 					for eQTL in gene.gainedEQTLs[sample][0]: #The TAD is the last element
@@ -798,7 +801,7 @@ class ChannelVisualizer:
 						gainedEQTLPositions[tadInd] = 1
 				
 					#Plot the gains per sample per gene
-					print "Plotting gains for sample ", sample, " and gene ", gene.name
+					print("Plotting gains for sample ", sample, " and gene ", gene.name)
 					plt.subplot(startPlot)
 					plt.subplots_adjust(hspace=2)
 					startPlot += 1

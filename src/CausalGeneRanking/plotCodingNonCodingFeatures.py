@@ -3,9 +3,12 @@
 
 """
 
+from __future__ import absolute_import
+from __future__ import print_function
 import sys
 import numpy as np
 import matplotlib.pyplot as plt
+from six.moves import range
 
 nonCodingFeatureData = np.loadtxt(sys.argv[1], dtype='object')
 codingFeatureData = np.loadtxt(sys.argv[2], dtype='object')
@@ -38,7 +41,7 @@ lossData = [np.sum(eQTLLosses), np.sum(enhancerLosses), np.sum(promoterLosses), 
 lossData = np.array(lossData)
 #lossData = (lossData / float(leftFeatures.shape[0] + rightFeatures.shape[0])) * 100
 #lossData = -np.log(lossData)
-print lossData
+print(lossData)
 
 width = 0.35
 
@@ -67,7 +70,7 @@ lossData = [np.sum(eQTLLosses), np.sum(enhancerLosses), np.sum(promoterLosses), 
 lossData = np.array(lossData)
 #lossData = (lossData / float(leftFeatures.shape[0] + rightFeatures.shape[0])) * 100
 #lossData = -np.log(lossData)
-print lossData
+print(lossData)
 
 plt.bar(np.arange(len(lossData)) + width, lossData, width, label='Coding SVs', color='red')
 plt.xticks(np.arange(len(lossData) + width / 2),
@@ -101,7 +104,7 @@ gainData = [np.sum(eQTLGains), np.sum(enhancerGains), np.sum(promoterGains), np.
 gainData = np.array(gainData)
 #gainData = (gainData / float(leftFeatures.shape[0] + rightFeatures.shape[0])) * 100
 #gainData = -np.log(gainData)
-print gainData
+print(gainData)
 
 plt.bar(np.arange(len(gainData)), gainData, width, label='Non-coding SVs', color='blue')
 # plt.xticks(np.arange(len(gainData)),
@@ -130,7 +133,7 @@ gainData = np.array(gainData)
 #gainData = (gainData / float(leftFeatures.shape[0] + rightFeatures.shape[0])) * 100
 #gainData = -np.log(gainData)
 
-print gainData
+print(gainData)
 
 plt.bar(np.arange(len(gainData)) + width, gainData, width, label='Coding SVs',color='red')
 plt.xticks(np.arange(len(gainData) + width / 2),
@@ -194,7 +197,7 @@ ymin = np.min(projected[:,1])
 ymax = np.max(projected[:,1])
 
 #Define the box size and how many boxes we should make
-print xmin, xmax, ymin, ymax
+print(xmin, xmax, ymin, ymax)
 
 #round the values to get covering boxes
 xmin = round(xmin)
@@ -259,6 +262,6 @@ for yInd in range(0, yBoxNum):
 plotGrid = np.ma.masked_where(plotGrid == 0, plotGrid)
 cmap = plt.cm.seismic
 cmap.set_bad(color='white')
-print plotGrid
+print(plotGrid)
 plt.imshow(plotGrid, cmap=cmap, interpolation='nearest')		
 plt.show()

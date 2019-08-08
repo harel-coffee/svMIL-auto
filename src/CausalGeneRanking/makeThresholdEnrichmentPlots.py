@@ -1,11 +1,14 @@
 
 #1. Read the data from the folder with real and permuted intersect values
+from __future__ import absolute_import
+from __future__ import print_function
 import sys
 import numpy as np
 import matplotlib.pyplot as plt
 import os
 from os import listdir
 from os.path import isfile, join
+from six.moves import range
 
 permutationDataFolder = sys.argv[1]
 realScoreCountsCosmic = dict() #keep per threshold what the scores are
@@ -17,7 +20,7 @@ realScoreCountsSNVDEGs = dict()
 realScoreCountsAll = dict()
 maxScore = 0
 geneScoreFiles = [f for f in listdir(permutationDataFolder) if isfile(join(permutationDataFolder, f))]
-print geneScoreFiles
+print(geneScoreFiles)
 for geneScoreFile in geneScoreFiles:
 	
 	if geneScoreFile == 'realSVs_geneScores_chr.txt':
@@ -125,7 +128,7 @@ def plotData(realScores, permutedScores, maxScore):
 			thrMean = np.mean(permutedScores[threshold])
 			
 		ax.errorbar(threshold, thrMean, np.std(permutedScores[threshold]), marker='o', mfc='black', mec='black')
-print "plotting data"
+print("plotting data")
 plotData(realScoreCountsCosmic, permutedScoreCountsCosmic, maxScore)
 plt.savefig("cosmic.svg")
 
@@ -160,7 +163,7 @@ def plotThresholdEnrichment(realScores, permutedScores, maxScore):
 
 # plotThresholdEnrichment(realScoreCountsCosmic, permutedScoreCountsCosmic, 3)
 # plt.savefig("cosmic_enrichtment.svg")
-print "plot enrichment"
+print("plot enrichment")
 plotThresholdEnrichment(realScoreCountsCosmic, permutedScoreCountsCosmic, maxScore)
 plt.savefig("cosmic_enrichment.svg")
 

@@ -1,5 +1,7 @@
 
 
+from __future__ import absolute_import
+from __future__ import print_function
 import numpy as np
 import sys
 import matplotlib.pyplot as plt
@@ -13,10 +15,10 @@ SG2Intersect = list(set(conceptSG[:,0]) & set(concept2[:,0]))
 SGPPIntersect = list(set(conceptSG[:,0]) & set(conceptPP[:,0]))
 PP2Intersect = list(set(concept2[:,0]) & set(conceptPP[:,0]))
 
-print "Number of genes in all labels: ", len(allLabelsIntersect)
-print "Number of genes shared by SG and 2: ", len(SG2Intersect)
-print "Number of genes shared by SG an PP: ", len(SGPPIntersect)
-print "Number of genes shared by PP and 2: ", len(PP2Intersect)
+print("Number of genes in all labels: ", len(allLabelsIntersect))
+print("Number of genes shared by SG and 2: ", len(SG2Intersect))
+print("Number of genes shared by SG an PP: ", len(SGPPIntersect))
+print("Number of genes shared by PP and 2: ", len(PP2Intersect))
 
 np.savetxt('sharedConceptGenes.txt', allLabelsIntersect, delimiter='\t', fmt='%s')
 exit()

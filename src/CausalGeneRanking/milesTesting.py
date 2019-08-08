@@ -1,8 +1,11 @@
+from __future__ import absolute_import
+from __future__ import print_function
 import sys
 import numpy as np
 
 from sklearn import metrics
 from sklearn.metrics import roc_curve, auc
+from six.moves import range
 
 ## Running MILES with somatic only, using the > 3 patient DEG labels
 
@@ -246,16 +249,16 @@ trainBags, testBags, trainLabels, testLabels = train_test_split(bags, labels, te
 #3. Generate a similarity matrix
 
 trainInstances = np.vstack(trainBags)
-print "Number of training instances: ", trainInstances.shape[0]
+print("Number of training instances: ", trainInstances.shape[0])
 
-print "generating similarity matrix"
+print("generating similarity matrix")
 similarityMatrix = np.zeros([len(trainBags), trainInstances.shape[0]])
 
-print "size of the similarity matrix: "
-print similarityMatrix.shape
+print("size of the similarity matrix: ")
+print(similarityMatrix.shape)
 
-print "size of the training bags: "
-print trainBags.shape
+print("size of the training bags: ")
+print(trainBags.shape)
 
 
 #Instead of the distance from the center, compute the distance from every instance to every instance in the other bags, and take the smallest distance as the similarity
@@ -283,10 +286,10 @@ for bagInd in range(0, trainBags.shape[0]):
 #3. Go through the bags, and find which instance in this bag has the smallest distance to all other instances (make sure to exclude itself)
 #4. Make a bag x instance similarity matrix
 bagInstanceSimilarityTrain = np.zeros([trainBags.shape[0], trainInstances.shape[0]])
-print "Number of training bags: ", trainBags.shape[0]
+print("Number of training bags: ", trainBags.shape[0])
 for bagInd in range(0, trainBags.shape[0]):
 	
-	print bagInd
+	print(bagInd)
 	
 	#Get the indices of the instances that are in this bag
 	instanceIndices = reverseBagMap[bagInd]
@@ -318,7 +321,7 @@ for bagInd in range(0, trainBags.shape[0]):
 	
 #4. Train a classifier on the similarity space
 from sklearn.ensemble import RandomForestClassifier
-print "training the classifier in similarity space"
+print("training the classifier in similarity space")
 rfClassifier = RandomForestClassifier(max_depth=5, n_estimators=2)
 rfClassifier.fit(bagInstanceSimilarityTrain, trainLabels) #Use the bag labels, not the instance labels
 
@@ -341,10 +344,10 @@ testInstances = np.vstack(testBags)
 #3. Go through the bags, and find which instance in this bag has the smallest distance to all other instances (make sure to exclude itself)
 #4. Make a bag x instance similarity matrix
 bagInstanceSimilarityTest = np.zeros([testBags.shape[0], trainInstances.shape[0]])
-print "Number of test bags: ", testBags.shape[0]
+print("Number of test bags: ", testBags.shape[0])
 for bagInd in range(0, testBags.shape[0]):
 	
-	print bagInd
+	print(bagInd)
 	
 	#Get the indices of the instances that are in this bag
 	instanceIndices = reverseBagMap[bagInd]
@@ -409,7 +412,7 @@ for bagInd in range(0, testBags.shape[0]):
 # print len(clf.coef_[0])
 # print "Used features: ", len(clf.coef_[0] != 0)
 
-print "lasso performance and AUC: "
+print("lasso performance and AUC: ")
 
 from sklearn.linear_model import Lasso
 from sklearn.metrics import auc, precision_recall_curve
@@ -498,7 +501,7 @@ for ind in positiveInd:
 		positiveGenes[geneName] = 0
 	positiveGenes[geneName] += 1
 
-print positivePairs
-print positiveGenes.keys()
-print len(positiveGenes.keys())
+print(positivePairs)
+print(list(positiveGenes.keys()))
+print(len(list(positiveGenes.keys())))
 exit()

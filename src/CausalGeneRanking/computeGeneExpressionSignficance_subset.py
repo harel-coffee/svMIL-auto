@@ -3,11 +3,14 @@
 
 """
 
+from __future__ import absolute_import
+from __future__ import print_function
 import sys
 import numpy as np
 import matplotlib.pyplot as plt
 import re
 from scipy import stats
+from six.moves import range
 
 #Plot the number of samples that every gene has in a histogram
 geneScoreFile = sys.argv[1]
@@ -23,7 +26,7 @@ for gene in geneScores:
 		filteredGenes.append(gene)
 		
 filteredGenes = np.array(filteredGenes, dtype="object")
-print filteredGenes.shape
+print(filteredGenes.shape)
 
 #Write to outfile to check cosmic overlap etc
 header = "geneName\tgeneScore\teQTLGains\teQTLLosses\tenhancerGains\tenhancerLosses\tpromoterGains\tpromoterLosses\tcpgGains\tcpgLosses\ttfGains\ttfLosses\thicGains\thicLosses\th3k9me3Gains\th3k9me3Losses\th3k4me3Gains\th3k4me3Losses\th3k27acGains\th3k27acLosses\th3k27me3Gains\th3k27me3Losses\th3k4me1Gains\th3k4me1Losses\th3k36me3Gains\th3k36me3Losses\tdnaseIGains\tdnaseILosses\ttotal\tsamples"
@@ -57,7 +60,7 @@ with open(expressionFile, 'r') as inF:
 		expressionData.append(fixedData)
 
 expressionData = np.array(expressionData, dtype="object")	
-print expressionData
+print(expressionData)
 
 pValues = []
 excludedSamples = dict()
@@ -130,7 +133,7 @@ for gene in filteredGenes:
 pValues = np.array(pValues, dtype="object")
 
 pValues = pValues[pValues[:,1].argsort()] 
-print pValues.shape
+print(pValues.shape)
 signGenes = []
 signCount = 0
 for pValue in pValues:
@@ -139,9 +142,9 @@ for pValue in pValues:
 		gene = filteredGenes[filteredGenes[:,0] == pValue[0]][0]
 		signGenes.append(gene)
 		
-		print pValue
+		print(pValue)
 		signCount += 1
-print "Number of significant genes: ", signCount
+print("Number of significant genes: ", signCount)
 
 signGenes = np.array(signGenes)
 #Write to outfile to check cosmic overlap etc

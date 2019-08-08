@@ -2,6 +2,8 @@
 	Given a list of breast cancer genes and the ranking outcome of our tool, compute how many of these are significant? And what are the ranks of these genes? 
 """
 
+from __future__ import absolute_import
+from __future__ import print_function
 import re
 
 #1. Compute how many breast cancer genes are significant in the results
@@ -96,8 +98,8 @@ for gene in genes:
 				#obtain the p-value and see if it is significant
 
 				eQTLScore = float(splitLine[3])
-				print "gene: ", gene
-				print "current eQTLScore: ", eQTLScore
+				print("gene: ", gene)
+				print("current eQTLScore: ", eQTLScore)
 			
 				bceQTLScores[gene] = eQTLScore
 				
@@ -106,7 +108,7 @@ for gene in genes:
 			lineCount += 1
 			
 #print breastCancerGeneScores
-print "known BC scores:"
+print("known BC scores:")
 #print sum(breastCancerGeneScores.values()) / float(len(breastCancerGeneScores))
 #print sum(bcGeneScores.values()) / float(len(bcGeneScores))
 #print sum(bcTadScores.values()) / float(len(bcTadScores))
@@ -114,7 +116,7 @@ print "known BC scores:"
 
 #Count how many breast cancer genes have a score higher than 0.
 
-print bceQTLScores
+print(bceQTLScores)
 
 higherThanZeroCount = 0
 for gene in bceQTLScores:
@@ -122,13 +124,13 @@ for gene in bceQTLScores:
 	if geneScore > 0:
 		higherThanZeroCount += 1
 		
-print "Number of known breast cancer genes with a score higher than 0: ", higherThanZeroCount
+print("Number of known breast cancer genes with a score higher than 0: ", higherThanZeroCount)
 
-print "Number of non-zero alphas for known breast cancer genes: ", bcNonZeroAlpha
-print "Number of non-zero betas for known breast cancer genes: ", bcNonZeroBeta
+print("Number of non-zero alphas for known breast cancer genes: ", bcNonZeroAlpha)
+print("Number of non-zero betas for known breast cancer genes: ", bcNonZeroBeta)
 
-print "Number of breast cancer genes with alpha = 0 and beta > 0: ", bcNonZeroBetaZeroAlpha
-print "Number of breast cancer genes with alpha > 0 and beta == 0: ", bcNonZeroAlphaZeroBeta
+print("Number of breast cancer genes with alpha = 0 and beta > 0: ", bcNonZeroBetaZeroAlpha)
+print("Number of breast cancer genes with alpha > 0 and beta == 0: ", bcNonZeroAlphaZeroBeta)
 
 
 #Repeat but then for the cosmic genes
@@ -184,12 +186,12 @@ for gene in cosmicGeneNames:
 
 #Count how many cosmic cancer genes have a score higher than 0.
 
-print "Number of cosmic cancer genes with a score higher than 0: ", higherThanZeroCount
+print("Number of cosmic cancer genes with a score higher than 0: ", higherThanZeroCount)
 
-print "Number of non-zero alphas for cosmic cancer genes: ", cosmicNonZeroAlpha
-print "Number of non-zero betas for cosmic cancer genes: ", cosmicNonZeroBeta
-print "Number of cosmic cancer genes with alpha > 0 and beta == 0: ", cosmicNonZeroAlphaZeroBeta
-print "Number of cosmic cancer genes with alpha == 0 and beta > 0: ", cosmicNonZeroBetaZeroAlpha
+print("Number of non-zero alphas for cosmic cancer genes: ", cosmicNonZeroAlpha)
+print("Number of non-zero betas for cosmic cancer genes: ", cosmicNonZeroBeta)
+print("Number of cosmic cancer genes with alpha > 0 and beta == 0: ", cosmicNonZeroAlphaZeroBeta)
+print("Number of cosmic cancer genes with alpha == 0 and beta > 0: ", cosmicNonZeroBetaZeroAlpha)
 
 #Repeat for the non-cosmic genes
 
@@ -221,18 +223,18 @@ with open(finalScoresFile, 'r') as f:
 			
 
 #print nonCosmicGeneScores
-print "Non cosmic gene sscores"
+print("Non cosmic gene sscores")
 
 
 #Count how many non-cosmic  genes have a score higher than 0.
 
 		
-print "Number of non-cosmic  genes with a score higher than 0: ", higherThanZeroCount
+print("Number of non-cosmic  genes with a score higher than 0: ", higherThanZeroCount)
 
-print "Number of non-zero alphas for non cancer genes: ", nonCosmicNonZeroAlpha
-print "Number of non-zero betas for non cancer genes: ", nonCosmicNonZeroBeta
-print "Number of non cosmic genes with alpha >0 and beta == 0: ", nonCosmicNonZeroAlphaZeroBeta
-print "Number of non cosmic genes with alpha == 0 and beta > 0: ", nonCosmicNonZeroBetaZeroAlpha
+print("Number of non-zero alphas for non cancer genes: ", nonCosmicNonZeroAlpha)
+print("Number of non-zero betas for non cancer genes: ", nonCosmicNonZeroBeta)
+print("Number of non cosmic genes with alpha >0 and beta == 0: ", nonCosmicNonZeroAlphaZeroBeta)
+print("Number of non cosmic genes with alpha == 0 and beta > 0: ", nonCosmicNonZeroBetaZeroAlpha)
 
 
 import numpy as np
@@ -241,9 +243,9 @@ import numpy as np
 
 
 
-tadScores = [np.mean(breastCancerGeneScores.values()), np.mean(cosmicGeneScores.values()), np.mean(nonCosmicGeneScores.values())]
-tadScoresStdLower = [np.percentile(breastCancerGeneScores.values(), 25), np.percentile(cosmicGeneScores.values(), 25), np.percentile(nonCosmicGeneScores.values(), 25)]
-tadScoresStdUpper = [np.percentile(breastCancerGeneScores.values(), 75), np.percentile(cosmicGeneScores.values(), 75), np.percentile(nonCosmicGeneScores.values(), 75)]
+tadScores = [np.mean(list(breastCancerGeneScores.values())), np.mean(list(cosmicGeneScores.values())), np.mean(list(nonCosmicGeneScores.values()))]
+tadScoresStdLower = [np.percentile(list(breastCancerGeneScores.values()), 25), np.percentile(list(cosmicGeneScores.values()), 25), np.percentile(list(nonCosmicGeneScores.values()), 25)]
+tadScoresStdUpper = [np.percentile(list(breastCancerGeneScores.values()), 75), np.percentile(list(cosmicGeneScores.values()), 75), np.percentile(list(nonCosmicGeneScores.values()), 75)]
 
 plt.errorbar([1,1.5,2], tadScores, [tadScoresStdLower, tadScoresStdUpper], linestyle='None', marker='*')
 plt.xlim(0.5,2.5)
