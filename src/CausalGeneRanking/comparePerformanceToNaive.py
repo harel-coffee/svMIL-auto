@@ -470,7 +470,7 @@ for gene in diffGenes:
 
 cosmicGenesFile = sys.argv[3]
 cosmicGenes = []
-with open(cosmicGenesFile, 'rb') as f:
+with open(cosmicGenesFile, 'r') as f:
 	lineCount = 0
 	for line in f:
 		if lineCount == 0:
@@ -565,7 +565,6 @@ g, p, dof, expctd = chi2_contingency(obs)
 print("BC p-value rules: ", p)
 
 
-
 #To get the DEGs, we actually need to re-compute the DEGs based on the gene-SV pairs that we get for each method. Otherwise we are biasing towards the rule-based approach. 
 #Collect the DEG genes for each SV-gene pair combination
 #The DEGs  will need to be re-computed for each shuffled iteration
@@ -578,66 +577,93 @@ print("BC p-value rules: ", p)
 
 #Read the DEG pairs and determine how many genes are DEG in total
 #svGenePairsWindowed = np.loadtxt("Output/windowedSVs.txt", dtype='object')
-# windowSVsDegPairs = np.load("svGenePairsWindowed.txt_degPairs.npy", allow_pickle=True)
-# tadSVsDegPairs = np.load("tadSVGenePairs.txt_degPairs.npy", allow_pickle=True)
-# ruleSVsDegPairs = np.load("ruleSvGenePairs.txt_degPairs.npy", allow_pickle=True)
-# 
-# 
-# windowedDegGenes = []
-# for pair in svGenePairsWindowed:
-# 	if pair in windowSVsDegPairs[:,0]:
-# 		splitPair = pair.split("_")
-# 		if splitPair[0] not in windowedDegGenes:
-# 			windowedDegGenes.append(splitPair[0])
-# 
-# tadDegGenes = []
-# for pair in tadSVGenePairs:
-# 	if pair in tadSVsDegPairs[:,0]:
-# 		splitPair = pair.split("_")
-# 		if splitPair[0] not in tadDegGenes:
-# 			tadDegGenes.append(splitPair[0])
-# 			
-# #For the rule based method, we need to look at a separate output file to get the gene-SV pairs. This may be fixed in the actual tool output later.
-# ruleSvGenePairs = np.loadtxt('ruleSvGenePairs.txt', dtype='object')
-# 
-# ruleDegGenes = []
-# for pair in ruleSvGenePairs:
-# 	if pair in ruleSVsDegPairs[:,0]:
-# 		splitPair = pair.split("_")
-# 		if splitPair[0] not in ruleDegGenes:
-# 			ruleDegGenes.append(splitPair[0])
-# 			
-# print "Number of DEG genes in the windowed approach: ", len(windowedDegGenes)
-# print "Number of DEG genes in the TAD approach: ", len(tadDegGenes)
-# print "number of DEG genes in the rule approach: ", len(ruleDegGenes)
+windowSVsDegPairs = np.load("svGenePairsWindowed.txt_degPairs.npy", allow_pickle=True, encoding='latin1')
+tadSVsDegPairs = np.load("tadSVGenePairs.txt_degPairs.npy", allow_pickle=True, encoding='latin1')
+ruleSVsDegPairs = np.load("ruleSvGenePairs.txt_degPairs.npy", allow_pickle=True, encoding='latin1')
+
+
+windowedDegGenes = []
+windowedCosmicDegGenes = []
+windowedBcDegGenes = []
+for pair in svGenePairsWindowed:
+	if pair in windowSVsDegPairs[:,0]:
+		splitPair = pair.split("_")
+		if splitPair[0] not in windowedDegGenes:
+			windowedDegGenes.append(splitPair[0])
+			
+			if splitPair[0] in cosmicGenes:
+				if splitPair[0] not in windowedCosmicDegGenes:
+					windowedCosmicDegGenes.append(splitPair[0])
+			if splitPair[0] in breastCancerGenes:
+				if splitPair[0] not in windowedBcDegGenes:
+					windowedBcDegGenes.append(splitPair[0])
+
+tadDegGenes = []
+tadCosmicDegGenes = []
+tadBcDegGenes = []
+for pair in tadSVGenePairs:
+	if pair in tadSVsDegPairs[:,0]:
+		splitPair = pair.split("_")
+		if splitPair[0] not in tadDegGenes:
+			tadDegGenes.append(splitPair[0])
+			
+			if splitPair[0] in cosmicGenes:
+				if splitPair[0] not in tadCosmicDegGenes:
+					tadCosmicDegGenes.append(splitPair[0])
+			if splitPair[0] in breastCancerGenes:
+				if splitPair[0] not in tadBcDegGenes:
+					tadBcDegGenes.append(splitPair[0])
+			
+#For the rule based method, we need to look at a separate output file to get the gene-SV pairs. This may be fixed in the actual tool output later.
+ruleSvGenePairs = np.loadtxt('ruleSvGenePairs.txt', dtype='object')
+
+ruleDegGenes = []
+ruleCosmicDegGenes = []
+ruleBcDegGenes = []
+for pair in ruleSvGenePairs:
+	if pair in ruleSVsDegPairs[:,0]:
+		splitPair = pair.split("_")
+		if splitPair[0] not in ruleDegGenes:
+			ruleDegGenes.append(splitPair[0])
+			
+			if splitPair[0] in cosmicGenes:
+				if splitPair[0] not in ruleCosmicDegGenes:
+					ruleCosmicDegGenes.append(splitPair[0])
+			if splitPair[0] in breastCancerGenes:
+				if splitPair[0] not in ruleBcDegGenes:
+					ruleBcDegGenes.append(splitPair[0])
+			
+print("Number of DEG genes in the windowed approach: ", len(windowedDegGenes))
+print("Number of DEG genes in the TAD approach: ", len(tadDegGenes))
+print("number of DEG genes in the rule approach: ", len(ruleDegGenes))
 
 
 #Compute enrichment for gene sets and GO terms
-print("doing enrichment: ")
-
-import gseapy as gp
-import pandas as pd
-import matplotlib.pyplot as plt
+# print("doing enrichment: ")
 # 
-# bm = Biomart(verbose=False, host="asia.ensembl.org")
-# results = bm.query(dataset='hsapiens_gene_ensembl',
-#                    attributes=['external_gene_name','entrezgene', 'go_id'],
-#                    filters={'hgnc_symbol': ruleBasedAffectedGenes},
-#                    # save output file
-#                    filename="ruleBasedBmIDs.txt")
+# import gseapy as gp
+# import pandas as pd
+# import matplotlib.pyplot as plt
+# # 
+# # bm = Biomart(verbose=False, host="asia.ensembl.org")
+# # results = bm.query(dataset='hsapiens_gene_ensembl',
+# #                    attributes=['external_gene_name','entrezgene', 'go_id'],
+# #                    filters={'hgnc_symbol': ruleBasedAffectedGenes},
+# #                    # save output file
+# #                    filename="ruleBasedBmIDs.txt")
+# # 
+# # print results.head()
 # 
-# print results.head()
-
-enr = gp.enrichr(gene_list=ruleBasedAffectedGenes,
-                 description='ruleBasedGenes',
-                 gene_sets=['KEGG_2016','KEGG_2013'],
-                 outdir='ruleBased/enrichr_kegg',
-                 cutoff=0.5
-                )
-
-print(enr.results.head())
-
-exit()
+# enr = gp.enrichr(gene_list=ruleBasedAffectedGenes,
+#                  description='ruleBasedGenes',
+#                  gene_sets=['KEGG_2016','KEGG_2013'],
+#                  outdir='ruleBased/enrichr_kegg',
+#                  cutoff=0.5
+#                 )
+# 
+# print(enr.results.head())
+# 
+# exit()
 
 
 #Now load all the shuffled files and get the counts. Then do a t-test for the real numbers
@@ -657,18 +683,18 @@ import glob
 
 shuffledPath = 'Output/RankedGenes/naive_shuffled/BRCA/Counts/'
 # 
-windowedCosmicCounts = getAllCounts(glob.glob(shuffledPath + 'windowedCosmic.txt*'))
-tadCosmicCounts = getAllCounts(glob.glob(shuffledPath + 'tadCosmic.txt*'))
-rulesCosmicCounts = getAllCounts(glob.glob(shuffledPath + 'rulesCosmic.txt*'))
+windowedCosmicDegCounts = getAllCounts(glob.glob(shuffledPath + 'windowedCosmicDeg.txt*'))
+tadCosmicDegCounts = getAllCounts(glob.glob(shuffledPath + 'tadCosmicDeg.txt*'))
+rulesCosmicDegCounts = getAllCounts(glob.glob(shuffledPath + 'rulesCosmicDeg.txt*'))
 
 # print "no of genes in the cosmic case for rules: ", len(ruleGenesCosmic)
 # plt.hist(rulesCosmicCounts)
 # plt.show()
 # plt.clf()
 
-windowedBcCounts = getAllCounts(glob.glob(shuffledPath + 'windowedBc.txt*'))
-tadBcCounts = getAllCounts(glob.glob(shuffledPath + 'tadBc.txt*'))
-rulesBcCounts = getAllCounts(glob.glob(shuffledPath + 'rulesBc.txt*'))
+windowedBcDegCounts = getAllCounts(glob.glob(shuffledPath + 'windowedBcDeg.txt*'))
+tadBcDegCounts = getAllCounts(glob.glob(shuffledPath + 'tadBcDeg.txt*'))
+rulesBcDegCounts = getAllCounts(glob.glob(shuffledPath + 'rulesBcDeg.txt*'))
 
 # print "no of genes in the cosmic case for rules: ", len(ruleGenesBc)
 # plt.hist(rulesBcCounts)
@@ -686,11 +712,11 @@ rulesDegCounts = getAllCounts(glob.glob(shuffledPath + 'rulesDeg.txt*'))
 
 #Do t-tests and get the significance
 
-z = (len(windowedGenesCosmic) - np.mean(windowedCosmicCounts)) / float(np.std(windowedCosmicCounts))
+z = (len(windowedGenesCosmic) - np.mean(windowedCosmicDegCounts)) / float(np.std(windowedCosmicDegCounts))
 windowCosmicPValue = stats.norm.sf(abs(z))*2
-z = (len(tadGenesCosmic) - np.mean(tadCosmicCounts)) / float(np.std(tadCosmicCounts))
+z = (len(tadGenesCosmic) - np.mean(tadCosmicDegCounts)) / float(np.std(tadCosmicDegCounts))
 tadCosmicPValue = stats.norm.sf(abs(z))*2
-z = (len(ruleGenesCosmic) - np.mean(rulesCosmicCounts)) / float(np.std(rulesCosmicCounts))
+z = (len(ruleGenesCosmic) - np.mean(rulesCosmicDegCounts)) / float(np.std(rulesCosmicDegCounts))
 rulesCosmicPValue = stats.norm.sf(abs(z))*2
 
 print("Windowed p-value for COSMIC genes: ", windowCosmicPValue)
@@ -698,11 +724,11 @@ print("TAD p-value for COSMIC genes: ", tadCosmicPValue)
 print("Rules p-value for COSMIC genes: ", rulesCosmicPValue)
 
 #BC
-z = (len(windowedGenesBc) - np.mean(windowedBcCounts)) / float(np.std(windowedBcCounts))
+z = (len(windowedGenesBc) - np.mean(windowedBcDegCounts)) / float(np.std(windowedBcDegCounts))
 windowBcPValue = stats.norm.sf(abs(z))*2
-z = (len(tadGenesBc) - np.mean(tadBcCounts)) / float(np.std(tadBcCounts))
+z = (len(tadGenesBc) - np.mean(tadBcDegCounts)) / float(np.std(tadBcDegCounts))
 tadBcPValue = stats.norm.sf(abs(z))*2
-z = (len(ruleGenesBc) - np.mean(rulesBcCounts)) / float(np.std(rulesBcCounts))
+z = (len(ruleGenesBc) - np.mean(rulesBcDegCounts)) / float(np.std(rulesBcDegCounts))
 rulesBcPValue = stats.norm.sf(abs(z))*2
 
 print("Windowed p-value for BC genes: ", windowBcPValue)
@@ -721,13 +747,39 @@ print("Windowed p-value for DEG genes: ", windowDegPValue)
 print("TAD p-value for DEG genes: ", tadDegPValue)
 print("Rules p-value for DEG genes: ", rulesDegPValue)
 
+exit()
 
-##Do enrichment for gene sets/Go terms
+print("doing enrichment: ")
 
+import gseapy as gp
+import pandas as pd
+pd.set_option('display.max_columns', 500)
+import matplotlib.pyplot as plt
+from matplotlib import interactive
+interactive(True)
 
+# 
+# bm = Biomart(verbose=False, host="asia.ensembl.org")
+# results = bm.query(dataset='hsapiens_gene_ensembl',
+#                    attributes=['external_gene_name','entrezgene', 'go_id'],
+#                    filters={'hgnc_symbol': ruleBasedAffectedGenes},
+#                    # save output file
+#                    filename="ruleBasedBmIDs.txt")
+# 
+# print results.head()
 
+enr = gp.enrichr(gene_list=list(ruleDegGenes),
+                 description='ruleBasedGenes',
+                 gene_sets=['KEGG_2016','KEGG_2013'],
+                 outdir='ruleBased/enrichr_kegg'
+                )
 
+print(enr.results.head())
 
+from gseapy.plot import barplot, dotplot
+a = barplot(enr.res2d,title='KEGG_2013',ofname='test.png')
+print(a)
+exit()
 
 #Compute the chi2 p-values for these findings
 # obs = np.array([[len(windowedDegGenes), len(cosmicGenes) - len(windowedDegGenes)], [len(affectedGenesWindowed) - len(windowedDegGenes), (19286 - len(affectedGenesWindowed)- (len(cosmicGenes) - len(windowedDegGenes)))]])

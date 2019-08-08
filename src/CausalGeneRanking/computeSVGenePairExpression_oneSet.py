@@ -16,6 +16,7 @@ from six.moves import range
 nonCodingPairs = np.loadtxt(sys.argv[1], dtype="object")
 
 expressionFile = sys.argv[2]
+shuffle = sys.argv[3] #pass true or false
 
 expressionData = []
 samples = []
@@ -40,6 +41,12 @@ with open(expressionFile, 'r') as inF:
 		expressionData.append(fixedData)
 
 expressionData = np.array(expressionData, dtype="object")	
+print(expressionData)
+
+if shuffle == "True":
+	#shuffling across columns
+	expressionData = expressionData[:, np.random.permutation(expressionData.shape[1])]
+#check if this goes well, also check if the hybrid ref is not in there
 print(expressionData)
 
 #Get the z-scores for every pair
