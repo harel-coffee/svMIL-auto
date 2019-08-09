@@ -79,12 +79,12 @@ def getSVsWithCodingEffects():
 				if pair not in codingEffectPairs:
 					codingEffectPairs.append(pair)
 					
-	print "Number of genes affected in the coding way: ", len(genesAffectedByCodingSVs)
-	print "Number of genes affected in the coding way that are DEG or COSMIC: ", len(genesAffectedByFilteredSVs)
+	print("Number of genes affected in the coding way: ", len(genesAffectedByCodingSVs))
+	print("Number of genes affected in the coding way that are DEG or COSMIC: ", len(genesAffectedByFilteredSVs))
 	return codingEffectSVs, codingEffectPairs
 	
 codingEffectSVs, codingEffectPairs = getSVsWithCodingEffects()
-print "Number of SVs filtered out with coding effects: ", len(codingEffectSVs)
+print("Number of SVs filtered out with coding effects: ", len(codingEffectSVs))
 np.savetxt('codingEffectSVs.txt', codingEffectSVs, delimiter='\t', fmt='%s')
 np.savetxt('codingEffectPairs.txt', codingEffectPairs, delimiter='\t', fmt='%s')
 
@@ -176,7 +176,7 @@ def findAffectedGenesWithinWindow():
 	
 affectedGenesWindowed, svGenePairsWindowed = findAffectedGenesWithinWindow()
 np.savetxt("Output/windowedSVs.txt", svGenePairsWindowed, delimiter='\t', fmt='%s')
-print "Number of affected genes in windowed approach: ", len(affectedGenesWindowed)
+print("Number of affected genes in windowed approach: ", len(affectedGenesWindowed))
 
 #3. Find all genes within the TAD of the filtered SVs
 # def findAffectedGenesByTadBoundaryDisruptions(codingEffectSVs):
@@ -386,7 +386,7 @@ def findAffectedGenesByTadDisruptions(codingEffectSVs):
 tadAffectedGenes, tadSVGenePairs = findAffectedGenesByTadDisruptions(codingEffectSVs)
 np.savetxt("Output/tadSVs.txt", tadSVGenePairs, delimiter='\t', fmt='%s')
 
-print "TAD affected genes: ", len(tadAffectedGenes)
+print("TAD affected genes: ", len(tadAffectedGenes))
 
 
 #4. Run the rule-based method on the filtered SVs
@@ -424,7 +424,7 @@ def getGenesWithRuleBasedApproach():
 	return affectedGenes
 
 ruleBasedAffectedGenes = getGenesWithRuleBasedApproach()
-print "rule-based affected genes: ", len(ruleBasedAffectedGenes)
+print("rule-based affected genes: ", len(ruleBasedAffectedGenes))
 ruleSvGenePairs = np.loadtxt('Output/RankedGenes/naive/BRCA//nonCoding_geneSVPairs.txt_none', dtype='object')
 
 
