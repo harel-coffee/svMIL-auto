@@ -568,12 +568,12 @@ print("BC p-value rules: ", p)
 #To get the DEGs, we actually need to re-compute the DEGs based on the gene-SV pairs that we get for each method. Otherwise we are biasing towards the rule-based approach. 
 #Collect the DEG genes for each SV-gene pair combination
 #The DEGs  will need to be re-computed for each shuffled iteration
-# windowExprCall = "python computeSVGenePairExpression_oneSet.py svGenePairsWindowed.txt " + sys.argv[8] 
-# os.system(windowExprCall)
-# tadExprCall = "python computeSVGenePairExpression_oneSet.py tadSVGenePairs.txt " + sys.argv[8] 
-# os.system(tadExprCall)
-# rulesExprCall = "python computeSVGenePairExpression_oneSet.py ruleSvGenePairs.txt " + sys.argv[8] 
-# os.system(rulesExprCall)
+windowExprCall = "python computeSVGenePairExpression_oneSet.py svGenePairsWindowed.txt " + sys.argv[8] 
+os.system(windowExprCall)
+tadExprCall = "python computeSVGenePairExpression_oneSet.py tadSVGenePairs.txt " + sys.argv[8] 
+os.system(tadExprCall)
+rulesExprCall = "python computeSVGenePairExpression_oneSet.py ruleSvGenePairs.txt " + sys.argv[8] 
+os.system(rulesExprCall)
 
 #Read the DEG pairs and determine how many genes are DEG in total
 #svGenePairsWindowed = np.loadtxt("Output/windowedSVs.txt", dtype='object')
