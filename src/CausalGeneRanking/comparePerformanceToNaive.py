@@ -404,7 +404,7 @@ def getGenesWithRuleBasedApproach():
 	NeighborhoodDefiner(causalGenes, svData, None, 'SV') #Provide the mode to ensure that the right variant type is used (different positions used in annotation)
 	
 	#3. Do ranking of the genes and report the causal SVs
-	print "Ranking the genes for the variants"
+	print("Ranking the genes for the variants")
 	geneRanking = GeneRanking(causalGenes[:,3], svData, 'SV', 'naive', 'none')
 	
 	#Read the genes from the ranking
