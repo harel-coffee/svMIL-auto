@@ -96,6 +96,7 @@ svData = InputParser().getSVsFromFile(sys.argv[4], "all", codingEffectSVs)
 #Shuffle the SVs
 #genomicShuffler = GenomicShuffler()
 #somaticSVs = genomicShuffler.shuffleSVs(svData)
+somaticSVs = svData
 
 
 #2. Find all genes within a window of the filtered SVs
