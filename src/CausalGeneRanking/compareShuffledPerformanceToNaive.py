@@ -435,11 +435,11 @@ for gene in ruleBasedAffectedGenes:
 
 #Collect the DEG genes for each SV-gene pair combination
 #The DEGs  will need to be re-computed for each shuffled iteration
-windowExprCall = "python computeSVGenePairExpression_oneSet.py Output/RankedGenes/naive_shuffled/BRCA/svGenePairsWindowed.txt_" + permutationRound + " " + sys.argv[8] + ' False'
+windowExprCall = "python computeSVGenePairExpression_oneSet.py Output/RankedGenes/naive_shuffled/BRCA/svGenePairsWindowed.txt_" + permutationRound + " " + sys.argv[8] + ' True'
 os.system(windowExprCall)
-tadExprCall = "python computeSVGenePairExpression_oneSet.py Output/RankedGenes/naive_shuffled/BRCA/tadSVGenePairs.txt_" + permutationRound + " " + sys.argv[8] + ' False'
+tadExprCall = "python computeSVGenePairExpression_oneSet.py Output/RankedGenes/naive_shuffled/BRCA/tadSVGenePairs.txt_" + permutationRound + " " + sys.argv[8] + ' True'
 os.system(tadExprCall)
-rulesExprCall = "python computeSVGenePairExpression_oneSet.py Output/RankedGenes/naive_shuffled/BRCA/ruleSvGenePairs.txt_" + permutationRound + " " + sys.argv[8] + ' False'
+rulesExprCall = "python computeSVGenePairExpression_oneSet.py Output/RankedGenes/naive_shuffled/BRCA/ruleSvGenePairs.txt_" + permutationRound + " " + sys.argv[8] + ' True'
 os.system(rulesExprCall)
 
 #Read the DEG pairs and determine how many genes are DEG in total

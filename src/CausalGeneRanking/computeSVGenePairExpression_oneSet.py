@@ -40,14 +40,13 @@ with open(expressionFile, 'r') as inF:
 		fixedData += data
 		expressionData.append(fixedData)
 
-expressionData = np.array(expressionData, dtype="object")	
+expressionData = np.array(expressionData, dtype="object")
 print(expressionData)
 
 if shuffle == "True":
 	#shuffling across columns
 	expressionData = expressionData[:, np.random.permutation(expressionData.shape[1])]
 #check if this goes well, also check if the hybrid ref is not in there
-print(expressionData)
 
 #Get the z-scores for every pair
 
