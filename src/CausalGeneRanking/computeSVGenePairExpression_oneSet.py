@@ -45,7 +45,10 @@ print(expressionData)
 
 if shuffle == "True":
 	#shuffling across columns
-	expressionData = expressionData[:, np.random.permutation(expressionData.shape[1])]
+	#make sure not to inclue the hybrid ref
+	cols = list(np.random.permutation(range(1, expressionData.shape[1])))
+	allCols = np.array([0] + cols)
+	expressionData = expressionData[:, allCols]
 #check if this goes well, also check if the hybrid ref is not in there
 
 #Get the z-scores for every pair
@@ -149,7 +152,6 @@ print("done")
 perPairDifferentialExpressionArray = np.empty([len(perPairDifferentialExpression), 2], dtype="object")
 perPairDifferentialExpressionArray[:,0] = list(perPairDifferentialExpression.keys())
 perPairDifferentialExpressionArray[:,1] = list(perPairDifferentialExpression.values())
-
 
 from statsmodels.sandbox.stats.multicomp import multipletests
 reject, pAdjusted, _, _ = multipletests(perPairDifferentialExpressionArray[:,1], method='bonferroni')

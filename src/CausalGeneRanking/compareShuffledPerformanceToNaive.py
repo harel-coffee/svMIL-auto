@@ -23,82 +23,124 @@ from scipy.stats import chi2_contingency
 import pylab as plt
 from matplotlib_venn import venn3, venn3_circles
 from six.moves import range
+from os import listdir
+from os.path import isfile, join
 
 permutationRound = sys.argv[7]
+outputFolder = sys.argv[10]
+shuffle = sys.argv[11]
+
+if not os.path.exists('Output/RankedGenes/' + outputFolder):
+	os.makedirs('Output/RankedGenes/' + outputFolder)
 
 #1. Filter SVs based on if these cause DEGs or affect COSMIC genes in the coding way
-
-def getSVsWithCodingEffects():
-	
-	codingPairs = np.loadtxt(sys.argv[1], dtype='object')
-	degPairs = np.load(sys.argv[2], allow_pickle=True, encoding='latin1')
-	cosmicGenesFile = sys.argv[3]
-	
-	codingSVGenes = dict()
-	for pair in codingPairs:
-		
-		splitPair = pair.split("_")
-		svEntries = splitPair[1:]
-		sv = "_".join(svEntries)
-		
-		if sv not in codingSVGenes:
-			codingSVGenes[sv] = []
-		codingSVGenes[sv].append(splitPair[0])
-	
-		
-	#get the COSMIC genes
-	
-	cosmicGenes = []
-	with open(cosmicGenesFile, 'r') as f:
-		lineCount = 0
-		for line in f:
-			if lineCount == 0:
-				lineCount += 1
-				continue
-			
-			splitLine = line.split("\t")
-			
-			geneName = splitLine[0]
-			cosmicGenes.append(geneName)
-
-	codingEffectSVs = []
-	genesAffectedByFilteredSVs = []
-	genesAffectedByCodingSVs = []
-	for sv in codingSVGenes:
-		
-		degCount = 0
-		cosmicCount = 0
-		degAndCosmicCount = 0
-		degOrCosmicCount = 0
-		
-		for gene in codingSVGenes[sv]:
-			pair = gene + "_" + sv
-			
-			if gene not in genesAffectedByCodingSVs:
-				genesAffectedByCodingSVs.append(gene)
-			
-			if gene in cosmicGenes or pair in degPairs[:,0]:
-				if sv not in codingEffectSVs:
-					codingEffectSVs.append(sv)
-				if gene not in genesAffectedByFilteredSVs: #look at all genes that are linked to the SVs. 
-					genesAffectedByFilteredSVs.append(gene)
-					
-	print("Number of genes affected in the coding way: ", len(genesAffectedByCodingSVs))
-	print("Number of genes affected in the coding way that are DEG or COSMIC: ", len(genesAffectedByFilteredSVs))
-	return codingEffectSVs
-	
-codingEffectSVs = getSVsWithCodingEffects()
-print("Number of SVs filtered out with coding effects: ", len(codingEffectSVs))
-np.savetxt('codingEffectSVs.txt', codingEffectSVs, delimiter='\t', fmt='%s')
+# 
+# def getSVsWithCodingEffects():
+# 	
+# 	codingPairs = np.loadtxt(sys.argv[1], dtype='object')
+# 	degPairs = np.load(sys.argv[2], allow_pickle=True, encoding='latin1')
+# 	cosmicGenesFile = sys.argv[3]
+# 	
+# 	codingSVGenes = dict()
+# 	for pair in codingPairs:
+# 		
+# 		splitPair = pair.split("_")
+# 		svEntries = splitPair[1:]
+# 		sv = "_".join(svEntries)
+# 		
+# 		if sv not in codingSVGenes:
+# 			codingSVGenes[sv] = []
+# 		codingSVGenes[sv].append(splitPair[0])
+# 	
+# 		
+# 	#get the COSMIC genes
+# 	
+# 	cosmicGenes = []
+# 	with open(cosmicGenesFile, 'r') as f:
+# 		lineCount = 0
+# 		for line in f:
+# 			if lineCount == 0:
+# 				lineCount += 1
+# 				continue
+# 			
+# 			splitLine = line.split("\t")
+# 			
+# 			geneName = splitLine[0]
+# 			cosmicGenes.append(geneName)
+# 
+# 	codingEffectSVs = []
+# 	genesAffectedByFilteredSVs = []
+# 	genesAffectedByCodingSVs = []
+# 	for sv in codingSVGenes:
+# 		
+# 		degCount = 0
+# 		cosmicCount = 0
+# 		degAndCosmicCount = 0
+# 		degOrCosmicCount = 0
+# 		
+# 		for gene in codingSVGenes[sv]:
+# 			pair = gene + "_" + sv
+# 			
+# 			if gene not in genesAffectedByCodingSVs:
+# 				genesAffectedByCodingSVs.append(gene)
+# 			
+# 			if gene in cosmicGenes or pair in degPairs[:,0]:
+# 				if sv not in codingEffectSVs:
+# 					codingEffectSVs.append(sv)
+# 				if gene not in genesAffectedByFilteredSVs: #look at all genes that are linked to the SVs. 
+# 					genesAffectedByFilteredSVs.append(gene)
+# 					
+# 	print("Number of genes affected in the coding way: ", len(genesAffectedByCodingSVs))
+# 	print("Number of genes affected in the coding way that are DEG or COSMIC: ", len(genesAffectedByFilteredSVs))
+# 	return codingEffectSVs
+# 	
+# codingEffectSVs = getSVsWithCodingEffects()
+# print("Number of SVs filtered out with coding effects: ", len(codingEffectSVs))
+# np.savetxt('codingEffectSVs.txt', codingEffectSVs, delimiter='\t', fmt='%s')
 codingEffectSVs = np.loadtxt('codingEffectSVs.txt', dtype='object')
 
 svData = InputParser().getSVsFromFile(sys.argv[4], "all", codingEffectSVs)
 #Shuffle the SVs
-#genomicShuffler = GenomicShuffler()
-#somaticSVs = genomicShuffler.shuffleSVs(svData)
-somaticSVs = svData
+if shuffle == "True":
+	genomicShuffler = GenomicShuffler()
+	somaticSVs = genomicShuffler.shuffleSVs(svData)
+else:
+	somaticSVs = svData
 
+#Get all sample-gene pairs with a coding SNV
+def getGenesWithSNVs():
+	
+	snvDir = sys.argv[9]
+	allFiles = [f for f in listdir(snvDir) if isfile(join(snvDir, f))]
+	
+	geneSNVPairs = []
+	for currentFile in allFiles:
+		
+		if currentFile == "MANIFEST.txt":
+			continue
+		splitFileName = currentFile.split(".")
+		patientID = splitFileName[0]
+	
+		#Load the contents of the file
+		with open(snvDir + "/" + currentFile, 'r') as inF:
+			lineCount = 0
+			for line in inF:
+				line = line.strip() #remove newlines
+				if lineCount < 1: #only read the line if it is not a header line
+					lineCount += 1
+					continue
+	
+				splitLine = line.split("\t")
+				geneName = splitLine[0]
+				
+				splitID = patientID.split("-")[2]
+				
+				pair = geneName + "_brca" + splitID
+				geneSNVPairs.append(pair)
 
+	return geneSNVPairs
+
+geneSNVPairs = getGenesWithSNVs()
 #2. Find all genes within a window of the filtered SVs
 def findAffectedGenesWithinWindow(somaticSVs):
 	
@@ -134,10 +176,13 @@ def findAffectedGenesWithinWindow(somaticSVs):
 			matchingGenes = np.concatenate((matchingGenesStart, matchingGenesEnd), axis=0)
 			for gene in matchingGenes:
 				if gene[3].name not in affectedGenes:
-					affectedGenes.append(gene[3].name)
-					svStr = sv[0] + "_" + str(sv[1]) + "_" + str(sv[2]) + "_" + sv[3] + "_" + str(sv[4]) + "_" + str(sv[5]) + "_" + sv[7]
-				svGenePairs.append(gene[3].name + "_" + svStr)
-	
+					if gene[3].name + "_" + sv[7] not in geneSNVPairs:
+						affectedGenes.append(gene[3].name)
+						svStr = sv[0] + "_" + str(sv[1]) + "_" + str(sv[2]) + "_" + sv[3] + "_" + str(sv[4]) + "_" + str(sv[5]) + "_" + sv[7]
+						##Check if the gene does not have a coding SNV, otherwise filter it out
+					
+						svGenePairs.append(gene[3].name + "_" + svStr)
+					
 		else:
 			#look at both sides of the translocation on both chromosomes
 			
@@ -156,10 +201,12 @@ def findAffectedGenesWithinWindow(somaticSVs):
 			matchingGenes = np.concatenate((matchingGenesStart, matchingGenesEnd), axis=0)
 			for gene in matchingGenes:
 				if gene[3].name not in affectedGenes:
-					affectedGenes.append(gene[3].name)
-					svStr = sv[0] + "_" + str(sv[1]) + "_" + str(sv[2]) + "_" + sv[3] + "_" + str(sv[4]) + "_" + str(sv[5]) + "_" + sv[7]
-				svGenePairs.append(gene[3].name + "_" + svStr)
-			
+					if gene[3].name + "_" + sv[7] not in geneSNVPairs:
+						affectedGenes.append(gene[3].name)
+						svStr = sv[0] + "_" + str(sv[1]) + "_" + str(sv[2]) + "_" + sv[3] + "_" + str(sv[4]) + "_" + str(sv[5]) + "_" + sv[7]
+						
+						svGenePairs.append(gene[3].name + "_" + svStr)
+					
 			#Repeat for chr2
 			chr2GeneSubset = genes[np.where(genes[:,0] == sv[3])]
 			
@@ -175,10 +222,12 @@ def findAffectedGenesWithinWindow(somaticSVs):
 			matchingGenes = np.concatenate((matchingGenesStart, matchingGenesEnd), axis=0)
 			for gene in matchingGenes:
 				if gene[3].name not in affectedGenes:
-					affectedGenes.append(gene[3].name)
-					svStr = sv[0] + "_" + str(sv[1]) + "_" + str(sv[2]) + "_" + sv[3] + "_" + str(sv[4]) + "_" + str(sv[5]) + "_" + sv[7]
-				svGenePairs.append(gene[3].name + "_" + svStr)
-			
+					if gene[3].name + "_" + sv[7] not in geneSNVPairs:
+						affectedGenes.append(gene[3].name)
+						svStr = sv[0] + "_" + str(sv[1]) + "_" + str(sv[2]) + "_" + sv[3] + "_" + str(sv[4]) + "_" + str(sv[5]) + "_" + sv[7]
+						
+						svGenePairs.append(gene[3].name + "_" + svStr)
+					
 			
 	return affectedGenes, svGenePairs
 	
@@ -248,15 +297,15 @@ def findAffectedGenesByTadDisruptions(codingEffectSVs, somaticSVs):
 			if len(matchingGenes) > 0:
 				
 				for gene in matchingGenes:
-				
-					if gene[3].name not in affectedGenes:
-						affectedGenes.append(gene[3].name)
-					if gene[3].name not in nonCodingSamples:
-						nonCodingSamples[gene[3].name] = []
-					nonCodingSamples[gene[3].name].append(sv[7])
-					
-					svGenePairs.append(gene[3].name + "_" + svStr)
-		
+					if gene[3].name + "_" + sv[7] not in geneSNVPairs:
+						if gene[3].name not in affectedGenes:
+							affectedGenes.append(gene[3].name)
+						if gene[3].name not in nonCodingSamples:
+							nonCodingSamples[gene[3].name] = []
+						nonCodingSamples[gene[3].name].append(sv[7])
+						
+						svGenePairs.append(gene[3].name + "_" + svStr)
+			
 		#repeat for translocations, but look at genes on both sides of the translocation on both chromosomes
 
 		else:
@@ -283,14 +332,14 @@ def findAffectedGenesByTadDisruptions(codingEffectSVs, somaticSVs):
 				if len(matchingGenes) > 0:
 					
 					for gene in matchingGenes:
-					
-						if gene[3].name not in affectedGenes:
-							affectedGenes.append(gene[3].name)
-						if gene[3].name not in nonCodingSamples:
-							nonCodingSamples[gene[3].name] = []
-						nonCodingSamples[gene[3].name].append(sv[7])
-						
-						svGenePairs.append(gene[3].name + "_" + svStr)
+						if gene[3].name + "_" + sv[7] not in geneSNVPairs:
+							if gene[3].name not in affectedGenes:
+								affectedGenes.append(gene[3].name)
+							if gene[3].name not in nonCodingSamples:
+								nonCodingSamples[gene[3].name] = []
+							nonCodingSamples[gene[3].name].append(sv[7])
+							
+							svGenePairs.append(gene[3].name + "_" + svStr)
 				
 			
 			#Repeat for the TAD on chr2
@@ -316,14 +365,14 @@ def findAffectedGenesByTadDisruptions(codingEffectSVs, somaticSVs):
 				if len(matchingGenes) > 0:
 					
 					for gene in matchingGenes:
-					
-						if gene[3].name not in affectedGenes:
-							affectedGenes.append(gene[3].name)
-						if gene[3].name not in nonCodingSamples:
-							nonCodingSamples[gene[3].name] = []
-						nonCodingSamples[gene[3].name].append(sv[7])
-						
-						svGenePairs.append(gene[3].name + "_" + svStr)
+						if gene[3].name + "_" + sv[7] not in geneSNVPairs:
+							if gene[3].name not in affectedGenes:
+								affectedGenes.append(gene[3].name)
+							if gene[3].name not in nonCodingSamples:
+								nonCodingSamples[gene[3].name] = []
+							nonCodingSamples[gene[3].name].append(sv[7])
+							
+							svGenePairs.append(gene[3].name + "_" + svStr)
 
 	return affectedGenes, svGenePairs
 
@@ -348,7 +397,7 @@ def getGenesWithRuleBasedApproach(svData):
 	
 	#3. Do ranking of the genes and report the causal SVs
 	print("Ranking the genes for the variants")
-	geneRanking = GeneRanking(causalGenes[:,3], svData, 'SV', 'naive_shuffled', permutationRound)
+	geneRanking = GeneRanking(causalGenes[:,3], svData, 'SV', outputFolder, permutationRound)
 	
 	#Read the genes from the ranking
 	affectedGenes = []
@@ -362,18 +411,33 @@ def getGenesWithRuleBasedApproach(svData):
 			
 			score = np.sum(cancerTypeScores[row][2:27]) #filter for genes that have at least 1 gain/loss
 			if score > 0:
-				affectedGenes.append(geneName)
+				
+				#Go through the samples for this gene, if any has an SNV, skip it.
+				samples = cancerTypeScores[row][29].split(",")
+				for sample in samples:
+					if geneName + "_" + sample not in geneSNVPairs:
+						affectedGenes.append(geneName)
 	
 	return affectedGenes
 
 ruleBasedAffectedGenes = getGenesWithRuleBasedApproach(somaticSVs)
 print("rule-based affected genes: ", len(ruleBasedAffectedGenes))
-ruleSvGenePairs = np.loadtxt('Output/RankedGenes/naive_shuffled/BRCA/nonCoding_geneSVPairs.txt_' + permutationRound, dtype='object')
+ruleSvGenePairs = np.loadtxt('Output/RankedGenes/' + outputFolder + '/BRCA/nonCoding_geneSVPairs.txt_' + permutationRound, dtype='object')
+
+#filter the sv-gene pairs here as well for snv-affected genes
+ruleSvGenePairsFiltered = []
+for pair in ruleSvGenePairs:
+	splitPair = pair[0].split("_")
+	if splitPair[0] + "_" + splitPair[len(splitPair)-1] not in geneSNVPairs:
+		ruleSvGenePairsFiltered.append(pair)
+
+ruleSvGenePairs = np.array(ruleSvGenePairsFiltered, dtype='object')
+
 
 #output the sv-gene pairs for this permutation
-np.savetxt('Output/RankedGenes/naive_shuffled/BRCA/svGenePairsWindowed.txt_' + permutationRound, svGenePairsWindowed, delimiter='\t', fmt='%s')
-np.savetxt('Output/RankedGenes/naive_shuffled/BRCA/tadSVGenePairs.txt_' + permutationRound, tadSVGenePairs, delimiter='\t', fmt='%s')
-np.savetxt('Output/RankedGenes/naive_shuffled/BRCA/ruleSvGenePairs.txt_' + permutationRound, ruleSvGenePairs[:,0], delimiter='\t', fmt='%s')
+np.savetxt('Output/RankedGenes/' + outputFolder + '/BRCA/svGenePairsWindowed.txt_' + permutationRound, svGenePairsWindowed, delimiter='\t', fmt='%s')
+np.savetxt('Output/RankedGenes/' + outputFolder + '/BRCA/tadSVGenePairs.txt_' + permutationRound, tadSVGenePairs, delimiter='\t', fmt='%s')
+np.savetxt('Output/RankedGenes/' + outputFolder + '/BRCA/ruleSvGenePairs.txt_' + permutationRound, ruleSvGenePairs[:,0], delimiter='\t', fmt='%s')
 
 
 cosmicGenesFile = sys.argv[3]
@@ -432,22 +496,20 @@ for gene in ruleBasedAffectedGenes:
 	if gene in breastCancerGenes:
 		ruleGenesBc.append(gene)
 
-
-
 #Collect the DEG genes for each SV-gene pair combination
 #The DEGs  will need to be re-computed for each shuffled iteration
-windowExprCall = "python computeSVGenePairExpression_oneSet.py Output/RankedGenes/naive_shuffled/BRCA/svGenePairsWindowed.txt_" + permutationRound + " " + sys.argv[8] + ' True'
+windowExprCall = "python computeSVGenePairExpression_oneSet.py Output/RankedGenes/"  + outputFolder + "/BRCA/svGenePairsWindowed.txt_" + permutationRound + " " + sys.argv[8] + ' True'
 os.system(windowExprCall)
-tadExprCall = "python computeSVGenePairExpression_oneSet.py Output/RankedGenes/naive_shuffled/BRCA/tadSVGenePairs.txt_" + permutationRound + " " + sys.argv[8] + ' True'
+tadExprCall = "python computeSVGenePairExpression_oneSet.py Output/RankedGenes/" + outputFolder + "/BRCA/tadSVGenePairs.txt_" + permutationRound + " " + sys.argv[8] + ' True'
 os.system(tadExprCall)
-rulesExprCall = "python computeSVGenePairExpression_oneSet.py Output/RankedGenes/naive_shuffled/BRCA/ruleSvGenePairs.txt_" + permutationRound + " " + sys.argv[8] + ' True'
+rulesExprCall = "python computeSVGenePairExpression_oneSet.py Output/RankedGenes/" + outputFolder + "/BRCA/ruleSvGenePairs.txt_" + permutationRound + " " + sys.argv[8] + ' True'
 os.system(rulesExprCall)
 
 #Read the DEG pairs and determine how many genes are DEG in total
 #svGenePairsWindowed = np.loadtxt("Output/windowedSVs.txt", dtype='object')
-windowSVsDegPairs = np.load("Output/RankedGenes/naive_shuffled/BRCA/svGenePairsWindowed.txt_" + permutationRound + "_degPairs.npy", allow_pickle=True, encoding='latin1')
-tadSVsDegPairs = np.load("Output/RankedGenes/naive_shuffled/BRCA/tadSVGenePairs.txt_" + permutationRound + "_degPairs.npy", allow_pickle=True, encoding='latin1')
-ruleSVsDegPairs = np.load("Output/RankedGenes/naive_shuffled/BRCA/ruleSvGenePairs.txt_" + permutationRound + "_degPairs.npy", allow_pickle=True, encoding='latin1')
+windowSVsDegPairs = np.load("Output/RankedGenes/" + outputFolder + "/BRCA/svGenePairsWindowed.txt_" + permutationRound + "_degPairs.npy", allow_pickle=True, encoding='latin1')
+tadSVsDegPairs = np.load("Output/RankedGenes/" + outputFolder + "/BRCA/tadSVGenePairs.txt_" + permutationRound + "_degPairs.npy", allow_pickle=True, encoding='latin1')
+ruleSVsDegPairs = np.load("Output/RankedGenes/" + outputFolder + "/BRCA/ruleSvGenePairs.txt_" + permutationRound + "_degPairs.npy", allow_pickle=True, encoding='latin1')
 
 print("checking for DEG overlap")
 windowedDegGenes = []
@@ -503,14 +565,18 @@ for pair in ruleSvGenePairs[:,0]:
 
 #Write all counts to output files
 
-np.savetxt('Output/RankedGenes/naive_shuffled/BRCA/Counts/windowedCosmicDeg.txt_' + permutationRound, np.array([len(windowedCosmicDegGenes)]), fmt='%s')
-np.savetxt('Output/RankedGenes/naive_shuffled/BRCA/Counts/tadCosmicDeg.txt_' + permutationRound, np.array([len(tadCosmicDegGenes)]), fmt='%s')
-np.savetxt('Output/RankedGenes/naive_shuffled/BRCA/Counts/rulesCosmicDeg.txt_' + permutationRound, np.array([len(ruleCosmicDegGenes)]), fmt='%s')
+#make dir if not exists
+if not os.path.exists('Output/RankedGenes/' + outputFolder + '/BRCA/Counts/'):
+	os.makedirs('Output/RankedGenes/' + outputFolder + '/BRCA/Counts/')
 
-np.savetxt('Output/RankedGenes/naive_shuffled/BRCA/Counts/windowedBcDeg.txt_' + permutationRound, np.array([len(windowedBcDegGenes)]), fmt='%s')
-np.savetxt('Output/RankedGenes/naive_shuffled/BRCA/Counts/tadBcDeg.txt_' + permutationRound, np.array([len(tadBcDegGenes)]), fmt='%s')
-np.savetxt('Output/RankedGenes/naive_shuffled/BRCA/Counts/rulesBcDeg.txt_' + permutationRound, np.array([len(ruleBcDegGenes)]), fmt='%s')
+np.savetxt('Output/RankedGenes/' + outputFolder + '/BRCA/Counts/windowedCosmicDeg.txt_' + permutationRound, np.array([len(windowedCosmicDegGenes)]), fmt='%s')
+np.savetxt('Output/RankedGenes/' + outputFolder + '/BRCA/Counts/tadCosmicDeg.txt_' + permutationRound, np.array([len(tadCosmicDegGenes)]), fmt='%s')
+np.savetxt('Output/RankedGenes/' + outputFolder + '/BRCA/Counts/rulesCosmicDeg.txt_' + permutationRound, np.array([len(ruleCosmicDegGenes)]), fmt='%s')
 
-np.savetxt('Output/RankedGenes/naive_shuffled/BRCA/Counts/windowedDeg.txt_' + permutationRound, np.array([len(windowedDegGenes)]), fmt='%s')
-np.savetxt('Output/RankedGenes/naive_shuffled/BRCA/Counts/tadDeg.txt_' + permutationRound, np.array([len(tadDegGenes)]), fmt='%s')
-np.savetxt('Output/RankedGenes/naive_shuffled/BRCA/Counts/rulesDeg.txt_' + permutationRound, np.array([len(ruleDegGenes)]), fmt='%s')
+np.savetxt('Output/RankedGenes/' + outputFolder + '/BRCA/Counts/windowedBcDeg.txt_' + permutationRound, np.array([len(windowedBcDegGenes)]), fmt='%s')
+np.savetxt('Output/RankedGenes/' + outputFolder + '/BRCA/Counts/tadBcDeg.txt_' + permutationRound, np.array([len(tadBcDegGenes)]), fmt='%s')
+np.savetxt('Output/RankedGenes/' + outputFolder + '/BRCA/Counts/rulesBcDeg.txt_' + permutationRound, np.array([len(ruleBcDegGenes)]), fmt='%s')
+
+np.savetxt('Output/RankedGenes/' + outputFolder + '/BRCA/Counts/windowedDeg.txt_' + permutationRound, np.array([len(windowedDegGenes)]), fmt='%s')
+np.savetxt('Output/RankedGenes/' + outputFolder + '/BRCA/Counts/tadDeg.txt_' + permutationRound, np.array([len(tadDegGenes)]), fmt='%s')
+np.savetxt('Output/RankedGenes/' + outputFolder + '/BRCA/Counts/rulesDeg.txt_' + permutationRound, np.array([len(ruleDegGenes)]), fmt='%s')

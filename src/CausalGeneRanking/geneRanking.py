@@ -118,6 +118,8 @@ class GeneRanking:
 				sv = svGeneIndices[ind]
 
 				pairIds.append(sv)
+				
+				
 				if sv in eQTLLossScores:
 					pairScores[ind,0] = eQTLLossScores[sv]
 				if sv in enhancerLossScores:
@@ -461,9 +463,12 @@ class GeneRanking:
 			return
 			scoringMatrix: (numpy array) matrix of samples x genes (samples in rows, genes in columns) with a value of 1 indicating that the sample has an SV causing a gain of at least 1 element, or 0 if there are none. 
 		"""
-		
+
 		scoringMatrix = np.zeros([len(sampleMap), len(geneMap)]) #store the final scores
 		geneMatrix = np.zeros(len(geneMap))
+		
+		if settings.general['gains'] == False:
+			return scoringMatrix, geneMatrix
 		
 		for geneInd in range(0, len(genes)):
 			
@@ -516,6 +521,9 @@ class GeneRanking:
 		scoringMatrix = np.zeros([len(sampleMap), len(geneMap)])
 		geneMatrix = np.zeros(len(geneMap))
 		
+		if settings.general['losses'] == False:
+			return scoringMatrix, geneMatrix
+		
 		for geneInd in range(0, len(genes)):
 			
 			gene = genes[geneInd]
@@ -561,6 +569,9 @@ class GeneRanking:
 			return
 			scoringMatrix: (numpy array) matrix of samples x genes (samples in rows, genes in columns) with a value of 1 indicating that the sample has an SV causing a loss of at least 1 element, or 0 if there are none. 
 		"""
+		
+		if settings.general['losses'] == False:
+			return dict(), svGeneMap, svGeneIndices	
 		
 		#Idea: have sv-gene pairs on one axis, and a 1 or 0 for this particular feature in the first column
 		pairScores = dict() #Keep a dictionary because we do not know how large the final matrix will be across all features
@@ -628,6 +639,9 @@ class GeneRanking:
 			return
 			scoringMatrix: (numpy array) matrix of samples x genes (samples in rows, genes in columns) with a value of 1 indicating that the sample has an SV causing a loss of at least 1 element, or 0 if there are none. 
 		"""
+		
+		if settings.general['gains'] == False:
+			return dict(), svGeneMap, svGeneIndices	
 		
 		#Idea: have sv-gene pairs on one axis, and a 1 or 0 for this particular feature in the first column
 		pairScores = dict() #Keep a dictionary because we do not know how large the final matrix will be across all features

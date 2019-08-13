@@ -23,7 +23,7 @@ from scipy import stats
 def getSVsWithCodingEffects():
 	
 	codingPairs = np.loadtxt(sys.argv[1], dtype='object')
-	degPairs = np.load(sys.argv[2], allow_pickle=True)
+	degPairs = np.load(sys.argv[2], allow_pickle=True, encoding='latin1')
 	cosmicGenesFile = sys.argv[3]
 	
 	codingSVGenes = dict()
@@ -41,7 +41,7 @@ def getSVsWithCodingEffects():
 	#get the COSMIC genes
 	
 	cosmicGenes = []
-	with open(cosmicGenesFile, 'rb') as f:
+	with open(cosmicGenesFile, 'r') as f:
 		lineCount = 0
 		for line in f:
 			if lineCount == 0:
@@ -88,6 +88,40 @@ print("Number of SVs filtered out with coding effects: ", len(codingEffectSVs))
 np.savetxt('codingEffectSVs.txt', codingEffectSVs, delimiter='\t', fmt='%s')
 np.savetxt('codingEffectPairs.txt', codingEffectPairs, delimiter='\t', fmt='%s')
 
+#Get all sample-gene pairs with a coding SNV
+def getGenesWithSNVs():
+	
+	snvDir = sys.argv[6]
+	allFiles = [f for f in listdir(snvDir) if isfile(join(snvDir, f))]
+	
+	geneSNVPairs = []
+	for currentFile in allFiles:
+		
+		if currentFile == "MANIFEST.txt":
+			continue
+		splitFileName = currentFile.split(".")
+		patientID = splitFileName[0]
+	
+		#Load the contents of the file
+		with open(snvDir + "/" + currentFile, 'r') as inF:
+			lineCount = 0
+			for line in inF:
+				line = line.strip() #remove newlines
+				if lineCount < 1: #only read the line if it is not a header line
+					lineCount += 1
+					continue
+	
+				splitLine = line.split("\t")
+				geneName = splitLine[0]
+				
+				pair = geneName + "_" + patientID
+				geneSNVPairs.append(pair)
+
+	return geneSNVPairs
+
+geneSNVPairs = getGenesWithSNVs()
+print(geneSNVPairs)
+exit()
 
 #2. Find all genes within a window of the filtered SVs
 def findAffectedGenesWithinWindow():
@@ -128,6 +162,9 @@ def findAffectedGenesWithinWindow():
 				if gene[3].name not in affectedGenes:
 					affectedGenes.append(gene[3].name)
 					svStr = sv[0] + "_" + str(sv[1]) + "_" + str(sv[2]) + "_" + sv[3] + "_" + str(sv[4]) + "_" + str(sv[5]) + "_" + sv[7]
+				
+				#Only add this combination if it does not have an SNV
+				
 				svGenePairs.append(gene[3].name + "_" + svStr)
 	
 		else:
