@@ -31,7 +31,11 @@ outputFolder = sys.argv[10]
 shuffle = sys.argv[11]
 
 if not os.path.exists('Output/RankedGenes/' + outputFolder):
-	os.makedirs('Output/RankedGenes/' + outputFolder)
+	try:
+		os.makedirs('Output/RankedGenes/' + outputFolder)
+	except FileExistsError:
+		pass
+	
 
 #1. Filter SVs based on if these cause DEGs or affect COSMIC genes in the coding way
 # 
@@ -567,7 +571,11 @@ for pair in ruleSvGenePairs[:,0]:
 
 #make dir if not exists
 if not os.path.exists('Output/RankedGenes/' + outputFolder + '/BRCA/Counts/'):
-	os.makedirs('Output/RankedGenes/' + outputFolder + '/BRCA/Counts/')
+	
+	try:
+		os.makedirs('Output/RankedGenes/' + outputFolder + '/BRCA/Counts/')
+	except FileExistsError:
+		pass
 
 np.savetxt('Output/RankedGenes/' + outputFolder + '/BRCA/Counts/windowedCosmicDeg.txt_' + permutationRound, np.array([len(windowedCosmicDegGenes)]), fmt='%s')
 np.savetxt('Output/RankedGenes/' + outputFolder + '/BRCA/Counts/tadCosmicDeg.txt_' + permutationRound, np.array([len(tadCosmicDegGenes)]), fmt='%s')
