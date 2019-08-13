@@ -218,6 +218,7 @@ class NeighborhoodDefiner:
 
 			# with open('eQTLData.pkl', 'wb') as h:
 			# 	pkl.dump(eQTLData, h, protocol=pkl.HIGHEST_PROTOCOL)
+			tadData = self.mapElementsToTads(eQTLData, tadData)
 		
 		#Read the lncRNA data. If we enable lncRNAs, for now we switch that for eQTLs. Will be fixed in a later version. 
 		if settings.general['lncRNA'] == True:
@@ -225,7 +226,7 @@ class NeighborhoodDefiner:
 			eQTLData = lncRNAData 
 
 		#Map the elements to the TADs, and map the genes to the TADs. 
-		tadData = self.mapElementsToTads(eQTLData, tadData)
+		
 		tadData = self.mapGenesToTads(genes, tadData) 
 		
 		#3. Get enhancers
