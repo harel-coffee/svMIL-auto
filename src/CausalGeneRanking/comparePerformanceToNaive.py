@@ -17,169 +17,234 @@ from scipy.stats import chi2_contingency
 import pylab as plt
 from matplotlib_venn import venn3, venn3_circles
 from scipy import stats
-
-# 1. Filter SVs based on if these cause DEGs or affect COSMIC genes in the coding way
-
-def getSVsWithCodingEffects():
-	
-	codingPairs = np.loadtxt(sys.argv[1], dtype='object')
-	degPairs = np.load(sys.argv[2], allow_pickle=True)
-	cosmicGenesFile = sys.argv[3]
-	
-	codingSVGenes = dict()
-	for pair in codingPairs:
-		
-		splitPair = pair.split("_")
-		svEntries = splitPair[1:]
-		sv = "_".join(svEntries)
-		
-		if sv not in codingSVGenes:
-			codingSVGenes[sv] = []
-		codingSVGenes[sv].append(splitPair[0])
-	
-		
-	#get the COSMIC genes
-	
-	cosmicGenes = []
-	with open(cosmicGenesFile, 'rb') as f:
-		lineCount = 0
-		for line in f:
-			if lineCount == 0:
-				lineCount += 1
-				continue
-			
-			splitLine = line.split("\t")
-			
-			geneName = splitLine[0]
-			cosmicGenes.append(geneName)
-
-	codingEffectSVs = []
-	genesAffectedByFilteredSVs = []
-	genesAffectedByCodingSVs = []
-	codingEffectPairs = []
-	for sv in codingSVGenes:
-		
-		degCount = 0
-		cosmicCount = 0
-		degAndCosmicCount = 0
-		degOrCosmicCount = 0
-		
-		for gene in codingSVGenes[sv]:
-			pair = gene + "_" + sv
-			
-			if gene not in genesAffectedByCodingSVs:
-				genesAffectedByCodingSVs.append(gene)
-			
-			if gene in cosmicGenes or pair in degPairs[:,0]:
-				if sv not in codingEffectSVs:
-					codingEffectSVs.append(sv)
-				if gene not in genesAffectedByFilteredSVs: #look at all genes that are linked to the SVs. 
-					genesAffectedByFilteredSVs.append(gene)
-					
-				if pair not in codingEffectPairs:
-					codingEffectPairs.append(pair)
-					
-	#print "Number of genes affected in the coding way: ", len(genesAffectedByCodingSVs)
-	#print "Number of genes affected in the coding way that are DEG or COSMIC: ", len(genesAffectedByFilteredSVs)
-	return codingEffectSVs, codingEffectPairs
-	
-codingEffectSVs, codingEffectPairs = getSVsWithCodingEffects()
-#print "Number of SVs filtered out with coding effects: ", len(codingEffectSVs)
-np.savetxt('codingEffectSVs.txt', codingEffectSVs, delimiter='\t', fmt='%s')
-np.savetxt('codingEffectPairs.txt', codingEffectPairs, delimiter='\t', fmt='%s')
-
-
-#2. Find all genes within a window of the filtered SVs
-def findAffectedGenesWithinWindow():
-	
-	#Read all SVs and filter these for the coding effect SVs
-	somaticSVs = InputParser().getSVsFromFile(sys.argv[4], "all", codingEffectSVs)
-	causalGenes = InputParser().readCausalGeneFile(settings.files['causalGenesFile'])
-	nonCausalGenes = InputParser().readNonCausalGeneFile(settings.files['nonCausalGenesFile'], causalGenes) #In the same format as the causal genes.
-	
-	#Combine the genes into one set. 
-	genes = np.concatenate((causalGenes, nonCausalGenes), axis=0)
-
-	#Specify a window to look around SVs. 2 mb seems good as I recall from quite some time ago. But this threshold may change
-	window = 2000000
-	
-	affectedGenes = []
-	svGenePairs = []
-	#For every SV, look at 2 mb to the left of the left breakpoint, and look at 2 mb to the right of the right breakpoint.
-	for sv in somaticSVs:
-		
-		#Split translocations and non-translocations
-		if sv[0] == sv[3]:
-
-			#Get all genes on chr1
-			chr1GeneSubset = genes[np.where(genes[:,0] == sv[0])]
-			
-			#The only genes we consider are the ones that are starting or ending within the window, and are not within the SV.
-			#So, the start must be befor the SV breakpoint, the end after the SV bp-window, but end before the SV breakpoint.
-			startMatches = (chr1GeneSubset[:,1] <= sv[1]) * (chr1GeneSubset[:,2] >= (sv[1] - window)) * (chr1GeneSubset[:,2] <= sv[1])
-			
-			#The reverse for the end of the SV.
-			endMatches = (chr1GeneSubset[:,2] >= sv[5]) * (chr1GeneSubset[:,1] <= (sv[5] + window)) * (chr1GeneSubset[:,1] >= sv[5])
-			
-			matchingGenesStart = chr1GeneSubset[startMatches] #genes must be either matching on the left or right.
-			matchingGenesEnd = chr1GeneSubset[endMatches] #genes must be either matching on the left or right.
-			matchingGenes = np.concatenate((matchingGenesStart, matchingGenesEnd), axis=0)
-			for gene in matchingGenes:
-				if gene[3].name not in affectedGenes:
-					affectedGenes.append(gene[3].name)
-					svStr = sv[0] + "_" + str(sv[1]) + "_" + str(sv[2]) + "_" + sv[3] + "_" + str(sv[4]) + "_" + str(sv[5]) + "_" + sv[7]
-				svGenePairs.append(gene[3].name + "_" + svStr)
-	
-		else:
-			#look at both sides of the translocation on both chromosomes
-			
-			#First for chr 1
-			chr1GeneSubset = genes[np.where(genes[:,0] == sv[0])]
-			
-			#The only genes we consider are the ones that are starting or ending within the window, and are not within the SV.
-			#So, the start must be befor the SV breakpoint, the end after the SV bp-window, but end before the SV breakpoint.
-			startMatches = (chr1GeneSubset[:,1] <= sv[1]) * (chr1GeneSubset[:,2] >= (sv[1] - window)) * (chr1GeneSubset[:,2] <= sv[1])
-			
-			#The reverse for the end of the SV.
-			endMatches = (chr1GeneSubset[:,2] >= sv[1]) * (chr1GeneSubset[:,1] <= (sv[1] + window)) * (chr1GeneSubset[:,1] >= sv[1])
-			
-			matchingGenesStart = chr1GeneSubset[startMatches] #genes must be either matching on the left or right.
-			matchingGenesEnd = chr1GeneSubset[endMatches] #genes must be either matching on the left or right.
-			matchingGenes = np.concatenate((matchingGenesStart, matchingGenesEnd), axis=0)
-			for gene in matchingGenes:
-				if gene[3].name not in affectedGenes:
-					affectedGenes.append(gene[3].name)
-					svStr = sv[0] + "_" + str(sv[1]) + "_" + str(sv[2]) + "_" + sv[3] + "_" + str(sv[4]) + "_" + str(sv[5]) + "_" + sv[7]
-				svGenePairs.append(gene[3].name + "_" + svStr)
-			
-			#Repeat for chr2
-			chr2GeneSubset = genes[np.where(genes[:,0] == sv[3])]
-			
-			#The only genes we consider are the ones that are starting or ending within the window, and are not within the SV.
-			#So, the start must be befor the SV breakpoint, the end after the SV bp-window, but end before the SV breakpoint.
-			startMatches = (chr2GeneSubset[:,1] <= sv[5]) * (chr2GeneSubset[:,2] >= (sv[5] - window)) * (chr2GeneSubset[:,2] <= sv[5])
-			
-			#The reverse for the end of the SV.
-			endMatches = (chr2GeneSubset[:,2] >= sv[5]) * (chr2GeneSubset[:,1] <= (sv[5] + window)) * (chr2GeneSubset[:,1] >= sv[5])
-			
-			matchingGenesStart = chr2GeneSubset[startMatches] #genes must be either matching on the left or right.
-			matchingGenesEnd = chr2GeneSubset[endMatches] #genes must be either matching on the left or right.
-			matchingGenes = np.concatenate((matchingGenesStart, matchingGenesEnd), axis=0)
-			for gene in matchingGenes:
-				if gene[3].name not in affectedGenes:
-					affectedGenes.append(gene[3].name)
-					svStr = sv[0] + "_" + str(sv[1]) + "_" + str(sv[2]) + "_" + sv[3] + "_" + str(sv[4]) + "_" + str(sv[5]) + "_" + sv[7]
-				svGenePairs.append(gene[3].name + "_" + svStr)
-			
-			
-	return affectedGenes, svGenePairs
-	
-affectedGenesWindowed, svGenePairsWindowed = findAffectedGenesWithinWindow()
-np.savetxt("Output/windowedSVs.txt", svGenePairsWindowed, delimiter='\t', fmt='%s')
-print("Number of affected genes in windowed approach: ", len(affectedGenesWindowed))
-
-#3. Find all genes within the TAD of the filtered SVs
-# def findAffectedGenesByTadBoundaryDisruptions(codingEffectSVs):
+# 
+# # 1. Filter SVs based on if these cause DEGs or affect COSMIC genes in the coding way
+# 
+# def getSVsWithCodingEffects():
+# 	
+# 	codingPairs = np.loadtxt(sys.argv[1], dtype='object')
+# 	degPairs = np.load(sys.argv[2], allow_pickle=True)
+# 	cosmicGenesFile = sys.argv[3]
+# 	
+# 	codingSVGenes = dict()
+# 	for pair in codingPairs:
+# 		
+# 		splitPair = pair.split("_")
+# 		svEntries = splitPair[1:]
+# 		sv = "_".join(svEntries)
+# 		
+# 		if sv not in codingSVGenes:
+# 			codingSVGenes[sv] = []
+# 		codingSVGenes[sv].append(splitPair[0])
+# 	
+# 		
+# 	#get the COSMIC genes
+# 	
+# 	cosmicGenes = []
+# 	with open(cosmicGenesFile, 'rb') as f:
+# 		lineCount = 0
+# 		for line in f:
+# 			if lineCount == 0:
+# 				lineCount += 1
+# 				continue
+# 			
+# 			splitLine = line.split("\t")
+# 			
+# 			geneName = splitLine[0]
+# 			cosmicGenes.append(geneName)
+# 
+# 	codingEffectSVs = []
+# 	genesAffectedByFilteredSVs = []
+# 	genesAffectedByCodingSVs = []
+# 	codingEffectPairs = []
+# 	for sv in codingSVGenes:
+# 		
+# 		degCount = 0
+# 		cosmicCount = 0
+# 		degAndCosmicCount = 0
+# 		degOrCosmicCount = 0
+# 		
+# 		for gene in codingSVGenes[sv]:
+# 			pair = gene + "_" + sv
+# 			
+# 			if gene not in genesAffectedByCodingSVs:
+# 				genesAffectedByCodingSVs.append(gene)
+# 			
+# 			if gene in cosmicGenes or pair in degPairs[:,0]:
+# 				if sv not in codingEffectSVs:
+# 					codingEffectSVs.append(sv)
+# 				if gene not in genesAffectedByFilteredSVs: #look at all genes that are linked to the SVs. 
+# 					genesAffectedByFilteredSVs.append(gene)
+# 					
+# 				if pair not in codingEffectPairs:
+# 					codingEffectPairs.append(pair)
+# 					
+# 	#print "Number of genes affected in the coding way: ", len(genesAffectedByCodingSVs)
+# 	#print "Number of genes affected in the coding way that are DEG or COSMIC: ", len(genesAffectedByFilteredSVs)
+# 	return codingEffectSVs, codingEffectPairs
+# 	
+# codingEffectSVs, codingEffectPairs = getSVsWithCodingEffects()
+# #print "Number of SVs filtered out with coding effects: ", len(codingEffectSVs)
+# np.savetxt('codingEffectSVs.txt', codingEffectSVs, delimiter='\t', fmt='%s')
+# np.savetxt('codingEffectPairs.txt', codingEffectPairs, delimiter='\t', fmt='%s')
+# 
+# 
+# #2. Find all genes within a window of the filtered SVs
+# def findAffectedGenesWithinWindow():
+# 	
+# 	#Read all SVs and filter these for the coding effect SVs
+# 	somaticSVs = InputParser().getSVsFromFile(sys.argv[4], "all", codingEffectSVs)
+# 	causalGenes = InputParser().readCausalGeneFile(settings.files['causalGenesFile'])
+# 	nonCausalGenes = InputParser().readNonCausalGeneFile(settings.files['nonCausalGenesFile'], causalGenes) #In the same format as the causal genes.
+# 	
+# 	#Combine the genes into one set. 
+# 	genes = np.concatenate((causalGenes, nonCausalGenes), axis=0)
+# 
+# 	#Specify a window to look around SVs. 2 mb seems good as I recall from quite some time ago. But this threshold may change
+# 	window = 2000000
+# 	
+# 	affectedGenes = []
+# 	svGenePairs = []
+# 	#For every SV, look at 2 mb to the left of the left breakpoint, and look at 2 mb to the right of the right breakpoint.
+# 	for sv in somaticSVs:
+# 		
+# 		#Split translocations and non-translocations
+# 		if sv[0] == sv[3]:
+# 
+# 			#Get all genes on chr1
+# 			chr1GeneSubset = genes[np.where(genes[:,0] == sv[0])]
+# 			
+# 			#The only genes we consider are the ones that are starting or ending within the window, and are not within the SV.
+# 			#So, the start must be befor the SV breakpoint, the end after the SV bp-window, but end before the SV breakpoint.
+# 			startMatches = (chr1GeneSubset[:,1] <= sv[1]) * (chr1GeneSubset[:,2] >= (sv[1] - window)) * (chr1GeneSubset[:,2] <= sv[1])
+# 			
+# 			#The reverse for the end of the SV.
+# 			endMatches = (chr1GeneSubset[:,2] >= sv[5]) * (chr1GeneSubset[:,1] <= (sv[5] + window)) * (chr1GeneSubset[:,1] >= sv[5])
+# 			
+# 			matchingGenesStart = chr1GeneSubset[startMatches] #genes must be either matching on the left or right.
+# 			matchingGenesEnd = chr1GeneSubset[endMatches] #genes must be either matching on the left or right.
+# 			matchingGenes = np.concatenate((matchingGenesStart, matchingGenesEnd), axis=0)
+# 			for gene in matchingGenes:
+# 				if gene[3].name not in affectedGenes:
+# 					affectedGenes.append(gene[3].name)
+# 					svStr = sv[0] + "_" + str(sv[1]) + "_" + str(sv[2]) + "_" + sv[3] + "_" + str(sv[4]) + "_" + str(sv[5]) + "_" + sv[7]
+# 				svGenePairs.append(gene[3].name + "_" + svStr)
+# 	
+# 		else:
+# 			#look at both sides of the translocation on both chromosomes
+# 			
+# 			#First for chr 1
+# 			chr1GeneSubset = genes[np.where(genes[:,0] == sv[0])]
+# 			
+# 			#The only genes we consider are the ones that are starting or ending within the window, and are not within the SV.
+# 			#So, the start must be befor the SV breakpoint, the end after the SV bp-window, but end before the SV breakpoint.
+# 			startMatches = (chr1GeneSubset[:,1] <= sv[1]) * (chr1GeneSubset[:,2] >= (sv[1] - window)) * (chr1GeneSubset[:,2] <= sv[1])
+# 			
+# 			#The reverse for the end of the SV.
+# 			endMatches = (chr1GeneSubset[:,2] >= sv[1]) * (chr1GeneSubset[:,1] <= (sv[1] + window)) * (chr1GeneSubset[:,1] >= sv[1])
+# 			
+# 			matchingGenesStart = chr1GeneSubset[startMatches] #genes must be either matching on the left or right.
+# 			matchingGenesEnd = chr1GeneSubset[endMatches] #genes must be either matching on the left or right.
+# 			matchingGenes = np.concatenate((matchingGenesStart, matchingGenesEnd), axis=0)
+# 			for gene in matchingGenes:
+# 				if gene[3].name not in affectedGenes:
+# 					affectedGenes.append(gene[3].name)
+# 					svStr = sv[0] + "_" + str(sv[1]) + "_" + str(sv[2]) + "_" + sv[3] + "_" + str(sv[4]) + "_" + str(sv[5]) + "_" + sv[7]
+# 				svGenePairs.append(gene[3].name + "_" + svStr)
+# 			
+# 			#Repeat for chr2
+# 			chr2GeneSubset = genes[np.where(genes[:,0] == sv[3])]
+# 			
+# 			#The only genes we consider are the ones that are starting or ending within the window, and are not within the SV.
+# 			#So, the start must be befor the SV breakpoint, the end after the SV bp-window, but end before the SV breakpoint.
+# 			startMatches = (chr2GeneSubset[:,1] <= sv[5]) * (chr2GeneSubset[:,2] >= (sv[5] - window)) * (chr2GeneSubset[:,2] <= sv[5])
+# 			
+# 			#The reverse for the end of the SV.
+# 			endMatches = (chr2GeneSubset[:,2] >= sv[5]) * (chr2GeneSubset[:,1] <= (sv[5] + window)) * (chr2GeneSubset[:,1] >= sv[5])
+# 			
+# 			matchingGenesStart = chr2GeneSubset[startMatches] #genes must be either matching on the left or right.
+# 			matchingGenesEnd = chr2GeneSubset[endMatches] #genes must be either matching on the left or right.
+# 			matchingGenes = np.concatenate((matchingGenesStart, matchingGenesEnd), axis=0)
+# 			for gene in matchingGenes:
+# 				if gene[3].name not in affectedGenes:
+# 					affectedGenes.append(gene[3].name)
+# 					svStr = sv[0] + "_" + str(sv[1]) + "_" + str(sv[2]) + "_" + sv[3] + "_" + str(sv[4]) + "_" + str(sv[5]) + "_" + sv[7]
+# 				svGenePairs.append(gene[3].name + "_" + svStr)
+# 			
+# 			
+# 	return affectedGenes, svGenePairs
+# 	
+# affectedGenesWindowed, svGenePairsWindowed = findAffectedGenesWithinWindow()
+# np.savetxt("Output/windowedSVs.txt", svGenePairsWindowed, delimiter='\t', fmt='%s')
+# print("Number of affected genes in windowed approach: ", len(affectedGenesWindowed))
+# 
+# #3. Find all genes within the TAD of the filtered SVs
+# # def findAffectedGenesByTadBoundaryDisruptions(codingEffectSVs):
+# # 		
+# # 	somaticSVs = InputParser().getSVsFromFile(sys.argv[4], "all", codingEffectSVs)
+# # 	tads = InputParser().getTADsFromFile(sys.argv[5])
+# # 	causalGenes = InputParser().readCausalGeneFile(settings.files['causalGenesFile'])
+# # 	nonCausalGenes = InputParser().readNonCausalGeneFile(settings.files['nonCausalGenesFile'], causalGenes) #In the same format as the causal genes.
+# # 	
+# # 	#Combine the genes into one set. 
+# # 	genes = np.concatenate((causalGenes, nonCausalGenes), axis=0)
+# # 	
+# # 	#Remove translocations, these do not disrupt boundaries
+# # 	filteredSomaticSVs = []
+# # 	for sv in somaticSVs:
+# # 		if sv[0] == sv[3]:
+# # 			filteredSomaticSVs.append(sv)
+# # 	filteredSomaticSVs = np.array(filteredSomaticSVs, dtype="object")
+# # 	
+# # 	
+# # 	
+# # 	#For each TAD, determine which SVs start or end within the TAD, and cover the boundary
+# # 	affectedGenes = []
+# # 	svGenePairs = []
+# # 	nonCodingSamples = dict()
+# # 	for tad in tads:
+# # 		
+# # 		#match on chromosome
+# # 		svSubset = filteredSomaticSVs[filteredSomaticSVs[:,0] == tad[0]]
+# # 		geneChrSubset = genes[genes[:,0] == tad[0]]
+# # 		
+# # 		#if the start of the SV is within the TAD, and the end is outside of the TAD
+# # 		startingSVs = svSubset[(svSubset[:,1] >= tad[1]) * (svSubset[:,1] <= tad[2]) * (svSubset[:,5] > tad[2])]
+# # 
+# # 		#if the end of the SV is within the TAD, and the start is outside of the TAD
+# # 		endingSVs = svSubset[(svSubset[:,5] >= tad[1]) * (svSubset[:,5] <= tad[2]) * (svSubset[:,1] < tad[1])]
+# # 		
+# # 		matchingSVs = np.concatenate((startingSVs, endingSVs))
+# # 		
+# # 		if len(matchingSVs) > 0:
+# # 			
+# # 			for sv in matchingSVs:
+# # 				svStr = sv[0] + "_" + str(sv[1]) + "_" + str(sv[2]) + "_" + sv[3] + "_" + str(sv[4]) + "_" + str(sv[5]) + "_" + sv[7]
+# # 				#all genes that end after the TAD start, but start before the TAD end
+# # 				matchingGenes = geneChrSubset[(geneChrSubset[:,2] >= tad[1]) * (geneChrSubset[:,1] <= tad[2])]
+# # 				
+# # 				#matchingEndGenes = (geneChrSubset[:,2] >= tad[1]) * (geneChrSubset[:,2] <= tad[2])
+# # 			
+# # 				#matchingGenes = geneChrSubset[matchingStartGenes * matchingEndGenes]
+# # 				for gene in matchingGenes:
+# # 				
+# # 					if gene[3].name not in affectedGenes:
+# # 						affectedGenes.append(gene[3].name)
+# # 					if gene[3].name not in nonCodingSamples:
+# # 						nonCodingSamples[gene[3].name] = []
+# # 					nonCodingSamples[gene[3].name].append(sv[7])
+# # 					
+# # 					svGenePairs.append(gene[3].name + "_" + svStr)
+# # 	
+# # 	return affectedGenes, svGenePairs
+# # 
+# # tadAffectedGenes, tadSVGenePairs = findAffectedGenesByTadBoundaryDisruptions(codingEffectSVs)
+# # np.savetxt("Output/tadSVs.txt", tadSVGenePairs, delimiter='\t', fmt='%s')
+# # 
+# # print "TAD affected genes: ", len(tadAffectedGenes)
+# 
+# ###Alternative to look at disrupted TADs, not just boundaries
+# def findAffectedGenesByTadDisruptions(codingEffectSVs):
 # 		
 # 	somaticSVs = InputParser().getSVsFromFile(sys.argv[4], "all", codingEffectSVs)
 # 	tads = InputParser().getTADsFromFile(sys.argv[5])
@@ -189,43 +254,55 @@ print("Number of affected genes in windowed approach: ", len(affectedGenesWindow
 # 	#Combine the genes into one set. 
 # 	genes = np.concatenate((causalGenes, nonCausalGenes), axis=0)
 # 	
-# 	#Remove translocations, these do not disrupt boundaries
-# 	filteredSomaticSVs = []
-# 	for sv in somaticSVs:
-# 		if sv[0] == sv[3]:
-# 			filteredSomaticSVs.append(sv)
-# 	filteredSomaticSVs = np.array(filteredSomaticSVs, dtype="object")
-# 	
-# 	
-# 	
-# 	#For each TAD, determine which SVs start or end within the TAD, and cover the boundary
+# 	#For each TAD, determine which SVs start or end within the TAD
 # 	affectedGenes = []
 # 	svGenePairs = []
 # 	nonCodingSamples = dict()
-# 	for tad in tads:
+# 	
+# 	for sv in somaticSVs:
+# 		svStr = sv[0] + "_" + str(sv[1]) + "_" + str(sv[2]) + "_" + sv[3] + "_" + str(sv[4]) + "_" + str(sv[5]) + "_" + sv[7]
 # 		
-# 		#match on chromosome
-# 		svSubset = filteredSomaticSVs[filteredSomaticSVs[:,0] == tad[0]]
-# 		geneChrSubset = genes[genes[:,0] == tad[0]]
-# 		
-# 		#if the start of the SV is within the TAD, and the end is outside of the TAD
-# 		startingSVs = svSubset[(svSubset[:,1] >= tad[1]) * (svSubset[:,1] <= tad[2]) * (svSubset[:,5] > tad[2])]
+# 		#for non-translocations, look at all genes on the left and right of the SV, but that are within the TAD boundaries.
+# 		if sv[0] == sv[3]:
+# 			
+# 			chr1GeneSubset = genes[genes[:,0] == sv[0]]
+# 			tadChr1Subset = tads[tads[:,0] == sv[0]]
+# 			
+# 			#find the TAD that the left side starts in
+# 			leftTAD = tadChr1Subset[(tadChr1Subset[:,1] <= sv[1]) * (tadChr1Subset[:,2] >= sv[1])]
+# 			
+# 			#find the TAD that the right side ends in
+# 			rightTAD = tadChr1Subset[(tadChr1Subset[:,1] <= sv[5]) * (tadChr1Subset[:,2] >= sv[5])]
 # 
-# 		#if the end of the SV is within the TAD, and the start is outside of the TAD
-# 		endingSVs = svSubset[(svSubset[:,5] >= tad[1]) * (svSubset[:,5] <= tad[2]) * (svSubset[:,1] < tad[1])]
-# 		
-# 		matchingSVs = np.concatenate((startingSVs, endingSVs))
-# 		
-# 		if len(matchingSVs) > 0:
-# 			
-# 			for sv in matchingSVs:
-# 				svStr = sv[0] + "_" + str(sv[1]) + "_" + str(sv[2]) + "_" + sv[3] + "_" + str(sv[4]) + "_" + str(sv[5]) + "_" + sv[7]
-# 				#all genes that end after the TAD start, but start before the TAD end
-# 				matchingGenes = geneChrSubset[(geneChrSubset[:,2] >= tad[1]) * (geneChrSubset[:,1] <= tad[2])]
+# 			if len(leftTAD) == 0 and len(rightTAD) == 0:
+# 				continue
+# 
+# 			leftMatchingGenes = []
+# 			rightMatchingGenes = []
+# 			if len(leftTAD) > 0:
+# 				leftTAD = leftTAD[0]
 # 				
-# 				#matchingEndGenes = (geneChrSubset[:,2] >= tad[1]) * (geneChrSubset[:,2] <= tad[2])
-# 			
-# 				#matchingGenes = geneChrSubset[matchingStartGenes * matchingEndGenes]
+# 				#Get all genes in these TADs that are to the left of the SV
+# 				#Make sure to not include genes that are inside the SV
+# 				leftEndMatchingGenes = (chr1GeneSubset[:,2] <= sv[1]) * (chr1GeneSubset[:,2] >= leftTAD[1])
+# 				leftMatchingGenes = chr1GeneSubset[leftEndMatchingGenes]
+# 			if len(rightTAD) > 0:
+# 				rightTAD = rightTAD[0]
+# 					
+# 				#Get all genes in the TAD that are on the right of the SV
+# 				rightStartMatchingGenes = (chr1GeneSubset[:,1] >= sv[5]) * (chr1GeneSubset[:,1] <= rightTAD[2])
+# 				rightMatchingGenes = chr1GeneSubset[rightStartMatchingGenes]
+# 
+# 			#Get the unique genes
+# 			if len(leftMatchingGenes) > 0 and len(rightMatchingGenes) > 0:
+# 				matchingGenes = np.concatenate((leftMatchingGenes, rightMatchingGenes))
+# 			if len(leftMatchingGenes) > 0 and len(rightMatchingGenes) == 0:
+# 				matchingGenes = leftMatchingGenes
+# 			if len(leftMatchingGenes) == 0 and len(rightMatchingGenes) > 0:
+# 				matchingGenes = rightMatchingGenes
+# 				
+# 			if len(matchingGenes) > 0:
+# 				
 # 				for gene in matchingGenes:
 # 				
 # 					if gene[3].name not in affectedGenes:
@@ -235,209 +312,132 @@ print("Number of affected genes in windowed approach: ", len(affectedGenesWindow
 # 					nonCodingSamples[gene[3].name].append(sv[7])
 # 					
 # 					svGenePairs.append(gene[3].name + "_" + svStr)
-# 	
+# 		
+# 		#repeat for translocations, but look at genes on both sides of the translocation on both chromosomes
+# 
+# 		else:
+# 			chr1GeneSubset = genes[genes[:,0] == sv[0]]
+# 			tadChr1Subset = tads[tads[:,0] == sv[0]]
+# 			
+# 			#find the TAD that the left side starts in
+# 			leftTAD = tadChr1Subset[(tadChr1Subset[:,1] <= sv[1]) * (tadChr1Subset[:,2] >= sv[1])]
+# 			
+# 			if len(leftTAD) >0:
+# 				
+# 				leftTAD = leftTAD[0]
+# 				
+# 				#Get all genes in these TADs that are to the left of the SV
+# 				
+# 				leftEndMatchingGenes = (chr1GeneSubset[:,2] <= sv[1]) * (chr1GeneSubset[:,2] >= leftTAD[1])
+# 				leftMatchingGenes = chr1GeneSubset[leftEndMatchingGenes]
+# 				
+# 				#Get all genes in the TAD that are on the right of the SV
+# 				rightStartMatchingGenes = (chr1GeneSubset[:,1] >= sv[1]) * (chr1GeneSubset[:,1] <= leftTAD[2])
+# 				rightMatchingGenes = chr1GeneSubset[rightStartMatchingGenes]
+# 				
+# 				matchingGenes = np.concatenate((leftMatchingGenes, rightMatchingGenes))
+# 				if len(matchingGenes) > 0:
+# 					
+# 					for gene in matchingGenes:
+# 					
+# 						if gene[3].name not in affectedGenes:
+# 							affectedGenes.append(gene[3].name)
+# 						if gene[3].name not in nonCodingSamples:
+# 							nonCodingSamples[gene[3].name] = []
+# 						nonCodingSamples[gene[3].name].append(sv[7])
+# 						
+# 						svGenePairs.append(gene[3].name + "_" + svStr)
+# 				
+# 			
+# 			#Repeat for the TAD on chr2
+# 			chr2GeneSubset = genes[genes[:,0] == sv[3]]
+# 			tadChr2Subset = tads[tads[:,0] == sv[3]]
+# 			
+# 			#find the TAD that the left side starts in
+# 			rightTAD = tadChr2Subset[(tadChr2Subset[:,1] <= sv[5]) * (tadChr2Subset[:,2] >= sv[5])]
+# 			
+# 			if len(rightTAD) > 0:
+# 					
+# 				rightTAD = rightTAD[0]
+# 				
+# 				#Get all genes in these TADs that are to the left of the SV
+# 				leftEndMatchingGenes = (chr2GeneSubset[:,2] <= sv[5]) * (chr2GeneSubset[:,2] >= rightTAD[1])
+# 				leftMatchingGenes = chr2GeneSubset[leftEndMatchingGenes]
+# 				
+# 				#Get all genes in the TAD that are on the right of the SV
+# 				rightStartMatchingGenes = (chr2GeneSubset[:,1] >= sv[5]) * (chr2GeneSubset[:,1] <= rightTAD[2])
+# 				rightMatchingGenes = chr2GeneSubset[rightStartMatchingGenes]
+# 				
+# 				matchingGenes = np.concatenate((leftMatchingGenes, rightMatchingGenes))
+# 				if len(matchingGenes) > 0:
+# 					
+# 					for gene in matchingGenes:
+# 					
+# 						if gene[3].name not in affectedGenes:
+# 							affectedGenes.append(gene[3].name)
+# 						if gene[3].name not in nonCodingSamples:
+# 							nonCodingSamples[gene[3].name] = []
+# 						nonCodingSamples[gene[3].name].append(sv[7])
+# 						
+# 						svGenePairs.append(gene[3].name + "_" + svStr)
+# 
 # 	return affectedGenes, svGenePairs
 # 
-# tadAffectedGenes, tadSVGenePairs = findAffectedGenesByTadBoundaryDisruptions(codingEffectSVs)
+# tadAffectedGenes, tadSVGenePairs = findAffectedGenesByTadDisruptions(codingEffectSVs)
 # np.savetxt("Output/tadSVs.txt", tadSVGenePairs, delimiter='\t', fmt='%s')
 # 
-# print "TAD affected genes: ", len(tadAffectedGenes)
-
-###Alternative to look at disrupted TADs, not just boundaries
-def findAffectedGenesByTadDisruptions(codingEffectSVs):
-		
-	somaticSVs = InputParser().getSVsFromFile(sys.argv[4], "all", codingEffectSVs)
-	tads = InputParser().getTADsFromFile(sys.argv[5])
-	causalGenes = InputParser().readCausalGeneFile(settings.files['causalGenesFile'])
-	nonCausalGenes = InputParser().readNonCausalGeneFile(settings.files['nonCausalGenesFile'], causalGenes) #In the same format as the causal genes.
-	
-	#Combine the genes into one set. 
-	genes = np.concatenate((causalGenes, nonCausalGenes), axis=0)
-	
-	#For each TAD, determine which SVs start or end within the TAD
-	affectedGenes = []
-	svGenePairs = []
-	nonCodingSamples = dict()
-	
-	for sv in somaticSVs:
-		svStr = sv[0] + "_" + str(sv[1]) + "_" + str(sv[2]) + "_" + sv[3] + "_" + str(sv[4]) + "_" + str(sv[5]) + "_" + sv[7]
-		
-		#for non-translocations, look at all genes on the left and right of the SV, but that are within the TAD boundaries.
-		if sv[0] == sv[3]:
-			
-			chr1GeneSubset = genes[genes[:,0] == sv[0]]
-			tadChr1Subset = tads[tads[:,0] == sv[0]]
-			
-			#find the TAD that the left side starts in
-			leftTAD = tadChr1Subset[(tadChr1Subset[:,1] <= sv[1]) * (tadChr1Subset[:,2] >= sv[1])]
-			
-			#find the TAD that the right side ends in
-			rightTAD = tadChr1Subset[(tadChr1Subset[:,1] <= sv[5]) * (tadChr1Subset[:,2] >= sv[5])]
-
-			if len(leftTAD) == 0 and len(rightTAD) == 0:
-				continue
-
-			leftMatchingGenes = []
-			rightMatchingGenes = []
-			if len(leftTAD) > 0:
-				leftTAD = leftTAD[0]
-				
-				#Get all genes in these TADs that are to the left of the SV
-				#Make sure to not include genes that are inside the SV
-				leftEndMatchingGenes = (chr1GeneSubset[:,2] <= sv[1]) * (chr1GeneSubset[:,2] >= leftTAD[1])
-				leftMatchingGenes = chr1GeneSubset[leftEndMatchingGenes]
-			if len(rightTAD) > 0:
-				rightTAD = rightTAD[0]
-					
-				#Get all genes in the TAD that are on the right of the SV
-				rightStartMatchingGenes = (chr1GeneSubset[:,1] >= sv[5]) * (chr1GeneSubset[:,1] <= rightTAD[2])
-				rightMatchingGenes = chr1GeneSubset[rightStartMatchingGenes]
-
-			#Get the unique genes
-			if len(leftMatchingGenes) > 0 and len(rightMatchingGenes) > 0:
-				matchingGenes = np.concatenate((leftMatchingGenes, rightMatchingGenes))
-			if len(leftMatchingGenes) > 0 and len(rightMatchingGenes) == 0:
-				matchingGenes = leftMatchingGenes
-			if len(leftMatchingGenes) == 0 and len(rightMatchingGenes) > 0:
-				matchingGenes = rightMatchingGenes
-				
-			if len(matchingGenes) > 0:
-				
-				for gene in matchingGenes:
-				
-					if gene[3].name not in affectedGenes:
-						affectedGenes.append(gene[3].name)
-					if gene[3].name not in nonCodingSamples:
-						nonCodingSamples[gene[3].name] = []
-					nonCodingSamples[gene[3].name].append(sv[7])
-					
-					svGenePairs.append(gene[3].name + "_" + svStr)
-		
-		#repeat for translocations, but look at genes on both sides of the translocation on both chromosomes
-
-		else:
-			chr1GeneSubset = genes[genes[:,0] == sv[0]]
-			tadChr1Subset = tads[tads[:,0] == sv[0]]
-			
-			#find the TAD that the left side starts in
-			leftTAD = tadChr1Subset[(tadChr1Subset[:,1] <= sv[1]) * (tadChr1Subset[:,2] >= sv[1])]
-			
-			if len(leftTAD) >0:
-				
-				leftTAD = leftTAD[0]
-				
-				#Get all genes in these TADs that are to the left of the SV
-				
-				leftEndMatchingGenes = (chr1GeneSubset[:,2] <= sv[1]) * (chr1GeneSubset[:,2] >= leftTAD[1])
-				leftMatchingGenes = chr1GeneSubset[leftEndMatchingGenes]
-				
-				#Get all genes in the TAD that are on the right of the SV
-				rightStartMatchingGenes = (chr1GeneSubset[:,1] >= sv[1]) * (chr1GeneSubset[:,1] <= leftTAD[2])
-				rightMatchingGenes = chr1GeneSubset[rightStartMatchingGenes]
-				
-				matchingGenes = np.concatenate((leftMatchingGenes, rightMatchingGenes))
-				if len(matchingGenes) > 0:
-					
-					for gene in matchingGenes:
-					
-						if gene[3].name not in affectedGenes:
-							affectedGenes.append(gene[3].name)
-						if gene[3].name not in nonCodingSamples:
-							nonCodingSamples[gene[3].name] = []
-						nonCodingSamples[gene[3].name].append(sv[7])
-						
-						svGenePairs.append(gene[3].name + "_" + svStr)
-				
-			
-			#Repeat for the TAD on chr2
-			chr2GeneSubset = genes[genes[:,0] == sv[3]]
-			tadChr2Subset = tads[tads[:,0] == sv[3]]
-			
-			#find the TAD that the left side starts in
-			rightTAD = tadChr2Subset[(tadChr2Subset[:,1] <= sv[5]) * (tadChr2Subset[:,2] >= sv[5])]
-			
-			if len(rightTAD) > 0:
-					
-				rightTAD = rightTAD[0]
-				
-				#Get all genes in these TADs that are to the left of the SV
-				leftEndMatchingGenes = (chr2GeneSubset[:,2] <= sv[5]) * (chr2GeneSubset[:,2] >= rightTAD[1])
-				leftMatchingGenes = chr2GeneSubset[leftEndMatchingGenes]
-				
-				#Get all genes in the TAD that are on the right of the SV
-				rightStartMatchingGenes = (chr2GeneSubset[:,1] >= sv[5]) * (chr2GeneSubset[:,1] <= rightTAD[2])
-				rightMatchingGenes = chr2GeneSubset[rightStartMatchingGenes]
-				
-				matchingGenes = np.concatenate((leftMatchingGenes, rightMatchingGenes))
-				if len(matchingGenes) > 0:
-					
-					for gene in matchingGenes:
-					
-						if gene[3].name not in affectedGenes:
-							affectedGenes.append(gene[3].name)
-						if gene[3].name not in nonCodingSamples:
-							nonCodingSamples[gene[3].name] = []
-						nonCodingSamples[gene[3].name].append(sv[7])
-						
-						svGenePairs.append(gene[3].name + "_" + svStr)
-
-	return affectedGenes, svGenePairs
-
-tadAffectedGenes, tadSVGenePairs = findAffectedGenesByTadDisruptions(codingEffectSVs)
-np.savetxt("Output/tadSVs.txt", tadSVGenePairs, delimiter='\t', fmt='%s')
-
-print("TAD affected genes: ", len(tadAffectedGenes))
-
-
-#4. Run the rule-based method on the filtered SVs
-
-#here I wil bypass main for simplicity, but could be much neater I think. the issue is passing the exlucded SVs.
-def getGenesWithRuleBasedApproach():
-	causalGenes = InputParser().readCausalGeneFile(settings.files['causalGenesFile'])
-	nonCausalGenes = InputParser().readNonCausalGeneFile(settings.files['nonCausalGenesFile'], causalGenes) #In the same format as the causal genes.
-	
-	#Combine the genes into one set. 
-	causalGenes = np.concatenate((causalGenes, nonCausalGenes), axis=0)
-	
-	svData = InputParser().getSVsFromFile(sys.argv[4], "all", codingEffectSVs)
-	
-	NeighborhoodDefiner(causalGenes, svData, None, 'SV') #Provide the mode to ensure that the right variant type is used (different positions used in annotation)
-	
-	#3. Do ranking of the genes and report the causal SVs
-	print("Ranking the genes for the variants")
-	geneRanking = GeneRanking(causalGenes[:,3], svData, 'SV', 'naive', 'none')
-	
-	#Read the genes from the ranking
-	affectedGenes = []
-	for cancerType in geneRanking.scores:
-
-		cancerTypeScores = geneRanking.scores[cancerType]
-	
-		for row in range(0, cancerTypeScores.shape[0]):
-			gene = cancerTypeScores[row][0]
-			geneName = gene.name
-			
-			score = np.sum(cancerTypeScores[row][2:27]) #filter for genes that have at least 1 gain/loss
-			if score > 0:
-				affectedGenes.append(geneName)
-	
-	return affectedGenes
-
-ruleBasedAffectedGenes = getGenesWithRuleBasedApproach()
-print("rule-based affected genes: ", len(ruleBasedAffectedGenes))
-ruleSvGenePairs = np.loadtxt('Output/RankedGenes/naive/BRCA//nonCoding_geneSVPairs.txt_none', dtype='object')
-
-
-np.savetxt('Output/ruleSVs.txt', ruleSvGenePairs[:,0], delimiter='\t', fmt='%s')
-
-#Save all genes in memory to prevent re-computing every time
-np.savetxt('affectedGenesWindowed.txt', affectedGenesWindowed, delimiter='\t', fmt='%s')
-np.savetxt('tadAffectedGenes.txt', tadAffectedGenes, delimiter='\t', fmt='%s')
-np.savetxt('ruleBasedAffectedGenes.txt', ruleBasedAffectedGenes, delimiter='\t', fmt='%s')
-
-np.savetxt('svGenePairsWindowed.txt', svGenePairsWindowed, delimiter='\t', fmt='%s')
-np.savetxt('tadSVGenePairs.txt', tadSVGenePairs, delimiter='\t', fmt='%s')
-np.savetxt('ruleSvGenePairs.txt', ruleSvGenePairs[:,0], delimiter='\t', fmt='%s')
+# print("TAD affected genes: ", len(tadAffectedGenes))
+# 
+# 
+# #4. Run the rule-based method on the filtered SVs
+# 
+# #here I wil bypass main for simplicity, but could be much neater I think. the issue is passing the exlucded SVs.
+# def getGenesWithRuleBasedApproach():
+# 	causalGenes = InputParser().readCausalGeneFile(settings.files['causalGenesFile'])
+# 	nonCausalGenes = InputParser().readNonCausalGeneFile(settings.files['nonCausalGenesFile'], causalGenes) #In the same format as the causal genes.
+# 	
+# 	#Combine the genes into one set. 
+# 	causalGenes = np.concatenate((causalGenes, nonCausalGenes), axis=0)
+# 	
+# 	svData = InputParser().getSVsFromFile(sys.argv[4], "all", codingEffectSVs)
+# 	
+# 	NeighborhoodDefiner(causalGenes, svData, None, 'SV') #Provide the mode to ensure that the right variant type is used (different positions used in annotation)
+# 	
+# 	#3. Do ranking of the genes and report the causal SVs
+# 	print("Ranking the genes for the variants")
+# 	geneRanking = GeneRanking(causalGenes[:,3], svData, 'SV', 'naive', 'none')
+# 	
+# 	#Read the genes from the ranking
+# 	affectedGenes = []
+# 	for cancerType in geneRanking.scores:
+# 
+# 		cancerTypeScores = geneRanking.scores[cancerType]
+# 	
+# 		for row in range(0, cancerTypeScores.shape[0]):
+# 			gene = cancerTypeScores[row][0]
+# 			geneName = gene.name
+# 			
+# 			score = np.sum(cancerTypeScores[row][2:27]) #filter for genes that have at least 1 gain/loss
+# 			if score > 0:
+# 				affectedGenes.append(geneName)
+# 	
+# 	return affectedGenes
+# 
+# ruleBasedAffectedGenes = getGenesWithRuleBasedApproach()
+# print("rule-based affected genes: ", len(ruleBasedAffectedGenes))
+# ruleSvGenePairs = np.loadtxt('Output/RankedGenes/naive/BRCA//nonCoding_geneSVPairs.txt_none', dtype='object')
+# 
+# 
+# np.savetxt('Output/ruleSVs.txt', ruleSvGenePairs[:,0], delimiter='\t', fmt='%s')
+# 
+# #Save all genes in memory to prevent re-computing every time
+# np.savetxt('affectedGenesWindowed.txt', affectedGenesWindowed, delimiter='\t', fmt='%s')
+# np.savetxt('tadAffectedGenes.txt', tadAffectedGenes, delimiter='\t', fmt='%s')
+# np.savetxt('ruleBasedAffectedGenes.txt', ruleBasedAffectedGenes, delimiter='\t', fmt='%s')
+# 
+# np.savetxt('svGenePairsWindowed.txt', svGenePairsWindowed, delimiter='\t', fmt='%s')
+# np.savetxt('tadSVGenePairs.txt', tadSVGenePairs, delimiter='\t', fmt='%s')
+# np.savetxt('ruleSvGenePairs.txt', ruleSvGenePairs[:,0], delimiter='\t', fmt='%s')
 
 affectedGenesWindowed = np.loadtxt('affectedGenesWindowed.txt', dtype='object')
 tadAffectedGenes = np.loadtxt('tadAffectedGenes.txt', dtype='object')
