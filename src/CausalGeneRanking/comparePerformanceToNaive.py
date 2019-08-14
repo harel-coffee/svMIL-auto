@@ -653,7 +653,7 @@ def getAllCounts(files):
 	#go through the files and get the number
 	counts = []
 	for currentFile in files:
-		count = np.loadtxt(currentFile)
+		count = np.loadtxt(currentFile)[0]
 		counts.append(count)
 	
 	return counts	
