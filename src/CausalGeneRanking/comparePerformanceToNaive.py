@@ -653,7 +653,7 @@ def getAllCounts(files):
 	#go through the files and get the number
 	counts = []
 	for currentFile in files:
-		count = np.loadtxt(currentFile)[0]
+		count = np.loadtxt(currentFile)
 		counts.append(count)
 	
 	return counts	
@@ -691,9 +691,7 @@ rulesDegCounts = getAllCounts(glob.glob(shuffledPath + 'rulesDeg.txt*'))
 # plt.clf()
 
 #Do t-tests and get the significance
-print(windowedCosmicCounts)
-print(windowedBcCounts)
-exit()
+
 
 z = (len(windowedGenesCosmic) - np.mean(windowedCosmicCounts)) / float(np.std(windowedCosmicCounts))
 windowCosmicPValue = stats.norm.sf(abs(z))*2
