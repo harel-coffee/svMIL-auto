@@ -663,18 +663,18 @@ import glob
 
 shuffledPath = sys.argv[7]
 # 
-windowedCosmicCounts = getAllCounts(glob.glob(shuffledPath + 'windowedCosmic.txt*'))
-tadCosmicCounts = getAllCounts(glob.glob(shuffledPath + 'tadCosmic.txt*'))
-rulesCosmicCounts = getAllCounts(glob.glob(shuffledPath + 'rulesCosmic.txt*'))
+windowedCosmicCounts = getAllCounts(glob.glob(shuffledPath + 'windowedCosmicDeg.txt*'))
+tadCosmicCounts = getAllCounts(glob.glob(shuffledPath + 'tadCosmicDeg.txt*'))
+rulesCosmicCounts = getAllCounts(glob.glob(shuffledPath + 'rulesCosmicDeg.txt*'))
 
 # print "no of genes in the cosmic case for rules: ", len(ruleGenesCosmic)
 # plt.hist(rulesCosmicCounts)
 # plt.show()
 # plt.clf()
 
-windowedBcCounts = getAllCounts(glob.glob(shuffledPath + 'windowedBc.txt*'))
-tadBcCounts = getAllCounts(glob.glob(shuffledPath + 'tadBc.txt*'))
-rulesBcCounts = getAllCounts(glob.glob(shuffledPath + 'rulesBc.txt*'))
+windowedBcCounts = getAllCounts(glob.glob(shuffledPath + 'windowedBcDeg.txt*'))
+tadBcCounts = getAllCounts(glob.glob(shuffledPath + 'tadBcDeg.txt*'))
+rulesBcCounts = getAllCounts(glob.glob(shuffledPath + 'rulesBcDeg.txt*'))
 
 # print "no of genes in the cosmic case for rules: ", len(ruleGenesBc)
 # plt.hist(rulesBcCounts)
