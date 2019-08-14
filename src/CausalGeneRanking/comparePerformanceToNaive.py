@@ -23,7 +23,7 @@ from scipy import stats
 def getSVsWithCodingEffects():
 	
 	codingPairs = np.loadtxt(sys.argv[1], dtype='object')
-	degPairs = np.load(sys.argv[2], allow_pickle=True, encoding='latin1')
+	degPairs = np.load(sys.argv[2], allow_pickle=True)
 	cosmicGenesFile = sys.argv[3]
 	
 	codingSVGenes = dict()
@@ -41,7 +41,7 @@ def getSVsWithCodingEffects():
 	#get the COSMIC genes
 	
 	cosmicGenes = []
-	with open(cosmicGenesFile, 'r') as f:
+	with open(cosmicGenesFile, 'rb') as f:
 		lineCount = 0
 		for line in f:
 			if lineCount == 0:
@@ -79,49 +79,15 @@ def getSVsWithCodingEffects():
 				if pair not in codingEffectPairs:
 					codingEffectPairs.append(pair)
 					
-	print("Number of genes affected in the coding way: ", len(genesAffectedByCodingSVs))
-	print("Number of genes affected in the coding way that are DEG or COSMIC: ", len(genesAffectedByFilteredSVs))
+	print "Number of genes affected in the coding way: ", len(genesAffectedByCodingSVs)
+	print "Number of genes affected in the coding way that are DEG or COSMIC: ", len(genesAffectedByFilteredSVs)
 	return codingEffectSVs, codingEffectPairs
 	
 codingEffectSVs, codingEffectPairs = getSVsWithCodingEffects()
-print("Number of SVs filtered out with coding effects: ", len(codingEffectSVs))
+print "Number of SVs filtered out with coding effects: ", len(codingEffectSVs)
 np.savetxt('codingEffectSVs.txt', codingEffectSVs, delimiter='\t', fmt='%s')
 np.savetxt('codingEffectPairs.txt', codingEffectPairs, delimiter='\t', fmt='%s')
 
-#Get all sample-gene pairs with a coding SNV
-def getGenesWithSNVs():
-	
-	snvDir = sys.argv[6]
-	allFiles = [f for f in listdir(snvDir) if isfile(join(snvDir, f))]
-	
-	geneSNVPairs = []
-	for currentFile in allFiles:
-		
-		if currentFile == "MANIFEST.txt":
-			continue
-		splitFileName = currentFile.split(".")
-		patientID = splitFileName[0]
-	
-		#Load the contents of the file
-		with open(snvDir + "/" + currentFile, 'r') as inF:
-			lineCount = 0
-			for line in inF:
-				line = line.strip() #remove newlines
-				if lineCount < 1: #only read the line if it is not a header line
-					lineCount += 1
-					continue
-	
-				splitLine = line.split("\t")
-				geneName = splitLine[0]
-				
-				pair = geneName + "_" + patientID
-				geneSNVPairs.append(pair)
-
-	return geneSNVPairs
-
-geneSNVPairs = getGenesWithSNVs()
-print(geneSNVPairs)
-exit()
 
 #2. Find all genes within a window of the filtered SVs
 def findAffectedGenesWithinWindow():
@@ -162,9 +128,6 @@ def findAffectedGenesWithinWindow():
 				if gene[3].name not in affectedGenes:
 					affectedGenes.append(gene[3].name)
 					svStr = sv[0] + "_" + str(sv[1]) + "_" + str(sv[2]) + "_" + sv[3] + "_" + str(sv[4]) + "_" + str(sv[5]) + "_" + sv[7]
-				
-				#Only add this combination if it does not have an SNV
-				
 				svGenePairs.append(gene[3].name + "_" + svStr)
 	
 		else:
@@ -213,7 +176,7 @@ def findAffectedGenesWithinWindow():
 	
 affectedGenesWindowed, svGenePairsWindowed = findAffectedGenesWithinWindow()
 np.savetxt("Output/windowedSVs.txt", svGenePairsWindowed, delimiter='\t', fmt='%s')
-print("Number of affected genes in windowed approach: ", len(affectedGenesWindowed))
+print "Number of affected genes in windowed approach: ", len(affectedGenesWindowed)
 
 #3. Find all genes within the TAD of the filtered SVs
 # def findAffectedGenesByTadBoundaryDisruptions(codingEffectSVs):
@@ -423,7 +386,7 @@ def findAffectedGenesByTadDisruptions(codingEffectSVs):
 tadAffectedGenes, tadSVGenePairs = findAffectedGenesByTadDisruptions(codingEffectSVs)
 np.savetxt("Output/tadSVs.txt", tadSVGenePairs, delimiter='\t', fmt='%s')
 
-print("TAD affected genes: ", len(tadAffectedGenes))
+print "TAD affected genes: ", len(tadAffectedGenes)
 
 
 #4. Run the rule-based method on the filtered SVs
@@ -441,7 +404,7 @@ def getGenesWithRuleBasedApproach():
 	NeighborhoodDefiner(causalGenes, svData, None, 'SV') #Provide the mode to ensure that the right variant type is used (different positions used in annotation)
 	
 	#3. Do ranking of the genes and report the causal SVs
-	print("Ranking the genes for the variants")
+	print "Ranking the genes for the variants"
 	geneRanking = GeneRanking(causalGenes[:,3], svData, 'SV', 'naive', 'none')
 	
 	#Read the genes from the ranking
@@ -461,7 +424,7 @@ def getGenesWithRuleBasedApproach():
 	return affectedGenes
 
 ruleBasedAffectedGenes = getGenesWithRuleBasedApproach()
-print("rule-based affected genes: ", len(ruleBasedAffectedGenes))
+print "rule-based affected genes: ", len(ruleBasedAffectedGenes)
 ruleSvGenePairs = np.loadtxt('Output/RankedGenes/naive/BRCA//nonCoding_geneSVPairs.txt_none', dtype='object')
 
 
@@ -476,13 +439,13 @@ np.savetxt('svGenePairsWindowed.txt', svGenePairsWindowed, delimiter='\t', fmt='
 np.savetxt('tadSVGenePairs.txt', tadSVGenePairs, delimiter='\t', fmt='%s')
 np.savetxt('ruleSvGenePairs.txt', ruleSvGenePairs[:,0], delimiter='\t', fmt='%s')
 
-# affectedGenesWindowed = np.loadtxt('affectedGenesWindowed.txt', dtype='object')
-# tadAffectedGenes = np.loadtxt('tadAffectedGenes.txt', dtype='object')
-# ruleBasedAffectedGenes = np.loadtxt('ruleBasedAffectedGenes.txt', dtype='object')
-# 
-# svGenePairsWindowed = np.loadtxt('svGenePairsWindowed.txt', dtype='object')
-# tadSVGenePairs = np.loadtxt('tadSVGenePairs.txt', dtype='object')
-# ruleSvGenePairs = np.loadtxt('ruleSvGenePairs.txt', dtype='object')
+affectedGenesWindowed = np.loadtxt('affectedGenesWindowed.txt', dtype='object')
+tadAffectedGenes = np.loadtxt('tadAffectedGenes.txt', dtype='object')
+ruleBasedAffectedGenes = np.loadtxt('ruleBasedAffectedGenes.txt', dtype='object')
+
+svGenePairsWindowed = np.loadtxt('svGenePairsWindowed.txt', dtype='object')
+tadSVGenePairs = np.loadtxt('tadSVGenePairs.txt', dtype='object')
+ruleSvGenePairs = np.loadtxt('ruleSvGenePairs.txt', dtype='object')
 
 #5. Compare the resulting genes between the approaches
 
@@ -602,73 +565,47 @@ g, p, dof, expctd = chi2_contingency(obs)
 print("BC p-value rules: ", p)
 
 
+
 #To get the DEGs, we actually need to re-compute the DEGs based on the gene-SV pairs that we get for each method. Otherwise we are biasing towards the rule-based approach. 
 #Collect the DEG genes for each SV-gene pair combination
 #The DEGs  will need to be re-computed for each shuffled iteration
-#windowExprCall = "python computeSVGenePairExpression_oneSet.py svGenePairsWindowed.txt " + sys.argv[8] + ' False'
-#os.system(windowExprCall)
-#tadExprCall = "python computeSVGenePairExpression_oneSet.py tadSVGenePairs.txt " + sys.argv[8] + ' False'
-#os.system(tadExprCall)
-#rulesExprCall = "python computeSVGenePairExpression_oneSet.py ruleSvGenePairs.txt " + sys.argv[8] + ' False'
-#os.system(rulesExprCall)
+# windowExprCall = "python computeSVGenePairExpression_oneSet.py svGenePairsWindowed.txt " + sys.argv[8] 
+# os.system(windowExprCall)
+# tadExprCall = "python computeSVGenePairExpression_oneSet.py tadSVGenePairs.txt " + sys.argv[8] 
+# os.system(tadExprCall)
+# rulesExprCall = "python computeSVGenePairExpression_oneSet.py ruleSvGenePairs.txt " + sys.argv[8] 
+# os.system(rulesExprCall)
 
-#Read the DEG pairs and determine how many genes are DEG in total
-#svGenePairsWindowed = np.loadtxt("Output/windowedSVs.txt", dtype='object')
+# Read the DEG pairs and determine how many genes are DEG in total
+svGenePairsWindowed = np.loadtxt("Output/windowedSVs.txt", dtype='object')
 windowSVsDegPairs = np.load("svGenePairsWindowed.txt_degPairs.npy", allow_pickle=True, encoding='latin1')
 tadSVsDegPairs = np.load("tadSVGenePairs.txt_degPairs.npy", allow_pickle=True, encoding='latin1')
 ruleSVsDegPairs = np.load("ruleSvGenePairs.txt_degPairs.npy", allow_pickle=True, encoding='latin1')
 
 
 windowedDegGenes = []
-windowedCosmicDegGenes = []
-windowedBcDegGenes = []
 for pair in svGenePairsWindowed:
 	if pair in windowSVsDegPairs[:,0]:
 		splitPair = pair.split("_")
 		if splitPair[0] not in windowedDegGenes:
 			windowedDegGenes.append(splitPair[0])
-			
-			if splitPair[0] in cosmicGenes:
-				if splitPair[0] not in windowedCosmicDegGenes:
-					windowedCosmicDegGenes.append(splitPair[0])
-			if splitPair[0] in breastCancerGenes:
-				if splitPair[0] not in windowedBcDegGenes:
-					windowedBcDegGenes.append(splitPair[0])
 
 tadDegGenes = []
-tadCosmicDegGenes = []
-tadBcDegGenes = []
 for pair in tadSVGenePairs:
 	if pair in tadSVsDegPairs[:,0]:
 		splitPair = pair.split("_")
 		if splitPair[0] not in tadDegGenes:
 			tadDegGenes.append(splitPair[0])
 			
-			if splitPair[0] in cosmicGenes:
-				if splitPair[0] not in tadCosmicDegGenes:
-					tadCosmicDegGenes.append(splitPair[0])
-			if splitPair[0] in breastCancerGenes:
-				if splitPair[0] not in tadBcDegGenes:
-					tadBcDegGenes.append(splitPair[0])
-			
 #For the rule based method, we need to look at a separate output file to get the gene-SV pairs. This may be fixed in the actual tool output later.
 ruleSvGenePairs = np.loadtxt('ruleSvGenePairs.txt', dtype='object')
 
 ruleDegGenes = []
-ruleCosmicDegGenes = []
-ruleBcDegGenes = []
 for pair in ruleSvGenePairs:
 	if pair in ruleSVsDegPairs[:,0]:
 		splitPair = pair.split("_")
 		if splitPair[0] not in ruleDegGenes:
 			ruleDegGenes.append(splitPair[0])
-			
-			if splitPair[0] in cosmicGenes:
-				if splitPair[0] not in ruleCosmicDegGenes:
-					ruleCosmicDegGenes.append(splitPair[0])
-			if splitPair[0] in breastCancerGenes:
-				if splitPair[0] not in ruleBcDegGenes:
-					ruleBcDegGenes.append(splitPair[0])
 			
 print("Number of DEG genes in the windowed approach: ", len(windowedDegGenes))
 print("Number of DEG genes in the TAD approach: ", len(tadDegGenes))
@@ -680,7 +617,11 @@ print("number of DEG genes in the rule approach: ", len(ruleDegGenes))
 # 
 # import gseapy as gp
 # import pandas as pd
+# pd.set_option('display.max_columns', 500)
 # import matplotlib.pyplot as plt
+# from matplotlib import interactive
+# interactive(True)
+# 
 # # 
 # # bm = Biomart(verbose=False, host="asia.ensembl.org")
 # # results = bm.query(dataset='hsapiens_gene_ensembl',
@@ -691,15 +632,17 @@ print("number of DEG genes in the rule approach: ", len(ruleDegGenes))
 # # 
 # # print results.head()
 # 
-# enr = gp.enrichr(gene_list=ruleBasedAffectedGenes,
+# enr = gp.enrichr(gene_list=list(ruleDegGenes),
 #                  description='ruleBasedGenes',
 #                  gene_sets=['KEGG_2016','KEGG_2013'],
-#                  outdir='ruleBased/enrichr_kegg',
-#                  cutoff=0.5
+#                  outdir='ruleBased/enrichr_kegg'
 #                 )
 # 
 # print(enr.results.head())
 # 
+# from gseapy.plot import barplot, dotplot
+# a = barplot(enr.res2d,title='KEGG_2013',ofname='test.png')
+# print(a)
 # exit()
 
 
@@ -718,20 +661,20 @@ def getAllCounts(files):
 
 import glob
 
-shuffledPath = 'Output/RankedGenes/naive_shuffled/BRCA/Counts/'
+shuffledPath = sys.argv[7]
 # 
-windowedCosmicDegCounts = getAllCounts(glob.glob(shuffledPath + 'windowedCosmicDeg.txt*'))
-tadCosmicDegCounts = getAllCounts(glob.glob(shuffledPath + 'tadCosmicDeg.txt*'))
-rulesCosmicDegCounts = getAllCounts(glob.glob(shuffledPath + 'rulesCosmicDeg.txt*'))
+windowedCosmicCounts = getAllCounts(glob.glob(shuffledPath + 'windowedCosmic.txt*'))
+tadCosmicCounts = getAllCounts(glob.glob(shuffledPath + 'tadCosmic.txt*'))
+rulesCosmicCounts = getAllCounts(glob.glob(shuffledPath + 'rulesCosmic.txt*'))
 
 # print "no of genes in the cosmic case for rules: ", len(ruleGenesCosmic)
 # plt.hist(rulesCosmicCounts)
 # plt.show()
 # plt.clf()
 
-windowedBcDegCounts = getAllCounts(glob.glob(shuffledPath + 'windowedBcDeg.txt*'))
-tadBcDegCounts = getAllCounts(glob.glob(shuffledPath + 'tadBcDeg.txt*'))
-rulesBcDegCounts = getAllCounts(glob.glob(shuffledPath + 'rulesBcDeg.txt*'))
+windowedBcCounts = getAllCounts(glob.glob(shuffledPath + 'windowedBc.txt*'))
+tadBcCounts = getAllCounts(glob.glob(shuffledPath + 'tadBc.txt*'))
+rulesBcCounts = getAllCounts(glob.glob(shuffledPath + 'rulesBc.txt*'))
 
 # print "no of genes in the cosmic case for rules: ", len(ruleGenesBc)
 # plt.hist(rulesBcCounts)
@@ -749,11 +692,11 @@ rulesDegCounts = getAllCounts(glob.glob(shuffledPath + 'rulesDeg.txt*'))
 
 #Do t-tests and get the significance
 
-z = (len(windowedGenesCosmic) - np.mean(windowedCosmicDegCounts)) / float(np.std(windowedCosmicDegCounts))
+z = (len(windowedGenesCosmic) - np.mean(windowedCosmicCounts)) / float(np.std(windowedCosmicCounts))
 windowCosmicPValue = stats.norm.sf(abs(z))*2
-z = (len(tadGenesCosmic) - np.mean(tadCosmicDegCounts)) / float(np.std(tadCosmicDegCounts))
+z = (len(tadGenesCosmic) - np.mean(tadCosmicCounts)) / float(np.std(tadCosmicCounts))
 tadCosmicPValue = stats.norm.sf(abs(z))*2
-z = (len(ruleGenesCosmic) - np.mean(rulesCosmicDegCounts)) / float(np.std(rulesCosmicDegCounts))
+z = (len(ruleGenesCosmic) - np.mean(rulesCosmicCounts)) / float(np.std(rulesCosmicCounts))
 rulesCosmicPValue = stats.norm.sf(abs(z))*2
 
 print("Windowed p-value for COSMIC genes: ", windowCosmicPValue)
@@ -761,11 +704,11 @@ print("TAD p-value for COSMIC genes: ", tadCosmicPValue)
 print("Rules p-value for COSMIC genes: ", rulesCosmicPValue)
 
 #BC
-z = (len(windowedGenesBc) - np.mean(windowedBcDegCounts)) / float(np.std(windowedBcDegCounts))
+z = (len(windowedGenesBc) - np.mean(windowedBcCounts)) / float(np.std(windowedBcCounts))
 windowBcPValue = stats.norm.sf(abs(z))*2
-z = (len(tadGenesBc) - np.mean(tadBcDegCounts)) / float(np.std(tadBcDegCounts))
+z = (len(tadGenesBc) - np.mean(tadBcCounts)) / float(np.std(tadBcCounts))
 tadBcPValue = stats.norm.sf(abs(z))*2
-z = (len(ruleGenesBc) - np.mean(rulesBcDegCounts)) / float(np.std(rulesBcDegCounts))
+z = (len(ruleGenesBc) - np.mean(rulesBcCounts)) / float(np.std(rulesBcCounts))
 rulesBcPValue = stats.norm.sf(abs(z))*2
 
 print("Windowed p-value for BC genes: ", windowBcPValue)
@@ -785,38 +728,12 @@ print("TAD p-value for DEG genes: ", tadDegPValue)
 print("Rules p-value for DEG genes: ", rulesDegPValue)
 
 exit()
+##Do enrichment for gene sets/Go terms
 
-print("doing enrichment: ")
 
-import gseapy as gp
-import pandas as pd
-pd.set_option('display.max_columns', 500)
-import matplotlib.pyplot as plt
-from matplotlib import interactive
-interactive(True)
 
-# 
-# bm = Biomart(verbose=False, host="asia.ensembl.org")
-# results = bm.query(dataset='hsapiens_gene_ensembl',
-#                    attributes=['external_gene_name','entrezgene', 'go_id'],
-#                    filters={'hgnc_symbol': ruleBasedAffectedGenes},
-#                    # save output file
-#                    filename="ruleBasedBmIDs.txt")
-# 
-# print results.head()
 
-enr = gp.enrichr(gene_list=list(ruleDegGenes),
-                 description='ruleBasedGenes',
-                 gene_sets=['KEGG_2016','KEGG_2013'],
-                 outdir='ruleBased/enrichr_kegg'
-                )
 
-print(enr.results.head())
-
-from gseapy.plot import barplot, dotplot
-a = barplot(enr.res2d,title='KEGG_2013',ofname='test.png')
-print(a)
-exit()
 
 #Compute the chi2 p-values for these findings
 # obs = np.array([[len(windowedDegGenes), len(cosmicGenes) - len(windowedDegGenes)], [len(affectedGenesWindowed) - len(windowedDegGenes), (19286 - len(affectedGenesWindowed)- (len(cosmicGenes) - len(windowedDegGenes)))]])
