@@ -399,91 +399,6 @@ diffGenes = np.setdiff1d(ruleBasedAffectedGenes, affectedGenesWindowed)
 for gene in diffGenes:
 	print(gene)
 
-
-
-#For each set, how many of the genes are in COSMIC?
-#get the COSMIC genes
-
-cosmicGenesFile = sys.argv[3]
-cosmicGenes = []
-with open(cosmicGenesFile, 'r') as f:
-	lineCount = 0
-	for line in f:
-		if lineCount == 0:
-			lineCount += 1
-			continue
-		
-		splitLine = line.split("\t")
-		
-		geneName = splitLine[0]
-		cosmicGenes.append(geneName)
-
-windowedGenesCosmic = []
-for gene in affectedGenesWindowed:
-	if gene in cosmicGenes:
-		windowedGenesCosmic.append(gene)
-
-tadGenesCosmic = []
-for gene in tadAffectedGenes:
-	if gene in cosmicGenes:
-		tadGenesCosmic.append(gene)
-
-ruleGenesCosmic = []
-for gene in ruleBasedAffectedGenes:
-	if gene in cosmicGenes:
-		ruleGenesCosmic.append(gene)
-		
-print("Number of cosmic genes in the windowed approach: ", len(windowedGenesCosmic))
-print("Number of cosmic genes in the tad approach: ", len(tadGenesCosmic))
-print("Number of cosmic genes in the rule approach: ", len(ruleGenesCosmic))
-
-#Compute the chi2 p-values for these findings
-#Because we are looking at all other genes, the number of cosmic genes - genes in the true group is the negative.
-# 
-# obs = np.array([[len(windowedGenesCosmic), len(cosmicGenes) - len(windowedGenesCosmic)], [len(affectedGenesWindowed) - len(windowedGenesCosmic), (19286 - len(affectedGenesWindowed)- (len(cosmicGenes) - len(windowedGenesCosmic)))]])
-# print(obs)
-# g, p, dof, expctd = chi2_contingency(obs)
-# print("COSMIC p-value windowed: ", p)
-# 
-# obs = np.array([[len(tadGenesCosmic), len(cosmicGenes) - len(tadGenesCosmic)], [len(tadAffectedGenes) - len(tadGenesCosmic), (19286 - len(tadAffectedGenes) - (len(cosmicGenes) - len(tadGenesCosmic)))]])
-# g, p, dof, expctd = chi2_contingency(obs)
-# print("COSMIC p-value tad: ", p)
-# 
-# obs = np.array([[len(ruleGenesCosmic), len(cosmicGenes) - len(ruleGenesCosmic)], [len(ruleBasedAffectedGenes) - len(ruleGenesCosmic), (19286 - len(ruleBasedAffectedGenes) - (len(cosmicGenes) - len(ruleGenesCosmic)))]])
-# g, p, dof, expctd = chi2_contingency(obs)
-# print("COSMIC p-value rules: ", p)
-
-#Get the breast cancer specific genes
-breastCancerGenesFile = sys.argv[6]
-breastCancerGenes = []
-with open(breastCancerGenesFile, 'r') as f:
-	
-	for line in f:
-		
-		line = line.strip()
-		
-		breastCancerGenes.append(line)
-
-
-windowedGenesBc = []
-for gene in affectedGenesWindowed:
-	if gene in breastCancerGenes:
-		windowedGenesBc.append(gene)
-
-tadGenesBc = []
-for gene in tadAffectedGenes:
-	if gene in breastCancerGenes:
-		tadGenesBc.append(gene)
-
-ruleGenesBc = []
-for gene in ruleBasedAffectedGenes:
-	if gene in breastCancerGenes:
-		ruleGenesBc.append(gene)
-		
-print("Number of bc genes in the windowed approach: ", len(windowedGenesBc))
-print("Number of bc genes in the tad approach: ", len(tadGenesBc))
-print("Number of bc genes in the rule approach: ", len(ruleGenesBc))
-# 
 # #Compute the chi2 p-values for these findings
 # #Because we are looking at all other genes, the number of cosmic genes - genes in the true group is the negative.
 # # 
@@ -547,6 +462,92 @@ print("Number of DEG genes in the windowed approach: ", len(windowedDegGenes))
 print("Number of DEG genes in the TAD approach: ", len(tadDegGenes))
 print("number of DEG genes in the rule approach: ", len(ruleDegGenes))
 
+
+
+
+#For each set, how many of the genes are in COSMIC?
+#get the COSMIC genes
+
+cosmicGenesFile = sys.argv[3]
+cosmicGenes = []
+with open(cosmicGenesFile, 'r') as f:
+	lineCount = 0
+	for line in f:
+		if lineCount == 0:
+			lineCount += 1
+			continue
+		
+		splitLine = line.split("\t")
+		
+		geneName = splitLine[0]
+		cosmicGenes.append(geneName)
+
+windowedGenesCosmic = []
+for gene in affectedGenesWindowed:
+	if gene in cosmicGenes and gene in windowedDegGenes:
+		windowedGenesCosmic.append(gene)
+
+tadGenesCosmic = []
+for gene in tadAffectedGenes:
+	if gene in cosmicGenes and gene in tadDegGenes:
+		tadGenesCosmic.append(gene)
+
+ruleGenesCosmic = []
+for gene in ruleBasedAffectedGenes:
+	if gene in cosmicGenes and gene in ruleDegGenes:
+		ruleGenesCosmic.append(gene)
+		
+print("Number of cosmic genes in the windowed approach: ", len(windowedGenesCosmic))
+print("Number of cosmic genes in the tad approach: ", len(tadGenesCosmic))
+print("Number of cosmic genes in the rule approach: ", len(ruleGenesCosmic))
+
+#Compute the chi2 p-values for these findings
+#Because we are looking at all other genes, the number of cosmic genes - genes in the true group is the negative.
+# 
+# obs = np.array([[len(windowedGenesCosmic), len(cosmicGenes) - len(windowedGenesCosmic)], [len(affectedGenesWindowed) - len(windowedGenesCosmic), (19286 - len(affectedGenesWindowed)- (len(cosmicGenes) - len(windowedGenesCosmic)))]])
+# print(obs)
+# g, p, dof, expctd = chi2_contingency(obs)
+# print("COSMIC p-value windowed: ", p)
+# 
+# obs = np.array([[len(tadGenesCosmic), len(cosmicGenes) - len(tadGenesCosmic)], [len(tadAffectedGenes) - len(tadGenesCosmic), (19286 - len(tadAffectedGenes) - (len(cosmicGenes) - len(tadGenesCosmic)))]])
+# g, p, dof, expctd = chi2_contingency(obs)
+# print("COSMIC p-value tad: ", p)
+# 
+# obs = np.array([[len(ruleGenesCosmic), len(cosmicGenes) - len(ruleGenesCosmic)], [len(ruleBasedAffectedGenes) - len(ruleGenesCosmic), (19286 - len(ruleBasedAffectedGenes) - (len(cosmicGenes) - len(ruleGenesCosmic)))]])
+# g, p, dof, expctd = chi2_contingency(obs)
+# print("COSMIC p-value rules: ", p)
+
+#Get the breast cancer specific genes
+breastCancerGenesFile = sys.argv[6]
+breastCancerGenes = []
+with open(breastCancerGenesFile, 'r') as f:
+	
+	for line in f:
+		
+		line = line.strip()
+		
+		breastCancerGenes.append(line)
+
+
+windowedGenesBc = []
+for gene in affectedGenesWindowed:
+	if gene in breastCancerGenes and gene in windowedDegGenes:
+		windowedGenesBc.append(gene)
+
+tadGenesBc = []
+for gene in tadAffectedGenes:
+	if gene in breastCancerGenes and gene in tadDegGenes:
+		tadGenesBc.append(gene)
+
+ruleGenesBc = []
+for gene in ruleBasedAffectedGenes:
+	if gene in breastCancerGenes and gene in ruleDegGenes:
+		ruleGenesBc.append(gene)
+		
+print("Number of bc genes in the windowed approach: ", len(windowedGenesBc))
+print("Number of bc genes in the tad approach: ", len(tadGenesBc))
+print("Number of bc genes in the rule approach: ", len(ruleGenesBc))
+# 
 
 #Compute enrichment for gene sets and GO terms
 # print("doing enrichment: ")
