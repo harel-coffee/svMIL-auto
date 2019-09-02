@@ -440,18 +440,18 @@ print("Number of cosmic genes in the rule approach: ", len(ruleGenesCosmic))
 #Compute the chi2 p-values for these findings
 #Because we are looking at all other genes, the number of cosmic genes - genes in the true group is the negative.
 # 
-obs = np.array([[len(windowedGenesCosmic), len(cosmicGenes) - len(windowedGenesCosmic)], [len(affectedGenesWindowed) - len(windowedGenesCosmic), (19286 - len(affectedGenesWindowed)- (len(cosmicGenes) - len(windowedGenesCosmic)))]])
-print(obs)
-g, p, dof, expctd = chi2_contingency(obs)
-print("COSMIC p-value windowed: ", p)
-
-obs = np.array([[len(tadGenesCosmic), len(cosmicGenes) - len(tadGenesCosmic)], [len(tadAffectedGenes) - len(tadGenesCosmic), (19286 - len(tadAffectedGenes) - (len(cosmicGenes) - len(tadGenesCosmic)))]])
-g, p, dof, expctd = chi2_contingency(obs)
-print("COSMIC p-value tad: ", p)
-
-obs = np.array([[len(ruleGenesCosmic), len(cosmicGenes) - len(ruleGenesCosmic)], [len(ruleBasedAffectedGenes) - len(ruleGenesCosmic), (19286 - len(ruleBasedAffectedGenes) - (len(cosmicGenes) - len(ruleGenesCosmic)))]])
-g, p, dof, expctd = chi2_contingency(obs)
-print("COSMIC p-value rules: ", p)
+# obs = np.array([[len(windowedGenesCosmic), len(cosmicGenes) - len(windowedGenesCosmic)], [len(affectedGenesWindowed) - len(windowedGenesCosmic), (19286 - len(affectedGenesWindowed)- (len(cosmicGenes) - len(windowedGenesCosmic)))]])
+# print(obs)
+# g, p, dof, expctd = chi2_contingency(obs)
+# print("COSMIC p-value windowed: ", p)
+# 
+# obs = np.array([[len(tadGenesCosmic), len(cosmicGenes) - len(tadGenesCosmic)], [len(tadAffectedGenes) - len(tadGenesCosmic), (19286 - len(tadAffectedGenes) - (len(cosmicGenes) - len(tadGenesCosmic)))]])
+# g, p, dof, expctd = chi2_contingency(obs)
+# print("COSMIC p-value tad: ", p)
+# 
+# obs = np.array([[len(ruleGenesCosmic), len(cosmicGenes) - len(ruleGenesCosmic)], [len(ruleBasedAffectedGenes) - len(ruleGenesCosmic), (19286 - len(ruleBasedAffectedGenes) - (len(cosmicGenes) - len(ruleGenesCosmic)))]])
+# g, p, dof, expctd = chi2_contingency(obs)
+# print("COSMIC p-value rules: ", p)
 
 #Get the breast cancer specific genes
 breastCancerGenesFile = sys.argv[6]
@@ -483,22 +483,22 @@ for gene in ruleBasedAffectedGenes:
 print("Number of bc genes in the windowed approach: ", len(windowedGenesBc))
 print("Number of bc genes in the tad approach: ", len(tadGenesBc))
 print("Number of bc genes in the rule approach: ", len(ruleGenesBc))
-
-#Compute the chi2 p-values for these findings
-#Because we are looking at all other genes, the number of cosmic genes - genes in the true group is the negative.
 # 
-obs = np.array([[len(windowedGenesBc), len(breastCancerGenes) - len(windowedGenesBc)], [len(affectedGenesWindowed) - len(windowedGenesBc), (19286 - len(affectedGenesWindowed)- (len(breastCancerGenes) - len(windowedGenesBc)))]])
-print(obs)
-g, p, dof, expctd = chi2_contingency(obs)
-print("BC p-value windowed: ", p)
-
-obs = np.array([[len(tadGenesBc), len(breastCancerGenes) - len(tadGenesBc)], [len(tadAffectedGenes) - len(tadGenesBc), (19286 - len(tadAffectedGenes) - (len(breastCancerGenes) - len(tadGenesBc)))]])
-g, p, dof, expctd = chi2_contingency(obs)
-print("BC p-value tad: ", p)
-
-obs = np.array([[len(ruleGenesBc), len(breastCancerGenes) - len(ruleGenesBc)], [len(ruleBasedAffectedGenes) - len(ruleGenesBc), (19286 - len(ruleBasedAffectedGenes) - (len(breastCancerGenes) - len(ruleGenesBc)))]])
-g, p, dof, expctd = chi2_contingency(obs)
-print("BC p-value rules: ", p)
+# #Compute the chi2 p-values for these findings
+# #Because we are looking at all other genes, the number of cosmic genes - genes in the true group is the negative.
+# # 
+# obs = np.array([[len(windowedGenesBc), len(breastCancerGenes) - len(windowedGenesBc)], [len(affectedGenesWindowed) - len(windowedGenesBc), (19286 - len(affectedGenesWindowed)- (len(breastCancerGenes) - len(windowedGenesBc)))]])
+# print(obs)
+# g, p, dof, expctd = chi2_contingency(obs)
+# print("BC p-value windowed: ", p)
+# 
+# obs = np.array([[len(tadGenesBc), len(breastCancerGenes) - len(tadGenesBc)], [len(tadAffectedGenes) - len(tadGenesBc), (19286 - len(tadAffectedGenes) - (len(breastCancerGenes) - len(tadGenesBc)))]])
+# g, p, dof, expctd = chi2_contingency(obs)
+# print("BC p-value tad: ", p)
+# 
+# obs = np.array([[len(ruleGenesBc), len(breastCancerGenes) - len(ruleGenesBc)], [len(ruleBasedAffectedGenes) - len(ruleGenesBc), (19286 - len(ruleBasedAffectedGenes) - (len(breastCancerGenes) - len(ruleGenesBc)))]])
+# g, p, dof, expctd = chi2_contingency(obs)
+# print("BC p-value rules: ", p)
 
 
 
