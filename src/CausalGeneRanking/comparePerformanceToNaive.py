@@ -501,6 +501,8 @@ print("Number of cosmic genes in the windowed approach: ", len(windowedGenesCosm
 print("Number of cosmic genes in the tad approach: ", len(tadGenesCosmic))
 print("Number of cosmic genes in the rule approach: ", len(ruleGenesCosmic))
 
+print("Rule-based cosmic genes: ", ruleGenesCosmic)
+
 #Compute the chi2 p-values for these findings
 #Because we are looking at all other genes, the number of cosmic genes - genes in the true group is the negative.
 # 
@@ -547,7 +549,8 @@ for gene in ruleBasedAffectedGenes:
 print("Number of bc genes in the windowed approach: ", len(windowedGenesBc))
 print("Number of bc genes in the tad approach: ", len(tadGenesBc))
 print("Number of bc genes in the rule approach: ", len(ruleGenesBc))
-# 
+
+print("Rule-based bc genes: ", ruleGenesBc)
 
 #Compute enrichment for gene sets and GO terms
 # print("doing enrichment: ")
