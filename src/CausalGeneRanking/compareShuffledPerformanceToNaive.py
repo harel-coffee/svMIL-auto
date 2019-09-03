@@ -437,7 +437,7 @@ for pair in ruleSvGenePairs:
 
 ruleSvGenePairs = np.array(ruleSvGenePairsFiltered, dtype='object')
 
-
+exit()
 #output the sv-gene pairs for this permutation
 np.savetxt('Output/RankedGenes/' + outputFolder + '/BRCA/svGenePairsWindowed.txt_' + permutationRound, svGenePairsWindowed, delimiter='\t', fmt='%s')
 np.savetxt('Output/RankedGenes/' + outputFolder + '/BRCA/tadSVGenePairs.txt_' + permutationRound, tadSVGenePairs, delimiter='\t', fmt='%s')
