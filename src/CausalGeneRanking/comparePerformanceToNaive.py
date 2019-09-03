@@ -432,38 +432,59 @@ svGenePairsWindowed = np.loadtxt("Output/windowedSVs.txt", dtype='object')
 windowSVsDegPairs = np.load("svGenePairsWindowed.txt_degPairs.npy", allow_pickle=True, encoding='latin1')
 tadSVsDegPairs = np.load("tadSVGenePairs.txt_degPairs.npy", allow_pickle=True, encoding='latin1')
 ruleSVsDegPairs = np.load("ruleSvGenePairs.txt_degPairs.npy", allow_pickle=True, encoding='latin1')
-
-
+			
 windowedDegGenes = []
+windowedCosmicDegGenes = []
+windowedBcDegGenes = []
 for pair in svGenePairsWindowed:
 	if pair in windowSVsDegPairs[:,0]:
 		splitPair = pair.split("_")
 		if splitPair[0] not in windowedDegGenes:
 			windowedDegGenes.append(splitPair[0])
+			
+			if splitPair[0] in cosmicGenes:
+				if splitPair[0] not in windowedCosmicDegGenes:
+					windowedCosmicDegGenes.append(splitPair[0])
+			if splitPair[0] in breastCancerGenes:
+				if splitPair[0] not in windowedBcDegGenes:
+					windowedBcDegGenes.append(splitPair[0])
+				
 
 tadDegGenes = []
+tadCosmicDegGenes = []
+tadBcDegGenes = []
 for pair in tadSVGenePairs:
 	if pair in tadSVsDegPairs[:,0]:
 		splitPair = pair.split("_")
 		if splitPair[0] not in tadDegGenes:
 			tadDegGenes.append(splitPair[0])
 			
-#For the rule based method, we need to look at a separate output file to get the gene-SV pairs. This may be fixed in the actual tool output later.
-ruleSvGenePairs = np.loadtxt('ruleSvGenePairs.txt', dtype='object')
+		if splitPair[0] in cosmicGenes:
+			if splitPair[0] not in tadCosmicDegGenes:
+				tadCosmicDegGenes.append(splitPair[0])
+		if splitPair[0] in breastCancerGenes:
+			if splitPair[0] not in tadBcDegGenes:
+				tadBcDegGenes.append(splitPair[0])
 
 ruleDegGenes = []
-for pair in ruleSvGenePairs:
+ruleCosmicDegGenes = []
+ruleBcDegGenes = []
+for pair in ruleSvGenePairs[:,0]:
 	if pair in ruleSVsDegPairs[:,0]:
 		splitPair = pair.split("_")
 		if splitPair[0] not in ruleDegGenes:
 			ruleDegGenes.append(splitPair[0])
 			
+		if splitPair[0] in cosmicGenes:
+			if splitPair[0] not in ruleCosmicDegGenes:
+				ruleCosmicDegGenes.append(splitPair[0])
+		if splitPair[0] in breastCancerGenes:
+			if splitPair[0] not in ruleBcDegGenes:
+				ruleBcDegGenes.append(splitPair[0])
+			
 print("Number of DEG genes in the windowed approach: ", len(windowedDegGenes))
 print("Number of DEG genes in the TAD approach: ", len(tadDegGenes))
 print("number of DEG genes in the rule approach: ", len(ruleDegGenes))
-
-
-
 
 #For each set, how many of the genes are in COSMIC?
 #get the COSMIC genes
