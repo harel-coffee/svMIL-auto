@@ -1,3 +1,7 @@
+import sys
+import numpy as np
+import glob
+
 
 def getAllCounts(files):
 	
@@ -9,8 +13,6 @@ def getAllCounts(files):
 	
 	return counts	
 
-
-import glob
 
 shuffledPath = sys.argv[1]
 # 
