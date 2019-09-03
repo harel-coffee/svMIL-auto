@@ -432,6 +432,35 @@ svGenePairsWindowed = np.loadtxt("Output/windowedSVs.txt", dtype='object')
 windowSVsDegPairs = np.load("svGenePairsWindowed.txt_degPairs.npy", allow_pickle=True, encoding='latin1')
 tadSVsDegPairs = np.load("tadSVGenePairs.txt_degPairs.npy", allow_pickle=True, encoding='latin1')
 ruleSVsDegPairs = np.load("ruleSvGenePairs.txt_degPairs.npy", allow_pickle=True, encoding='latin1')
+
+#get the COSMIC genes
+
+cosmicGenesFile = sys.argv[3]
+cosmicGenes = []
+with open(cosmicGenesFile, 'r') as f:
+	lineCount = 0
+	for line in f:
+		if lineCount == 0:
+			lineCount += 1
+			continue
+		
+		splitLine = line.split("\t")
+		
+		geneName = splitLine[0]
+		cosmicGenes.append(geneName)
+		
+
+#Get the breast cancer specific genes
+breastCancerGenesFile = sys.argv[6]
+breastCancerGenes = []
+with open(breastCancerGenesFile, 'r') as f:
+	
+	for line in f:
+		
+		line = line.strip()
+		
+		breastCancerGenes.append(line)
+
 			
 windowedDegGenes = []
 windowedCosmicDegGenes = []
@@ -486,43 +515,12 @@ print("Number of DEG genes in the windowed approach: ", len(windowedDegGenes))
 print("Number of DEG genes in the TAD approach: ", len(tadDegGenes))
 print("number of DEG genes in the rule approach: ", len(ruleDegGenes))
 
-#For each set, how many of the genes are in COSMIC?
-#get the COSMIC genes
-
-cosmicGenesFile = sys.argv[3]
-cosmicGenes = []
-with open(cosmicGenesFile, 'r') as f:
-	lineCount = 0
-	for line in f:
-		if lineCount == 0:
-			lineCount += 1
-			continue
+#For each set, how many of the genes are in COSMIC
 		
-		splitLine = line.split("\t")
-		
-		geneName = splitLine[0]
-		cosmicGenes.append(geneName)
+print("Number of cosmic genes in the windowed approach: ", len(windowedCosmicDegGenes))
+print("Number of cosmic genes in the tad approach: ", len(tadCosmicDegGenes))
+print("Number of cosmic genes in the rule approach: ", len(ruleCosmicDegGenes))
 
-windowedGenesCosmic = []
-for gene in affectedGenesWindowed:
-	if gene in cosmicGenes and gene in windowedDegGenes:
-		windowedGenesCosmic.append(gene)
-
-tadGenesCosmic = []
-for gene in tadAffectedGenes:
-	if gene in cosmicGenes and gene in tadDegGenes:
-		tadGenesCosmic.append(gene)
-
-ruleGenesCosmic = []
-for gene in ruleBasedAffectedGenes:
-	if gene in cosmicGenes and gene in ruleDegGenes:
-		ruleGenesCosmic.append(gene)
-		
-print("Number of cosmic genes in the windowed approach: ", len(windowedGenesCosmic))
-print("Number of cosmic genes in the tad approach: ", len(tadGenesCosmic))
-print("Number of cosmic genes in the rule approach: ", len(ruleGenesCosmic))
-
-print("Rule-based cosmic genes: ", ruleGenesCosmic)
 
 #Compute the chi2 p-values for these findings
 #Because we are looking at all other genes, the number of cosmic genes - genes in the true group is the negative.
@@ -540,38 +538,11 @@ print("Rule-based cosmic genes: ", ruleGenesCosmic)
 # g, p, dof, expctd = chi2_contingency(obs)
 # print("COSMIC p-value rules: ", p)
 
-#Get the breast cancer specific genes
-breastCancerGenesFile = sys.argv[6]
-breastCancerGenes = []
-with open(breastCancerGenesFile, 'r') as f:
-	
-	for line in f:
 		
-		line = line.strip()
-		
-		breastCancerGenes.append(line)
+print("Number of bc genes in the windowed approach: ", len(windowedBcDegGenes))
+print("Number of bc genes in the tad approach: ", len(tadBcDegGenes))
+print("Number of bc genes in the rule approach: ", len(ruleBcDegGenes))
 
-
-windowedGenesBc = []
-for gene in affectedGenesWindowed:
-	if gene in breastCancerGenes and gene in windowedDegGenes:
-		windowedGenesBc.append(gene)
-
-tadGenesBc = []
-for gene in tadAffectedGenes:
-	if gene in breastCancerGenes and gene in tadDegGenes:
-		tadGenesBc.append(gene)
-
-ruleGenesBc = []
-for gene in ruleBasedAffectedGenes:
-	if gene in breastCancerGenes and gene in ruleDegGenes:
-		ruleGenesBc.append(gene)
-		
-print("Number of bc genes in the windowed approach: ", len(windowedGenesBc))
-print("Number of bc genes in the tad approach: ", len(tadGenesBc))
-print("Number of bc genes in the rule approach: ", len(ruleGenesBc))
-
-print("Rule-based bc genes: ", ruleGenesBc)
 
 #Compute enrichment for gene sets and GO terms
 # print("doing enrichment: ")
@@ -654,11 +625,11 @@ rulesDegCounts = getAllCounts(glob.glob(shuffledPath + 'rulesDeg.txt*'))
 #Do t-tests and get the significance
 
 
-z = (len(windowedGenesCosmic) - np.mean(windowedCosmicCounts)) / float(np.std(windowedCosmicCounts))
+z = (len(windowedCosmicDegGenes) - np.mean(windowedCosmicCounts)) / float(np.std(windowedCosmicCounts))
 windowCosmicPValue = stats.norm.sf(abs(z))*2
-z = (len(tadGenesCosmic) - np.mean(tadCosmicCounts)) / float(np.std(tadCosmicCounts))
+z = (len(tadCosmicDegGenes) - np.mean(tadCosmicCounts)) / float(np.std(tadCosmicCounts))
 tadCosmicPValue = stats.norm.sf(abs(z))*2
-z = (len(ruleGenesCosmic) - np.mean(rulesCosmicCounts)) / float(np.std(rulesCosmicCounts))
+z = (len(ruleCosmicDegGenes) - np.mean(rulesCosmicCounts)) / float(np.std(rulesCosmicCounts))
 rulesCosmicPValue = stats.norm.sf(abs(z))*2
 
 print("Windowed p-value for COSMIC genes: ", windowCosmicPValue)
@@ -666,11 +637,11 @@ print("TAD p-value for COSMIC genes: ", tadCosmicPValue)
 print("Rules p-value for COSMIC genes: ", rulesCosmicPValue)
 
 #BC
-z = (len(windowedGenesBc) - np.mean(windowedBcCounts)) / float(np.std(windowedBcCounts))
+z = (len(windowedBcDegGenes) - np.mean(windowedBcCounts)) / float(np.std(windowedBcCounts))
 windowBcPValue = stats.norm.sf(abs(z))*2
-z = (len(tadGenesBc) - np.mean(tadBcCounts)) / float(np.std(tadBcCounts))
+z = (len(tadBcDegGenes) - np.mean(tadBcCounts)) / float(np.std(tadBcCounts))
 tadBcPValue = stats.norm.sf(abs(z))*2
-z = (len(ruleGenesBc) - np.mean(rulesBcCounts)) / float(np.std(rulesBcCounts))
+z = (len(ruleBcDegGenes) - np.mean(rulesBcCounts)) / float(np.std(rulesBcCounts))
 rulesBcPValue = stats.norm.sf(abs(z))*2
 
 print("Windowed p-value for BC genes: ", windowBcPValue)
