@@ -498,7 +498,7 @@ for pair in tadSVGenePairs:
 ruleDegGenes = []
 ruleCosmicDegGenes = []
 ruleBcDegGenes = []
-for pair in ruleSvGenePairs[:,0]:
+for pair in ruleSvGenePairs:
 	if pair in ruleSVsDegPairs[:,0]:
 		splitPair = pair.split("_")
 		if splitPair[0] not in ruleDegGenes:
