@@ -51,3 +51,25 @@ print("windowed deg: ", np.mean(windowedDegCounts))
 print("tad deg: ", np.mean(tadDegCounts))
 print("rules deg: ", np.mean(rulesDegCounts))
 
+windowedCosmicCounts = getAllCounts(glob.glob(shuffledPath + 'windowedCosmicPairs.txt*'))
+tadCosmicCounts = getAllCounts(glob.glob(shuffledPath + 'tadCosmicPairs.txt*'))
+rulesCosmicCounts = getAllCounts(glob.glob(shuffledPath + 'rulesCosmicPairs.txt*'))
+
+print("windowed cosmic: ", np.mean(windowedCosmicCounts))
+print("tad cosmic: ", np.mean(tadCosmicCounts))
+print("rules cosmic: ", np.mean(rulesCosmicCounts))
+
+# print "no of genes in the cosmic case for rules: ", len(ruleGenesCosmic)
+# plt.hist(rulesCosmicCounts)
+# plt.show()
+# plt.clf()
+
+windowedBcCounts = getAllCounts(glob.glob(shuffledPath + 'windowedBcPairs.txt*'))
+tadBcCounts = getAllCounts(glob.glob(shuffledPath + 'tadBcPairs.txt*'))
+rulesBcCounts = getAllCounts(glob.glob(shuffledPath + 'rulesBcPairs.txt*'))
+
+
+print("windowed bc: ", np.mean(windowedBcCounts))
+print("tad bc: ", np.mean(tadBcCounts))
+print("rules bc: ", np.mean(rulesBcCounts))
+
