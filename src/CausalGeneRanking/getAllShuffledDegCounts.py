@@ -16,9 +16,9 @@ def getAllCounts(files):
 
 shuffledPath = sys.argv[1]
 # 
-windowedCosmicCounts = getAllCounts(glob.glob(shuffledPath + 'windowedCosmicDeg.txt*'))
-tadCosmicCounts = getAllCounts(glob.glob(shuffledPath + 'tadCosmicDeg.txt*'))
-rulesCosmicCounts = getAllCounts(glob.glob(shuffledPath + 'rulesCosmicDeg.txt*'))
+windowedCosmicCounts = getAllCounts(glob.glob(shuffledPath + 'windowedCosmicDegPairs.txt*'))
+tadCosmicCounts = getAllCounts(glob.glob(shuffledPath + 'tadCosmicDegPairs.txt*'))
+rulesCosmicCounts = getAllCounts(glob.glob(shuffledPath + 'rulesCosmicDegPairs.txt*'))
 
 print("windowed cosmic+deg: ", np.mean(windowedCosmicCounts))
 print("tad cosmic+deg: ", np.mean(tadCosmicCounts))
@@ -29,9 +29,9 @@ print("rules cosmic+deg: ", np.mean(rulesCosmicCounts))
 # plt.show()
 # plt.clf()
 
-windowedBcCounts = getAllCounts(glob.glob(shuffledPath + 'windowedBcDeg.txt*'))
-tadBcCounts = getAllCounts(glob.glob(shuffledPath + 'tadBcDeg.txt*'))
-rulesBcCounts = getAllCounts(glob.glob(shuffledPath + 'rulesBcDeg.txt*'))
+windowedBcCounts = getAllCounts(glob.glob(shuffledPath + 'windowedBcDegPairs.txt*'))
+tadBcCounts = getAllCounts(glob.glob(shuffledPath + 'tadBcDegPairs.txt*'))
+rulesBcCounts = getAllCounts(glob.glob(shuffledPath + 'rulesBcDegPairs.txt*'))
 
 
 print("windowed bc+deg: ", np.mean(windowedBcCounts))
@@ -43,9 +43,9 @@ print("rules bc+deg: ", np.mean(rulesBcCounts))
 # plt.show()
 # plt.clf()
 
-windowedDegCounts = getAllCounts(glob.glob(shuffledPath + 'windowedDeg.txt*'))
-tadDegCounts = getAllCounts(glob.glob(shuffledPath + 'tadDeg.txt*'))
-rulesDegCounts = getAllCounts(glob.glob(shuffledPath + 'rulesDeg.txt*'))
+windowedDegCounts = getAllCounts(glob.glob(shuffledPath + 'windowedDegPairs.txt*'))
+tadDegCounts = getAllCounts(glob.glob(shuffledPath + 'tadDegPairs.txt*'))
+rulesDegCounts = getAllCounts(glob.glob(shuffledPath + 'rulesDegPairs.txt*'))
 
 print("windowed deg: ", np.mean(windowedDegCounts))
 print("tad deg: ", np.mean(tadDegCounts))

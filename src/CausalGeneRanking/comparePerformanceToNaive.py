@@ -511,7 +511,7 @@ for pair in svGenePairsWindowed:
 				if splitPair[0] not in windowedBcDegGenes:
 					windowedBcDegGenes.append(splitPair[0])
 
-print("Windowed no of sv-gene pairs DEG: ", len(svGenePairsWindowed))
+print("Windowed no of sv-gene pairs DEG: ", windowSVsDegPairs.shape[0])
 print("Windowed no of sv-gene pairs DEG and COSMIC: ", len(windowedCosmicDegPairs))
 print("Windowed no of sv-gene pairs DEG and bc: ", len(windowedBcDegPairs))
 print("Windowed no of sv-gene pairs COSMIC: ", len(windowedCosmicPairs))
@@ -548,7 +548,7 @@ for pair in tadSVGenePairs:
 			if splitPair[0] not in tadBcDegGenes:
 				tadBcDegGenes.append(splitPair[0])
 
-print("TAD no of sv-gene pairs DEG: ", len(tadSVGenePairs))
+print("TAD no of sv-gene pairs DEG: ", tadSVsDegPairs.shape[0])
 print("TAD no of sv-gene pairs DEG and COSMIC: ", len(tadCosmicDegPairs))
 print("TAD no of sv-gene pairs DEG and bc: ", len(tadBcDegPairs))
 print("TAD no of sv-gene pairs COSMIC: ", len(tadCosmicPairs))
@@ -584,7 +584,7 @@ for pair in ruleSvGenePairs:
 			if splitPair[0] not in ruleBcDegGenes:
 				ruleBcDegGenes.append(splitPair[0])
 
-print("Rules no of sv-gene pairs DEG: ", ruleSvGenePairs.shape)
+print("Rules no of sv-gene pairs DEG: ", ruleSVsDegPairs.shape[0])
 print("Rules no of sv-gene pairs DEG and COSMIC: ", len(ruleCosmicDegPairs))
 print("Rules no of sv-gene pairs DEG and bc: ", len(ruleBcDegPairs))
 print("Rules no of sv-gene pairs COSMIC: ", len(ruleCosmicPairs))
