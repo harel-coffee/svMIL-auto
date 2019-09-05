@@ -14,9 +14,10 @@ from six.moves import range
 # Get the expression z-scores for every SV. 
 
 nonCodingPairs = np.loadtxt(sys.argv[1], dtype="object")
+codingPairs = np.load(sys.argv[2], allow_pickle=True, encoding='latin1') #include the coding pair to make sure that we compute DEGs compared to samples with NO SV at all, also not coding.
 
-expressionFile = sys.argv[2]
-shuffle = sys.argv[3] #pass true or false
+expressionFile = sys.argv[3]
+shuffle = sys.argv[4] #pass true or false
 
 expressionData = []
 samples = []
@@ -43,12 +44,12 @@ with open(expressionFile, 'r') as inF:
 expressionData = np.array(expressionData, dtype="object")
 print(expressionData)
 
-if shuffle == "True":
-	#shuffling across columns
-	#make sure not to inclue the hybrid ref
-	cols = list(np.random.permutation(range(1, expressionData.shape[1])))
-	allCols = np.array([0] + cols)
-	expressionData = expressionData[:, allCols]
+# if shuffle == "True":
+# 	#shuffling across columns
+# 	#make sure not to inclue the hybrid ref
+# 	cols = list(np.random.permutation(range(1, expressionData.shape[1])))
+# 	allCols = np.array([0] + cols)
+# 	expressionData = expressionData[:, allCols]
 #check if this goes well, also check if the hybrid ref is not in there
 
 #Get the z-scores for every pair
@@ -63,6 +64,16 @@ for pair in nonCodingPairs:
 	if gene not in geneSampleRef:
 		geneSampleRef[gene] = []
 	geneSampleRef[gene].append(sample)
+
+codingSampleRef = dict()
+for pair in codingPairs[:,0]:
+	splitPair = pair.split("_")
+	gene = splitPair[0]
+	sample = splitPair[len(splitPair)-1]
+	
+	if gene not in codingSampleRef:
+		codingSampleRef[gene] = []
+	codingSampleRef[gene].append(sample)
 
 #Set for every gene the expression values in all possible samples for lookup
 geneSampleExpr = dict()
@@ -98,9 +109,16 @@ for gene in geneSampleExpr:
 	matchedFullSampleNames = list(geneSampleExpr[gene].keys())
 	
 	#Get all the samples without an SV for this gene
-	unmatchedSamples = np.setdiff1d(samples[1:len(samples)-1], matchedFullSampleNames) #exclude hybrid ref
+	unmatchedNonCodingSamples = list(np.setdiff1d(samples[1:len(samples)-1], matchedFullSampleNames)) #exclude hybrid ref
+	unmatchedSamples = []
+	for sample in unmatchedNonCodingSamples:
+		if gene in codingSampleRef:
+			if sample not in codingSampleRef[gene]: #only samples that are not in the set with non-coding SVs, and also do not have coding SVs.
+				unmatchedSamples.append(sample)
+		else: #if the gene does not have coding SV pairs, add it to the negative set.
+			unmatchedSamples.append(sample)
 	negativeSamples = []
-	for sample in unmatchedSamples: #sample tumor samples, exclude normals
+	for sample in unmatchedSamples: 
 		splitSampleName = sample.split("-")
 		code = int("".join(list(splitSampleName[3])[0:2]))
 		
@@ -115,6 +133,23 @@ for gene in geneSampleExpr:
 	
 	negativeExpr[gene] = negativeSampleExpressionValues
 print("negative expr done")
+
+#alternative shuffling after pre-removing coding samples
+#here we go through the positive & negative set and do a random sampling without replacement from either until we have enough values.
+import random
+if shuffle == "True":
+	for gene in geneSampleExpr:
+		allExpr = negativeExpr[gene]
+		for sample in geneSampleExpr[gene]:
+			allExpr.append(geneSampleExpr[gene][sample])
+		
+		#For each positive sample, get a random expression value.
+		for sample in geneSampleExpr[gene]:
+			randInd = random.randint(0,len(allExpr)-1)
+			geneSampleExpr[gene][sample] = allExpr[randInd]
+			del allExpr[randInd]
+		negativeExpr[gene] = allExpr #remaining will be the negative set. 
+
 
 def getDEPairs(pairs, geneSampleRef, epressionData, perPairDifferentialExpression, geneSampleExpr, negativeExpr):
 									

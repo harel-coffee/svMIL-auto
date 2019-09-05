@@ -363,13 +363,17 @@ ruleBasedAffectedGenes = getGenesWithRuleBasedApproach()
 print("rule-based affected genes: ", len(ruleBasedAffectedGenes))
 ruleSvGenePairs = np.loadtxt('Output/RankedGenes/naive/BRCA//nonCoding_geneSVPairs.txt_none', dtype='object')
 
-
 np.savetxt('Output/ruleSVs.txt', ruleSvGenePairs[:,0], delimiter='\t', fmt='%s')
 
 #Save all genes in memory to prevent re-computing every time
 np.savetxt('affectedGenesWindowed.txt', affectedGenesWindowed, delimiter='\t', fmt='%s')
 np.savetxt('tadAffectedGenes.txt', tadAffectedGenes, delimiter='\t', fmt='%s')
 np.savetxt('ruleBasedAffectedGenes.txt', ruleBasedAffectedGenes, delimiter='\t', fmt='%s')
+
+
+print("Number of sv-gene pairs windowed: ", len(svGenePairsWindowed))
+print("Number of sv-gene pairs tads: ", len(tadSVGenePairs))
+print("Number of sv-gene pairs rules: ", ruleSvGenePairs.shape)
 
 np.savetxt('svGenePairsWindowed.txt', svGenePairsWindowed, delimiter='\t', fmt='%s')
 np.savetxt('tadSVGenePairs.txt', tadSVGenePairs, delimiter='\t', fmt='%s')
@@ -399,39 +403,24 @@ diffGenes = np.setdiff1d(ruleBasedAffectedGenes, affectedGenesWindowed)
 for gene in diffGenes:
 	print(gene)
 
-# #Compute the chi2 p-values for these findings
-# #Because we are looking at all other genes, the number of cosmic genes - genes in the true group is the negative.
-# # 
-# obs = np.array([[len(windowedGenesBc), len(breastCancerGenes) - len(windowedGenesBc)], [len(affectedGenesWindowed) - len(windowedGenesBc), (19286 - len(affectedGenesWindowed)- (len(breastCancerGenes) - len(windowedGenesBc)))]])
-# print(obs)
-# g, p, dof, expctd = chi2_contingency(obs)
-# print("BC p-value windowed: ", p)
-# 
-# obs = np.array([[len(tadGenesBc), len(breastCancerGenes) - len(tadGenesBc)], [len(tadAffectedGenes) - len(tadGenesBc), (19286 - len(tadAffectedGenes) - (len(breastCancerGenes) - len(tadGenesBc)))]])
-# g, p, dof, expctd = chi2_contingency(obs)
-# print("BC p-value tad: ", p)
-# 
-# obs = np.array([[len(ruleGenesBc), len(breastCancerGenes) - len(ruleGenesBc)], [len(ruleBasedAffectedGenes) - len(ruleGenesBc), (19286 - len(ruleBasedAffectedGenes) - (len(breastCancerGenes) - len(ruleGenesBc)))]])
-# g, p, dof, expctd = chi2_contingency(obs)
-# print("BC p-value rules: ", p)
-
-
-
-#To get the DEGs, we actually need to re-compute the DEGs based on the gene-SV pairs that we get for each method. Otherwise we are biasing towards the rule-based approach. 
-#Collect the DEG genes for each SV-gene pair combination
-#The DEGs  will need to be re-computed for each shuffled iteration
-# windowExprCall = "python computeSVGenePairExpression_oneSet.py svGenePairsWindowed.txt " + sys.argv[8] 
-# os.system(windowExprCall)
-# tadExprCall = "python computeSVGenePairExpression_oneSet.py tadSVGenePairs.txt " + sys.argv[8] 
-# os.system(tadExprCall)
-# rulesExprCall = "python computeSVGenePairExpression_oneSet.py ruleSvGenePairs.txt " + sys.argv[8] 
-# os.system(rulesExprCall)
+#Compute the DEGs for each pair set
+windowExprCall = "python computeSVGenePairExpression_oneSet.py svGenePairsWindowed.txt" + " " + sys.argv[2] + " " + sys.argv[8] + ' False'
+os.system(windowExprCall)
+tadExprCall = "python computeSVGenePairExpression_oneSet.py tadSVGenePairs.txt" + " " + sys.argv[2] + " " + sys.argv[8] + ' False'
+os.system(tadExprCall)
+rulesExprCall = "python computeSVGenePairExpression_oneSet.py ruleSvGenePairs.txt" + " " + sys.argv[2] + " " + sys.argv[8] + ' False'
+os.system(rulesExprCall)
 
 # Read the DEG pairs and determine how many genes are DEG in total
 svGenePairsWindowed = np.loadtxt("Output/windowedSVs.txt", dtype='object')
 windowSVsDegPairs = np.load("svGenePairsWindowed.txt_degPairs.npy", allow_pickle=True, encoding='latin1')
 tadSVsDegPairs = np.load("tadSVGenePairs.txt_degPairs.npy", allow_pickle=True, encoding='latin1')
 ruleSVsDegPairs = np.load("ruleSvGenePairs.txt_degPairs.npy", allow_pickle=True, encoding='latin1')
+
+print("No of deg pairs windowed: ", windowSVsDegPairs.shape)
+print("No of deg pairs tad: ", tadSVsDegPairs.shape)
+print("No of deg pairs rule: ", ruleSVsDegPairs.shape)
+
 
 #get the COSMIC genes
 
@@ -448,6 +437,21 @@ with open(cosmicGenesFile, 'r') as f:
 		
 		geneName = splitLine[0]
 		cosmicGenes.append(geneName)
+
+windowedGenesCosmic = []
+for gene in affectedGenesWindowed:
+	if gene in cosmicGenes:
+		windowedGenesCosmic.append(gene)
+
+tadGenesCosmic = []
+for gene in tadAffectedGenes:
+	if gene in cosmicGenes:
+		tadGenesCosmic.append(gene)
+
+ruleGenesCosmic = []
+for gene in ruleBasedAffectedGenes:
+	if gene in cosmicGenes:
+		ruleGenesCosmic.append(gene)
 		
 
 #Get the breast cancer specific genes
@@ -461,121 +465,130 @@ with open(breastCancerGenesFile, 'r') as f:
 		
 		breastCancerGenes.append(line)
 
-			
+windowedGenesBc = []
+for gene in affectedGenesWindowed:
+	if gene in breastCancerGenes:
+		windowedGenesBc.append(gene)
+
+tadGenesBc = []
+for gene in tadAffectedGenes:
+	if gene in breastCancerGenes:
+		tadGenesBc.append(gene)
+
+ruleGenesBc = []
+for gene in ruleBasedAffectedGenes:
+	if gene in breastCancerGenes:
+		ruleGenesBc.append(gene)
+
+#keep the deg sv-gene pairs, which are cosmic, which are BC, and which are cosmic+deg and bc+deg
+windowedCosmicDegPairs = []
+windowedBcDegPairs = []
+windowedCosmicPairs = []
+windowedBcPairs = []
+
 windowedDegGenes = []
 windowedCosmicDegGenes = []
 windowedBcDegGenes = []
 for pair in svGenePairsWindowed:
+	splitPair = pair.split("_")
+	#check for cosmic or bc
+	if splitPair[0] in cosmicGenes:
+		windowedCosmicPairs.append(pair)
+	if splitPair[0] in breastCancerGenes:
+		windowedBcPairs.append(pair)
+	
+	#combinations with degs
 	if pair in windowSVsDegPairs[:,0]:
-		splitPair = pair.split("_")
 		if splitPair[0] not in windowedDegGenes:
 			windowedDegGenes.append(splitPair[0])
 			
 			if splitPair[0] in cosmicGenes:
+				windowedCosmicDegPairs.append(pair)
 				if splitPair[0] not in windowedCosmicDegGenes:
 					windowedCosmicDegGenes.append(splitPair[0])
 			if splitPair[0] in breastCancerGenes:
+				windowedBcDegPairs.append(pair)
 				if splitPair[0] not in windowedBcDegGenes:
 					windowedBcDegGenes.append(splitPair[0])
-				
+
+print("Windowed no of sv-gene pairs DEG: ", len(svGenePairsWindowed))
+print("Windowed no of sv-gene pairs DEG and COSMIC: ", len(windowedCosmicDegPairs))
+print("Windowed no of sv-gene pairs DEG and bc: ", len(windowedBcDegPairs))
+print("Windowed no of sv-gene pairs COSMIC: ", len(windowedCosmicPairs))
+print("Windowed no of sv-gene pairs BC: ", len(windowedBcPairs))
+
+tadCosmicDegPairs = []
+tadBcDegPairs = []
+tadCosmicPairs = []
+tadBcPairs = []
 
 tadDegGenes = []
 tadCosmicDegGenes = []
 tadBcDegGenes = []
 for pair in tadSVGenePairs:
+	splitPair = pair.split("_")
+	
+	if splitPair[0] in cosmicGenes:
+		tadCosmicPairs.append(pair)
+	
+	if splitPair[0] in breastCancerGenes:
+		tadBcPairs.append(pair)
+	
 	if pair in tadSVsDegPairs[:,0]:
-		splitPair = pair.split("_")
+		
 		if splitPair[0] not in tadDegGenes:
 			tadDegGenes.append(splitPair[0])
 			
 		if splitPair[0] in cosmicGenes:
+			tadCosmicDegPairs.append(pair)
 			if splitPair[0] not in tadCosmicDegGenes:
 				tadCosmicDegGenes.append(splitPair[0])
 		if splitPair[0] in breastCancerGenes:
+			tadBcDegPairs.append(pair)
 			if splitPair[0] not in tadBcDegGenes:
 				tadBcDegGenes.append(splitPair[0])
+
+print("TAD no of sv-gene pairs DEG: ", len(tadSVGenePairs))
+print("TAD no of sv-gene pairs DEG and COSMIC: ", len(tadCosmicDegPairs))
+print("TAD no of sv-gene pairs DEG and bc: ", len(tadBcDegPairs))
+print("TAD no of sv-gene pairs COSMIC: ", len(tadCosmicPairs))
+print("TAD no of sv-gene pairs BC: ", len(tadBcPairs))
+
+ruleCosmicDegPairs = []
+ruleBcDegPairs = []
+ruleCosmicPairs = []
+ruleBcPairs = []
 
 ruleDegGenes = []
 ruleCosmicDegGenes = []
 ruleBcDegGenes = []
-for pair in ruleSvGenePairs:
+for pair in ruleSvGenePairs[:,0]:
+	splitPair = pair.split("_")
+	
+	if splitPair[0] in cosmicGenes:
+		ruleCosmicPairs.append(pair)
+	if splitPair[0] in breastCancerGenes:
+		ruleBcPairs.append(pair)
+	
 	if pair in ruleSVsDegPairs[:,0]:
-		splitPair = pair.split("_")
+		
 		if splitPair[0] not in ruleDegGenes:
 			ruleDegGenes.append(splitPair[0])
 			
 		if splitPair[0] in cosmicGenes:
+			ruleCosmicDegPairs.append(pair)
 			if splitPair[0] not in ruleCosmicDegGenes:
 				ruleCosmicDegGenes.append(splitPair[0])
 		if splitPair[0] in breastCancerGenes:
+			ruleBcDegPairs.append(pair)
 			if splitPair[0] not in ruleBcDegGenes:
 				ruleBcDegGenes.append(splitPair[0])
-			
-print("Number of DEG genes in the windowed approach: ", len(windowedDegGenes))
-print("Number of DEG genes in the TAD approach: ", len(tadDegGenes))
-print("number of DEG genes in the rule approach: ", len(ruleDegGenes))
 
-#For each set, how many of the genes are in COSMIC
-		
-print("Number of cosmic genes in the windowed approach: ", len(windowedCosmicDegGenes))
-print("Number of cosmic genes in the tad approach: ", len(tadCosmicDegGenes))
-print("Number of cosmic genes in the rule approach: ", len(ruleCosmicDegGenes))
-
-
-#Compute the chi2 p-values for these findings
-#Because we are looking at all other genes, the number of cosmic genes - genes in the true group is the negative.
-# 
-# obs = np.array([[len(windowedGenesCosmic), len(cosmicGenes) - len(windowedGenesCosmic)], [len(affectedGenesWindowed) - len(windowedGenesCosmic), (19286 - len(affectedGenesWindowed)- (len(cosmicGenes) - len(windowedGenesCosmic)))]])
-# print(obs)
-# g, p, dof, expctd = chi2_contingency(obs)
-# print("COSMIC p-value windowed: ", p)
-# 
-# obs = np.array([[len(tadGenesCosmic), len(cosmicGenes) - len(tadGenesCosmic)], [len(tadAffectedGenes) - len(tadGenesCosmic), (19286 - len(tadAffectedGenes) - (len(cosmicGenes) - len(tadGenesCosmic)))]])
-# g, p, dof, expctd = chi2_contingency(obs)
-# print("COSMIC p-value tad: ", p)
-# 
-# obs = np.array([[len(ruleGenesCosmic), len(cosmicGenes) - len(ruleGenesCosmic)], [len(ruleBasedAffectedGenes) - len(ruleGenesCosmic), (19286 - len(ruleBasedAffectedGenes) - (len(cosmicGenes) - len(ruleGenesCosmic)))]])
-# g, p, dof, expctd = chi2_contingency(obs)
-# print("COSMIC p-value rules: ", p)
-
-		
-print("Number of bc genes in the windowed approach: ", len(windowedBcDegGenes))
-print("Number of bc genes in the tad approach: ", len(tadBcDegGenes))
-print("Number of bc genes in the rule approach: ", len(ruleBcDegGenes))
-
-
-#Compute enrichment for gene sets and GO terms
-# print("doing enrichment: ")
-# 
-# import gseapy as gp
-# import pandas as pd
-# pd.set_option('display.max_columns', 500)
-# import matplotlib.pyplot as plt
-# from matplotlib import interactive
-# interactive(True)
-# 
-# # 
-# # bm = Biomart(verbose=False, host="asia.ensembl.org")
-# # results = bm.query(dataset='hsapiens_gene_ensembl',
-# #                    attributes=['external_gene_name','entrezgene', 'go_id'],
-# #                    filters={'hgnc_symbol': ruleBasedAffectedGenes},
-# #                    # save output file
-# #                    filename="ruleBasedBmIDs.txt")
-# # 
-# # print results.head()
-# 
-# enr = gp.enrichr(gene_list=list(ruleDegGenes),
-#                  description='ruleBasedGenes',
-#                  gene_sets=['KEGG_2016','KEGG_2013'],
-#                  outdir='ruleBased/enrichr_kegg'
-#                 )
-# 
-# print(enr.results.head())
-# 
-# from gseapy.plot import barplot, dotplot
-# a = barplot(enr.res2d,title='KEGG_2013',ofname='test.png')
-# print(a)
-# exit()
+print("Rules no of sv-gene pairs DEG: ", ruleSvGenePairs[:,0].shape)
+print("Rules no of sv-gene pairs DEG and COSMIC: ", len(ruleCosmicDegPairs))
+print("Rules no of sv-gene pairs DEG and bc: ", len(ruleBcDegPairs))
+print("Rules no of sv-gene pairs COSMIC: ", len(ruleCosmicPairs))
+print("Rules no of sv-gene pairs BC: ", len(ruleBcPairs))	
 
 
 #Now load all the shuffled files and get the counts. Then do a t-test for the real numbers
@@ -595,203 +608,175 @@ import glob
 
 shuffledPath = sys.argv[7]
 # 
-windowedCosmicCounts = getAllCounts(glob.glob(shuffledPath + 'windowedCosmicDeg.txt*'))
-tadCosmicCounts = getAllCounts(glob.glob(shuffledPath + 'tadCosmicDeg.txt*'))
-rulesCosmicCounts = getAllCounts(glob.glob(shuffledPath + 'rulesCosmicDeg.txt*'))
+windowedCosmicDegCounts = getAllCounts(glob.glob(shuffledPath + 'windowedCosmicDegPairs.txt*'))
+tadCosmicDegCounts = getAllCounts(glob.glob(shuffledPath + 'tadCosmicDegPairs.txt*'))
+rulesCosmicDegCounts = getAllCounts(glob.glob(shuffledPath + 'rulesCosmicDegPairs.txt*'))
 
-# print "no of genes in the cosmic case for rules: ", len(ruleGenesCosmic)
-# plt.hist(rulesCosmicCounts)
-# plt.show()
-# plt.clf()
+windowedBcDegCounts = getAllCounts(glob.glob(shuffledPath + 'windowedBcDegPairs.txt*'))
+tadBcDegCounts = getAllCounts(glob.glob(shuffledPath + 'tadBcDegPairs.txt*'))
+rulesBcDegCounts = getAllCounts(glob.glob(shuffledPath + 'rulesBcDegPairs.txt*'))
 
-windowedBcCounts = getAllCounts(glob.glob(shuffledPath + 'windowedBcDeg.txt*'))
-tadBcCounts = getAllCounts(glob.glob(shuffledPath + 'tadBcDeg.txt*'))
-rulesBcCounts = getAllCounts(glob.glob(shuffledPath + 'rulesBcDeg.txt*'))
+windowedDegCounts = getAllCounts(glob.glob(shuffledPath + 'windowedDegPairs.txt*'))
+tadDegCounts = getAllCounts(glob.glob(shuffledPath + 'tadDegPairs.txt*'))
+rulesDegCounts = getAllCounts(glob.glob(shuffledPath + 'rulesDegPairs.txt*'))
 
-# print "no of genes in the cosmic case for rules: ", len(ruleGenesBc)
-# plt.hist(rulesBcCounts)
-# plt.show()
-# plt.clf()
+windowedCosmicPairCounts = getAllCounts(glob.glob(shuffledPath + 'windowedCosmicPairs.txt*'))
+tadCosmicPairCounts = getAllCounts(glob.glob(shuffledPath + 'tadCosmicPairs.txt*'))
+rulesCosmicPairCounts = getAllCounts(glob.glob(shuffledPath + 'rulesCosmicPairs.txt*'))
 
-windowedDegCounts = getAllCounts(glob.glob(shuffledPath + 'windowedDeg.txt*'))
-tadDegCounts = getAllCounts(glob.glob(shuffledPath + 'tadDeg.txt*'))
-rulesDegCounts = getAllCounts(glob.glob(shuffledPath + 'rulesDeg.txt*'))
+windowedBcPairCounts = getAllCounts(glob.glob(shuffledPath + 'windowedBcPairs.txt*'))
+tadBcPairCounts = getAllCounts(glob.glob(shuffledPath + 'tadBcPairs.txt*'))
+rulesBcPairCounts = getAllCounts(glob.glob(shuffledPath + 'rulesBcPairs.txt*'))
 
-# print "no of genes in the cosmic case for rules: ", len(ruleDegGenes)
-# plt.hist(rulesDegCounts)
-# plt.show()
-# plt.clf()
 
 #Do t-tests and get the significance
 
-
-z = (len(windowedCosmicDegGenes) - np.mean(windowedCosmicCounts)) / float(np.std(windowedCosmicCounts))
-windowCosmicPValue = stats.norm.sf(abs(z))*2
-z = (len(tadCosmicDegGenes) - np.mean(tadCosmicCounts)) / float(np.std(tadCosmicCounts))
-tadCosmicPValue = stats.norm.sf(abs(z))*2
-z = (len(ruleCosmicDegGenes) - np.mean(rulesCosmicCounts)) / float(np.std(rulesCosmicCounts))
-rulesCosmicPValue = stats.norm.sf(abs(z))*2
-
-print("Windowed p-value for COSMIC genes: ", windowCosmicPValue)
-print("TAD p-value for COSMIC genes: ", tadCosmicPValue)
-print("Rules p-value for COSMIC genes: ", rulesCosmicPValue)
-
-#BC
-z = (len(windowedBcDegGenes) - np.mean(windowedBcCounts)) / float(np.std(windowedBcCounts))
-windowBcPValue = stats.norm.sf(abs(z))*2
-z = (len(tadBcDegGenes) - np.mean(tadBcCounts)) / float(np.std(tadBcCounts))
-tadBcPValue = stats.norm.sf(abs(z))*2
-z = (len(ruleBcDegGenes) - np.mean(rulesBcCounts)) / float(np.std(rulesBcCounts))
-rulesBcPValue = stats.norm.sf(abs(z))*2
-
-print("Windowed p-value for BC genes: ", windowBcPValue)
-print("TAD p-value for BC genes: ", tadBcPValue)
-print("Rules p-value for BC genes: ", rulesBcPValue)
-
 #DEGs
-z = (len(windowedDegGenes) - np.mean(windowedDegCounts)) / float(np.std(windowedDegCounts))
+z = (len(svGenePairsWindowed) - np.mean(windowedDegCounts)) / float(np.std(windowedDegCounts))
 windowDegPValue = stats.norm.sf(abs(z))*2
-z = (len(tadDegGenes) - np.mean(tadDegCounts)) / float(np.std(tadDegCounts))
+z = (len(tadSVGenePairs) - np.mean(tadDegCounts)) / float(np.std(tadDegCounts))
 tadDegPValue = stats.norm.sf(abs(z))*2
-z = (len(ruleDegGenes) - np.mean(rulesDegCounts)) / float(np.std(rulesDegCounts))
+z = (ruleSvGenePairs.shape[0] - np.mean(rulesDegCounts)) / float(np.std(rulesDegCounts))
 rulesDegPValue = stats.norm.sf(abs(z))*2
 
 print("Windowed p-value for DEG genes: ", windowDegPValue)
 print("TAD p-value for DEG genes: ", tadDegPValue)
 print("Rules p-value for DEG genes: ", rulesDegPValue)
 
-exit()
-##Do enrichment for gene sets/Go terms
+z = (len(windowedCosmicDegPairs) - np.mean(windowedCosmicDegCounts)) / float(np.std(windowedCosmicDegCounts))
+windowCosmicPValue = stats.norm.sf(abs(z))*2
+z = (len(tadCosmicDegPairs) - np.mean(tadCosmicDegCounts)) / float(np.std(tadCosmicDegCounts))
+tadCosmicPValue = stats.norm.sf(abs(z))*2
+z = (len(ruleCosmicDegPairs) - np.mean(rulesCosmicDegCounts)) / float(np.std(rulesCosmicDegCounts))
+rulesCosmicPValue = stats.norm.sf(abs(z))*2
 
+print("Windowed p-value for COSMIC+DEG sv-gene pairs: ", windowCosmicPValue)
+print("TAD p-value for COSMIC+DEG sv-gene pairs: ", tadCosmicPValue)
+print("Rules p-value for COSMIC+DEG sv-gene pairs: ", rulesCosmicPValue)
 
+#BC
+z = (len(windowedBcDegPairs) - np.mean(windowedBcDegCounts)) / float(np.std(windowedBcDegCounts))
+windowBcPValue = stats.norm.sf(abs(z))*2
+z = (len(tadBcDegPairs) - np.mean(tadBcDegCounts)) / float(np.std(tadBcDegCounts))
+tadBcPValue = stats.norm.sf(abs(z))*2
+z = (len(ruleBcDegPairs) - np.mean(rulesBcDegCounts)) / float(np.std(rulesBcDegCounts))
+rulesBcPValue = stats.norm.sf(abs(z))*2
 
+print("Windowed p-value for BC+DEG pairs: ", windowBcPValue)
+print("TAD p-value for BC+DEG pairs: ", tadBcPValue)
+print("Rules p-value for BC+DEG pairs: ", rulesBcPValue)
 
+#cosmic no deg
 
+z = (len(windowedCosmicPairs) - np.mean(windowedCosmicPairCounts)) / float(np.std(windowedCosmicPairCounts))
+windowCosmicPValue = stats.norm.sf(abs(z))*2
+z = (len(tadCosmicPairs) - np.mean(tadCosmicPairCounts)) / float(np.std(tadCosmicPairCounts))
+tadCosmicPValue = stats.norm.sf(abs(z))*2
+z = (len(ruleCosmicPairs) - np.mean(rulesCosmicPairCounts)) / float(np.std(rulesCosmicPairCounts))
+rulesCosmicPValue = stats.norm.sf(abs(z))*2
 
-#Compute the chi2 p-values for these findings
-# obs = np.array([[len(windowedDegGenes), len(cosmicGenes) - len(windowedDegGenes)], [len(affectedGenesWindowed) - len(windowedDegGenes), (19286 - len(affectedGenesWindowed)- (len(cosmicGenes) - len(windowedDegGenes)))]])
-# g, p, dof, expctd = chi2_contingency(obs)
-# print "DEG p-value windowed: ", p
+print("Windowed p-value for COSMIC sv-gene pairs: ", windowCosmicPValue)
+print("TAD p-value for COSMIC sv-gene pairs: ", tadCosmicPValue)
+print("Rules p-value for COSMIC sv-gene pairs: ", rulesCosmicPValue)
+
+#BC no deg
+z = (len(windowedBcPairs) - np.mean(windowedBcPairCounts)) / float(np.std(windowedBcPairCounts))
+windowBcPValue = stats.norm.sf(abs(z))*2
+z = (len(tadBcPairs) - np.mean(tadBcPairCounts)) / float(np.std(tadBcPairCounts))
+tadBcPValue = stats.norm.sf(abs(z))*2
+z = (len(ruleBcPairs) - np.mean(rulesBcPairCounts)) / float(np.std(rulesBcPairCounts))
+rulesBcPValue = stats.norm.sf(abs(z))*2
+
+print("Windowed p-value for BC pairs: ", windowBcPValue)
+print("TAD p-value for BC pairs: ", tadBcPValue)
+print("Rules p-value for BC pairs: ", rulesBcPValue)
+
+#Repeat but for genes, and not sv-gene pairs
+
+print("STATS FOR GENES ONLY")
 # 
-# obs = np.array([[len(tadDegGenes), len(cosmicGenes) - len(tadDegGenes)], [len(tadAffectedGenes) - len(tadDegGenes), (19286 - len(tadAffectedGenes) - (len(cosmicGenes) - len(tadDegGenes)))]])
-# g, p, dof, expctd = chi2_contingency(obs)
-# print "DEG p-value tad: ", p
-# 
-# obs = np.array([[len(ruleDegGenes), len(cosmicGenes) - len(ruleDegGenes)], [len(ruleBasedAffectedGenes) - len(ruleDegGenes), (19286 - len(ruleBasedAffectedGenes) - (len(cosmicGenes) - len(ruleDegGenes)))]])
-# g, p, dof, expctd = chi2_contingency(obs)
-# print "DEG p-value rules: ", p
+windowedCosmicDegCountsGenes = getAllCounts(glob.glob(shuffledPath + 'windowedCosmicDeg.txt*'))
+tadCosmicDegCountsGenes = getAllCounts(glob.glob(shuffledPath + 'tadCosmicDeg.txt*'))
+rulesCosmicDegCountsGenes = getAllCounts(glob.glob(shuffledPath + 'rulesCosmicDeg.txt*'))
 
-#Make a venn diagram
+windowedBcDegCountsGenes = getAllCounts(glob.glob(shuffledPath + 'windowedBcDeg.txt*'))
+tadBcDegCountsGenes = getAllCounts(glob.glob(shuffledPath + 'tadBcDeg.txt*'))
+rulesBcDegCountsGenes = getAllCounts(glob.glob(shuffledPath + 'rulesBcDeg.txt*'))
 
-#For the genes that are found
-allCriteriaIntersect = list(set(affectedGenesWindowed) & set(tadAffectedGenes) & set(ruleBasedAffectedGenes))
-windowTadIntersect = list(set(affectedGenesWindowed) & set(tadAffectedGenes))
-windowRuleIntersect = list(set(affectedGenesWindowed) & set(ruleBasedAffectedGenes))
-tadRuleIntersect = list(set(tadAffectedGenes) & set(ruleBasedAffectedGenes))
+windowedDegCountsGenes = getAllCounts(glob.glob(shuffledPath + 'windowedDeg.txt*'))
+tadDegCountsGenes = getAllCounts(glob.glob(shuffledPath + 'tadDeg.txt*'))
+rulesDegCountsGenes = getAllCounts(glob.glob(shuffledPath + 'rulesDeg.txt*'))
 
-print("Number of genes that are in all 3 nc-based methods: ", len(allCriteriaIntersect))
-print("Number of genes that are in the windowed and TAD approaches: ", len(windowTadIntersect))
-print("Number of genes that are in windowed and rule approaches: ", len(windowRuleIntersect))
-print("Number of genes that are in the TAD and rule approahes: ", len(tadRuleIntersect))
+windowedCosmicPairCountsGenes = getAllCounts(glob.glob(shuffledPath + 'windowedCosmic.txt*'))
+tadCosmicPairCountsGenes = getAllCounts(glob.glob(shuffledPath + 'tadCosmic.txt*'))
+rulesCosmicPairCountsGenes = getAllCounts(glob.glob(shuffledPath + 'rulesCosmic.txt*'))
 
-#Determine the venn diagram values
-twr = len(allCriteriaIntersect)
-tw = len(windowTadIntersect) - twr
-wr = len(windowRuleIntersect) - twr
-tr = len(tadRuleIntersect) - twr
-t = len(tadAffectedGenes) - twr - tw - tr
-r = len(ruleBasedAffectedGenes) - twr - wr - tr
-w = len(affectedGenesWindowed) - twr - wr - tw
-
-v = venn3(subsets=(w, t,tw, r,wr, tr,twr),
-		  set_labels=('Windowed', 'TAD', 'Rules'))
-#v.get_label_by_id('100').set_text(w)
-#v.get_label_by_id('010').set_text(t)
-#v.get_label_by_id('001').set_text(r)
-plt.title("Overlapping genes in the nc-based approaches")
-plt.savefig('genesOverlap.svg')
-#plt.show()
-plt.clf()
-
-#Repeat for COSMIC
-
-allCriteriaIntersect = list(set(windowedGenesCosmic) & set(tadGenesCosmic) & set(ruleGenesCosmic))
-windowTadIntersect = list(set(windowedGenesCosmic) & set(tadGenesCosmic))
-windowRuleIntersect = list(set(windowedGenesCosmic) & set(ruleGenesCosmic))
-tadRuleIntersect = list(set(tadGenesCosmic) & set(ruleGenesCosmic))
-print("Number of genes that are in all 3 nc-based methods: ", len(allCriteriaIntersect))
-print("Number of genes that are in the windowed and TAD approaches: ", len(windowTadIntersect))
-print("Number of genes that are in windowed and rule approaches: ", len(windowRuleIntersect))
-print("Number of genes that are in the TAD and rule approahes: ", len(tadRuleIntersect))
+windowedBcPairCountsGenes = getAllCounts(glob.glob(shuffledPath + 'windowedBc.txt*'))
+tadBcPairCountsGenes = getAllCounts(glob.glob(shuffledPath + 'tadBc.txt*'))
+rulesBcPairCountsGenes = getAllCounts(glob.glob(shuffledPath + 'rulesBc.txt*'))
 
 
-twr = len(allCriteriaIntersect)
-tw = len(windowTadIntersect) - twr
-wr = len(windowRuleIntersect) - twr
-tr = len(tadRuleIntersect) - twr
-t = len(tadGenesCosmic) - twr - tw - tr
-r = len(ruleGenesCosmic) - twr - wr - tr
-w = len(windowedGenesCosmic) - twr - wr - tw
+#Do t-tests and get the significance
 
-v = venn3(subsets=(w, t,tw, r,wr, tr,twr),
-		  set_labels=('Windowed', 'TAD', 'Rules'))
-plt.title("Overlapping COSMIC genes in the nc-based approaches")
-plt.savefig('cosmicOverlap.svg')
-#plt.show()
-plt.clf()
+#DEGs
+z = (len(windowedDegGenes) - np.mean(windowedDegCountsGenes)) / float(np.std(windowedDegCountsGenes))
+windowDegPValue = stats.norm.sf(abs(z))*2
+z = (len(tadDegGenes) - np.mean(tadDegCountsGenes)) / float(np.std(tadDegCountsGenes))
+tadDegPValue = stats.norm.sf(abs(z))*2
+z = (len(ruleDegGenes) - np.mean(rulesDegCountsGenes)) / float(np.std(rulesDegCountsGenes))
+rulesDegPValue = stats.norm.sf(abs(z))*2
 
-#repeat for bc genes
-allCriteriaIntersect = list(set(windowedGenesBc) & set(tadGenesBc) & set(ruleGenesBc))
-windowTadIntersect = list(set(windowedGenesBc) & set(tadGenesBc))
-windowRuleIntersect = list(set(windowedGenesBc) & set(ruleGenesBc))
-tadRuleIntersect = list(set(tadGenesBc) & set(ruleGenesBc))
-print("Number of genes that are in all 3 nc-based methods: ", len(allCriteriaIntersect))
-print("Number of genes that are in the windowed and TAD approaches: ", len(windowTadIntersect))
-print("Number of genes that are in windowed and rule approaches: ", len(windowRuleIntersect))
-print("Number of genes that are in the TAD and rule approahes: ", len(tadRuleIntersect))
+print("Windowed p-value for DEG genes: ", windowDegPValue)
+print("TAD p-value for DEG genes: ", tadDegPValue)
+print("Rules p-value for DEG genes: ", rulesDegPValue)
 
+z = (len(windowedCosmicDegGenes) - np.mean(windowedCosmicDegCountsGenes)) / float(np.std(windowedCosmicDegCountsGenes))
+windowCosmicPValue = stats.norm.sf(abs(z))*2
+z = (len(tadCosmicDegGenes) - np.mean(tadCosmicDegCountsGenes)) / float(np.std(tadCosmicDegCountsGenes))
+tadCosmicPValue = stats.norm.sf(abs(z))*2
+z = (len(ruleCosmicDegGenes) - np.mean(rulesCosmicDegCountsGenes)) / float(np.std(rulesCosmicDegCountsGenes))
+rulesCosmicPValue = stats.norm.sf(abs(z))*2
 
-twr = len(allCriteriaIntersect)
-tw = len(windowTadIntersect) - twr
-wr = len(windowRuleIntersect) - twr
-tr = len(tadRuleIntersect) - twr
-t = len(tadGenesBc) - twr - tw - tr
-r = len(ruleGenesBc) - twr - wr - tr
-w = len(windowedGenesBc) - twr - wr - tw
+print("Windowed p-value for COSMIC+DEG sv-gene pairs: ", windowCosmicPValue)
+print("TAD p-value for COSMIC+DEG sv-gene pairs: ", tadCosmicPValue)
+print("Rules p-value for COSMIC+DEG sv-gene pairs: ", rulesCosmicPValue)
 
-v = venn3(subsets=(w, t,tw, r,wr, tr,twr),
-		  set_labels=('Windowed', 'TAD', 'Rules'))
-plt.title("Overlapping breast cancer genes in the nc-based approaches")
-plt.savefig('bcOverlap.svg')
-#plt.show()
-plt.clf()
+#BC
+z = (len(windowedBcDegGenes) - np.mean(windowedBcDegCountsGenes)) / float(np.std(windowedBcDegCountsGenes))
+windowBcPValue = stats.norm.sf(abs(z))*2
+z = (len(tadBcDegGenes) - np.mean(tadBcDegCountsGenes)) / float(np.std(tadBcDegCountsGenes))
+tadBcPValue = stats.norm.sf(abs(z))*2
+z = (len(ruleBcDegGenes) - np.mean(rulesBcDegCountsGenes)) / float(np.std(rulesBcDegCountsGenes))
+rulesBcPValue = stats.norm.sf(abs(z))*2
 
+print("Windowed p-value for BC+DEG pairs: ", windowBcPValue)
+print("TAD p-value for BC+DEG pairs: ", tadBcPValue)
+print("Rules p-value for BC+DEG pairs: ", rulesBcPValue)
 
-#Repeat for DEG genes
+#cosmic no deg
 
-allCriteriaIntersect = list(set(windowedDegGenes) & set(tadDegGenes) & set(ruleDegGenes))
-windowTadIntersect = list(set(windowedDegGenes) & set(tadDegGenes))
-windowRuleIntersect = list(set(windowedDegGenes) & set(ruleDegGenes))
-tadRuleIntersect = list(set(tadDegGenes) & set(ruleDegGenes))
+z = (len(windowedGenesCosmic) - np.mean(windowedCosmicPairCountsGenes)) / float(np.std(windowedCosmicPairCountsGenes))
+windowCosmicPValue = stats.norm.sf(abs(z))*2
+z = (len(tadGenesCosmic) - np.mean(tadCosmicPairCountsGenes)) / float(np.std(tadCosmicPairCountsGenes))
+tadCosmicPValue = stats.norm.sf(abs(z))*2
+z = (len(ruleGenesCosmic) - np.mean(rulesCosmicPairCountsGenes)) / float(np.std(rulesCosmicPairCountsGenes))
+rulesCosmicPValue = stats.norm.sf(abs(z))*2
 
-print("Number of genes that are in all 3 nc-based methods: ", len(allCriteriaIntersect))
-print("Number of genes that are in the windowed and TAD approaches: ", len(windowTadIntersect))
-print("Number of genes that are in windowed and rule approaches: ", len(windowRuleIntersect))
-print("Number of genes that are in the TAD and rule approahes: ", len(tadRuleIntersect))
+print("Windowed p-value for COSMIC sv-gene pairs: ", windowCosmicPValue)
+print("TAD p-value for COSMIC sv-gene pairs: ", tadCosmicPValue)
+print("Rules p-value for COSMIC sv-gene pairs: ", rulesCosmicPValue)
 
-twr = len(allCriteriaIntersect)
-tw = len(windowTadIntersect) - twr
-wr = len(windowRuleIntersect) - twr
-tr = len(tadRuleIntersect) - twr
-t = len(tadDegGenes) - twr - tw - tr
-r = len(ruleDegGenes) - twr - wr - tr
-w = len(windowedDegGenes) - twr - wr - tw
+#BC no deg
+z = (len(windowedGenesBc) - np.mean(windowedBcPairCountsGenes)) / float(np.std(windowedBcPairCountsGenes))
+windowBcPValue = stats.norm.sf(abs(z))*2
+z = (len(tadGenesBc) - np.mean(tadBcPairCountsGenes)) / float(np.std(tadBcPairCountsGenes))
+tadBcPValue = stats.norm.sf(abs(z))*2
+z = (len(ruleGenesBc) - np.mean(rulesBcPairCountsGenes)) / float(np.std(rulesBcPairCountsGenes))
+rulesBcPValue = stats.norm.sf(abs(z))*2
 
-v = venn3(subsets=(w, t,tw, r,wr, tr,twr),
-		  set_labels=('Windowed', 'TAD', 'Rules'))
-plt.title("Overlapping DEG genes in the nc-based approaches")
-#plt.show()
-plt.savefig('degOverlap.svg')
+print("Windowed p-value for BC pairs: ", windowBcPValue)
+print("TAD p-value for BC pairs: ", tadBcPValue)
+print("Rules p-value for BC pairs: ", rulesBcPValue)
 
 
 

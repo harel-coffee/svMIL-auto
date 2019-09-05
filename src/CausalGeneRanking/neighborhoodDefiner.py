@@ -230,15 +230,17 @@ class NeighborhoodDefiner:
 		tadData = self.mapGenesToTads(genes, tadData) 
 		
 		#3. Get enhancers
-		print("getting enhancers")
+		
 		if settings.general['enhancers'] == True:
+			print("getting enhancers")
 			enhancerData = InputParser().getEnhancersFromFile(settings.files['enhancerFile'], genes[:,3], self)
 			#Add the enhancers to TADs & genes as well	
 			tadData = self.mapElementsToTads(enhancerData, tadData)	
 		
 		#4. Get promoters
-		print("getting promoters")
+		
 		if settings.general['promoters'] == True:
+			print("getting promoters")
 			promoterData = InputParser().getPromotersFromFile(settings.files['promoterFile'], genes[:,3], self)
 			
 			#Add the promoters to the TADs
