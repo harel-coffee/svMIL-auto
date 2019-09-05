@@ -624,11 +624,11 @@ rulesDegCounts = getAllCounts(glob.glob(shuffledPath + 'rulesDegPairs.txt*'))
 #Do t-tests and get the significance
 
 #DEGs
-z = (len(svGenePairsWindowed) - np.mean(windowedDegCounts)) / float(np.std(windowedDegCounts))
+z = (windowSVsDegPairs.shape[0] - np.mean(windowedDegCounts)) / float(np.std(windowedDegCounts))
 windowDegPValue = stats.norm.sf(abs(z))*2
-z = (len(tadSVGenePairs) - np.mean(tadDegCounts)) / float(np.std(tadDegCounts))
+z = (tadSVsDegPairs.shape[0] - np.mean(tadDegCounts)) / float(np.std(tadDegCounts))
 tadDegPValue = stats.norm.sf(abs(z))*2
-z = (ruleSvGenePairs.shape[0] - np.mean(rulesDegCounts)) / float(np.std(rulesDegCounts))
+z = (ruleSVsDegPairs.shape[0] - np.mean(rulesDegCounts)) / float(np.std(rulesDegCounts))
 rulesDegPValue = stats.norm.sf(abs(z))*2
 
 print("Windowed p-value for DEG genes: ", windowDegPValue)
