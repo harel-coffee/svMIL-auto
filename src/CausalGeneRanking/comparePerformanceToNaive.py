@@ -562,7 +562,7 @@ ruleBcPairs = []
 ruleDegGenes = []
 ruleCosmicDegGenes = []
 ruleBcDegGenes = []
-for pair in ruleSvGenePairs[:,0]:
+for pair in ruleSvGenePairs:
 	splitPair = pair.split("_")
 	
 	if splitPair[0] in cosmicGenes:
@@ -584,7 +584,7 @@ for pair in ruleSvGenePairs[:,0]:
 			if splitPair[0] not in ruleBcDegGenes:
 				ruleBcDegGenes.append(splitPair[0])
 
-print("Rules no of sv-gene pairs DEG: ", ruleSvGenePairs[:,0].shape)
+print("Rules no of sv-gene pairs DEG: ", ruleSvGenePairs.shape)
 print("Rules no of sv-gene pairs DEG and COSMIC: ", len(ruleCosmicDegPairs))
 print("Rules no of sv-gene pairs DEG and bc: ", len(ruleBcDegPairs))
 print("Rules no of sv-gene pairs COSMIC: ", len(ruleCosmicPairs))
