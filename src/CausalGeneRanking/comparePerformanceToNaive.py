@@ -620,14 +620,6 @@ windowedDegCounts = getAllCounts(glob.glob(shuffledPath + 'windowedDegPairs.txt*
 tadDegCounts = getAllCounts(glob.glob(shuffledPath + 'tadDegPairs.txt*'))
 rulesDegCounts = getAllCounts(glob.glob(shuffledPath + 'rulesDegPairs.txt*'))
 
-windowedCosmicPairCounts = getAllCounts(glob.glob(shuffledPath + 'windowedCosmicPairs.txt*'))
-tadCosmicPairCounts = getAllCounts(glob.glob(shuffledPath + 'tadCosmicPairs.txt*'))
-rulesCosmicPairCounts = getAllCounts(glob.glob(shuffledPath + 'rulesCosmicPairs.txt*'))
-
-windowedBcPairCounts = getAllCounts(glob.glob(shuffledPath + 'windowedBcPairs.txt*'))
-tadBcPairCounts = getAllCounts(glob.glob(shuffledPath + 'tadBcPairs.txt*'))
-rulesBcPairCounts = getAllCounts(glob.glob(shuffledPath + 'rulesBcPairs.txt*'))
-
 
 #Do t-tests and get the significance
 
@@ -666,31 +658,6 @@ print("Windowed p-value for BC+DEG pairs: ", windowBcPValue)
 print("TAD p-value for BC+DEG pairs: ", tadBcPValue)
 print("Rules p-value for BC+DEG pairs: ", rulesBcPValue)
 
-#cosmic no deg
-
-z = (len(windowedCosmicPairs) - np.mean(windowedCosmicPairCounts)) / float(np.std(windowedCosmicPairCounts))
-windowCosmicPValue = stats.norm.sf(abs(z))*2
-z = (len(tadCosmicPairs) - np.mean(tadCosmicPairCounts)) / float(np.std(tadCosmicPairCounts))
-tadCosmicPValue = stats.norm.sf(abs(z))*2
-z = (len(ruleCosmicPairs) - np.mean(rulesCosmicPairCounts)) / float(np.std(rulesCosmicPairCounts))
-rulesCosmicPValue = stats.norm.sf(abs(z))*2
-
-print("Windowed p-value for COSMIC sv-gene pairs: ", windowCosmicPValue)
-print("TAD p-value for COSMIC sv-gene pairs: ", tadCosmicPValue)
-print("Rules p-value for COSMIC sv-gene pairs: ", rulesCosmicPValue)
-
-#BC no deg
-z = (len(windowedBcPairs) - np.mean(windowedBcPairCounts)) / float(np.std(windowedBcPairCounts))
-windowBcPValue = stats.norm.sf(abs(z))*2
-z = (len(tadBcPairs) - np.mean(tadBcPairCounts)) / float(np.std(tadBcPairCounts))
-tadBcPValue = stats.norm.sf(abs(z))*2
-z = (len(ruleBcPairs) - np.mean(rulesBcPairCounts)) / float(np.std(rulesBcPairCounts))
-rulesBcPValue = stats.norm.sf(abs(z))*2
-
-print("Windowed p-value for BC pairs: ", windowBcPValue)
-print("TAD p-value for BC pairs: ", tadBcPValue)
-print("Rules p-value for BC pairs: ", rulesBcPValue)
-
 #Repeat but for genes, and not sv-gene pairs
 
 print("STATS FOR GENES ONLY")
@@ -706,14 +673,6 @@ rulesBcDegCountsGenes = getAllCounts(glob.glob(shuffledPath + 'rulesBcDeg.txt*')
 windowedDegCountsGenes = getAllCounts(glob.glob(shuffledPath + 'windowedDeg.txt*'))
 tadDegCountsGenes = getAllCounts(glob.glob(shuffledPath + 'tadDeg.txt*'))
 rulesDegCountsGenes = getAllCounts(glob.glob(shuffledPath + 'rulesDeg.txt*'))
-
-windowedCosmicPairCountsGenes = getAllCounts(glob.glob(shuffledPath + 'windowedCosmic.txt*'))
-tadCosmicPairCountsGenes = getAllCounts(glob.glob(shuffledPath + 'tadCosmic.txt*'))
-rulesCosmicPairCountsGenes = getAllCounts(glob.glob(shuffledPath + 'rulesCosmic.txt*'))
-
-windowedBcPairCountsGenes = getAllCounts(glob.glob(shuffledPath + 'windowedBc.txt*'))
-tadBcPairCountsGenes = getAllCounts(glob.glob(shuffledPath + 'tadBc.txt*'))
-rulesBcPairCountsGenes = getAllCounts(glob.glob(shuffledPath + 'rulesBc.txt*'))
 
 
 #Do t-tests and get the significance
@@ -753,30 +712,6 @@ print("Windowed p-value for BC+DEG pairs: ", windowBcPValue)
 print("TAD p-value for BC+DEG pairs: ", tadBcPValue)
 print("Rules p-value for BC+DEG pairs: ", rulesBcPValue)
 
-#cosmic no deg
-
-z = (len(windowedGenesCosmic) - np.mean(windowedCosmicPairCountsGenes)) / float(np.std(windowedCosmicPairCountsGenes))
-windowCosmicPValue = stats.norm.sf(abs(z))*2
-z = (len(tadGenesCosmic) - np.mean(tadCosmicPairCountsGenes)) / float(np.std(tadCosmicPairCountsGenes))
-tadCosmicPValue = stats.norm.sf(abs(z))*2
-z = (len(ruleGenesCosmic) - np.mean(rulesCosmicPairCountsGenes)) / float(np.std(rulesCosmicPairCountsGenes))
-rulesCosmicPValue = stats.norm.sf(abs(z))*2
-
-print("Windowed p-value for COSMIC sv-gene pairs: ", windowCosmicPValue)
-print("TAD p-value for COSMIC sv-gene pairs: ", tadCosmicPValue)
-print("Rules p-value for COSMIC sv-gene pairs: ", rulesCosmicPValue)
-
-#BC no deg
-z = (len(windowedGenesBc) - np.mean(windowedBcPairCountsGenes)) / float(np.std(windowedBcPairCountsGenes))
-windowBcPValue = stats.norm.sf(abs(z))*2
-z = (len(tadGenesBc) - np.mean(tadBcPairCountsGenes)) / float(np.std(tadBcPairCountsGenes))
-tadBcPValue = stats.norm.sf(abs(z))*2
-z = (len(ruleGenesBc) - np.mean(rulesBcPairCountsGenes)) / float(np.std(rulesBcPairCountsGenes))
-rulesBcPValue = stats.norm.sf(abs(z))*2
-
-print("Windowed p-value for BC pairs: ", windowBcPValue)
-print("TAD p-value for BC pairs: ", tadBcPValue)
-print("Rules p-value for BC pairs: ", rulesBcPValue)
 
 
 

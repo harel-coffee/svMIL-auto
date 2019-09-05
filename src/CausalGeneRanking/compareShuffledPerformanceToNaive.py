@@ -649,8 +649,8 @@ np.savetxt('Output/RankedGenes/' + outputFolder + '/BRCA/Counts/windowedBcDegPai
 np.savetxt('Output/RankedGenes/' + outputFolder + '/BRCA/Counts/tadBcDegPairs.txt_' + permutationRound, np.array([len(tadBcDegPairs)]), fmt='%s')
 np.savetxt('Output/RankedGenes/' + outputFolder + '/BRCA/Counts/rulesBcDegPairs.txt_' + permutationRound, np.array([len(ruleBcDegPairs)]), fmt='%s')
 
-np.savetxt('Output/RankedGenes/' + outputFolder + '/BRCA/Counts/windowedDegPairs.txt_' + permutationRound, np.array([len(svGenePairsWindowed)]), fmt='%s')
-np.savetxt('Output/RankedGenes/' + outputFolder + '/BRCA/Counts/tadDegPairs.txt_' + permutationRound, np.array([len(tadSVGenePairs)]), fmt='%s')
+np.savetxt('Output/RankedGenes/' + outputFolder + '/BRCA/Counts/windowedDegPairs.txt_' + permutationRound, np.array([windowSVsDegPairs.shape[0]]), fmt='%s')
+np.savetxt('Output/RankedGenes/' + outputFolder + '/BRCA/Counts/tadDegPairs.txt_' + permutationRound, np.array([tadSVsDegPairs.shape[0]]), fmt='%s')
 np.savetxt('Output/RankedGenes/' + outputFolder + '/BRCA/Counts/rulesDegPairs.txt_' + permutationRound, np.array([ruleSVsDegPairs.shape[0]]), fmt='%s')
 
 np.savetxt('Output/RankedGenes/' + outputFolder + '/BRCA/Counts/windowedCosmicPairs.txt_' + permutationRound, np.array([len(windowedCosmicPairs)]), fmt='%s')
