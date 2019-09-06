@@ -517,6 +517,10 @@ print("Windowed no of sv-gene pairs DEG and bc: ", len(windowedBcDegPairs))
 print("Windowed no of sv-gene pairs COSMIC: ", len(windowedCosmicPairs))
 print("Windowed no of sv-gene pairs BC: ", len(windowedBcPairs))
 
+print("Windowed no of unique DEG genes: ", len(windowedDegGenes))
+print("Windowed no of unique COSMIC genes: ", len(windowedCosmicDegGenes))
+print("Windowed no of unique DEG genes: ", len(windowedBcDegGenes))
+
 tadCosmicDegPairs = []
 tadBcDegPairs = []
 tadCosmicPairs = []
@@ -554,6 +558,10 @@ print("TAD no of sv-gene pairs DEG and bc: ", len(tadBcDegPairs))
 print("TAD no of sv-gene pairs COSMIC: ", len(tadCosmicPairs))
 print("TAD no of sv-gene pairs BC: ", len(tadBcPairs))
 
+print("TAD no of unique DEG genes: ", len(tadDegGenes))
+print("TAD no of unique COSMIC genes: ", len(tadCosmicDegGenes))
+print("TAD no of unique DEG genes: ", len(tadBcDegGenes))
+
 ruleCosmicDegPairs = []
 ruleBcDegPairs = []
 ruleCosmicPairs = []
@@ -589,6 +597,10 @@ print("Rules no of sv-gene pairs DEG and COSMIC: ", len(ruleCosmicDegPairs))
 print("Rules no of sv-gene pairs DEG and bc: ", len(ruleBcDegPairs))
 print("Rules no of sv-gene pairs COSMIC: ", len(ruleCosmicPairs))
 print("Rules no of sv-gene pairs BC: ", len(ruleBcPairs))	
+
+print("Rules no of unique DEG genes: ", len(ruleDegGenes))
+print("Rules no of unique COSMIC genes: ", len(ruleCosmicDegGenes))
+print("Rules no of unique DEG genes: ", len(ruleBcDegGenes))
 
 
 #Now load all the shuffled files and get the counts. Then do a t-test for the real numbers
