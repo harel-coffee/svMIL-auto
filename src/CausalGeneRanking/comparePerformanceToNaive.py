@@ -404,10 +404,10 @@ for gene in diffGenes:
 	print(gene)
 
 #Compute the DEGs for each pair set
-windowExprCall = "python computeSVGenePairExpression_oneSet.py svGenePairsWindowed.txt" + " " + sys.argv[2] + " " + sys.argv[8] + ' False'
-os.system(windowExprCall)
-tadExprCall = "python computeSVGenePairExpression_oneSet.py tadSVGenePairs.txt" + " " + sys.argv[2] + " " + sys.argv[8] + ' False'
-os.system(tadExprCall)
+#windowExprCall = "python computeSVGenePairExpression_oneSet.py svGenePairsWindowed.txt" + " " + sys.argv[2] + " " + sys.argv[8] + ' False'
+#os.system(windowExprCall)
+#tadExprCall = "python computeSVGenePairExpression_oneSet.py tadSVGenePairs.txt" + " " + sys.argv[2] + " " + sys.argv[8] + ' False'
+#os.system(tadExprCall)
 rulesExprCall = "python computeSVGenePairExpression_oneSet.py ruleSvGenePairs.txt" + " " + sys.argv[2] + " " + sys.argv[8] + ' False'
 os.system(rulesExprCall)
 
