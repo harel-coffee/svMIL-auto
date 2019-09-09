@@ -315,9 +315,9 @@ plt.savefig('gains_deg_counts_addition.svg')
 
 #DEGs
 #eqtls, enhancers, promoters, CpG, TFs, HiC, histones, dnaseI
-y = [X, 97, 110, 118, 127, 127, 127]
+y = [70, 97, 110, 118, 127, 127, 127, 127]
 x = range(0, len(y))
-averages = [X, 3280, 3949, 4251, 4692, 4693, 4693] #total number of pairs
+averages = [2433, 3280, 3949, 4251, 4692, 4693, 4693, 4708] #total number of pairs
 
 fig, ax = plt.subplots()
 ax.stem(x, y)
