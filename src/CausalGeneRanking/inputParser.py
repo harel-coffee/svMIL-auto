@@ -112,7 +112,7 @@ class InputParser:
 				# 		continue
 				#
 				
-				if svType != "tandem_dup":
+				if svType != "invers":
 					continue
 				
 				# if svType != "del" and svType != "invers" and svType != "tandem_dup" and svType != "DEL" and svType != "INV" and svType != "DUP":
