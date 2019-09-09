@@ -95,13 +95,13 @@ class InputParser:
 				# 	continue
 				
 				#  
-				# interChrTypeMatch = re.search("chr", svType, re.IGNORECASE)
-				# transTypeMatch = re.search("trans", svType, re.IGNORECASE)
-				# rangeTypeMatch = re.search("range", svType, re.IGNORECASE)
-				# 
-				# if interChrTypeMatch is None and transTypeMatch is None and rangeTypeMatch is None:
-				# 	continue
-				# 
+				interChrTypeMatch = re.search("chr", svType, re.IGNORECASE)
+				transTypeMatch = re.search("trans", svType, re.IGNORECASE)
+				rangeTypeMatch = re.search("range", svType, re.IGNORECASE)
+				
+				if interChrTypeMatch is None and transTypeMatch is None and rangeTypeMatch is None:
+					continue
+				
 				# only keep the main 4 types
 				# if svType != "del" and svType != "invers" and svType != "tandem_dup":
 				# 	
@@ -112,8 +112,7 @@ class InputParser:
 				# 		continue
 				#
 				
-				if svType != "invers":
-					continue
+		
 				
 				# if svType != "del" and svType != "invers" and svType != "tandem_dup" and svType != "DEL" and svType != "INV" and svType != "DUP":
 				# 	
