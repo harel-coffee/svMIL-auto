@@ -269,7 +269,7 @@ plt.savefig('losses_deg_counts.svg')
 #eqtls, enhancers, promoters, CpG, TFs, HiC, histones, dnaseI
 y = [229, 93, 105, 115, 127, 127, 127, 127]
 x = range(0, len(y))
-averages = [X, 615, 729, 3200, 4105, 4118, 4118, 4118] #total number of pairs
+averages = [2433, 615, 729, 3200, 4105, 4118, 4118, 4118] #total number of pairs
 
 fig, ax = plt.subplots()
 ax.stem(x, y)
