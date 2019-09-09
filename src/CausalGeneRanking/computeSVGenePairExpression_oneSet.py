@@ -103,6 +103,17 @@ for gene in geneSampleRef:
 					geneSampleExpr[gene][geneSample] = float(geneExpression[sampleInd])
 print("done getting expr for samples")
 
+#make a histogram of the expression across all genes and samples (see if there is a skew)
+geneSampleExprArr = []
+for gene in geneSampleExpr:
+	for sample in geneSampleExpr[gene]:
+		geneSampleExprArr.append(geneSampleExpr[gene][sample])
+
+import matplotlib.pyplot as plt
+plt.hist(geneSampleExprArr)
+plt.savefig(sys.argv[1] + "_geneSampleExpr.svg")
+plt.clf()
+
 #Also set the negative set for every gene consisting of the expression of all samples wthout any SV
 negativeExpr = dict()
 for gene in geneSampleExpr:
@@ -133,6 +144,15 @@ for gene in geneSampleExpr:
 	
 	negativeExpr[gene] = negativeSampleExpressionValues
 print("negative expr done")
+
+negativeSampleExprArr = []
+for gene in negativeExpr:
+	negativeSampleExprArr += negativeExpr[gene]
+
+import matplotlib.pyplot as plt
+plt.hist(negativeSampleExprArr)
+plt.savefig(sys.argv[1] + "_negativeSampleExpr.svg")
+plt.clf()
 
 #alternative shuffling after pre-removing coding samples
 #here we go through the positive & negative set and do a random sampling without replacement from either until we have enough values.
