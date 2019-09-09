@@ -287,3 +287,50 @@ plt.xlabel('Lost features')
 plt.tight_layout()
 plt.savefig('losses_deg_counts_addition.svg')
 
+#gains
+
+#DEGs
+#eqtls, enhancers, promoters, CpG, TFs, HiC, histones, dnaseI
+y = [578, 54, 79, 83, 97, 97, 97, 97]
+x = range(0, len(y))
+averages = [X, 1525, 2377, 2592, 3174, 3174, 3174, 3175] #total number of pairs
+
+fig, ax = plt.subplots()
+ax.stem(x, y)
+count = 0
+for i,j in zip(x,y):
+	ax.annotate(str(averages[count]), xy=(i,j), xytext=(-2,10), textcoords='offset points') #add the averages
+	count += 1
+plt.ylim(np.min(y), np.max(y)+100)
+plt.ylim(np.min(y), np.max(y))
+plt.title('SV-gene pairs that are DEG')
+ax.set_xticklabels(['', 'eQTLs', 'enhancers', 'promoters', 'CpG', 'TFs', 'HiC', 'Histones', 'DNAseI'])
+plt.xticks(rotation=90)
+plt.ylabel('Number of SV-gene pairs')
+plt.xlabel('Gained features')
+plt.tight_layout()
+plt.savefig('gains_deg_counts_addition.svg')
+
+#gains + losses
+
+#DEGs
+#eqtls, enhancers, promoters, CpG, TFs, HiC, histones, dnaseI
+y = [X, 97]
+x = range(0, len(y))
+averages = [X, 1793, 2509] #total number of pairs
+
+fig, ax = plt.subplots()
+ax.stem(x, y)
+count = 0
+for i,j in zip(x,y):
+	ax.annotate(str(averages[count]), xy=(i,j), xytext=(-2,10), textcoords='offset points') #add the averages
+	count += 1
+plt.ylim(np.min(y), np.max(y)+100)
+plt.ylim(np.min(y), np.max(y))
+plt.title('SV-gene pairs that are DEG')
+ax.set_xticklabels(['', 'eQTLs', 'enhancers', 'promoters', 'CpG', 'TFs', 'HiC', 'Histones', 'DNAseI'])
+plt.xticks(rotation=90)
+plt.ylabel('Number of SV-gene pairs')
+plt.xlabel('Gained features')
+plt.tight_layout()
+plt.savefig('gains_deg_counts_addition.svg')
