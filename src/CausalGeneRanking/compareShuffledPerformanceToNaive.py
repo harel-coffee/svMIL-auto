@@ -37,6 +37,14 @@ if not os.path.exists('Output/RankedGenes/' + outputFolder):
 		pass
 	
 
+#Get the coding DEG pairs, these can be used later to fitler out SV-gene pairs that are DEG due to nearby coding
+codingDegPairs = np.load(sys.argv[2], allow_pickle=True, encoding='latin1')
+splitCodingDegPairs = dict()
+for pair in codingDegPairs[:,0]:
+	splitPair = pair.split("_")
+	newPair = splitPair[0] + "_" + splitPair[len(splitPair)-1]
+	splitCodingDegPairs[newPair] = 0
+
 #1. Filter SVs based on if these cause DEGs or affect COSMIC genes in the coding way
 
 def getSVsWithCodingEffects():
@@ -146,9 +154,10 @@ def getGenesWithSNVs():
 	return geneSNVPairs
 
 geneSNVPairs = getGenesWithSNVs()
-#2. Find all genes within a window of the filtered SVs
-def findAffectedGenesWithinWindow(somaticSVs):
-	
+#2. Find all genes within a window of the filtered SVsdef findAffectedGenesWithinWindow():
+def findAffectedGenesWithinWindow(somaticSVs):	
+	#Read all SVs and filter these for the coding effect SVs
+	somaticSVs = InputParser().getSVsFromFile(sys.argv[4], "all", codingEffectSVs)
 	causalGenes = InputParser().readCausalGeneFile(settings.files['causalGenesFile'])
 	nonCausalGenes = InputParser().readNonCausalGeneFile(settings.files['nonCausalGenesFile'], causalGenes) #In the same format as the causal genes.
 	
@@ -183,10 +192,11 @@ def findAffectedGenesWithinWindow(somaticSVs):
 				if gene[3].name not in affectedGenes:
 					affectedGenes.append(gene[3].name)
 					svStr = sv[0] + "_" + str(sv[1]) + "_" + str(sv[2]) + "_" + sv[3] + "_" + str(sv[4]) + "_" + str(sv[5]) + "_" + sv[7]
-					##Check if the gene does not have a coding SNV, otherwise filter it out
-					
-				svGenePairs.append(gene[3].name + "_" + svStr)
-					
+				
+				newPair = gene[3].name + "_" + sv[7]
+				if newPair not in splitCodingDegPairs:
+					svGenePairs.append(gene[3].name + "_" + svStr)
+	
 		else:
 			#look at both sides of the translocation on both chromosomes
 			
@@ -207,9 +217,8 @@ def findAffectedGenesWithinWindow(somaticSVs):
 				if gene[3].name not in affectedGenes:
 					affectedGenes.append(gene[3].name)
 					svStr = sv[0] + "_" + str(sv[1]) + "_" + str(sv[2]) + "_" + sv[3] + "_" + str(sv[4]) + "_" + str(sv[5]) + "_" + sv[7]
-						
 				svGenePairs.append(gene[3].name + "_" + svStr)
-					
+			
 			#Repeat for chr2
 			chr2GeneSubset = genes[np.where(genes[:,0] == sv[3])]
 			
@@ -227,20 +236,22 @@ def findAffectedGenesWithinWindow(somaticSVs):
 				if gene[3].name not in affectedGenes:
 					affectedGenes.append(gene[3].name)
 					svStr = sv[0] + "_" + str(sv[1]) + "_" + str(sv[2]) + "_" + sv[3] + "_" + str(sv[4]) + "_" + str(sv[5]) + "_" + sv[7]
-						
-				svGenePairs.append(gene[3].name + "_" + svStr)
-					
+				newPair = gene[3].name + "_" + sv[7]
+				if newPair not in splitCodingDegPairs:
+					svGenePairs.append(gene[3].name + "_" + svStr)
+			
 			
 	return affectedGenes, svGenePairs
 	
 affectedGenesWindowed, svGenePairsWindowed = findAffectedGenesWithinWindow(somaticSVs)
 np.savetxt("Output/windowedSVs.txt", svGenePairsWindowed, delimiter='\t', fmt='%s')
 print("Number of affected genes in windowed approach: ", len(affectedGenesWindowed))
+print("Number of SV-gene pairs windowed: ", len(svGenePairsWindowed))
 
 #3. Find all genes within the TAD of the filtered SVs
 ###Alternative to look at disrupted TADs, not just boundaries
 def findAffectedGenesByTadDisruptions(codingEffectSVs, somaticSVs):
-	
+		
 	tads = InputParser().getTADsFromFile(sys.argv[5])
 	causalGenes = InputParser().readCausalGeneFile(settings.files['causalGenesFile'])
 	nonCausalGenes = InputParser().readNonCausalGeneFile(settings.files['nonCausalGenesFile'], causalGenes) #In the same format as the causal genes.
@@ -305,7 +316,9 @@ def findAffectedGenesByTadDisruptions(codingEffectSVs, somaticSVs):
 						nonCodingSamples[gene[3].name] = []
 					nonCodingSamples[gene[3].name].append(sv[7])
 					
-					svGenePairs.append(gene[3].name + "_" + svStr)
+					newPair = gene[3].name + "_" + sv[7]
+					if newPair not in splitCodingDegPairs:
+						svGenePairs.append(gene[3].name + "_" + svStr)
 		
 		#repeat for translocations, but look at genes on both sides of the translocation on both chromosomes
 
@@ -340,7 +353,9 @@ def findAffectedGenesByTadDisruptions(codingEffectSVs, somaticSVs):
 							nonCodingSamples[gene[3].name] = []
 						nonCodingSamples[gene[3].name].append(sv[7])
 						
-						svGenePairs.append(gene[3].name + "_" + svStr)
+						newPair = gene[3].name + "_" + sv[7]
+						if newPair not in splitCodingDegPairs:
+							svGenePairs.append(gene[3].name + "_" + svStr)
 				
 			
 			#Repeat for the TAD on chr2
@@ -373,7 +388,9 @@ def findAffectedGenesByTadDisruptions(codingEffectSVs, somaticSVs):
 							nonCodingSamples[gene[3].name] = []
 						nonCodingSamples[gene[3].name].append(sv[7])
 						
-						svGenePairs.append(gene[3].name + "_" + svStr)
+						newPair = gene[3].name + "_" + sv[7]
+						if newPair not in splitCodingDegPairs:
+							svGenePairs.append(gene[3].name + "_" + svStr)
 
 	return affectedGenes, svGenePairs
 
@@ -381,6 +398,7 @@ tadAffectedGenes, tadSVGenePairs = findAffectedGenesByTadDisruptions(codingEffec
 np.savetxt("Output/tadSVs.txt", tadSVGenePairs, delimiter='\t', fmt='%s')
 
 print("TAD affected genes: ", len(tadAffectedGenes))
+print("Number of SV-gene pairs TAD: ", len(tadSVGenePairs))
 
 #4. Run the rule-based method on the filtered SVs
 

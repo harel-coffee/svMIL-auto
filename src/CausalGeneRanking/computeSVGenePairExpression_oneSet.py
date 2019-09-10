@@ -158,6 +158,8 @@ plt.clf()
 #here we go through the positive & negative set and do a random sampling without replacement from either until we have enough values.
 import random
 if shuffle == "True":
+	
+	#This is the case where we shuffle differently per gene
 	for gene in geneSampleExpr:
 		allExpr = negativeExpr[gene]
 		for sample in geneSampleExpr[gene]:
@@ -169,6 +171,8 @@ if shuffle == "True":
 			geneSampleExpr[gene][sample] = allExpr[randInd]
 			del allExpr[randInd]
 		negativeExpr[gene] = allExpr #remaining will be the negative set. 
+
+	#An alternative case where we shuffle the same across all samples
 
 
 def getDEPairs(pairs, geneSampleRef, epressionData, perPairDifferentialExpression, geneSampleExpr, negativeExpr):
