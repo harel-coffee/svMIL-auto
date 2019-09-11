@@ -431,11 +431,11 @@ for gene in diffGenes:
 	print(gene)
 
 #Compute the DEGs for each pair set
-windowExprCall = "python computeSVGenePairExpression_oneSet.py svGenePairsWindowed.txt" + " " + sys.argv[2] + " " + sys.argv[8] + ' False'
+windowExprCall = "python computeSVGenePairExpression_oneSet.py svGenePairsWindowed.txt" + " " + sys.argv[2] + " " + sys.argv[7] + ' False'
 os.system(windowExprCall)
-tadExprCall = "python computeSVGenePairExpression_oneSet.py tadSVGenePairs.txt" + " " + sys.argv[2] + " " + sys.argv[8] + ' False'
+tadExprCall = "python computeSVGenePairExpression_oneSet.py tadSVGenePairs.txt" + " " + sys.argv[2] + " " + sys.argv[7] + ' False'
 os.system(tadExprCall)
-rulesExprCall = "python computeSVGenePairExpression_oneSet.py ruleSvGenePairs.txt" + " " + sys.argv[2] + " " + sys.argv[8] + ' False'
+rulesExprCall = "python computeSVGenePairExpression_oneSet.py ruleSvGenePairs.txt" + " " + sys.argv[2] + " " + sys.argv[7] + ' False'
 os.system(rulesExprCall)
 
 # Read the DEG pairs and determine how many genes are DEG in total
@@ -645,7 +645,7 @@ def getAllCounts(files):
 
 import glob
 
-shuffledPath = sys.argv[7]
+shuffledPath = sys.argv[8]
 # 
 windowedCosmicDegCounts = getAllCounts(glob.glob(shuffledPath + 'windowedCosmicDegPairs.txt*'))
 tadCosmicDegCounts = getAllCounts(glob.glob(shuffledPath + 'tadCosmicDegPairs.txt*'))
