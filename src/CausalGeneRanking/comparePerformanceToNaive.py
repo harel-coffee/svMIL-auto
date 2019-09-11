@@ -351,7 +351,7 @@ np.savetxt("Output/tadSVs.txt", tadSVGenePairs, delimiter='\t', fmt='%s')
 
 print("TAD affected genes: ", len(tadAffectedGenes))
 print("Number of SV-gene pairs TAD-based: ", len(tadSVGenePairs))
-exit()
+
 #4. Run the rule-based method on the filtered SVs
 
 #here I wil bypass main for simplicity, but could be much neater I think. the issue is passing the exlucded SVs.
