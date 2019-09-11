@@ -168,7 +168,9 @@ def findAffectedGenesWithinWindow():
 				if gene[3].name not in affectedGenes:
 					affectedGenes.append(gene[3].name)
 					svStr = sv[0] + "_" + str(sv[1]) + "_" + str(sv[2]) + "_" + sv[3] + "_" + str(sv[4]) + "_" + str(sv[5]) + "_" + sv[7]
-				svGenePairs.append(gene[3].name + "_" + svStr)
+				newPair = gene[3].name + "_" + sv[7]
+				if newPair not in splitCodingDegPairs:
+					svGenePairs.append(gene[3].name + "_" + svStr)
 			
 			#Repeat for chr2
 			chr2GeneSubset = genes[np.where(genes[:,0] == sv[3])]
@@ -195,7 +197,7 @@ def findAffectedGenesWithinWindow():
 	return affectedGenes, svGenePairs
 	
 affectedGenesWindowed, svGenePairsWindowed = findAffectedGenesWithinWindow()
-np.savetxt("Output/windowedSVs.txt", svGenePairsWindowed, delimiter='\t', fmt='%s')
+np.savetxt('svGenePairsWindowed.txt', svGenePairsWindowed, delimiter='\t', fmt='%s')
 print("Number of affected genes in windowed approach: ", len(affectedGenesWindowed))
 print("Number of SV-gene pairs in windowed approach: ", len(svGenePairsWindowed))
 
@@ -347,7 +349,7 @@ def findAffectedGenesByTadDisruptions(codingEffectSVs):
 	return affectedGenes, svGenePairs
 
 tadAffectedGenes, tadSVGenePairs = findAffectedGenesByTadDisruptions(codingEffectSVs)
-np.savetxt("Output/tadSVs.txt", tadSVGenePairs, delimiter='\t', fmt='%s')
+np.savetxt('tadSVGenePairs.txt', tadSVGenePairs, delimiter='\t', fmt='%s')
 
 print("TAD affected genes: ", len(tadAffectedGenes))
 print("Number of SV-gene pairs TAD-based: ", len(tadSVGenePairs))
@@ -390,7 +392,7 @@ ruleBasedAffectedGenes = getGenesWithRuleBasedApproach()
 print("rule-based affected genes: ", len(ruleBasedAffectedGenes))
 ruleSvGenePairs = np.loadtxt('Output/RankedGenes/naive/BRCA//nonCoding_geneSVPairs.txt_none', dtype='object')
 
-np.savetxt('Output/ruleSVs.txt', ruleSvGenePairs[:,0], delimiter='\t', fmt='%s')
+np.savetxt('ruleSvGenePairs_withFeatures.txt', ruleSvGenePairs, delimiter='\t', fmt='%s')
 
 #Save all genes in memory to prevent re-computing every time
 #np.savetxt('affectedGenesWindowed.txt', affectedGenesWindowed, delimiter='\t', fmt='%s')
@@ -402,8 +404,8 @@ np.savetxt('ruleBasedAffectedGenes.txt', ruleBasedAffectedGenes, delimiter='\t',
 #print("Number of sv-gene pairs tads: ", len(tadSVGenePairs))
 print("Number of sv-gene pairs rules: ", ruleSvGenePairs.shape)
 
-#np.savetxt('svGenePairsWindowed.txt', svGenePairsWindowed, delimiter='\t', fmt='%s')
-#np.savetxt('tadSVGenePairs.txt', tadSVGenePairs, delimiter='\t', fmt='%s')
+np.savetxt('svGenePairsWindowed.txt', svGenePairsWindowed, delimiter='\t', fmt='%s')
+np.savetxt('tadSVGenePairs.txt', tadSVGenePairs, delimiter='\t', fmt='%s')
 np.savetxt('ruleSvGenePairs.txt', ruleSvGenePairs[:,0], delimiter='\t', fmt='%s')
 
 affectedGenesWindowed = np.loadtxt('affectedGenesWindowed.txt', dtype='object')
