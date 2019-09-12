@@ -111,7 +111,15 @@ print("Number of SVs filtered out with coding effects: ", len(codingEffectSVs))
 np.savetxt('codingEffectSVs.txt', codingEffectSVs, delimiter='\t', fmt='%s')
 codingEffectSVs = np.loadtxt('codingEffectSVs.txt', dtype='object')
 
-svData = InputParser().getSVsFromFile(sys.argv[4], "all", codingEffectSVs)
+svData = InputParser().getSVsFromFile(sys.argv[4], "all", [])
+
+#filter SVs for somatic SVs
+somaticSVs = []
+for sv in svData:
+	svStr = sv[0] + "_" + str(sv[1]) + "_" + str(sv[2]) + "_" + sv[3] + "_" + str(sv[4]) + "_" + str(sv[5]) + "_" + sv[7]
+	if svStr not in codingEffectSVs:
+		somaticSVs.append(sv)
+svData = np.array(somaticSVs, dtype='object')
 #Shuffle the SVs
 if shuffle == "True":
 	print("shuffling SVs")
@@ -119,6 +127,7 @@ if shuffle == "True":
 	somaticSVs = genomicShuffler.shuffleSVs(svData)
 else:
 	somaticSVs = svData
+
 
 #Get all sample-gene pairs with a coding SNV
 def getGenesWithSNVs():
@@ -157,7 +166,6 @@ geneSNVPairs = getGenesWithSNVs()
 #2. Find all genes within a window of the filtered SVsdef findAffectedGenesWithinWindow():
 def findAffectedGenesWithinWindow(somaticSVs):	
 	#Read all SVs and filter these for the coding effect SVs
-	somaticSVs = InputParser().getSVsFromFile(sys.argv[4], "all", codingEffectSVs)
 	causalGenes = InputParser().readCausalGeneFile(settings.files['causalGenesFile'])
 	nonCausalGenes = InputParser().readNonCausalGeneFile(settings.files['nonCausalGenesFile'], causalGenes) #In the same format as the causal genes.
 	
@@ -410,7 +418,7 @@ def getGenesWithRuleBasedApproach(svData):
 	#Combine the genes into one set. 
 	causalGenes = np.concatenate((causalGenes, nonCausalGenes), axis=0)
 	
-	NeighborhoodDefiner(causalGenes, svData, None, 'SV') #Provide the mode to ensure that the right variant type is used (different positions used in annotation)
+	NeighborhoodDefiner(causalGenes, svData, None, 'SV', codingEffectSVs) #Provide the mode to ensure that the right variant type is used (different positions used in annotation)
 	
 	#3. Do ranking of the genes and report the causal SVs
 	print("Ranking the genes for the variants")

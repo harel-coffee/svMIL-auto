@@ -108,9 +108,18 @@ codingEffectSVs = np.loadtxt('codingEffectSVs.txt', dtype='object')
 def findAffectedGenesWithinWindow():
 	
 	#Read all SVs and filter these for the coding effect SVs
-	somaticSVs = InputParser().getSVsFromFile(sys.argv[4], "all", codingEffectSVs)
+	somaticSVs = InputParser().getSVsFromFile(sys.argv[4], "all", [])
 	causalGenes = InputParser().readCausalGeneFile(settings.files['causalGenesFile'])
 	nonCausalGenes = InputParser().readNonCausalGeneFile(settings.files['nonCausalGenesFile'], causalGenes) #In the same format as the causal genes.
+	
+	
+	#Fiter out coding effect SVs
+	svData = []
+	for sv in somaticSVs:
+		svStr = sv[0] + "_" + str(sv[1]) + "_" + str(sv[2]) + "_" + sv[3] + "_" + str(sv[4]) + "_" + str(sv[5]) + "_" + sv[7]
+		if svStr not in codingEffectSVs:
+			svData.append(sv)
+	somaticSVs = np.array(svData, dtype='object')
 	
 	#Combine the genes into one set. 
 	genes = np.concatenate((causalGenes, nonCausalGenes), axis=0)
@@ -122,6 +131,7 @@ def findAffectedGenesWithinWindow():
 	svGenePairs = []
 	#For every SV, look at 2 mb to the left of the left breakpoint, and look at 2 mb to the right of the right breakpoint.
 	for sv in somaticSVs:
+		svStr = sv[0] + "_" + str(sv[1]) + "_" + str(sv[2]) + "_" + sv[3] + "_" + str(sv[4]) + "_" + str(sv[5]) + "_" + sv[7]
 		
 		#Split translocations and non-translocations
 		if sv[0] == sv[3]:
@@ -142,7 +152,6 @@ def findAffectedGenesWithinWindow():
 			for gene in matchingGenes:
 				if gene[3].name not in affectedGenes:
 					affectedGenes.append(gene[3].name)
-					svStr = sv[0] + "_" + str(sv[1]) + "_" + str(sv[2]) + "_" + sv[3] + "_" + str(sv[4]) + "_" + str(sv[5]) + "_" + sv[7]
 				
 				newPair = gene[3].name + "_" + sv[7]
 				if newPair not in splitCodingDegPairs:
@@ -164,14 +173,18 @@ def findAffectedGenesWithinWindow():
 			matchingGenesStart = chr1GeneSubset[startMatches] #genes must be either matching on the left or right.
 			matchingGenesEnd = chr1GeneSubset[endMatches] #genes must be either matching on the left or right.
 			matchingGenes = np.concatenate((matchingGenesStart, matchingGenesEnd), axis=0)
+			
+		
 			for gene in matchingGenes:
 				if gene[3].name not in affectedGenes:
 					affectedGenes.append(gene[3].name)
-					svStr = sv[0] + "_" + str(sv[1]) + "_" + str(sv[2]) + "_" + sv[3] + "_" + str(sv[4]) + "_" + str(sv[5]) + "_" + sv[7]
+					
 				newPair = gene[3].name + "_" + sv[7]
+				
 				if newPair not in splitCodingDegPairs:
 					svGenePairs.append(gene[3].name + "_" + svStr)
-			
+				
+				
 			#Repeat for chr2
 			chr2GeneSubset = genes[np.where(genes[:,0] == sv[3])]
 			
@@ -185,14 +198,16 @@ def findAffectedGenesWithinWindow():
 			matchingGenesStart = chr2GeneSubset[startMatches] #genes must be either matching on the left or right.
 			matchingGenesEnd = chr2GeneSubset[endMatches] #genes must be either matching on the left or right.
 			matchingGenes = np.concatenate((matchingGenesStart, matchingGenesEnd), axis=0)
+			
+			
 			for gene in matchingGenes:
 				if gene[3].name not in affectedGenes:
 					affectedGenes.append(gene[3].name)
-					svStr = sv[0] + "_" + str(sv[1]) + "_" + str(sv[2]) + "_" + sv[3] + "_" + str(sv[4]) + "_" + str(sv[5]) + "_" + sv[7]
 				newPair = gene[3].name + "_" + sv[7]
+				
 				if newPair not in splitCodingDegPairs:
+				
 					svGenePairs.append(gene[3].name + "_" + svStr)
-			
 			
 	return affectedGenes, svGenePairs
 	
@@ -205,13 +220,21 @@ print("Number of SV-gene pairs in windowed approach: ", len(svGenePairsWindowed)
 ###Alternative to look at disrupted TADs, not just boundaries
 def findAffectedGenesByTadDisruptions(codingEffectSVs):
 		
-	somaticSVs = InputParser().getSVsFromFile(sys.argv[4], "all", codingEffectSVs)
+	somaticSVs = InputParser().getSVsFromFile(sys.argv[4], "all", [])
 	tads = InputParser().getTADsFromFile(sys.argv[5])
 	causalGenes = InputParser().readCausalGeneFile(settings.files['causalGenesFile'])
 	nonCausalGenes = InputParser().readNonCausalGeneFile(settings.files['nonCausalGenesFile'], causalGenes) #In the same format as the causal genes.
 	
 	#Combine the genes into one set. 
 	genes = np.concatenate((causalGenes, nonCausalGenes), axis=0)
+	
+	#Fiter out coding effect SVs
+	svData = []
+	for sv in somaticSVs:
+		svStr = sv[0] + "_" + str(sv[1]) + "_" + str(sv[2]) + "_" + sv[3] + "_" + str(sv[4]) + "_" + str(sv[5]) + "_" + sv[7]
+		if svStr not in codingEffectSVs:
+			svData.append(sv)
+	somaticSVs = np.array(svData, dtype='object')
 	
 	#For each TAD, determine which SVs start or end within the TAD
 	affectedGenes = []
@@ -364,13 +387,20 @@ def getGenesWithRuleBasedApproach():
 	#Combine the genes into one set. 
 	causalGenes = np.concatenate((causalGenes, nonCausalGenes), axis=0)
 	
-	svData = InputParser().getSVsFromFile(sys.argv[4], "all", codingEffectSVs)
+	svData = InputParser().getSVsFromFile(sys.argv[4], "all", [])
 	
-	NeighborhoodDefiner(causalGenes, svData, None, 'SV') #Provide the mode to ensure that the right variant type is used (different positions used in annotation)
+	NeighborhoodDefiner(causalGenes, svData, None, 'SV', codingEffectSVs) #Provide the mode to ensure that the right variant type is used (different positions used in annotation)
+	
+	somaticSVs = []
+	for sv in svData:
+		svStr = sv[0] + "_" + str(sv[1]) + "_" + str(sv[2]) + "_" + sv[3] + "_" + str(sv[4]) + "_" + str(sv[5]) + "_" + sv[7]
+		if svStr not in codingEffectSVs:
+			somaticSVs.append(sv)
+	somaticSVs = np.array(somaticSVs, dtype='object')
 	
 	#3. Do ranking of the genes and report the causal SVs
 	print("Ranking the genes for the variants")
-	geneRanking = GeneRanking(causalGenes[:,3], svData, 'SV', 'naive', 'none')
+	geneRanking = GeneRanking(causalGenes[:,3], somaticSVs, 'SV', 'naive', 'none')
 	
 	#Read the genes from the ranking
 	affectedGenes = []
@@ -393,20 +423,18 @@ print("rule-based affected genes: ", len(ruleBasedAffectedGenes))
 ruleSvGenePairs = np.loadtxt('Output/RankedGenes/naive/BRCA//nonCoding_geneSVPairs.txt_none', dtype='object')
 
 np.savetxt('ruleSvGenePairs_withFeatures.txt', ruleSvGenePairs, delimiter='\t', fmt='%s')
+np.savetxt('ruleSvGenePairs.txt', ruleSvGenePairs[:,0], delimiter='\t', fmt='%s')
 
 #Save all genes in memory to prevent re-computing every time
-#np.savetxt('affectedGenesWindowed.txt', affectedGenesWindowed, delimiter='\t', fmt='%s')
-#np.savetxt('tadAffectedGenes.txt', tadAffectedGenes, delimiter='\t', fmt='%s')
+np.savetxt('affectedGenesWindowed.txt', affectedGenesWindowed, delimiter='\t', fmt='%s')
+np.savetxt('tadAffectedGenes.txt', tadAffectedGenes, delimiter='\t', fmt='%s')
 np.savetxt('ruleBasedAffectedGenes.txt', ruleBasedAffectedGenes, delimiter='\t', fmt='%s')
 
-
-#print("Number of sv-gene pairs windowed: ", len(svGenePairsWindowed))
-#print("Number of sv-gene pairs tads: ", len(tadSVGenePairs))
+print("Number of sv-gene pairs windowed: ", len(svGenePairsWindowed))
+print("Number of sv-gene pairs tads: ", len(tadSVGenePairs))
 print("Number of sv-gene pairs rules: ", ruleSvGenePairs.shape)
 
-np.savetxt('svGenePairsWindowed.txt', svGenePairsWindowed, delimiter='\t', fmt='%s')
-np.savetxt('tadSVGenePairs.txt', tadSVGenePairs, delimiter='\t', fmt='%s')
-np.savetxt('ruleSvGenePairs.txt', ruleSvGenePairs[:,0], delimiter='\t', fmt='%s')
+
 
 affectedGenesWindowed = np.loadtxt('affectedGenesWindowed.txt', dtype='object')
 tadAffectedGenes = np.loadtxt('tadAffectedGenes.txt', dtype='object')
@@ -441,7 +469,6 @@ rulesExprCall = "python computeSVGenePairExpression_oneSet.py ruleSvGenePairs.tx
 os.system(rulesExprCall)
 
 # Read the DEG pairs and determine how many genes are DEG in total
-svGenePairsWindowed = np.loadtxt("Output/windowedSVs.txt", dtype='object')
 windowSVsDegPairs = np.load("svGenePairsWindowed.txt_degPairs.npy", allow_pickle=True, encoding='latin1')
 tadSVsDegPairs = np.load("tadSVGenePairs.txt_degPairs.npy", allow_pickle=True, encoding='latin1')
 ruleSVsDegPairs = np.load("ruleSvGenePairs.txt_degPairs.npy", allow_pickle=True, encoding='latin1')

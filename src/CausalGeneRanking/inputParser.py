@@ -23,7 +23,7 @@ import settings
 
 class InputParser:
 	
-	def getSVsFromFile(self, svFile, typeFilter, excludedSVs):
+	def getSVsFromFile(self, svFile, typeFilter, excludedSVs): #excluded SVs no longer used here!!!
 		"""
 			Parse the SV data from the SV input file.
 			
@@ -69,6 +69,9 @@ class InputParser:
 				cancerType = splitLine[cancerTypeIndex]
 				sampleName = splitLine[sampleNameIndex]
 				
+				
+					
+				
 				# #Dirty workaround to make sure that the cancer type names are the same, we only focus on 1 type for this intial run
 				if cancerType == "breast/gastric":
 					cancerType = "breast"
@@ -79,6 +82,7 @@ class InputParser:
 				
 				svTypeIndex = header.index("sv_type")
 				svType = splitLine[svTypeIndex]
+				
 				
 				# doubleTypeMatch = re.search("_", svType, re.IGNORECASE)
 				# if doubleTypeMatch is not None:
@@ -196,8 +200,7 @@ class InputParser:
 					
 					#Check if this SV needs to be exluded
 					svStr = chr1 + "_" + str(s1) + "_" + str(e1) + "_" + chr2 + "_" + str(s2) + "_" + str(e2) + "_" + sampleName
-					if svStr in excludedSVs:
-						continue
+
 					variantsList.append([chr1, s1, e1, chr2, s2, e2, cancerType, sampleName, svObject])
 					
 				else:
@@ -205,8 +208,7 @@ class InputParser:
 					
 					#Check if this SV needs to be exluded
 					svStr = 'chr' + chr1 + "_" + str(s1) + "_" + str(e1) + "_" + 'chr' + chr2 + "_" + str(s2) + "_" + str(e2) + "_" + sampleName
-					if svStr in excludedSVs:
-						continue
+
 					variantsList.append(['chr' + chr1, s1, e1, 'chr' + chr2, s2, e2, cancerType, sampleName, svObject])
 				#chr 1, start, end, chr2, start2, end2
 				

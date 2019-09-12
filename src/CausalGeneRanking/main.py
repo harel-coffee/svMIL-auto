@@ -96,13 +96,7 @@ if permutationYN == "True":
 #2. Get the neighborhood for these genes based on the SVs or SNVs
 if mode == "SV":
 	print("Defining the neighborhood for the causal genes and the SVs")
-	NeighborhoodDefiner(causalGenes, svData, None, mode) #Provide the mode to ensure that the right variant type is used (different positions used in annotation)
-if mode == "SNV":
-	print("Defining the neighborhood for the causal genes and the SNVs")
-	NeighborhoodDefiner(causalGenes, None, snvData, mode) #Provide the mode to ensure that the right variant type is used (different positions used in annotation)
-if mode == "SV+SNV":
-	print("Defining the neighborhood for the causal genes and the SVs and SNVs")
-	NeighborhoodDefiner(causalGenes, svData, snvData, mode) #Provide the mode to ensure that the right variant type is used (different positions used in annotation)
+	NeighborhoodDefiner(causalGenes, svData, None, mode, excludedSVs) #Provide the mode to ensure that the right variant type is used (different positions used in annotation)
 	
 
 #3. Do ranking of the genes and report the causal SVs
