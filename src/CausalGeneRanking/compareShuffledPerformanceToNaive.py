@@ -225,7 +225,9 @@ def findAffectedGenesWithinWindow(somaticSVs):
 				if gene[3].name not in affectedGenes:
 					affectedGenes.append(gene[3].name)
 					svStr = sv[0] + "_" + str(sv[1]) + "_" + str(sv[2]) + "_" + sv[3] + "_" + str(sv[4]) + "_" + str(sv[5]) + "_" + sv[7]
-				svGenePairs.append(gene[3].name + "_" + svStr)
+				newPair = gene[3].name + "_" + sv[7]
+				if newPair not in splitCodingDegPairs:
+					svGenePairs.append(gene[3].name + "_" + svStr)
 			
 			#Repeat for chr2
 			chr2GeneSubset = genes[np.where(genes[:,0] == sv[3])]
