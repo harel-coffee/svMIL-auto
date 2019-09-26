@@ -34,26 +34,89 @@ pairs, labels = InputParser().processSVGenePairs(sys.argv[1], sys.argv[2])
 #2. Define a feature matrix
 featureMatrixDefiner = FeatureMatrixDefiner()
 featureMatrixDefiner.setFeatureData()
-matrix = featureMatrixDefiner.defineFeatureMatrix(pairs)
+svGenePairsRules = np.loadtxt(sys.argv[3], dtype='object')
+bags, instances, bagLabels = featureMatrixDefiner.defineFeatureMatrix(pairs, labels, svGenePairsRules)
 
-print(matrix.shape)
+print(bags.shape)
+print(instances.shape)
+print(bagLabels.shape)
+
+#Make similarity matrix
+
+print("generating similarity matrix")
+
+#Unfold the training bags so that we can compute the distance matrix at once to all genes
+bagMap = dict()
+reverseBagMap = dict()
+geneInd = 0
+for bagInd in range(0, bags.shape[0]):
+	reverseBagMap[bagInd] = []
+	for gene in bags[bagInd]:
+		bagMap[geneInd] = bagInd
+		reverseBagMap[bagInd].append(geneInd)
+		
+		geneInd += 1
+
+bagIndices = np.arange(bags.shape[0])
+similarityMatrix = np.zeros([bags.shape[0], instances.shape[0]])
+print("Number of bags: ", bags.shape[0])
+for bagInd in range(0, bags.shape[0]):
+	
+	#Get the indices of the instances that are in this bag
+	instanceIndices = reverseBagMap[bagInd]
+	
+	instanceSubset = instances[instanceIndices,:]
+	otherInstances = np.vstack(bags[bagIndices != bagInd])
+	
+	instanceAvg = [np.mean(instanceSubset[:,0]), np.mean(instanceSubset[:,1])]
+	
+	#compute distance to all other instances
+	distance = np.abs(instanceAvg - instances)
+
+	summedDistance = np.sum(distance,axis=1)
+	similarityMatrix[bagInd,:] = summedDistance
+	continue
+	
+	
+	
+	#Compute the pairwise distance matrix here
+	minDistance = float("inf")
+	minDistanceInd = 0
+	for instanceInd in range(0, instanceSubset.shape[0]):
+		instance = instanceSubset[instanceInd]
+		distance = np.abs(instance - instances) #compute the distances to the train instances, otherwise we are not in the same similarity space. 
+
+		#distance = np.abs(instance - otherInstances)
+
+		summedDistance = np.sum(distance,axis=1)
+
+		currentMinDistance = np.mean(summedDistance)
+		if currentMinDistance < np.mean(minDistance):
+			minDistance = summedDistance
+			minDistanceInd = instanceInd
+
+	#This instance will be used as representative for this bag. We use this value as the similarity to all other instances.  
+	similarityMatrix[bagInd] = minDistance
 
 
-# pca = PCA(n_components=2)
-# projected = pca.fit_transform(matrix)
-# 
-# colorLabels = []
-# 
-# for label in labels:
-# 	
-# 	if label == 1:
-# 		colorLabels.append('r')
-# 	else:
-# 		colorLabels.append('b')
-# 
-# fig,ax=plt.subplots(figsize=(7,5))
-# plt.scatter(projected[:, 0], projected[:, 1], c=colorLabels)
-# plt.show()
+
+
+pca = PCA(n_components=2)
+projected = pca.fit_transform(similarityMatrix)
+
+colorLabels = []
+
+for label in bagLabels:
+	
+	if label == 1:
+		colorLabels.append('r')
+	else:
+		colorLabels.append('b')
+
+fig,ax=plt.subplots(figsize=(7,5))
+plt.scatter(projected[:, 0], projected[:, 1], c=colorLabels)
+plt.show()
+exit()
 # 
 # 
 # 

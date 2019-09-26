@@ -5,164 +5,131 @@
 
 import random
 import numpy as np
+import sys
+from inputParser import InputParser
+import settings
 
-#let's start with a very simple simulated case to see if our idea works.
-#We make bags representing windows, and instances representing the elements inside this window (for now, SVs and TAD boundaries)
+## Describe each window with the elements that are in that window.
+# Get the SV-gene pairs that are DEG and non-DEG
+#For the 4 MB windows, collect each element that is inside those windows.
+#List: TADs, enhancers, SV, genes
 
-#For a positive window, we model a SV overlapping a TAD boundary
-#For a negative window, we model an SV never overlapping any TAD boundary
+pairs, pairLabels = InputParser().processSVGenePairs(sys.argv[1], sys.argv[2])
+enhancerData = InputParser().getEnhancersFromFile(settings.files['enhancerFile'])
+tadData = InputParser().getTADsFromFile(settings.files['tadFile'])
+causalGenes = InputParser().readCausalGeneFile(settings.files['causalGenesFile'])
+nonCausalGenes = InputParser().readNonCausalGeneFile(settings.files['nonCausalGenesFile'], causalGenes) #In the same format as the causal genes.
+svGenePairsRules = np.loadtxt(sys.argv[3], dtype='object')
 
-#The instances will for now have simple features: their positions. A start position, and an end postion.
-#First, we can use 1 TAD boundary, so there will be 2 instances for each window: a TAD boundary, and an SV.
-
-### For boundary overlap prediction
-
-# 
-# window = 2000000 #test with our 2 MB window
-# svSize = 500000 #use a 500 kb size for the SV for now. 
-# 
-# examples = 1000
-# 
-# bags = []
-# labels = []
-# 
-# for exampleInd in range(0, examples):
-# 	#Make 1000 examples where we have a random SV start and SV end, where the TAD boundary position is in the middle (any position).
-# 	
-# 	#The SV can start max window - size
-# 	svStart = random.randint(0, (window-svSize))
-# 	svEnd = svStart + svSize
-# 	
-# 	svInstance = [svStart, svEnd]
-# 	
-# 	#randomly choose a TAD boundary within the SV.
-# 	tadPosPositive = random.randint(svStart, svEnd)
-# 	
-# 	tadInstance = [tadPosPositive, tadPosPositive] #TAD boundaries start and end at the same bp.
-# 	
-# 	
-# 	#keep these windows,store the instances in the bag.
-# 	instances = [svInstance, tadInstance]
-# 	bags.append(instances)
-# 	labels.append(1)
-# 	
-# 	#Make 1000 examples where we have a random SV start and SV end, where the TAD boundary position is not inside this SV. 
-# 	
-# 	svStart = random.randint(0, (window-svSize))
-# 	svEnd = svStart + svSize
-# 	
-# 	svInstance = [svStart, svEnd]
-# 	
-# 	#Randomly choose a TAD boundary outside of the SV.
-# 	#coin flip for which side of the SV
-# 	ind = random.randint(0,1)
-# 	
-# 	if ind == 0: #left side
-# 		tadPosNegative = random.randint(0,svStart)
-# 	else:
-# 		tadPosNegative = random.randint(svEnd, window)
-# 
-# 	tadInstance = [tadPosNegative, tadPosNegative] #TAD boundaries start and end at the same bp.
-# 
-# 	instances = [svInstance, tadInstance]
-# 	bags.append(instances)
-# 	labels.append(0)
-
-###For the full case with enhancer disruptions
-
-windowCount = 2500
-windowSize = 2000000
-binSize = 1000
-tadSize = 10000 #10kb
-geneSize = 1000
-svSize = 1000
-enhancerCount = 5
+#Combine the genes into one set. 
+geneData = np.concatenate((causalGenes, nonCausalGenes), axis=0)
 
 bags = []
 labels = []
+currentChr = None
+window = 1000000 #look in a 2 MB window
+pairInd = -1
+posBags = []
+negBags = []
+for pair in pairs:
+	pairInd += 1
+	pairStr = "_".join([str(i) for i in pair])
+	if pairStr not in svGenePairsRules[:,0]:
+		continue
+	#look in a 1 MB window around the SV of the pair.
+	#find enhancers, genes and TADs that are inside this window
 
-for window in range(0, windowCount):
-
-	#2. Randomly place 2 TADs within this window
-	#The minimum place to start is at the beginning, and we need to fit 2*tad size (back to back), so the maximum start is window size - 2*tad size
-	minimumStart = 0
-	maximumStart = windowSize - (2*tadSize)
 	
-	tad1Start = random.randint(minimumStart, maximumStart)
-	tad1End = tad1Start + tadSize
-	tad2Start = tad1End
-	tad2End = tad2Start + tadSize
-
-	#3. Set a negative SV in 1 window, and a positive in the other
-	#the SV must be within either TAD, do a coin flip for that.
-	tadNumber = random.randint(0,1)
+	sv = pair[1:len(pair)]
 	
-	#Then select a random position within the TAD, but not disrupting the boundary.
-	if tadNumber == 0:
-		negSvStart = random.randint(tad1Start + 1, tad1End - 1 - svSize)
-		negSvEnd = negSvStart + svSize
+	
+	instances = []
+	
+	#only get a new chr subset if the chr changes
+	if sv[0] != currentChr:
+		#Get the subset of eQTls on this chromosome
+		chr1SubsetEnh = enhancerData[np.where(enhancerData[:,0] == sv[0])]
+		print(chr1SubsetEnh.shape)
+		currentChr = sv[0]
+		
+		#Get the subset of eQTls on this chromosome
+		chr1SubsetTAD = tadData[np.where(tadData[:,0] == sv[0])]
+		print(chr1SubsetTAD.shape)
+		
+		chr1SubsetGene = geneData[np.where(geneData[:,0] == sv[0])]
+		print(chr1SubsetGene.shape)
+	
+	startMatches = sv[1] <= chr1SubsetTAD[:,2]
+	endMatches = sv[5] >= chr1SubsetTAD[:,1]
+			
+	tadMatches = chr1SubsetTAD[startMatches * endMatches]
+	
+	leftTAD = tadMatches[0]
+	rightTAD = tadMatches[len(tadMatches)-1]
+		
+	
+	#The only eQTLs we consider are the ones that are starting or ending within the window, and are not within the SV.
+	#So, the start must be befor the SV breakpoint, the end after the SV bp-window, but end before the SV breakpoint.
+	startMatches = (chr1SubsetEnh[:,1] <= sv[1]) * (chr1SubsetEnh[:,1] >= leftTAD[1]) * (chr1SubsetEnh[:,2] <= sv[1])
+			
+	#The reverse for the end of the SV.
+	endMatches = (chr1SubsetEnh[:,2] >= sv[5]) * (chr1SubsetEnh[:,2] <= rightTAD[2]) * (chr1SubsetEnh[:,1] >= sv[5])
+	
+	matchingStart = chr1SubsetEnh[startMatches] # must be either matching on the left or right.
+	matchingEnd = chr1SubsetEnh[endMatches] # must be either matching on the left or right.
+	
+	#For every position, determine the position relative to the SV and add it at the right place in the feature vector.
+	for match in matchingStart:
+		instances.append(np.array([match[1], match[2]]))
+		
+	
+	#TADs
+	
+	instances.append(np.array([rightTAD[2], leftTAD[1]]))
+
+	
+	#Genes
+	
+	#Match for TADs that start in the start window
+	startStartMatches = (chr1SubsetGene[:,1] <= sv[1]) * (chr1SubsetGene[:,1] >= leftTAD[1])
+	#Match for TADs that end in the start window		
+	startEndMatches = (chr1SubsetGene[:,2] <= sv[1]) * (chr1SubsetGene[:,2] >= leftTAD[1])		
+			
+	#The reverse for the end ofchr1SubsetGenethe SV.
+	endStartMatches = (chr1SubsetGene[:,1] >= sv[5]) * (chr1SubsetGene[:,1] <= rightTAD[2])
+	endEndMatches = (chr1SubsetGene[:,2] >= sv[5]) * (chr1SubsetGene[:,2] <= rightTAD[2])
+	
+	matchingStart = chr1SubsetGene[startStartMatches + startEndMatches] # must be either matching on the left or right.
+	matchingEnd = chr1SubsetGene[endStartMatches + endEndMatches] # must be either matching on the left or right.
+	
+	matches = np.concatenate((matchingStart, matchingEnd))
+	
+	for match in matches:
+		instances.append(np.array([match[1], match[2]]))
+
+
+	#SV
+	instances.append(np.array([sv[1], sv[5]]))
+	if pairLabels[pairInd] == 0:
+		negBags.append(np.array(instances))
 	else:
-		negSvStart = random.randint(tad2Start + 1, tad2End - 1 - svSize)
-		negSvEnd = negSvStart + svSize
+		posBags.append(np.array(instances))
 	
-	#The positive SV overlaps the boundary. 
-	posSvStart = tad1End - (svSize/2)
-	posSvEnd = posSvStart + svSize
-	
-	#4. Decide based on SV placement where the gene and enhancers will be placed
-	#It may be easy to fix the gene placement based on where the SV is not. That may make it quite easy for the classifier, but we can fix that later.
-	if tadNumber == 0:
-		#place the gene in the second TAD.
-		geneStart = random.randint(tad2Start, tad2End)
-		geneEnd = geneStart + geneSize
-		#place the enhancers randomly around the negative SV in the first TAD, make sure that there is no overlap for now.
-		enhancerWindow = list(np.arange(tad1Start, negSvStart))
-		enhancerWindow += list(np.arange(negSvEnd, posSvStart))
-		enhancersPos = np.random.choice(enhancerWindow, enhancerCount, replace=False)
-	else:
-		#place the gene in the first TAD.
-		geneStart = random.randint(tad1Start, tad1End)
-		geneEnd = geneStart + geneSize
-		#place the enhancers randomly around the negative SV in the second TAD, make sure that there is no overlap for now.
-		enhancerWindow = list(np.arange(posSvEnd, negSvStart)) #exclude the positive SV such that the enhancers never overlap with the SV. 
-		enhancerWindow += list(np.arange(negSvEnd, tad2End))
-		enhancersPos = np.random.choice(enhancerWindow, enhancerCount, replace=False)
-	
-	#5. Make feature descriptions like we do for the other windows (same bin size)
-	
-	posInstances = []
-	negInstances = []
-	
-	geneInstance = [geneStart, geneEnd]
-	tad1Instance = [tad1Start, tad1End]
-	tad2Instance = [tad2Start, tad2End]
-	posSvInstance = [posSvStart, posSvEnd]
-	negSvInstance = [negSvStart, negSvEnd]
-	
-	posInstances = [geneInstance, tad1Instance, tad2Instance, posSvInstance]
-	negInstances = [geneInstance, tad1Instance, tad2Instance, negSvInstance]
-	
-	for enhancerPos in enhancersPos:
-		posInstances.append([enhancerPos, enhancerPos])
-		negInstances.append([enhancerPos, enhancerPos])
-	
-	bags.append(posInstances)
-	labels.append(1)
-	bags.append(negInstances)
-	labels.append(0)
+posBags = np.array(posBags)
+negBags = np.array(negBags)
+negBagsSubsampled = np.random.choice(negBags, posBags.shape[0])	
 
-
-bags = np.array(bags)
+bags = np.concatenate((posBags, negBagsSubsampled))
 instances = np.vstack(bags)
-
+labels = [1]*posBags.shape[0] + [0]*negBagsSubsampled.shape[0]
 
 from random import shuffle
-#shuffle(labels)
+shuffle(labels)
 
 labels = np.array(labels)
 
 print(bags)
-print(instances)
+print(instances.shape)
 
 #Run MILES
 
@@ -189,8 +156,18 @@ for bagInd in range(0, bags.shape[0]):
 	instanceIndices = reverseBagMap[bagInd]
 	
 	instanceSubset = instances[instanceIndices,:]
-	
 	otherInstances = np.vstack(bags[bagIndices != bagInd])
+	
+	instanceAvg = [np.mean(instanceSubset[:,0]), np.mean(instanceSubset[:,1])]
+	
+	#compute distance to all other instances
+	distance = np.abs(instanceAvg - instances)
+
+	summedDistance = np.sum(distance,axis=1)
+	similarityMatrix[bagInd,:] = summedDistance
+	continue
+	
+	
 	
 	#Compute the pairwise distance matrix here
 	minDistance = float("inf")

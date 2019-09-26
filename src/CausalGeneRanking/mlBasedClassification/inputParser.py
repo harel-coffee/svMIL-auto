@@ -14,6 +14,10 @@ from __future__ import print_function
 import numpy as np
 from random import randint
 import re
+from gene import Gene
+from sv import SV
+from tad import TAD
+from element import Element
 
 class InputParser:
 
@@ -70,7 +74,8 @@ class InputParser:
 		
 		#Randomly subsample the SV-pairs to be balanced with the DEG pairs
 		np.random.seed(0)
-		negativePairsSubsampled = np.random.choice(negativePairs, positivePairs.shape[0])
+		#negativePairsSubsampled = np.random.choice(negativePairs, positivePairs.shape[0])
+		negativePairsSubsampled = negativePairs
 		
 		print(positivePairs.shape)
 		print(negativePairsSubsampled.shape)
@@ -90,7 +95,114 @@ class InputParser:
 
 		return sortedPairs, sortedLabels
 
+	
+	def readCausalGeneFile(self, causalGeneFile):
+		"""
+			Read the COSMIC genes from the file.
+			
+			causalGeneFile: (string) location of the file with COSMIC genes.
+			
+			return
+			cosmicGenesSorted: (numpy array) array with the genes and their information, lexographically sorted by chromosome. chr, start, end, geneObject
+		"""
+		
+			
+		cosmicGenes = [] 
+		with open(causalGeneFile, 'r') as geneFile:
+			
+			lineCount = 0
+			header = []
+			for line in geneFile:
+				splitLine = line.split("\t")
+				#First extract the header and store it in the dictionary to remove dependency on the order of columns in the file
+				if lineCount < 1:
+		
+					header = splitLine
+					lineCount += 1
+					continue
+					
+				#Obtain the gene name and gene position
+				
+				geneSymbolInd = header.index('Gene Symbol')
+				genePositionInd = header.index('Genome Location')
+				
+				geneSymbol = splitLine[geneSymbolInd]
+				genePosition = splitLine[genePositionInd]
+				
+				#Split the gene position into chr, start and end
+				
+				colonSplitPosition = genePosition.split(":")
+				dashSplitPosition = colonSplitPosition[1].split("-")
+				
+				chromosome = colonSplitPosition[0]
+				start = dashSplitPosition[0].replace('"',"") #apparently there are some problems with the data, sometimes there are random quotes in there
+				end = dashSplitPosition[1].replace('"', "")
+				
+				if start == '' or end == '':
+					continue
+				
+				gene = Gene(geneSymbol, "chr" + chromosome, int(start), int(end)) #Keep in objects for easy access of properties related to the neighborhood of the gene
+				
+				cosmicGenes.append(["chr" + chromosome, int(start), int(end), gene])
+				
+		#Sort the genes
+		cosmicGenes = np.array(cosmicGenes, dtype='object')
+		
+		sortedInd = np.lexsort((cosmicGenes[:,1], cosmicGenes[:,0])) #first sort by chromosome and then by start position. 
+		cosmicGenesSorted = cosmicGenes[sortedInd]
+	
+		return cosmicGenesSorted
+		
+	def readNonCausalGeneFile(self, nonCausalGeneFile, causalGenes):
+		"""
+			Read the non-causal genes. These are filtered for genes that are in COSMIC to make sure that these do not overlap. 
+			
+			
+			nonCausalGeneFile: (string) location of the file with non-causal (non-COSMIC) genes. 
+			causalGenes: (numpy array) array with the genes and their information. chr, start, end, geneObject
+			
+			return:
+			nonCausalGenes: (numpy array) array with the non-causal genes and their information. chr, start, end, geneObject
+			
+		"""
+		causalGeneDict = dict() #for filtering out genes that are already present in the causal gene list
+		for gene in causalGenes:
+			geneObj = gene[3]
+			causalGeneDict[geneObj.name] = 1			
+		
+		nonCausalGeneList = []
+		nonCausalGeneNameDict = dict() #dictionary to keep the names of genes that are already in our list and don't need to be sampled again. 
+		
+		with open(nonCausalGeneFile, 'r') as geneFile:
+			
+			lineCount = 0
+			for line in geneFile:
+				line = line.strip()
+				splitLine = line.split("\t")
+				
+				
+				
+				#Obtain the name, chromosome and positions of the gene. 
+				
+				geneID = splitLine[3]
+				
+				
+				chrom = splitLine[0]
 
+				start = splitLine[1]
+				end = splitLine[2]
+				
+				geneObj = Gene(geneID, chrom, int(start), int(end))
+				
+				if geneID not in causalGeneDict:
+				
+					nonCausalGeneList.append([chrom, int(start), int(end), geneObj])
+				
+		nonCausalGenes = np.array(nonCausalGeneList, dtype="object")
+	
+		
+		return nonCausalGenes 
+	
 	#Read TAD data
 	def getTADsFromFile(self, tadFile):
 		"""
@@ -116,8 +228,10 @@ class InputParser:
 				splitLine = line.split("\t")
 				
 				
+				TADObject = TAD(splitLine[0], int(splitLine[1]), int(splitLine[2]))
+				
 				#chr, start, end
-				tadData.append([splitLine[0], int(splitLine[1]), int(splitLine[2])])
+				tadData.append([splitLine[0], int(splitLine[1]), int(splitLine[2]), TADObject])
 		
 		#Also convert the other dataset to numpy
 		tadData = np.array(tadData, dtype='object')
@@ -137,7 +251,7 @@ class InputParser:
 		return np.array(sortedTads)
 	
 	#Reading eQTL file
-	def getEQTLsFromFile(self, eQTLFile):
+	def getEQTLsFromFile(self, eQTLFile, genes, neighborhoodDefiner):
 		"""
 			Read the eQTLs from the file.
 			
@@ -149,6 +263,13 @@ class InputParser:
 			eQTLs: (numpy array) array with eQTL elements. chr, start, end, ElementObject
 			
 		"""
+		#Filter the eQTLs that do not have a match
+		geneDict = dict()
+		
+		for gene in genes:
+			if gene not in geneDict:
+				geneDict[gene.name] = gene
+		
 		
 		eQTLs = []
 		with open(eQTLFile, 'r') as f:
@@ -163,6 +284,9 @@ class InputParser:
 				splitLine = line.split("\t")
 				
 				
+				if splitLine[3] not in geneDict:
+					continue
+				
 				#Add the chr notation for uniformity. 		
 				chrMatch = re.search("chr", splitLine[0], re.IGNORECASE)
 				chrName = ""
@@ -170,9 +294,13 @@ class InputParser:
 					chrName = "chr" + splitLine[0]
 				else:
 					chrName = splitLine[0]
-
-		
+				# eQTLObject = Element(chrName, int(splitLine[1]), int(splitLine[2])) #chr, start, end
+				# eQTLObject.type = 'eQTL' #set the correct type
+				# #The mapping information is in the file, so we can already do it here
+				#This function belongs more to the neighborhood definer, so we use the function from there. 
+				#neighborhoodDefiner.mapElementsToGenes(eQTLObject, geneDict, splitLine[3])
 				eQTL = [chrName, int(splitLine[1]), int(splitLine[2]), "eQTL", splitLine[3]]
+				#neighborhoodDefiner.mapElementsToGenes(eQTL, geneDict, splitLine[3])
 
 				#eQTLs.append([chrName, int(splitLine[1]), int(splitLine[2]), eQTLObject, "eQTL"]) #Keep the eQTL information raw as well for quick overlapping.
 				eQTLs.append(eQTL) #Keep the eQTL information raw as well for quick overlapping. 
@@ -180,7 +308,7 @@ class InputParser:
 		
 		return np.array(eQTLs, dtype='object')
 	
-	def getEnhancersFromFile(self, enhancerFile):
+	def getEnhancersFromFile(self, enhancerFile, genes, neighborhoodDefiner):
 		"""
 			Read the enhancers from the file.
 			
@@ -192,6 +320,14 @@ class InputParser:
 			enhancers: (numpy array) array with enhancer elements. chr, start, end, ElementObject
 		
 		"""
+		
+		
+		geneDict = dict()
+		
+		for gene in genes:
+			if gene not in geneDict:
+				geneDict[gene.name] = gene
+		
 		
 		enhancers = []
 		with open(enhancerFile, 'r') as f:
@@ -225,7 +361,18 @@ class InputParser:
 				splitGeneInfo = splitInteraction[1].split("$")
 				geneName = splitGeneInfo[1]
 				
+				if geneName not in geneDict:
+					continue
+				
+				
+				# elementObject = Element(chrName, start, end)
+				# elementObject.type = "enhancer"
+				
+				#The mapping information is in the file, so we can already do it here
+				
+						
 				element = [chrName, start, end, "enhancer", geneName]
+				#neighborhoodDefiner.mapElementsToGenes(element, geneDict, geneName)
 				enhancers.append(element)
 		
 		
@@ -289,6 +436,7 @@ class InputParser:
 				#The mapping information is in the file, so we can already do it here
 				
 				promoter = [chrName, start, end, "promoter", finalGeneName]
+				#neighborhoodDefiner.mapElementsToGenes(promoter, geneDict, finalGeneName)
 				promoters.append(promoter) #Keep the eQTL information raw as well for quick overlapping. 
 		
 		return np.array(promoters, dtype='object')	
@@ -481,106 +629,5 @@ class InputParser:
 				dnaseISites.append([chrName, start, end, "dnaseI", None])
 		
 		return np.array(dnaseISites, dtype='object')	
-	
-	def readCausalGeneFile(self, causalGeneFile):
-		"""
-			Read the COSMIC genes from the file.
 			
-			causalGeneFile: (string) location of the file with COSMIC genes.
-			
-			return
-			cosmicGenesSorted: (numpy array) array with the genes and their information, lexographically sorted by chromosome. chr, start, end, geneObject
-		"""
-		
-			
-		cosmicGenes = [] 
-		with open(causalGeneFile, 'r') as geneFile:
-			
-			lineCount = 0
-			header = []
-			for line in geneFile:
-				splitLine = line.split("\t")
-				#First extract the header and store it in the dictionary to remove dependency on the order of columns in the file
-				if lineCount < 1:
-		
-					header = splitLine
-					lineCount += 1
-					continue
-					
-				#Obtain the gene name and gene position
-				
-				geneSymbolInd = header.index('Gene Symbol')
-				genePositionInd = header.index('Genome Location')
-				
-				geneSymbol = splitLine[geneSymbolInd]
-				genePosition = splitLine[genePositionInd]
-				
-				#Split the gene position into chr, start and end
-				
-				colonSplitPosition = genePosition.split(":")
-				dashSplitPosition = colonSplitPosition[1].split("-")
-				
-				chromosome = colonSplitPosition[0]
-				start = dashSplitPosition[0].replace('"',"") #apparently there are some problems with the data, sometimes there are random quotes in there
-				end = dashSplitPosition[1].replace('"', "")
-				
-				if start == '' or end == '':
-					continue
-				
-				cosmicGenes.append(["chr" + chromosome, int(start), int(end), geneSymbol])
-				
-		#Sort the genes
-		cosmicGenes = np.array(cosmicGenes, dtype='object')
-		
-		sortedInd = np.lexsort((cosmicGenes[:,1], cosmicGenes[:,0])) #first sort by chromosome and then by start position. 
-		cosmicGenesSorted = cosmicGenes[sortedInd]
-	
-		return cosmicGenesSorted
-		
-	def readNonCausalGeneFile(self, nonCausalGeneFile, causalGenes):
-		"""
-			Read the non-causal genes. These are filtered for genes that are in COSMIC to make sure that these do not overlap. 
-			
-			
-			nonCausalGeneFile: (string) location of the file with non-causal (non-COSMIC) genes. 
-			causalGenes: (numpy array) array with the genes and their information. chr, start, end, geneObject
-			
-			return:
-			nonCausalGenes: (numpy array) array with the non-causal genes and their information. chr, start, end, geneObject
-			
-		"""
-		causalGeneDict = dict() #for filtering out genes that are already present in the causal gene list
-		for gene in causalGenes:
-			causalGeneDict[gene[3]] = 1			
-		
-		nonCausalGeneList = []
-		nonCausalGeneNameDict = dict() #dictionary to keep the names of genes that are already in our list and don't need to be sampled again. 
-		
-		with open(nonCausalGeneFile, 'r') as geneFile:
-			
-			lineCount = 0
-			for line in geneFile:
-				line = line.strip()
-				splitLine = line.split("\t")
-				
-				
-				
-				#Obtain the name, chromosome and positions of the gene. 
-				
-				geneID = splitLine[3]
-				
-				
-				chrom = splitLine[0]
-
-				start = splitLine[1]
-				end = splitLine[2]
-				
-				if geneID not in causalGeneDict:
-				
-					nonCausalGeneList.append([chrom, int(start), int(end), geneID])
-				
-		nonCausalGenes = np.array(nonCausalGeneList, dtype="object")
-	
-		
-		return nonCausalGenes 
 	

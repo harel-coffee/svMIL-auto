@@ -215,6 +215,7 @@ print("no of rules: ", svGenePairsRules.shape)
 positivePairsFeatures = []
 positiveWithFeatures = 0
 positiveWithoutFeatures = 0
+svFeaturesPos = dict()
 for pair in positivePairs:
 	if pair in svGenePairsRules[:,0]:
 		positiveWithFeatures += 1
@@ -223,6 +224,13 @@ for pair in positivePairs:
 		#skip the pair name and also the total score
 		
 		positivePairsFeatures.append(features)
+		splitPair = pair.split("_")
+
+		sv = "_".join(splitPair[1:len(splitPair)])
+		
+		if sv not in svFeaturesPos:
+			svFeaturesPos[sv] = []
+		svFeaturesPos[sv].append(list(features[1:len(features)-1].astype('float')))
 		
 	# 	features = features[1:len(features)-1]
 	# 	features = [float(feature) for feature in features]
@@ -235,8 +243,9 @@ for pair in positivePairs:
 negativePairsFeatures = []
 negativeWithFeatures = 0
 negativeWithoutFeatures = 0
-#for pair in negativePairsSubsampled:
-for pair in negativePairs:
+svFeaturesNeg = dict()
+for pair in negativePairsSubsampled:
+#for pair in negativePairs:
 	if pair in svGenePairsRules[:,0]:
 		negativeWithFeatures += 1
 		#get these features
@@ -244,6 +253,15 @@ for pair in negativePairs:
 		#skip the pair name and also the total score
 		
 		negativePairsFeatures.append(features)
+		
+		splitPair = pair.split("_")
+		
+		sv = "_".join(splitPair[1:len(splitPair)])
+		
+		if sv not in svFeaturesNeg:
+			svFeaturesNeg[sv] = []
+
+		svFeaturesNeg[sv].append(list(features[1:len(features)-1].astype('float')))
 		
 	# 	features = features[1:len(features)-1]
 	# 	features = [float(feature) for feature in features]
@@ -255,13 +273,123 @@ for pair in negativePairs:
 positivePairsFeatures = np.array(positivePairsFeatures, dtype='object')
 negativePairsFeatures = np.array(negativePairsFeatures, dtype='object')
 
+#Try MIL
+
+#Make bags
+bags = []
+labels = []
+for sv in svFeaturesPos:
+	bags.append(svFeaturesPos[sv])
+	labels.append(1)
+
+for sv in svFeaturesNeg:
+	bags.append(svFeaturesNeg[sv])
+	labels.append(0)
+
+bags = np.array(bags)
+instances = np.vstack(bags)
+labels = np.array(labels)
+
+
+print("generating similarity matrix")
+
+#Unfold the training bags so that we can compute the distance matrix at once to all genes
+bagMap = dict()
+reverseBagMap = dict()
+geneInd = 0
+for bagInd in range(0, bags.shape[0]):
+	reverseBagMap[bagInd] = []
+	for gene in bags[bagInd]:
+		bagMap[geneInd] = bagInd
+		reverseBagMap[bagInd].append(geneInd)
+		
+		geneInd += 1
+
+bagIndices = np.arange(bags.shape[0])
+similarityMatrix = np.zeros([bags.shape[0], instances.shape[0]])
+print("Number of bags: ", bags.shape[0])
+for bagInd in range(0, bags.shape[0]):
+	
+	#Get the indices of the instances that are in this bag
+	instanceIndices = reverseBagMap[bagInd]
+	
+	instanceSubset = instances[instanceIndices,:]
+	
+	otherInstances = np.vstack(bags[bagIndices != bagInd])
+	
+	#Compute the pairwise distance matrix here
+	minDistance = float("inf")
+	minDistanceInd = 0
+	for instanceInd in range(0, instanceSubset.shape[0]):
+		instance = instanceSubset[instanceInd]
+		distance = np.abs(instance - instances) #compute the distances to the train instances, otherwise we are not in the same similarity space. 
+
+		#distance = np.abs(instance - otherInstances)
+
+		summedDistance = np.sum(distance,axis=1)
+
+		currentMinDistance = np.min(summedDistance)
+		if currentMinDistance < np.min(minDistance):
+			minDistance = summedDistance
+			minDistanceInd = instanceInd
+
+	#This instance will be used as representative for this bag. We use this value as the similarity to all other instances.  
+	similarityMatrix[bagInd] = minDistance
+
+#Train random forest
+
+print(similarityMatrix)
+
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.metrics import auc, precision_recall_curve
+from sklearn.model_selection import StratifiedKFold
+
+cv = StratifiedKFold(n_splits=10)
+np.random.seed(500)
+
+accs = []
+aucs = []
+coeffs = []
+predDiffs = []
+for train, test in cv.split(similarityMatrix, labels):
+	
+	rfClassifier = RandomForestClassifier(max_depth=5, n_estimators=2)
+	rfClassifier.fit(similarityMatrix[train], labels[train]) #Use the bag labels, not the instance labels
+
+	predictions = rfClassifier.predict(similarityMatrix[test])
+	precision, recall, thresholds = precision_recall_curve(labels[test], predictions)
+	aucScore = auc(recall, precision)
+	predsDiff = np.average(labels[test] == np.sign(predictions))
+	#Now select the most important features with random forest
+	importances = rfClassifier.feature_importances_
+	std = np.std([tree.feature_importances_ for tree in rfClassifier.estimators_],
+				 axis=0)
+	indices = np.argsort(importances)[::-1]
+	
+	nonZeroIndices = []
+	for index in indices:
+		if importances[index] > 0:
+			nonZeroIndices.append(index)
+	
+	aucs.append(aucScore)
+	predDiffs.append(predsDiff)
+
+print("Actual acc: ", np.mean(predDiffs))
+print("Mean AUC: ", np.mean(aucs))
+
+
+exit()
+
+
+
+
 #output to files
 np.savetxt('degPairsFeatures.txt', positivePairsFeatures, fmt='%s', delimiter='\t')
 np.savetxt('nonDegPairsFeatures.txt', negativePairsFeatures, fmt='%s', delimiter='\t')
 
 print(positivePairsFeatures)
 print(negativePairsFeatures)
-exit()
+
 print(positiveWithFeatures)
 print(positiveWithoutFeatures)
 print(negativeWithFeatures)
