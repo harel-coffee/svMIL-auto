@@ -11,7 +11,7 @@ import numpy as np
 
 windowCount = 2500
 windowSize = 2000000
-binSize = 100
+binSize = 1000
 tadSize = 10000 #10kb
 geneSize = 1000
 svSize = 1000
@@ -138,6 +138,91 @@ windowFeaturesSVs = np.array(windowFeaturesSVs)
 windowFeaturesGenes = np.array(windowFeaturesGenes)
 windowFeaturesTads = np.array(windowFeaturesTads)
 windowFeaturesEnhancers = np.array(windowFeaturesEnhancers)
+
+#8. CNN
+featureMatrix = np.dstack((np.array(windowFeaturesSVs), np.array(windowFeaturesGenes), np.array(windowFeaturesTads), np.array(windowFeaturesEnhancers)))
+
+
+from sklearn.model_selection import train_test_split
+from mcfly import modelgen, find_architecture, storage
+from keras.models import load_model
+import os
+
+#use just 1 channel for now, later split into 2 and see if it makes a difference
+X_train, X_test, y_train_list, y_test_list = train_test_split(featureMatrix, windowLabels, test_size=.4, random_state=42)
+
+#the training labels need to be a vector as well. For each gene we have a 1 or 0 for each class. We have 2 classes, so this will be genes * 2
+
+y_train = np.zeros([len(y_train_list), 2])
+for labelInd in range(0, len(y_train_list)):
+	
+	label = y_train_list[labelInd]
+	
+	if label == 1:
+		y_train[labelInd, 0] = 0
+		y_train[labelInd, 1] = 1
+	if label == 0:
+		y_train[labelInd, 0] = 1
+		y_train[labelInd, 1] = 0
+
+y_test = np.zeros([len(y_test_list), 2])
+for labelInd in range(0, len(y_test_list)):
+	
+	label = y_test_list[labelInd]
+	
+	if label == 1:
+		y_test[labelInd, 0] = 0
+		y_test[labelInd, 1] = 1
+	if label == 0:
+		y_test[labelInd, 0] = 1
+		y_test[labelInd, 1] = 0
+	
+
+
+num_classes = y_train.shape[1]
+X_train = np.array(X_train)
+
+X_test = np.array(X_test)
+
+
+models = modelgen.generate_models(X_train.shape,
+								  number_of_classes=num_classes,
+								  number_of_models = 2)
+
+
+models_to_print = list(range(len(models)))
+for i, item in enumerate(models):
+	if i in models_to_print:
+		model, params, model_types = item
+		print("-------------------------------------------------------------------------------------------------------")
+		print(("Model " + str(i)))
+		print(" ")
+		print("Hyperparameters:")
+		print(params)
+		print(" ")
+		print("Model description:")
+		model.summary()
+		print(" ")
+		print("Model type:")
+		print(model_types)
+		print(" ")
+
+# Define directory where the results, e.g. json file, will be stored
+resultpath = os.path.join('.', 'models')
+if not os.path.exists(resultpath):
+		os.makedirs(resultpath)
+		
+outputfile = os.path.join(resultpath, 'modelcomparison.json')
+histories, val_accuracies, val_losses = find_architecture.train_models_on_samples(X_train, y_train,
+																		   X_test, y_test,
+																		   models,nr_epochs=5,
+																		   subset_size=300,
+																		   verbose=True,
+																		   outputfile=outputfile)
+print(('Details of the training process were stored in ',outputfile))
+
+exit()
+
 
 
 #7. Simple classifiers
@@ -372,22 +457,3 @@ performCV(featureMatrix, windowLabels, rfClassifier)
 
 exit()
 
-X_train, X_test, y_train, y_test = train_test_split(featureMatrix, windowLabels, test_size=0.4, random_state=42)
-
-#1. Random forest
-from sklearn.ensemble import RandomForestClassifier
-rfClassifier = RandomForestClassifier(max_depth=5, n_estimators=2)
-rfClassifier.fit(X_train, y_train) #Use the bag labels, not the instance labels
-
-predictions = rfClassifier.predict(X_test)
-predsDiff = np.average(y_test == np.sign(predictions))
-print("RF score: ", predsDiff)
-
-preds = rfClassifier.predict_proba(X_test)[:,1]
-fpr, tpr, thresholds = metrics.roc_curve(y_test, preds, pos_label=1)
-aucS = metrics.auc(fpr, tpr)
-print("RF AUC: ", aucS)
-
-precision, recall, thresholds = precision_recall_curve(y_test, predictions)
-aucScore = auc(recall, precision)
-print("RF AUPRC: ", aucScore)

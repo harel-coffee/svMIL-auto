@@ -80,11 +80,11 @@ negativePairsSubsampled = np.random.choice(negativePairs, positivePairs.shape[0]
 print(positivePairs.shape)
 print(negativePairsSubsampled.shape)
 
-allPairs = np.concatenate((positivePairs, negativePairsSubsampled))
-labels = np.array([1]*positivePairs.shape[0] + [0]*negativePairsSubsampled.shape[0])
+#allPairs = np.concatenate((positivePairs, negativePairsSubsampled))
+#labels = np.array([1]*positivePairs.shape[0] + [0]*negativePairsSubsampled.shape[0])
 
-#allPairs = np.concatenate((positivePairs, negativePairs))
-#labels = np.array([1]*positivePairs.shape[0] + [0]*negativePairs.shape[0])
+allPairs = np.concatenate((positivePairs, negativePairs))
+labels = np.array([1]*positivePairs.shape[0] + [0]*negativePairs.shape[0])
 
 #split the pairs to be able to sort them
 splitPairs = []
@@ -221,37 +221,47 @@ for pair in positivePairs:
 		#get these features
 		features = svGenePairsRules[svGenePairsRules[:,0] == pair,:][0]
 		#skip the pair name and also the total score
-		features = features[1:len(features)-1]
-		features = [float(feature) for feature in features]
+		
 		positivePairsFeatures.append(features)
-	else: #if not, assign all features as 0
-		positiveWithoutFeatures += 1
-		positivePairsFeatures.append([0]*26)
+		
+	# 	features = features[1:len(features)-1]
+	# 	features = [float(feature) for feature in features]
+	# 	positivePairsFeatures.append(features)
+	# else: #if not, assign all features as 0
+	# 	positiveWithoutFeatures += 1
+	# 	positivePairsFeatures.append([0]*26)
 
 #repeat for negative pairs
 negativePairsFeatures = []
 negativeWithFeatures = 0
 negativeWithoutFeatures = 0
-for pair in negativePairsSubsampled:
-#for pair in negativePairs:
+#for pair in negativePairsSubsampled:
+for pair in negativePairs:
 	if pair in svGenePairsRules[:,0]:
 		negativeWithFeatures += 1
 		#get these features
 		features = svGenePairsRules[svGenePairsRules[:,0] == pair,:][0]
 		#skip the pair name and also the total score
-		features = features[1:len(features)-1]
-		features = [float(feature) for feature in features]
+		
 		negativePairsFeatures.append(features)
-	else: #if not, assign all features as 0
-		negativeWithoutFeatures += 1
-		negativePairsFeatures.append([0]*26)
+		
+	# 	features = features[1:len(features)-1]
+	# 	features = [float(feature) for feature in features]
+	# 	negativePairsFeatures.append(features)
+	# else: #if not, assign all features as 0
+	# 	negativeWithoutFeatures += 1
+	# 	negativePairsFeatures.append([0]*26)
 
-positivePairsFeatures = np.array(positivePairsFeatures)
-negativePairsFeatures = np.array(negativePairsFeatures)
+positivePairsFeatures = np.array(positivePairsFeatures, dtype='object')
+negativePairsFeatures = np.array(negativePairsFeatures, dtype='object')
+
+#output to files
+np.savetxt('degPairsFeatures.txt', positivePairsFeatures, fmt='%s', delimiter='\t')
+np.savetxt('nonDegPairsFeatures.txt', negativePairsFeatures, fmt='%s', delimiter='\t')
 
 print(positivePairsFeatures)
 print(negativePairsFeatures)
-
+exit()
 print(positiveWithFeatures)
 print(positiveWithoutFeatures)
 print(negativeWithFeatures)
