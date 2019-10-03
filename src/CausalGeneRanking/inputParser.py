@@ -116,6 +116,7 @@ class InputParser:
 				# 		continue
 				#
 				
+			
 		
 				
 				if svType != "del" and svType != "invers" and svType != "tandem_dup" and svType != "DEL" and svType != "INV" and svType != "DUP":
@@ -128,9 +129,7 @@ class InputParser:
 					if interChrTypeMatch is None and transTypeMatch is None and rangeTypeMatch is None and itxTypeMatch is None and ctxTypeMatch is None:
 						continue
 				
-				# if svType != "invers":
-				# 	continue
-					
+				
 				
 				# if svType != "inversion":
 				# 	continue
@@ -200,6 +199,8 @@ class InputParser:
 					
 					#Check if this SV needs to be exluded
 					svStr = chr1 + "_" + str(s1) + "_" + str(e1) + "_" + chr2 + "_" + str(s2) + "_" + str(e2) + "_" + sampleName
+					# if svStr not in excludedSVs:
+					# 	continue
 
 					variantsList.append([chr1, s1, e1, chr2, s2, e2, cancerType, sampleName, svObject])
 					
@@ -208,6 +209,9 @@ class InputParser:
 					
 					#Check if this SV needs to be exluded
 					svStr = 'chr' + chr1 + "_" + str(s1) + "_" + str(e1) + "_" + 'chr' + chr2 + "_" + str(s2) + "_" + str(e2) + "_" + sampleName
+
+					# if svStr not in excludedSVs:
+					# 	continue
 
 					variantsList.append(['chr' + chr1, s1, e1, 'chr' + chr2, s2, e2, cancerType, sampleName, svObject])
 				#chr 1, start, end, chr2, start2, end2

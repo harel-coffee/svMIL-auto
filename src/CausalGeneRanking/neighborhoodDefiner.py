@@ -211,7 +211,7 @@ class NeighborhoodDefiner:
 			# 	#Load the eqtls
 			# 	with open('eQTLData.pkl', 'rb') as h:
 			# 		eQTLData = pkl.load(h)
-			
+		
 			eQTLFile = settings.files['eQTLFile']
 			print("getting eQTLs")
 			eQTLData = InputParser().getEQTLsFromFile(eQTLFile, genes[:,3], self)
@@ -799,6 +799,7 @@ class NeighborhoodDefiner:
 		
 		filteredSVs = np.array(filteredSVs, dtype='object')
 		
+		#filteredSVs = svData
 		DerivativeTADMaker(filteredSVs, genes, tadData)
 		
 		

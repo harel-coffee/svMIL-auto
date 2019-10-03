@@ -391,16 +391,16 @@ def getGenesWithRuleBasedApproach():
 	
 	NeighborhoodDefiner(causalGenes, svData, None, 'SV', codingEffectSVs) #Provide the mode to ensure that the right variant type is used (different positions used in annotation)
 	
-	somaticSVs = []
-	for sv in svData:
-		svStr = sv[0] + "_" + str(sv[1]) + "_" + str(sv[2]) + "_" + sv[3] + "_" + str(sv[4]) + "_" + str(sv[5]) + "_" + sv[7]
-		if svStr not in codingEffectSVs:
-			somaticSVs.append(sv)
-	somaticSVs = np.array(somaticSVs, dtype='object')
-	
+	# somaticSVs = []
+	# for sv in svData:
+	# 	svStr = sv[0] + "_" + str(sv[1]) + "_" + str(sv[2]) + "_" + sv[3] + "_" + str(sv[4]) + "_" + str(sv[5]) + "_" + sv[7]
+	# 	if svStr not in codingEffectSVs:
+	# 		somaticSVs.append(sv)
+	# somaticSVs = np.array(somaticSVs, dtype='object')
+	# 
 	#3. Do ranking of the genes and report the causal SVs
 	print("Ranking the genes for the variants")
-	geneRanking = GeneRanking(causalGenes[:,3], somaticSVs, 'SV', 'naive', 'none')
+	geneRanking = GeneRanking(causalGenes[:,3], svData, 'SV', 'naive', 'none')
 	
 	#Read the genes from the ranking
 	affectedGenes = []
@@ -417,22 +417,22 @@ def getGenesWithRuleBasedApproach():
 				affectedGenes.append(geneName)
 	
 	return affectedGenes
-
-ruleBasedAffectedGenes = getGenesWithRuleBasedApproach()
-print("rule-based affected genes: ", len(ruleBasedAffectedGenes))
-ruleSvGenePairs = np.loadtxt('Output/RankedGenes/naive/BRCA//nonCoding_geneSVPairs.txt_none', dtype='object')
-
-np.savetxt('ruleSvGenePairs_withFeatures.txt', ruleSvGenePairs, delimiter='\t', fmt='%s')
-np.savetxt('ruleSvGenePairs.txt', ruleSvGenePairs[:,0], delimiter='\t', fmt='%s')
-
-#Save all genes in memory to prevent re-computing every time
-np.savetxt('affectedGenesWindowed.txt', affectedGenesWindowed, delimiter='\t', fmt='%s')
-np.savetxt('tadAffectedGenes.txt', tadAffectedGenes, delimiter='\t', fmt='%s')
-np.savetxt('ruleBasedAffectedGenes.txt', ruleBasedAffectedGenes, delimiter='\t', fmt='%s')
-
-print("Number of sv-gene pairs windowed: ", len(svGenePairsWindowed))
-print("Number of sv-gene pairs tads: ", len(tadSVGenePairs))
-print("Number of sv-gene pairs rules: ", ruleSvGenePairs.shape)
+# 
+# ruleBasedAffectedGenes = getGenesWithRuleBasedApproach()
+# print("rule-based affected genes: ", len(ruleBasedAffectedGenes))
+# ruleSvGenePairs = np.loadtxt('Output/RankedGenes/naive/BRCA//nonCoding_geneSVPairs.txt_none', dtype='object')
+# 
+# np.savetxt('ruleSvGenePairs_withFeatures.txt', ruleSvGenePairs, delimiter='\t', fmt='%s')
+# np.savetxt('ruleSvGenePairs.txt', ruleSvGenePairs[:,0], delimiter='\t', fmt='%s')
+# 
+# #Save all genes in memory to prevent re-computing every time
+# np.savetxt('affectedGenesWindowed.txt', affectedGenesWindowed, delimiter='\t', fmt='%s')
+# np.savetxt('tadAffectedGenes.txt', tadAffectedGenes, delimiter='\t', fmt='%s')
+# np.savetxt('ruleBasedAffectedGenes.txt', ruleBasedAffectedGenes, delimiter='\t', fmt='%s')
+# 
+# print("Number of sv-gene pairs windowed: ", len(svGenePairsWindowed))
+# print("Number of sv-gene pairs tads: ", len(tadSVGenePairs))
+# print("Number of sv-gene pairs rules: ", ruleSvGenePairs.shape)
 
 
 

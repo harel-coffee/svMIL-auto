@@ -13,6 +13,9 @@ from six.moves import range
 nonCodingFeatureData = np.loadtxt(sys.argv[1], dtype='object')
 codingFeatureData = np.loadtxt(sys.argv[2], dtype='object')
 
+print(nonCodingFeatureData.shape)
+print(codingFeatureData.shape)
+
 nonCodingFeatures = nonCodingFeatureData[:,1:]
 codingFeatures = codingFeatureData[:,1:]
 
@@ -39,13 +42,13 @@ lossData = [np.sum(eQTLLosses), np.sum(enhancerLosses), np.sum(promoterLosses), 
 			np.sum(tfLosses), np.sum(hicLosses), np.sum(h3k9me3Losses), np.sum(h3k4me3Losses), np.sum(h3k27acLosses),
 			np.sum(h3k27me3Losses), np.sum(h3k4me1Losses), np.sum(h3k36me3Losses), np.sum(dnaseLosses)]
 lossData = np.array(lossData)
-#lossData = (lossData / float(leftFeatures.shape[0] + rightFeatures.shape[0])) * 100
+lossData = (lossData / float(leftFeatures.shape[0])) * 100
 #lossData = -np.log(lossData)
 print(lossData)
 
 width = 0.35
 
-plt.bar(np.arange(len(lossData)), lossData, width, label='Non-coding SVs', color='blue')
+plt.barh(np.arange(len(lossData)), lossData, width, label='Non-DEG pairs', color='blue')
 # plt.xticks(range(0, len(lossData)),
 	   # ['eQTLs', 'enhancers', 'promoters', 'CpG', 'TF', 'HiC', 'h3k9me3', 'h3k4me3', 'h3k27ac', 'h3k27me3', 'h3k4me1', 'h3k36me3', 'DNAseI'], rotation=90)
 # plt.show()
@@ -68,19 +71,19 @@ lossData = [np.sum(eQTLLosses), np.sum(enhancerLosses), np.sum(promoterLosses), 
 			np.sum(tfLosses), np.sum(hicLosses), np.sum(h3k9me3Losses), np.sum(h3k4me3Losses), np.sum(h3k27acLosses),
 			np.sum(h3k27me3Losses), np.sum(h3k4me1Losses), np.sum(h3k36me3Losses), np.sum(dnaseLosses)]
 lossData = np.array(lossData)
-#lossData = (lossData / float(leftFeatures.shape[0] + rightFeatures.shape[0])) * 100
+lossData = (lossData / float(rightFeatures.shape[0])) * 100
 #lossData = -np.log(lossData)
 print(lossData)
 
-plt.bar(np.arange(len(lossData)) + width, lossData, width, label='Coding SVs', color='red')
-plt.xticks(np.arange(len(lossData) + width / 2),
-		   ['eQTLs', 'enhancers', 'promoters', 'CpG', 'TF', 'HiC', 'h3k9me3', 'h3k4me3', 'h3k27ac', 'h3k27me3', 'h3k4me1', 'h3k36me3', 'DNAseI'], rotation=90)
-#plt.ylim([0,10])
+plt.barh(np.arange(len(lossData)) + width, lossData, width, label='DEG pairs', color='red')
+plt.yticks(np.arange(len(lossData) + width / 2),
+		   ['eQTLs', 'enhancers', 'promoters', 'CpG', 'TF', 'HiC', 'h3k9me3', 'h3k4me3', 'h3k27ac', 'h3k27me3', 'h3k4me1', 'h3k36me3', 'DNAseI'])
+plt.xlim([0,100])
 plt.legend(loc='best')
 plt.tight_layout()
-plt.show()
-#plt.savefig('Output/leftRight_losses.svg')
-
+#plt.show()
+plt.savefig('Output/degNonDeg_losses.svg')
+plt.clf()
 #Gains
 
 eQTLGains = leftFeatures[:,13].astype(float)
@@ -102,11 +105,11 @@ gainData = [np.sum(eQTLGains), np.sum(enhancerGains), np.sum(promoterGains), np.
 			np.sum(h3k27me3Gains), np.sum(h3k4me1Gains), np.sum(h3k36me3Gains), np.sum(dnaseGains)]
 
 gainData = np.array(gainData)
-#gainData = (gainData / float(leftFeatures.shape[0] + rightFeatures.shape[0])) * 100
+gainData = (gainData / float(leftFeatures.shape[0])) * 100
 #gainData = -np.log(gainData)
 print(gainData)
 
-plt.bar(np.arange(len(gainData)), gainData, width, label='Non-coding SVs', color='blue')
+plt.barh(np.arange(len(gainData)), gainData, width, label='Non-DEG pairs', color='blue')
 # plt.xticks(np.arange(len(gainData)),
 # 		   ['eQTLs', 'enhancers', 'promoters', 'CpG', 'TF', 'HiC', 'h3k9me3', 'h3k4me3', 'h3k27ac', 'h3k27me3', 'h3k4me1', 'h3k36me3', 'DNAseI'], rotation=90)
 # plt.show()
@@ -130,23 +133,23 @@ gainData = [np.sum(eQTLGains), np.sum(enhancerGains), np.sum(promoterGains), np.
 			np.sum(h3k27me3Gains), np.sum(h3k4me1Gains), np.sum(h3k36me3Gains), np.sum(dnaseGains)]
 
 gainData = np.array(gainData)
-#gainData = (gainData / float(leftFeatures.shape[0] + rightFeatures.shape[0])) * 100
+gainData = (gainData / float(rightFeatures.shape[0])) * 100
 #gainData = -np.log(gainData)
 
 print(gainData)
 
-plt.bar(np.arange(len(gainData)) + width, gainData, width, label='Coding SVs',color='red')
-plt.xticks(np.arange(len(gainData) + width / 2),
-		   ['eQTLs', 'enhancers', 'promoters', 'CpG', 'TF', 'HiC', 'h3k9me3', 'h3k4me3', 'h3k27ac', 'h3k27me3', 'h3k4me1', 'h3k36me3', 'DNAseI'], rotation=90)
+plt.barh(np.arange(len(gainData)) + width, gainData, width, label='DEG pairs',color='red')
+plt.yticks(np.arange(len(gainData) + width / 2),
+		   ['eQTLs', 'enhancers', 'promoters', 'CpG', 'TF', 'HiC', 'h3k9me3', 'h3k4me3', 'h3k27ac', 'h3k27me3', 'h3k4me1', 'h3k36me3', 'DNAseI'])
 
-#plt.ylim([0,10])
+plt.xlim([0,100])
 plt.legend(loc='best')
 plt.tight_layout()
-plt.show()
+#plt.show()
+plt.savefig('Output/degNonDeg_gains.svg')
 
 
-
-
+exit()
 
 
 

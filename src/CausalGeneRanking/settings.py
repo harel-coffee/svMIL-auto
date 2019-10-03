@@ -2,6 +2,7 @@ files = dict(
 	
 	#In SV mode, snvFile can be left empty. For SNV mode, svFile can be left empty. 
 	svFile = '../../data/svs/brca_tcga_parsed_05022019.txt', #TCGA BRCA SVs
+	#svFile = 'codingEffectSVs.txt',
 	#svFile = '/Users/mnieboer/Documents/Projects/BoundaryMutations/data/ucec_svs_parsed_12082019.txt',
 	#svFile = '../../data/svs/germline_dgv.txt', #germline SV test
 	snvFile = '../../data/snvs/cosmicNCV.txt', #all SNVs
