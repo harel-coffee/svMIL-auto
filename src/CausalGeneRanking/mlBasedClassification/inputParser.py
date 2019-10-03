@@ -73,7 +73,7 @@ class InputParser:
 		negativePairs = np.array(intraPairsNegative)
 		
 		#Randomly subsample the SV-pairs to be balanced with the DEG pairs
-		np.random.seed(0)
+		#np.random.seed(0)
 		#negativePairsSubsampled = np.random.choice(negativePairs, positivePairs.shape[0])
 		negativePairsSubsampled = negativePairs
 		

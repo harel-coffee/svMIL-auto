@@ -23,16 +23,13 @@ class FeatureMatrixDefiner:
 		posBags = []
 		negBags = []
 		for pair in pairs:
-			
+			pairInd += 1
 			pairStr = "_".join([str(i) for i in pair])
 			if pairStr not in svGenePairsRules[:,0]:
 				continue
 			#look in a 1 MB window around the SV of the pair.
 			#find enhancers, genes and TADs that are inside this window
-			pairInd += 1
 			
-			if pairInd > 5:
-				continue
 			
 			sv = pair[1:len(pair)]
 			
@@ -67,7 +64,8 @@ class FeatureMatrixDefiner:
 				instances.append([element[1], element[2]])
 			
 			
-			
+			if len(instances) == 0:
+				continue #skip pairs for which there are no instances
 	
 			#TADs
 			
@@ -82,17 +80,20 @@ class FeatureMatrixDefiner:
 			
 		posBags = np.array(posBags)
 		negBags = np.array(negBags)
+
 		negBagsSubsampled = np.random.choice(negBags, posBags.shape[0])	
 		
 		bags = np.concatenate((posBags, negBagsSubsampled))
 		instances = np.vstack(bags)
 		labels = [1]*posBags.shape[0] + [0]*negBagsSubsampled.shape[0]
 		
-		from random import shuffle
-		#shuffle(labels)
+		
 		
 		labels = np.array(labels)
 		
+		#bags = bags[0:150]
+		#labels = labels[0:150]
+		#instances = np.vstack(bags)
 		return bags, instances, labels
 		
 	

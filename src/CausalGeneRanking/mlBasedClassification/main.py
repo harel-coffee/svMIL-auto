@@ -98,24 +98,69 @@ for bagInd in range(0, bags.shape[0]):
 	#This instance will be used as representative for this bag. We use this value as the similarity to all other instances.  
 	similarityMatrix[bagInd] = minDistance
 
+print(similarityMatrix)
+print(bagLabels)
+# 
+# plt.scatter(similarityMatrix[0,:], similarityMatrix[1,:])
+# plt.show()
+# exit()
 
 
+# pca = PCA(n_components=2)
+# projected = pca.fit_transform(similarityMatrix)
+# 
+# colorLabels = []
+# 
+# for label in bagLabels:
+# 	
+# 	if label == 1:
+# 		colorLabels.append('r')
+# 	else:
+# 		colorLabels.append('b')
+# 
+# fig,ax=plt.subplots(figsize=(7,5))
+# plt.scatter(projected[:, 0], projected[:, 1], c=colorLabels)
+# plt.show()
 
-pca = PCA(n_components=2)
-projected = pca.fit_transform(similarityMatrix)
+from random import shuffle
+shuffle(bagLabels)
 
-colorLabels = []
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.metrics import auc, precision_recall_curve
+from sklearn.model_selection import StratifiedKFold
 
-for label in bagLabels:
+cv = StratifiedKFold(n_splits=10)
+np.random.seed(500)
+
+accs = []
+aucs = []
+coeffs = []
+predDiffs = []
+for train, test in cv.split(similarityMatrix, bagLabels):
 	
-	if label == 1:
-		colorLabels.append('r')
-	else:
-		colorLabels.append('b')
+	rfClassifier = RandomForestClassifier(max_depth=5, n_estimators=2)
+	rfClassifier.fit(similarityMatrix[train], bagLabels[train]) #Use the bag labels, not the instance labels
 
-fig,ax=plt.subplots(figsize=(7,5))
-plt.scatter(projected[:, 0], projected[:, 1], c=colorLabels)
-plt.show()
+	predictions = rfClassifier.predict(similarityMatrix[test])
+	precision, recall, thresholds = precision_recall_curve(bagLabels[test], predictions)
+	aucScore = auc(recall, precision)
+	predsDiff = np.average(bagLabels[test] == np.sign(predictions))
+	#Now select the most important features with random forest
+	importances = rfClassifier.feature_importances_
+	std = np.std([tree.feature_importances_ for tree in rfClassifier.estimators_],
+				 axis=0)
+	indices = np.argsort(importances)[::-1]
+	
+	nonZeroIndices = []
+	for index in indices:
+		if importances[index] > 0:
+			nonZeroIndices.append(index)
+	
+	aucs.append(aucScore)
+	predDiffs.append(predsDiff)
+
+print("Actual acc: ", np.mean(predDiffs))
+print("Mean AUC: ", np.mean(aucs))
 exit()
 # 
 # 
