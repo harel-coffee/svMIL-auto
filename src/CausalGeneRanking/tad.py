@@ -51,7 +51,8 @@ class TAD:
 		
 		elementsInRange = []
 		for element in self.elements:
-			if element[1] >= start and element[2] <= end:
+			#if element[1] >= start and element[2] <= end or element[2] <= end and element[1] >= start:
+			if element[2] >= start and element[1] <= end:
 				elementsInRange.append(element)
 
 		return elementsInRange

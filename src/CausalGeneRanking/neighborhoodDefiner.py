@@ -78,7 +78,7 @@ class NeighborhoodDefiner:
 		
 		#1. Get TADs from the TAD file, and then map TADs to genes (left/right TAD).
 		tadData = []
-		if settings.general['tads'] == True or settings.general['gainOfInteractions'] == True: #Gain of interactions is dependent on TADs
+		if settings.general['tads'] == True:
 			tadFile = settings.files['tadFile']
 			
 			print("Getting TADs")
@@ -292,7 +292,12 @@ class NeighborhoodDefiner:
 			
 			tadData = self.mapElementsToTads(dnaseIData, tadData)
 		
-		
+		#10. get chromHMM states
+		if settings.general['chromHMM'] == True:
+			print("Getting chromHMM states")
+			chromHmmData = InputParser().getChromHmmFromFile(settings.files['chromHmmFile'])
+			
+			tadData = self.mapElementsToTads(chromHmmData, tadData)
 		
 		#3. Map SVs to all neighborhood elements
 		if mode == "SV":
@@ -804,6 +809,6 @@ class NeighborhoodDefiner:
 		
 		
 		#Specific for deletions, this will need to be part of the derivative TAD maker later on
-		if settings.general['gainOfInteractions'] == True:
-			self.determineGainedInteractions(filteredSVs, tadData)
+		#if settings.general['gainOfInteractions'] == True:
+		#	self.determineGainedInteractions(filteredSVs, tadData)
 		

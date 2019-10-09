@@ -63,8 +63,8 @@ ax.set_xticklabels(['eQTLs', 'enhancers', 'promoters', 'CpG', 'TF', 'HiC', 'h3k9
 ax.set_ylim(0,18)
 plt.xticks(rotation=70)
 # Save the figure
-#plt.show()
-plt.savefig(sys.argv[1] + "_losses.png", bbox_inches='tight')
+plt.show()
+#plt.savefig(sys.argv[1] + "_losses.png", bbox_inches='tight')
 
 
 #Repeat but then for gains
@@ -108,8 +108,8 @@ ax.set_xticklabels(['eQTLs', 'enhancers', 'promoters', 'CpG', 'TF', 'HiC', 'h3k9
 plt.xticks(rotation=70)
 ax.set_ylim(0,18)
 # Save the figure
-#plt.show()
-plt.savefig(sys.argv[1] + "_gains.png", bbox_inches='tight')
+plt.show()
+#plt.savefig(sys.argv[1] + "_gains.png", bbox_inches='tight')
 
 
 

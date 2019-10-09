@@ -95,8 +95,7 @@ class InputParser:
 				# if svType != "del" and svType != "invers" and svType != "tandem_dup":
 				# 	continue
 				
-				# if svType != "deletion" and svType != "inversion" and svType != "duplication":
-				# 	continue
+				
 				
 				#  
 				# interChrTypeMatch = re.search("chr", svType, re.IGNORECASE)
@@ -116,20 +115,24 @@ class InputParser:
 				# 		continue
 				#
 				
-			
-		
-				
-				if svType != "del" and svType != "invers" and svType != "tandem_dup" and svType != "DEL" and svType != "INV" and svType != "DUP":
+				if settings.general['cancerType'] == "germline":
 					
-					interChrTypeMatch = re.search("chr", svType, re.IGNORECASE)
-					transTypeMatch = re.search("trans", svType, re.IGNORECASE)
-					rangeTypeMatch = re.search("range", svType, re.IGNORECASE)
-					itxTypeMatch = re.search("ITX", svType, re.IGNORECASE)
-					ctxTypeMatch = re.search("CTX", svType, re.IGNORECASE)
-					if interChrTypeMatch is None and transTypeMatch is None and rangeTypeMatch is None and itxTypeMatch is None and ctxTypeMatch is None:
+					if svType != "deletion" and svType != "inversion" and svType != "duplication":
 						continue
-				
-				
+			
+				if settings.general['cancerType'] == "BRCA":
+					
+					if svType != "del" and svType != "invers" and svType != "tandem_dup" and svType != "DEL" and svType != "INV" and svType != "DUP":
+						
+						interChrTypeMatch = re.search("chr", svType, re.IGNORECASE)
+						transTypeMatch = re.search("trans", svType, re.IGNORECASE)
+						rangeTypeMatch = re.search("range", svType, re.IGNORECASE)
+						itxTypeMatch = re.search("ITX", svType, re.IGNORECASE)
+						ctxTypeMatch = re.search("CTX", svType, re.IGNORECASE)
+						if interChrTypeMatch is None and transTypeMatch is None and rangeTypeMatch is None and itxTypeMatch is None and ctxTypeMatch is None:
+							continue
+					
+					
 				
 				# if svType != "inversion":
 				# 	continue
@@ -835,5 +838,29 @@ class InputParser:
 				dnaseISites.append([chrName, start, end, "dnaseI", None])
 		
 		return np.array(dnaseISites, dtype='object')	
-			
+	
+	def getChromHmmFromFile(self, chromHmmFile):
+		
+		
+		chromHmmSites = []
+		with open(chromHmmFile, 'r') as f:
+			lineCount = 0
+			for line in f:
+				if lineCount < 1:
+					lineCount += 1
+					continue
+				
+				line = line.strip()
+				splitLine = line.split("\t")
+				
+				chrName = splitLine[0]
+				start = int(splitLine[1])
+				end = int(splitLine[2])
+				chromState = splitLine[3]
+				
+				chromHmmSites.append([chrName, start, end, chromState, None])
+				
+		
+		return np.array(chromHmmSites, dtype='object')
+
 	

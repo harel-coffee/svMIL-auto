@@ -6,7 +6,6 @@ import settings
 class Gene:
 	"""
 		Class to describe a gene. Holds all other information related to the neighborhood of the gene as well, like the TADs, eQTLs and SVs.
-		
 	"""
 	def __init__(self, name, chromosome, start, end):
 		
@@ -59,13 +58,17 @@ class Gene:
 		if len(gainedElements) > 0:
 			if sample not in self.gainedElements:
 				self.gainedElements[sample] = dict()
-		
+				
+			if self.name == 'JAK1':
+				print(gainedElements)
+				print(sample)
 		#Have a dictionary where we count the number of elements of a specific type that are gained per sample.
 		#This is much faster than storing the actual elements that are gained, and we do not use that information in the ranking, so it can be discarded here. 
 		for gainedElement in gainedElements:
 			if gainedElement[3] not in self.gainedElements[sample]:
 				self.gainedElements[sample][gainedElement[3]] = 0
 			self.gainedElements[sample][gainedElement[3]] += 1
+
 		
 	def addGainedElementsSVs(self, gainedElements, sv):
 		
@@ -89,8 +92,10 @@ class Gene:
 		
 		#Have a dictionary where we count the number of elements of a specific type that are lost per sample.
 		#This is much faster than storing the actual elements that are lost, and we do not use that information in the ranking, so it can be discarded here.
-		elementsNotLinkedToGenes = ['cpg', 'tf', 'hic', 'dnaseI', 'h3k9me3', 'h3k4me3', 'h3k27ac', 'h3k27me3', 'h3k4me1', 'h3k36me3']
-		
+		elementsNotLinkedToGenes = ['cpg', 'tf', 'hic', 'dnaseI', 'h3k9me3', 'h3k4me3', 'h3k27ac', 'h3k27me3', 'h3k4me1', 'h3k36me3',
+									'CTCF', 'CTCF+Enhancer', 'CTCF+Promoter', 'Enhancer', 'Heterochromatin',
+									'Poised_Promoter', 'Promoter', 'Repeat', 'Repressed', 'Transcribed']
+
 		for lostElement in lostElements:
 			if lostElement[3] in elementsNotLinkedToGenes:
 				if lostElement[3] not in self.lostElements[sample]:
@@ -111,7 +116,9 @@ class Gene:
 		
 		#Have a dictionary where we count the number of elements of a specific type that are lost per sample.
 		#This is much faster than storing the actual elements that are lost, and we do not use that information in the ranking, so it can be discarded here.
-		elementsNotLinkedToGenes = ['cpg', 'tf', 'hic', 'dnaseI', 'h3k9me3', 'h3k4me3', 'h3k27ac', 'h3k27me3', 'h3k4me1', 'h3k36me3']
+		elementsNotLinkedToGenes = ['cpg', 'tf', 'hic', 'dnaseI', 'h3k9me3', 'h3k4me3', 'h3k27ac', 'h3k27me3', 'h3k4me1', 'h3k36me3',
+									'CTCF', 'CTCF+Enhancer', 'CTCF+Promoter', 'Enhancer', 'Heterochromatin',
+									'Poised_Promoter', 'Promoter', 'Repeat', 'Repressed', 'Transcribed']
 		
 		for lostElement in lostElements:
 			if lostElement[3] in elementsNotLinkedToGenes:

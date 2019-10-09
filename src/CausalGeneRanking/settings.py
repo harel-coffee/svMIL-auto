@@ -1,10 +1,10 @@
 files = dict(
 	
 	#In SV mode, snvFile can be left empty. For SNV mode, svFile can be left empty. 
-	svFile = '../../data/svs/brca_tcga_parsed_05022019.txt', #TCGA BRCA SVs
+	#svFile = '../../data/svs/brca_tcga_parsed_05022019.txt', #TCGA BRCA SVs
 	#svFile = 'codingEffectSVs.txt',
 	#svFile = '/Users/mnieboer/Documents/Projects/BoundaryMutations/data/ucec_svs_parsed_12082019.txt',
-	#svFile = '../../data/svs/germline_dgv.txt', #germline SV test
+	svFile = '../../data/svs/germline_dgv.txt', #germline SV test
 	snvFile = '../../data/snvs/cosmicNCV.txt', #all SNVs
 	causalGenesFile = '../../data/genes/CCGC.tsv', #file with all causal genes from cosmic. 
 	nonCausalGenesFile = '../../data/genes/hg19_proteinCodingGenes.bed', #file with all protein-coding genes.
@@ -24,6 +24,7 @@ files = dict(
 	h3k4me1 = '../../data/histones/ENCFF336DDM_H3K4me1.bed',
 	h3k36me3 = '../../data/histones/ENCFF906MJM_H3K36me3.bed',
 	dnaseIFile = '../../data/dnase/ENCFF301VRH.bed',
+	chromHmmFile = '../../data/chromhmm/GSE57498_HMEC_ChromHMM.bed',
 	hicFile = '../../data/hic/HMEC_groupedTADInteractions.txt',
 	tadFile = "../../data/tads/HMEC_Lieberman-raw_TADs.bed", #File with TADs specific for breast tissue
 	rankedGeneScoreDir = "Output/RankedGenes", #File that the output scores will be written to. The output will be in a folder with the provided UUID under this main results folder
@@ -33,7 +34,7 @@ files = dict(
 general = dict(
 	
 	mode = 'SV', #Options are: SV, SNV or SV+SNV
-	cancerType = 'BRCA', #Use to specify which cancer type the data should be filtered by
+	cancerType = 'germline', #Use to specify which cancer type the data should be filtered by
 	nonCoding = True, #Should we count gains/losses for genes that are affected by non-coding SVS?
 	coding = False, #Should we include gains and losses of non-coding elements, or only genes that are directly affected by SVs? 
 	gains = True, #Enable looking at gains of features
@@ -47,6 +48,7 @@ general = dict(
 	hiC = True, #Include HiC interactions in the ranking yes/no
 	histones = True, #Include the histone marks in the ranking yes/no (maybe these need to be split later)
 	dnaseI = True, #Include DNAse I hypersensitivity sites yes/no
+	chromHMM = True,
 	gainOfInteractions = True, #This depends on TADs and interactions.
 	shuffleTads = False, #Should TAD positions be shuffled
 	lncRNA = False #use lncRNAs instead of eQTLs

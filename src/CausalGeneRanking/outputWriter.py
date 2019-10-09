@@ -56,7 +56,7 @@ class OutputWriter:
 			cancerTypeScores = geneRanking.scores[cancerType]
 
 			#Store all the gene scores in here. 
-			perGeneScores = np.empty([len(genes), 33], dtype="object") #store by gene name because it is easiest to match back later
+			perGeneScores = np.empty([len(genes), 53], dtype="object") #store by gene name because it is easiest to match back later
 			
 			for row in range(0, cancerTypeScores.shape[0]):
 				gene = cancerTypeScores[row][0]
@@ -64,78 +64,88 @@ class OutputWriter:
 				geneChr = gene.chromosome
 				geneStart = gene.start
 				
-				geneScore = cancerTypeScores[row,1]
-				eQTLGainScore = cancerTypeScores[row,2]
-				eQTLLossScore = cancerTypeScores[row,3]
-				enhancerGainScore = cancerTypeScores[row,4]
-				enhancerLossScore = cancerTypeScores[row,5]
-				promoterGainScore = cancerTypeScores[row,6]
-				promoterLossScore = cancerTypeScores[row,7]
-				cpgGainScore = cancerTypeScores[row,8]
-				cpgLossScore = cancerTypeScores[row,9]
-				tfGainScore = cancerTypeScores[row,10]
-				tfLossScore = cancerTypeScores[row,11]
-				hicGainScore = cancerTypeScores[row,12]
-				hicLossScore = cancerTypeScores[row,13]
-				h3k9me3GainScore = cancerTypeScores[row,14]
-				h3k9me3LossScore = cancerTypeScores[row,15]
-				h3k4me3GainScore = cancerTypeScores[row,16]
-				h3k4me3LossScore = cancerTypeScores[row,17]
-				h3k27acGainScore = cancerTypeScores[row,18]
-				h3k27acLossScore = cancerTypeScores[row,19]
-				h3k27me3GainScore = cancerTypeScores[row,20]
-				h3k27me3LossScore = cancerTypeScores[row,21]
-				h3k4me1GainScore = cancerTypeScores[row,22]
-				h3k4me1LossScore = cancerTypeScores[row,23]
-				h3k36me3GainScore = cancerTypeScores[row,24]
-				h3k36me3LossScore = cancerTypeScores[row,25]
-				dnaseIGainScore = cancerTypeScores[row,26]
-				dnaseILossScore = cancerTypeScores[row,27]
-				samples = cancerTypeScores[row,28]
-				codingSamples = cancerTypeScores[row,29]
-				
-				
 				perGeneScores[row][0] = geneName
 				perGeneScores[row][1] = geneChr
 				perGeneScores[row][2] = geneStart
 				
-				perGeneScores[row][3] = geneScore
-				perGeneScores[row][4] = eQTLGainScore
-				perGeneScores[row][5] = eQTLLossScore
-				perGeneScores[row][6] = enhancerGainScore
-				perGeneScores[row][7] = enhancerLossScore
-				perGeneScores[row][8] = promoterGainScore
-				perGeneScores[row][9] = promoterLossScore
-				perGeneScores[row][10] = cpgGainScore
-				perGeneScores[row][11] = cpgLossScore
-				perGeneScores[row][12] = tfGainScore
-				perGeneScores[row][13] = tfLossScore
-				perGeneScores[row][14] = hicGainScore
-				perGeneScores[row][15] = hicLossScore
-				perGeneScores[row][16] = h3k9me3GainScore
-				perGeneScores[row][17] = h3k9me3LossScore
-				perGeneScores[row][18] = h3k4me3GainScore
-				perGeneScores[row][19] = h3k4me3LossScore
-				perGeneScores[row][20] = h3k27acGainScore
-				perGeneScores[row][21] = h3k27acLossScore
-				perGeneScores[row][22] = h3k27me3GainScore
-				perGeneScores[row][23] = h3k27me3LossScore
-				perGeneScores[row][24] = h3k4me1GainScore
-				perGeneScores[row][25] = h3k4me1LossScore
-				perGeneScores[row][26] = h3k36me3GainScore
-				perGeneScores[row][27] = h3k36me3LossScore
-				perGeneScores[row][28] = dnaseIGainScore
-				perGeneScores[row][29] = dnaseILossScore
+				colInd = 3 #start from this ind
+				for col in range(1, len(cancerTypeScores[row])):
+					perGeneScores[row][colInd] = cancerTypeScores[row,col]
+					
+					colInd += 1
+					
 				
+				# geneScore = cancerTypeScores[row,1]
+				# eQTLGainScore = cancerTypeScores[row,2]
+				# eQTLLossScore = cancerTypeScores[row,3]
+				# enhancerGainScore = cancerTypeScores[row,4]
+				# enhancerLossScore = cancerTypeScores[row,5]
+				# promoterGainScore = cancerTypeScores[row,6]
+				# promoterLossScore = cancerTypeScores[row,7]
+				# cpgGainScore = cancerTypeScores[row,8]
+				# cpgLossScore = cancerTypeScores[row,9]
+				# tfGainScore = cancerTypeScores[row,10]
+				# tfLossScore = cancerTypeScores[row,11]
+				# hicGainScore = cancerTypeScores[row,12]
+				# hicLossScore = cancerTypeScores[row,13]
+				# h3k9me3GainScore = cancerTypeScores[row,14]
+				# h3k9me3LossScore = cancerTypeScores[row,15]
+				# h3k4me3GainScore = cancerTypeScores[row,16]
+				# h3k4me3LossScore = cancerTypeScores[row,17]
+				# h3k27acGainScore = cancerTypeScores[row,18]
+				# h3k27acLossScore = cancerTypeScores[row,19]
+				# h3k27me3GainScore = cancerTypeScores[row,20]
+				# h3k27me3LossScore = cancerTypeScores[row,21]
+				# h3k4me1GainScore = cancerTypeScores[row,22]
+				# h3k4me1LossScore = cancerTypeScores[row,23]
+				# h3k36me3GainScore = cancerTypeScores[row,24]
+				# h3k36me3LossScore = cancerTypeScores[row,25]
+				# dnaseIGainScore = cancerTypeScores[row,26]
+				# dnaseILossScore = cancerTypeScores[row,27]
+				# samples = cancerTypeScores[row,28]
+				# codingSamples = cancerTypeScores[row,29]
+				# 
+				# 
+				# 
+				# 
+				# perGeneScores[row][3] = geneScore
+				# perGeneScores[row][4] = eQTLGainScore
+				# perGeneScores[row][5] = eQTLLossScore
+				# perGeneScores[row][6] = enhancerGainScore
+				# perGeneScores[row][7] = enhancerLossScore
+				# perGeneScores[row][8] = promoterGainScore
+				# perGeneScores[row][9] = promoterLossScore
+				# perGeneScores[row][10] = cpgGainScore
+				# perGeneScores[row][11] = cpgLossScore
+				# perGeneScores[row][12] = tfGainScore
+				# perGeneScores[row][13] = tfLossScore
+				# perGeneScores[row][14] = hicGainScore
+				# perGeneScores[row][15] = hicLossScore
+				# perGeneScores[row][16] = h3k9me3GainScore
+				# perGeneScores[row][17] = h3k9me3LossScore
+				# perGeneScores[row][18] = h3k4me3GainScore
+				# perGeneScores[row][19] = h3k4me3LossScore
+				# perGeneScores[row][20] = h3k27acGainScore
+				# perGeneScores[row][21] = h3k27acLossScore
+				# perGeneScores[row][22] = h3k27me3GainScore
+				# perGeneScores[row][23] = h3k27me3LossScore
+				# perGeneScores[row][24] = h3k4me1GainScore
+				# perGeneScores[row][25] = h3k4me1LossScore
+				# perGeneScores[row][26] = h3k36me3GainScore
+				# perGeneScores[row][27] = h3k36me3LossScore
+				# perGeneScores[row][28] = dnaseIGainScore
+				# perGeneScores[row][29] = dnaseILossScore
+				# 
+				# 
+				# 
+				# perGeneScores[row][30] = np.sum(perGeneScores[row][4:30])
+				# perGeneScores[row][31] = samples
+				# perGeneScores[row][32] = codingSamples
 				
-				
-				perGeneScores[row][30] = np.sum(perGeneScores[row][4:30])
-				perGeneScores[row][31] = samples
-				perGeneScores[row][32] = codingSamples
-				
+				perGeneScores[row][52] = np.sum(perGeneScores[row][4:49])
 		
 			#Also rank the output by highest total score (recurrence)
-			perGeneScores = perGeneScores[perGeneScores[:,30].argsort()[::-1]] #Select the column  to rank by
+			perGeneScores = perGeneScores[perGeneScores[:,52].argsort()[::-1]] #Select the column  to rank by
 			
 			#Create the folder to write the output to specific for the current cancer type
 			cancerTypeFolder = rankedGeneScoreDir + "/" + uuid + "/" + cancerType
@@ -148,7 +158,20 @@ class OutputWriter:
 			else:
 				outfileName = cancerTypeFolder + "/realSVs_geneScores_chr.txt"
 			
-			header = "geneName\tchromosome\tstart\tgeneScore\teQTLGains\teQTLLosses\tenhancerGains\tenhancerLosses\tpromoterGains\tpromoterLosses\tcpgGains\tcpgLosses\ttfGains\ttfLosses\thicGains\thicLosses\th3k9me3Gains\th3k9me3Losses\th3k4me3Gains\th3k4me3Losses\th3k27acGains\th3k27acLosses\th3k27me3Gains\th3k27me3Losses\th3k4me1Gains\th3k4me1Losses\th3k36me3Gains\th3k36me3Losses\tdnaseIGains\tdnaseILosses\ttotal\tsamples\tcodingSamples"
+			#manually make the header
+			entries = ['eQTL', 'enhancer', 'promoter', 'cpg', 'tf', 'hic', 'h3k9me3', 'h3k4me3', 'h3k27ac', 'h3k27me3', 'h3k4me1', 'h3k36me3', 'dnaseI',
+						'CTCF', 'CTCF+Enhancer', 'CTCF+Promoter', 'Enhancer', 'Heterochromatin', 'Poised_Promoter', 'Promoter', 'Repeat', 'Repressed', 'Transcribed']
+			
+			header = 'geneName\tchromosome\tstart\tgeneScore\t'
+			for entry in entries:
+				header += entry + "_gain" 
+				header += '\t'
+				header += entry + "_loss"
+				header += '\t'
+			
+			header += 'nonCodingSamples\tcodingSamples'
+			
+			#header = "geneName\tchromosome\tstart\tgeneScore\teQTLGains\teQTLLosses\tenhancerGains\tenhancerLosses\tpromoterGains\tpromoterLosses\tcpgGains\tcpgLosses\ttfGains\ttfLosses\thicGains\thicLosses\th3k9me3Gains\th3k9me3Losses\th3k4me3Gains\th3k4me3Losses\th3k27acGains\th3k27acLosses\th3k27me3Gains\th3k27me3Losses\th3k4me1Gains\th3k4me1Losses\th3k36me3Gains\th3k36me3Losses\tdnaseIGains\tdnaseILosses\ttotal\tsamples\tcodingSamples"
 				
 			#Write to numpy output file	
 			np.savetxt(outfileName, perGeneScores, delimiter='\t', fmt='%s', header=header)

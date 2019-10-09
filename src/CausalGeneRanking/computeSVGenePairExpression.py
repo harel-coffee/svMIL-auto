@@ -12,6 +12,7 @@ from six.moves import range
 nonCodingPairs = np.loadtxt(sys.argv[1], dtype="object")
 codingPairs = np.loadtxt(sys.argv[2], dtype="object")
 
+
 expressionFile = sys.argv[3]
 
 expressionData = []
@@ -46,7 +47,7 @@ geneSampleRef = dict()
 for pair in nonCodingPairs[:,0]:
 	splitPair = pair.split("_")
 	gene = splitPair[0]
-	sample = splitPair[len(splitPair)-1]
+	sample = splitPair[7]
 	
 	if gene not in geneSampleRef:
 		geneSampleRef[gene] = []
@@ -55,7 +56,7 @@ for pair in nonCodingPairs[:,0]:
 for pair in codingPairs:
 	splitPair = pair.split("_")
 	gene = splitPair[0]
-	sample = splitPair[len(splitPair)-1]
+	sample = splitPair[7]
 	
 	if gene not in geneSampleRef:
 		geneSampleRef[gene] = []
@@ -118,7 +119,7 @@ def getDEPairs(pairs, geneSampleRef, epressionData, perPairDifferentialExpressio
 	for pair in pairs:
 		splitPair = pair.split("_")
 		gene = splitPair[0]
-		pairSample = splitPair[len(splitPair)-1]
+		pairSample = splitPair[7]
 		shortPairSampleName = pairSample.split("brca")[1]
 		sv = "_".join(splitPair[1:])
 		if gene not in expressionData[:,0]:
@@ -143,59 +144,60 @@ def getDEPairs(pairs, geneSampleRef, epressionData, perPairDifferentialExpressio
 	return perPairDifferentialExpression
 
 #Get the p-value for each pair in coding & non-coding
-perPairDifferentialExpression = getDEPairs(nonCodingPairs[:,0], geneSampleRef, expressionData, dict(), geneSampleExpr, negativeExpr)
-print("done")
-perPairDifferentialExpression = getDEPairs(codingPairs, geneSampleRef, expressionData, perPairDifferentialExpression, geneSampleExpr, negativeExpr)
-print("coding done")
-#Do multiple testing correction
-#print perPairDifferentialExpression
-
-perPairDifferentialExpressionArray = np.empty([len(perPairDifferentialExpression), 2], dtype="object")
-perPairDifferentialExpressionArray[:,0] = list(perPairDifferentialExpression.keys())
-perPairDifferentialExpressionArray[:,1] = list(perPairDifferentialExpression.values())
-
-
-from statsmodels.sandbox.stats.multicomp import multipletests
-reject, pAdjusted, _, _ = multipletests(perPairDifferentialExpressionArray[:,1], method='bonferroni')
-
-perPairDifferentialExpressionArrayFiltered = perPairDifferentialExpressionArray[reject]
-
-#np.save('codingNonCodingPairDEGs.npy', perPairDifferentialExpressionArrayFiltered)
-
-#instead of writing the whole array to a file, write per SV which DEGs these are linked to
-svsAndDegsNonCoding = dict()
-svsAndDegsCoding = dict()
-for pair in perPairDifferentialExpressionArrayFiltered[:,0]:
-	splitPair = pair.split("_")
-	svEntries = splitPair[1:]
-	sv = "_".join(svEntries)
-	
-	if sv not in svsAndDegsNonCoding:
-		svsAndDegsNonCoding[sv] = 0
-	if sv not in svsAndDegsCoding:
-		svsAndDegsCoding[sv] = 0
-		
-	if pair in nonCodingPairs[:,0]:
-		svsAndDegsNonCoding[sv] += 1
-	if pair in codingPairs:
-		svsAndDegsCoding[sv] += 1
-
-pairs = np.empty([len(svsAndDegsNonCoding), 2], dtype="object")	
-for svInd in range(0, len(svsAndDegsNonCoding)):
-	pairs[svInd, 0] = list(svsAndDegsNonCoding.keys())[svInd]
-	pairs[svInd,1] = svsAndDegsNonCoding[list(svsAndDegsNonCoding.keys())[svInd]]
-
-np.savetxt(sys.argv[1] + "_degPairsNonCoding.txt", pairs, delimiter="\t", fmt="%s")
-
-#repeat for coding
-pairs = np.empty([len(svsAndDegsCoding), 2], dtype="object")	
-for svInd in range(0, len(svsAndDegsCoding)):
-	pairs[svInd, 0] = list(svsAndDegsCoding.keys())[svInd]
-	pairs[svInd,1] = svsAndDegsCoding[list(svsAndDegsCoding.keys())[svInd]]
-
-np.savetxt(sys.argv[1] + "_degPairsCoding.txt", pairs, delimiter="\t", fmt="%s")
+# perPairDifferentialExpression = getDEPairs(nonCodingPairs[:,0], geneSampleRef, expressionData, dict(), geneSampleExpr, negativeExpr)
+# print("done")
+# perPairDifferentialExpression = getDEPairs(codingPairs, geneSampleRef, expressionData, perPairDifferentialExpression, geneSampleExpr, negativeExpr)
+# print("coding done")
+# #Do multiple testing correction
+# #print perPairDifferentialExpression
+# 
+# perPairDifferentialExpressionArray = np.empty([len(perPairDifferentialExpression), 2], dtype="object")
+# perPairDifferentialExpressionArray[:,0] = list(perPairDifferentialExpression.keys())
+# perPairDifferentialExpressionArray[:,1] = list(perPairDifferentialExpression.values())
+# 
+# 
+# from statsmodels.sandbox.stats.multicomp import multipletests
+# reject, pAdjusted, _, _ = multipletests(perPairDifferentialExpressionArray[:,1], method='bonferroni')
+# 
+# perPairDifferentialExpressionArrayFiltered = perPairDifferentialExpressionArray[reject]
+# 
+# #np.save('codingNonCodingPairDEGs.npy', perPairDifferentialExpressionArrayFiltered)
+# 
+# #instead of writing the whole array to a file, write per SV which DEGs these are linked to
+# svsAndDegsNonCoding = dict()
+# svsAndDegsCoding = dict()
+# for pair in perPairDifferentialExpressionArrayFiltered[:,0]:
+# 	splitPair = pair.split("_")
+# 	svEntries = splitPair[1:]
+# 	sv = "_".join(svEntries)
+# 	
+# 	if sv not in svsAndDegsNonCoding:
+# 		svsAndDegsNonCoding[sv] = 0
+# 	if sv not in svsAndDegsCoding:
+# 		svsAndDegsCoding[sv] = 0
+# 		
+# 	if pair in nonCodingPairs[:,0]:
+# 		svsAndDegsNonCoding[sv] += 1
+# 	if pair in codingPairs:
+# 		svsAndDegsCoding[sv] += 1
+# 
+# pairs = np.empty([len(svsAndDegsNonCoding), 2], dtype="object")	
+# for svInd in range(0, len(svsAndDegsNonCoding)):
+# 	pairs[svInd, 0] = list(svsAndDegsNonCoding.keys())[svInd]
+# 	pairs[svInd,1] = svsAndDegsNonCoding[list(svsAndDegsNonCoding.keys())[svInd]]
+# 
+# np.savetxt(sys.argv[1] + "_degPairsNonCoding.txt", pairs, delimiter="\t", fmt="%s")
+# 
+# #repeat for coding
+# pairs = np.empty([len(svsAndDegsCoding), 2], dtype="object")	
+# for svInd in range(0, len(svsAndDegsCoding)):
+# 	pairs[svInd, 0] = list(svsAndDegsCoding.keys())[svInd]
+# 	pairs[svInd,1] = svsAndDegsCoding[list(svsAndDegsCoding.keys())[svInd]]
+# 
+# np.savetxt(sys.argv[1] + "_degPairsCoding.txt", pairs, delimiter="\t", fmt="%s")
 
 # Output DEG pairs for non-coding only
+from statsmodels.sandbox.stats.multicomp import multipletests
 perPairDifferentialExpression = getDEPairs(nonCodingPairs[:,0], geneSampleRef, expressionData, dict(), geneSampleExpr, negativeExpr)
 print("done")
 

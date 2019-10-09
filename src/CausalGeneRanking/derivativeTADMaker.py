@@ -613,17 +613,17 @@ class DerivativeTADMaker:
 						
 					for gene in leftSideGenes:		
 						gene.addLostElements(remainingElementsLeft, sv.sampleName)
-						gene.addLostElementsSVs(remainingElementsLeft, sv.chr1 + "_" + str(sv.s1) + "_" + str(sv.e1) + "_" + sv.chr2 + "_" + str(sv.s2) + "_" + str(sv.e2) + "_" + sv.sampleName)
+						gene.addLostElementsSVs(remainingElementsLeft, sv.chr1 + "_" + str(sv.s1) + "_" + str(sv.e1) + "_" + sv.chr2 + "_" + str(sv.s2) + "_" + str(sv.e2) + "_" + sv.sampleName + "_" + sv.svType)
 						
 						gene.addGainedElements(rightSideElements, sv.sampleName)
-						gene.addGainedElementsSVs(rightSideElements, sv.chr1 + "_" + str(sv.s1) + "_" + str(sv.e1) + "_" + sv.chr2 + "_" + str(sv.s2) + "_" + str(sv.e2) + "_" + sv.sampleName)
+						gene.addGainedElementsSVs(rightSideElements, sv.chr1 + "_" + str(sv.s1) + "_" + str(sv.e1) + "_" + sv.chr2 + "_" + str(sv.s2) + "_" + str(sv.e2) + "_" + sv.sampleName + "_" + sv.svType)
 						
 					for gene in rightSideGenes:		
 						gene.addLostElements(remainingElementsRight, sv.sampleName)
-						gene.addLostElementsSVs(remainingElementsRight, sv.chr1 + "_" + str(sv.s1) + "_" + str(sv.e1) + "_" + sv.chr2 + "_" + str(sv.s2) + "_" + str(sv.e2) + "_" + sv.sampleName)
+						gene.addLostElementsSVs(remainingElementsRight, sv.chr1 + "_" + str(sv.s1) + "_" + str(sv.e1) + "_" + sv.chr2 + "_" + str(sv.s2) + "_" + str(sv.e2) + "_" + sv.sampleName + "_" + sv.svType)
 					
 						gene.addGainedElements(leftSideElements, sv.sampleName)
-						gene.addGainedElementsSVs(leftSideElements, sv.chr1 + "_" + str(sv.s1) + "_" + str(sv.e1) + "_" + sv.chr2 + "_" + str(sv.s2) + "_" + str(sv.e2) + "_" + sv.sampleName)
+						gene.addGainedElementsSVs(leftSideElements, sv.chr1 + "_" + str(sv.s1) + "_" + str(sv.e1) + "_" + sv.chr2 + "_" + str(sv.s2) + "_" + str(sv.e2) + "_" + sv.sampleName + "_" + sv.svType)
 					
 						
 		### DELETIONS ###
@@ -645,34 +645,92 @@ class DerivativeTADMaker:
 			
 			tadMatches = tadChrSubset[startMatches * endMatches]
 			
-			if tadMatches.shape[0] < 1: #no matches
+			if tadMatches.shape[0] < 2: #no matches, or overlapping just 1 TAD. 
 				return
-								
-			#Filter for TADs that are entirely overlapped and TADs that only contain part of the deletion.
 			
-			for tad in tadMatches:
+			
+			
+			#Get the leftmost and rightmost TADs
+			farLeftTad = tadMatches[0] #This list is sorted
+			farRightTad = tadMatches[tadMatches.shape[0]-1]
+			
+			
+			
+			#The genes in the far left TAD, only in the part that is not overlapped by the deletion, gain the elements that are not overlapped by the deletion
+			#in the far right tad.
+			remainingLeftGenes = farLeftTad[3].getGenesByRange(farLeftTad[1], svData[1])
+			remainingLeftElements = farLeftTad[3].getElementsByRange(farLeftTad[1], svData[1])
+			
+			remainingRightGenes = farRightTad[3].getGenesByRange(svData[5], farRightTad[2])
+			remainingRightElements = farRightTad[3].getElementsByRange(svData[5], farRightTad[2])
+			
+			deletedLeftGenes = farLeftTad[3].getGenesByRange(svData[1], farLeftTad[2])
+			deletedLeftElements = farLeftTad[3].getElementsByRange(svData[1], farLeftTad[2])
+			
+			deletedRightGenes = farRightTad[3].getGenesByRange(farRightTad[1], svData[5])
+			deletedRightElements = farRightTad[3].getElementsByRange(farRightTad[1], svData[5])
+			
+			# if svData[0] + "_" + str(svData[1]) + "_" + str(svData[2]) + "_" + svData[3] + "_" + str(svData[4]) + "_" + str(svData[5]) + "_" + svData[8].sampleName + "_" + svData[8].svType == "chr1_61871997_61871997_chr1_64954506_64954506_brcaA0DG_del":
+			# 	print(farLeftTad)
+			# 	print(farRightTad)
+			# 	print(svData)
+			# 	print(remainingRightGenes)
+			# 	for gene in remainingRightGenes:
+			# 		print(gene.name)
+			# 	#print(remainingLeftElements)
+			# 	exit()
+			
+			#for the losses, the remaining genes in the left lose the lost left elements
+			#for the gains, the remaining genes in the left gain the remaining elements on the right. 
+			for gene in remainingLeftGenes: #add gains from the right
+				if len(remainingRightElements) > 0:
+					gene.addGainedElements(remainingRightElements, svData[8].sampleName)
+					gene.addGainedElementsSVs(remainingRightElements, svData[0] + "_" + str(svData[1]) + "_" + str(svData[2]) + "_" + svData[3] + "_" + str(svData[4]) + "_" + str(svData[5]) + "_" + svData[8].sampleName + "_" + svData[8].svType)
 				
-				#For now skip the SVs that are entirely within the TAD
-				if svData[1] > tad[1] and svData[5] < tad[2]:
-					continue
+				gene.addLostElements(deletedLeftElements, svData[8].sampleName)
+				gene.addLostElementsSVs(deletedLeftElements, svData[0] + "_" + str(svData[1]) + "_" + str(svData[2]) + "_" + svData[3] + "_" + str(svData[4]) + "_" + str(svData[5]) + "_" + svData[8].sampleName + "_" + svData[8].svType)
 				
-				lostElements = []
-				remainingGenes = []
-				if svData[1] > tad[1] or svData[5] < tad[2]: #if the SV overlaps the TAD entirely, this will never be true.
-					#Determine which part of the TAD is disrupted by the SV
-					if svData[1] > tad[1] and svData[5] > tad[2]: #If the SV starts after the TAD start, but the TAD ends before the SV end, the SV is in the leftmost TAD.
-						lostElements = tad[3].getElementsByRange(svData[1], tad[2]) #Elements in the deletion
-						remainingGenes = tad[3].getGenesByRange(tad[1], svData[1])
-						
-					if svData[5] > tad[1] and svData[5] < tad[2]: #If the SV ends after the start of the TAD, and also ends before the end of the TAD, the SV is in the rightmost TAD.
-						lostElements = tad[3].getElementsByRange(tad[1], svData[5])
-						remainingGenes = tad[3].getGenesByRange(svData[5], tad[2])
-				# else: #do not do this, if the deletion covers the entire TAD, it also removes the gene itself, so that is not intersting as a 'loss' 
-				# 	lostElements = tad[3].elements
-				for gene in remainingGenes:
-					gene.addLostElements(lostElements, svData[8].sampleName)
-					gene.addLostElementsSVs(lostElements, svData[0] + "_" + str(svData[1]) + "_" + str(svData[2]) + "_" + svData[3] + "_" + str(svData[4]) + "_" + str(svData[5]) + "_" + svData[8].sampleName)
-					
+			for gene in remainingRightGenes: #add gains from the left
+				if len(remainingRightElements) > 0:
+					gene.addGainedElements(remainingLeftElements, svData[8].sampleName)
+					gene.addGainedElementsSVs(remainingLeftElements, svData[0] + "_" + str(svData[1]) + "_" + str(svData[2]) + "_" + svData[3] + "_" + str(svData[4]) + "_" + str(svData[5]) + "_" + svData[8].sampleName + "_" + svData[8].svType)
+			
+				gene.addLostElements(deletedRightElements, svData[8].sampleName)
+				gene.addLostElementsSVs(deletedRightElements, svData[0] + "_" + str(svData[1]) + "_" + str(svData[2]) + "_" + svData[3] + "_" + str(svData[4]) + "_" + str(svData[5]) + "_" + svData[8].sampleName + "_" + svData[8].svType)
+				
+			
+				
+			
+			# for tad in tadMatches:
+			# 	
+			# 	#For now skip the SVs that are entirely within the TAD
+			# 	if svData[1] > tad[1] and svData[5] < tad[2]:
+			# 		continue
+			# 	
+			# 	lostElements = []
+			# 	remainingGenes = []
+			# 	if svData[1] > tad[1] or svData[5] < tad[2]: #if the SV overlaps the TAD entirely, this will never be true.
+			# 		
+			# 		#re-do this, but then for gains and losses at the same time. 
+			# 		
+			# 		#get the genes in the left TAD and the right TAD.
+			# 		#get the gens in the deletion on the left, and the ones on the right in the deletion. 
+			# 		
+			# 		
+			# 		#Determine which part of the TAD is disrupted by the SV
+			# 		if svData[1] > tad[1] and svData[5] > tad[2]: #If the SV starts after the TAD start, but the TAD ends before the SV end, the SV is in the leftmost TAD.
+			# 			lostElements = tad[3].getElementsByRange(svData[1], tad[2]) #Elements in the deletion
+			# 			remainingGenes = tad[3].getGenesByRange(tad[1], svData[1])
+			# 			
+			# 		if svData[5] > tad[1] and svData[5] < tad[2]: #If the SV ends after the start of the TAD, and also ends before the end of the TAD, the SV is in the rightmost TAD.
+			# 			lostElements = tad[3].getElementsByRange(tad[1], svData[5])
+			# 			remainingGenes = tad[3].getGenesByRange(svData[5], tad[2])
+			# 	# else: #do not do this, if the deletion covers the entire TAD, it also removes the gene itself, so that is not intersting as a 'loss' 
+			# 	# 	lostElements = tad[3].elements
+			# 	for gene in remainingGenes:
+			# 		gene.addLostElements(lostElements, svData[8].sampleName)
+			# 		gene.addLostElementsSVs(lostElements, svData[0] + "_" + str(svData[1]) + "_" + str(svData[2]) + "_" + svData[3] + "_" + str(svData[4]) + "_" + str(svData[5]) + "_" + svData[8].sampleName + "_" + svData[8].svType)
+			# 		
 			
 					
 								
@@ -743,39 +801,39 @@ class DerivativeTADMaker:
 			for gene in unaffectedGenesLeft:
 				
 				gene.addGainedElements(rightSideElements, svData[7])
-				gene.addGainedElementsSVs(rightSideElements, svData[0] + "_" + str(svData[1]) + "_" + str(svData[2]) + "_" + svData[3] + "_" + str(svData[4]) + "_" + str(svData[5]) + "_" + svData[8].sampleName)
+				gene.addGainedElementsSVs(rightSideElements, svData[0] + "_" + str(svData[1]) + "_" + str(svData[2]) + "_" + svData[3] + "_" + str(svData[4]) + "_" + str(svData[5]) + "_" + svData[8].sampleName + "_" + svData[8].svType)
 				
 				gene.addLostElements(leftSideElements, svData[7])
-				gene.addLostElementsSVs(leftSideElements, svData[0] + "_" + str(svData[1]) + "_" + str(svData[2]) + "_" + svData[3] + "_" + str(svData[4]) + "_" + str(svData[5]) + "_" + svData[8].sampleName)
+				gene.addLostElementsSVs(leftSideElements, svData[0] + "_" + str(svData[1]) + "_" + str(svData[2]) + "_" + svData[3] + "_" + str(svData[4]) + "_" + str(svData[5]) + "_" + svData[8].sampleName + "_" + svData[8].svType)
 				
 			#All genes in the right side of the inversion will gain elements from the original left TAD.
 			#All genes in the right side will lose interactions with eQTLs in the unaffected right TAD. 
 			for gene in rightSideGenes:
 				
 				gene.addGainedElements(unaffectedElementsLeft, svData[7])
-				gene.addGainedElementsSVs(unaffectedElementsLeft, svData[0] + "_" + str(svData[1]) + "_" + str(svData[2]) + "_" + svData[3] + "_" + str(svData[4]) + "_" + str(svData[5]) + "_" + svData[8].sampleName)
+				gene.addGainedElementsSVs(unaffectedElementsLeft, svData[0] + "_" + str(svData[1]) + "_" + str(svData[2]) + "_" + svData[3] + "_" + str(svData[4]) + "_" + str(svData[5]) + "_" + svData[8].sampleName + "_" + svData[8].svType)
 				#print "Number of unaffected elements right: ", len(unaffectedElementsRight), " for genes ", len(rightSideGenes)
 				gene.addLostElements(unaffectedElementsRight, svData[7])
-				gene.addLostElementsSVs(unaffectedElementsRight, svData[0] + "_" + str(svData[1]) + "_" + str(svData[2]) + "_" + svData[3] + "_" + str(svData[4]) + "_" + str(svData[5]) + "_" + svData[8].sampleName)
+				gene.addLostElementsSVs(unaffectedElementsRight, svData[0] + "_" + str(svData[1]) + "_" + str(svData[2]) + "_" + svData[3] + "_" + str(svData[4]) + "_" + str(svData[5]) + "_" + svData[8].sampleName + "_" + svData[8].svType)
 			
 			#vice versa but then for the right TAD and right side of the inversion.
 			#The lost eQTLs are the ones that are in the right side of the inversion
 			for gene in unaffectedGenesRight:
 				
 				gene.addGainedElements(leftSideElements, svData[7])
-				gene.addGainedElementsSVs(leftSideElements, svData[0] + "_" + str(svData[1]) + "_" + str(svData[2]) + "_" + svData[3] + "_" + str(svData[4]) + "_" + str(svData[5]) + "_" + svData[8].sampleName)
+				gene.addGainedElementsSVs(leftSideElements, svData[0] + "_" + str(svData[1]) + "_" + str(svData[2]) + "_" + svData[3] + "_" + str(svData[4]) + "_" + str(svData[5]) + "_" + svData[8].sampleName + "_" + svData[8].svType)
 				
 				gene.addLostElements(rightSideElements, svData[7])
-				gene.addLostElementsSVs(rightSideElements, svData[0] + "_" + str(svData[1]) + "_" + str(svData[2]) + "_" + svData[3] + "_" + str(svData[4]) + "_" + str(svData[5]) + "_" + svData[8].sampleName)
+				gene.addLostElementsSVs(rightSideElements, svData[0] + "_" + str(svData[1]) + "_" + str(svData[2]) + "_" + svData[3] + "_" + str(svData[4]) + "_" + str(svData[5]) + "_" + svData[8].sampleName + "_" + svData[8].svType)
 			
 			#The lost eQTLs are the ones that are in the unaffected original left TAD
 			for gene in leftSideGenes:
 				
 				gene.addGainedElements(unaffectedElementsRight, svData[7])
-				gene.addGainedElementsSVs(unaffectedElementsRight, svData[0] + "_" + str(svData[1]) + "_" + str(svData[2]) + "_" + svData[3] + "_" + str(svData[4]) + "_" + str(svData[5]) + "_" + svData[8].sampleName)
+				gene.addGainedElementsSVs(unaffectedElementsRight, svData[0] + "_" + str(svData[1]) + "_" + str(svData[2]) + "_" + svData[3] + "_" + str(svData[4]) + "_" + str(svData[5]) + "_" + svData[8].sampleName + "_" + svData[8].svType)
 				
 				gene.addLostElements(unaffectedElementsLeft, svData[7])
-				gene.addLostElementsSVs(unaffectedElementsLeft, svData[0] + "_" + str(svData[1]) + "_" + str(svData[2]) + "_" + svData[3] + "_" + str(svData[4]) + "_" + str(svData[5]) + "_" + svData[8].sampleName)
+				gene.addLostElementsSVs(unaffectedElementsLeft, svData[0] + "_" + str(svData[1]) + "_" + str(svData[2]) + "_" + svData[3] + "_" + str(svData[4]) + "_" + str(svData[5]) + "_" + svData[8].sampleName + "_" + svData[8].svType)
 
 			return
 		
@@ -886,12 +944,12 @@ class DerivativeTADMaker:
 					for gene in svGenesFirstTad:
 						
 						gene.addGainedElements(svInteractionsLastTad, svData[7])
-						gene.addGainedElementsSVs(svInteractionsLastTad, svData[0] + "_" + str(svData[1]) + "_" + str(svData[2]) + "_" + svData[3] + "_" + str(svData[4]) + "_" + str(svData[5]) + "_" + svData[8].sampleName)
+						gene.addGainedElementsSVs(svInteractionsLastTad, svData[0] + "_" + str(svData[1]) + "_" + str(svData[2]) + "_" + svData[3] + "_" + str(svData[4]) + "_" + str(svData[5]) + "_" + svData[8].sampleName + "_" + svData[8].svType)
 					
 					for gene in svGenesLastTad:
 					
 						gene.addGainedElements(svInteractionsFirstTad, svData[7])
-						gene.addGainedElementsSVs(svInteractionsFirstTad, svData[0] + "_" + str(svData[1]) + "_" + str(svData[2]) + "_" + svData[3] + "_" + str(svData[4]) + "_" + str(svData[5]) + "_" + svData[8].sampleName)
+						gene.addGainedElementsSVs(svInteractionsFirstTad, svData[0] + "_" + str(svData[1]) + "_" + str(svData[2]) + "_" + svData[3] + "_" + str(svData[4]) + "_" + str(svData[5]) + "_" + svData[8].sampleName + "_" + svData[8].svType)
 					
 					#The last TAD remains the same overall.
 					#Only the TADs in the middle are duplicated.
@@ -946,11 +1004,11 @@ class DerivativeTADMaker:
 						
 						#Each gene in this bin gets all eQTLs that are within the SV.
 						gene.addGainedElements(svInteractionsSecondTad, svData[7])
-						gene.addGainedElementsSVs(svInteractionsSecondTad, svData[0] + "_" + str(svData[1]) + "_" + str(svData[2]) + "_" + svData[3] + "_" + str(svData[4]) + "_" + str(svData[5]) + "_" + svData[8].sampleName)
+						gene.addGainedElementsSVs(svInteractionsSecondTad, svData[0] + "_" + str(svData[1]) + "_" + str(svData[2]) + "_" + svData[3] + "_" + str(svData[4]) + "_" + str(svData[5]) + "_" + svData[8].sampleName + "_" + svData[8].svType)
 						
 					for gene in svGenesSecondTad:
 						
 						#Each gene here gains eQTLs from outside of the SV in the bin.
 						gene.addGainedElements(svInteractionsFirstTad, svData[7])
-						gene.addGainedElementsSVs(svInteractionsFirstTad, svData[0] + "_" + str(svData[1]) + "_" + str(svData[2]) + "_" + svData[3] + "_" + str(svData[4]) + "_" + str(svData[5]) + "_" + svData[8].sampleName)
+						gene.addGainedElementsSVs(svInteractionsFirstTad, svData[0] + "_" + str(svData[1]) + "_" + str(svData[2]) + "_" + svData[3] + "_" + str(svData[4]) + "_" + str(svData[5]) + "_" + svData[8].sampleName + "_" + svData[8].svType)
 		
