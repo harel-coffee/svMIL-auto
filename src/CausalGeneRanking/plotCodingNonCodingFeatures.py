@@ -15,6 +15,7 @@ from sklearn.metrics import auc, precision_recall_curve
 from sklearn.model_selection import StratifiedKFold
 from sklearn.model_selection import cross_val_score
 from scipy import interp
+import random
 
 degData = np.loadtxt(sys.argv[1], dtype='object')
 nonDegData = np.loadtxt(sys.argv[2], dtype='object')
@@ -22,38 +23,90 @@ nonDegData = np.loadtxt(sys.argv[2], dtype='object')
 #Split into features for deg pairs and non-deg pairs.
 #allow option to split this per SV type
 
-svTypeDeg = "transl_inter"
-svTypeNonDeg = 'inversion'
+svTypeDeg = "invers"
+svTypeNonDeg = 'invers'
 
+#Shuffle labels, randomly assign each entry to DEG or non-DEG. Will remain unbalanced!
+shuffle = False
 if svTypeDeg != "":
 	
 	degFeatures = []
-	for sv in degData:
-		splitSV = sv[0].split("_")
-		if len(splitSV) == 9: #for del, dup, inv
-			if re.search(splitSV[8], svTypeDeg, re.IGNORECASE):
-				degFeatures.append(sv[1:])
-		else:
-			if re.search("_".join([splitSV[8], splitSV[9]]), svTypeDeg, re.IGNORECASE):
-				degFeatures.append(sv[1:])
-			
 	nonDegFeatures = []
-	for sv in nonDegData:
+	
+	if shuffle == False:
+		for sv in degData:
+			splitSV = sv[0].split("_")
+			features = []
+			if len(splitSV) == 9: #for del, dup, inv
+				if re.search(splitSV[8], svTypeDeg, re.IGNORECASE):
+					features = sv[1:]
+			else:
+				if re.search("_".join([splitSV[8], splitSV[9]]), svTypeDeg, re.IGNORECASE):
+					features = sv[1:]
+			
+			if len(features) < 1:
+				continue
+			
+			if shuffle == False:
+				
+				degFeatures.append(features)
+			if shuffle == True:
+				flip = random.randint(0,1)
+				if flip == 0:
+					degFeatures.append(features)
+				else:
+					nonDegFeatures.append(features)
 		
-		splitSV = sv[0].split("_")
-		if len(splitSV) == 9: #for del, dup, inv
-			if re.search(splitSV[8], svTypeNonDeg, re.IGNORECASE):
-				nonDegFeatures.append(sv[1:])
-		else:
-			if re.search("_".join([splitSV[8], splitSV[9]]), svTypeNonDeg, re.IGNORECASE):
-				nonDegFeatures.append(sv[1:])
+		for sv in nonDegData:
+			
+			splitSV = sv[0].split("_")
+			features = []
+			if len(splitSV) == 9: #for del, dup, inv
+				if re.search(splitSV[8], svTypeNonDeg, re.IGNORECASE):
+					features = sv[1:]
+			else:
+				if re.search("_".join([splitSV[8], splitSV[9]]), svTypeNonDeg, re.IGNORECASE):
+					features = sv[1:]
+			
+			if len(features) < 1:
+				continue
+			
+			if shuffle == False:
+				nonDegFeatures.append(features)
+			if shuffle == True:
+				flip = random.randint(0,1)
+				if flip == 0:
+					degFeatures.append(features)
+				else:
+					nonDegFeatures.append(features)		
 	
 	degFeatures = np.array(degFeatures)
 	nonDegFeatures = np.array(nonDegFeatures)
 else:
 	
-	degFeatures = degData[:,1:]
-	nonDegFeatures = nonDegData[:,1:]
+	
+	if shuffle == False:
+		degFeatures = degData[:,1:]
+		nonDegFeatures = nonDegData[:,1:]
+	else:
+		degFeatures = []
+		nonDegFeatures = []
+		for sv in degData:
+			flip = random.randint(0,1)
+			if flip == 0:
+				degFeatures.append(sv[1:])
+			else:
+				nonDegFeatures.append(sv[1:])
+				
+		for sv in nonDegData:
+			flip = random.randint(0,1)
+			if flip == 0:
+				degFeatures.append(sv[1:])
+			else:
+				nonDegFeatures.append(sv[1:])
+				
+		degFeatures = np.array(degFeatures)
+		nonDegFeatures = np.array(nonDegFeatures)
 
 print(degFeatures)
 print(nonDegFeatures)
@@ -110,7 +163,7 @@ print(lossData)
 
 width = 0.35
 
-plt.barh(np.arange(len(lossData)), lossData, width, label='Germline pairs', color='blue')
+plt.barh(np.arange(len(lossData)), lossData, width, label='Non-DEG pairs', color='blue')
 # plt.xticks(range(0, len(lossData)),
 	   # ['eQTLs', 'enhancers', 'promoters', 'CpG', 'TF', 'HiC', 'h3k9me3', 'h3k4me3', 'h3k27ac', 'h3k27me3', 'h3k4me1', 'h3k36me3', 'DNAseI'], rotation=90)
 # plt.show()
@@ -161,7 +214,7 @@ print(lossData)
 #lossData = np.log(lossData)
 
 
-plt.barh(np.arange(len(lossData)) + width, lossData, width, label='Somatic pairs', color='red')
+plt.barh(np.arange(len(lossData)) + width, lossData, width, label='DEG pairs', color='red')
 plt.yticks(np.arange(len(lossData) + width / 2), ['eQTLs', 'enhancers', 'promoters', 'CpG', 'TF', 'HiC', 'h3k9me3', 'h3k4me3',
 												  'h3k27ac', 'h3k27me3', 'h3k4me1', 'h3k36me3','DNAseI', 'CTCF', 'CTCF+Enhancer',
 												  'CTCF+Promoter', 'chromHMM Enhancer', 'heterochromatin', 'poised promoter',
@@ -216,7 +269,7 @@ print(gainData)
 #gainData = np.log(gainData)
 
 
-plt.barh(np.arange(len(gainData)), gainData, width, label='Germline pairs', color='blue')
+plt.barh(np.arange(len(gainData)), gainData, width, label='Non-DEG pairs', color='blue')
 # plt.xticks(np.arange(len(gainData)),
 # 		   ['eQTLs', 'enhancers', 'promoters', 'CpG', 'TF', 'HiC', 'h3k9me3', 'h3k4me3', 'h3k27ac', 'h3k27me3', 'h3k4me1', 'h3k36me3', 'DNAseI'], rotation=90)
 # plt.show()
@@ -262,7 +315,7 @@ print(gainData)
 
 
 
-plt.barh(np.arange(len(gainData)) + width, gainData, width, label='Somatic pairs',color='red')
+plt.barh(np.arange(len(gainData)) + width, gainData, width, label='DEG pairs',color='red')
 plt.yticks(np.arange(len(gainData) + width / 2),['eQTLs', 'enhancers', 'promoters', 'CpG', 'TF', 'HiC', 'h3k9me3', 'h3k4me3',
 												 'h3k27ac', 'h3k27me3', 'h3k4me1', 'h3k36me3', 'DNAseI', 'CTCF', 'CTCF+Enhancer',
 												 'CTCF+Promoter', 'chromHMM Enhancer', 'heterochromatin', 'poised promoter',

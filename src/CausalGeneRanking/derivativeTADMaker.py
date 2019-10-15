@@ -55,7 +55,7 @@ class DerivativeTADMaker:
 			if typeMatch is not None:
 				self.determineDerivativeTADs(sv, tadData, "inv")
 				invCount += 1
-				print("inversion count: ", invCount)
+				#print("inversion count: ", invCount)
 		
 		
 		#Duplications
@@ -65,7 +65,7 @@ class DerivativeTADMaker:
 				
 				self.determineDerivativeTADs(sv, tadData, "dup")
 				dupCount += 1
-				print("duplication count: ", dupCount)
+				#print("duplication count: ", dupCount)
 				
 		#Deletions		
 		for sv in svData:
@@ -74,7 +74,7 @@ class DerivativeTADMaker:
 				
 				self.determineDerivativeTADs(sv, tadData, "del")
 				delCount += 1
-				print("deletion count: ", delCount)		
+				#print("deletion count: ", delCount)		
 				
 				
 		#For the translocations separately

@@ -244,8 +244,8 @@ negativePairsFeatures = []
 negativeWithFeatures = 0
 negativeWithoutFeatures = 0
 svFeaturesNeg = dict()
-for pair in negativePairsSubsampled:
-#for pair in negativePairs:
+#for pair in negativePairsSubsampled:
+for pair in negativePairs:
 	if pair in svGenePairsRules[:,0]:
 		negativeWithFeatures += 1
 		#get these features
@@ -272,6 +272,11 @@ for pair in negativePairsSubsampled:
 
 positivePairsFeatures = np.array(positivePairsFeatures, dtype='object')
 negativePairsFeatures = np.array(negativePairsFeatures, dtype='object')
+
+#output to files
+np.savetxt('Output/RankedGenes/13102019/BRCA/degPairsFeatures.txt', positivePairsFeatures, fmt='%s', delimiter='\t')
+np.savetxt('Output/RankedGenes/13102019/BRCA/nonDegPairsFeatures.txt', negativePairsFeatures, fmt='%s', delimiter='\t')
+exit()
 
 #Try MIL
 
@@ -383,9 +388,6 @@ exit()
 
 
 
-#output to files
-np.savetxt('degPairsFeatures.txt', positivePairsFeatures, fmt='%s', delimiter='\t')
-np.savetxt('nonDegPairsFeatures.txt', negativePairsFeatures, fmt='%s', delimiter='\t')
 
 print(positivePairsFeatures)
 print(negativePairsFeatures)

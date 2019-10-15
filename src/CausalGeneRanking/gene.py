@@ -1,5 +1,6 @@
 from __future__ import absolute_import
 from copy import deepcopy
+import numpy as np
 
 import settings
 
@@ -22,6 +23,7 @@ class Gene:
 		self.lostElements = dict()
 		self.lostElementsSVs = dict() #lost elements per SV, not per sample
 		self.gainedElementsSVs = dict()
+		self.alteredElements = dict()
 		
 	def setTADs(self, leftTAD, rightTAD):
 		
@@ -59,9 +61,6 @@ class Gene:
 			if sample not in self.gainedElements:
 				self.gainedElements[sample] = dict()
 				
-			if self.name == 'JAK1':
-				print(gainedElements)
-				print(sample)
 		#Have a dictionary where we count the number of elements of a specific type that are gained per sample.
 		#This is much faster than storing the actual elements that are gained, and we do not use that information in the ranking, so it can be discarded here. 
 		for gainedElement in gainedElements:
@@ -82,7 +81,8 @@ class Gene:
 			if gainedElement[3] not in self.gainedElementsSVs[sv]:
 				self.gainedElementsSVs[sv][gainedElement[3]] = 0
 			self.gainedElementsSVs[sv][gainedElement[3]] += 1
-			
+		
+		self.addAlteredElements(gainedElements, sv, 'gain')	
 	
 	def addLostElements(self, lostElements, sample):
 		
@@ -108,6 +108,8 @@ class Gene:
 						self.lostElements[sample][lostElement[3]] = 0
 					self.lostElements[sample][lostElement[3]] +=1
 	
+		
+	
 	def addLostElementsSVs(self, lostElements, sv):
 		
 		if len(lostElements) > 0:
@@ -132,24 +134,87 @@ class Gene:
 						self.lostElementsSVs[sv][lostElement[3]] = 0
 					self.lostElementsSVs[sv][lostElement[3]] +=1
 		
-	# def setLostElements(self, lostElements, sample):
-	# 	
-	# 	for lostElement in lostElements:
-	# 		if lostElement in self.elements:
-	# 			self.addLostElement(lostElement, sample)
-	# 	#self.lostEQTLs[sample] = lostEQTLs
-	# 
-	# def addLostElement(self, lostElement, sample, types):
-	# 	
-	# 	#Treat losses differently for elements that we cannot link to the gene
-	# 	elementsNotLinkedToGenes = ['cpg', 'tf', 'hic', 'dnaseI', 'h3k9me3', 'h3k4me3', 'h3k27ac', 'h3k27me3', 'h3k4me1', 'h3k36me3']
-	# 	
-	# 	if sample not in self.lostElements:
-	# 		self.lostElements[sample] = dict()
-	# 
-	# 	for elementType in types:
-	# 		if elementType not in self.lostElements[sample]:
-	# 			self.lostElements[sample][elementType] = 0
-	# 		self.lostElements[sample][elementType] += 1
-	# 
-	# 	
+		self.addAlteredElements(lostElements, sv, 'loss')
+		
+	def addAlteredElements(self, elements, sv, alterationType):
+		"""
+			For this gene, make a dictionary where we can look up by SV which elements were altered by that SV for this gene.
+			The values for this element are the feature vector that we will use to describe that element. 
+		"""
+		
+		allowedElements = ['enhancer']
+		
+		elementsNotLinkedToGenes = ['cpg', 'tf', 'hic', 'dnaseI', 'h3k9me3', 'h3k4me3', 'h3k27ac', 'h3k27me3', 'h3k4me1', 'h3k36me3',
+									'CTCF', 'CTCF+Enhancer', 'CTCF+Promoter', 'Enhancer', 'Heterochromatin',
+									'Poised_Promoter', 'Promoter', 'Repeat', 'Repressed', 'Transcribed']
+
+		if len(elements) > 0:
+			if sv not in self.alteredElements:
+				self.alteredElements[sv] = dict()
+		
+		#For methylation marks, gather all relevant marks here for easy lookup.
+		#For now, just focus on what is relevant for enhancers
+		methylationMarks = []
+		for element in elements:
+			
+			if element[3] in ['h3k27ac', 'h3k4me1', 'CTCF', 'CTCF+Enhancer', 'Enhancer', 'Heterochromatin', 'Repeat', 'Repressed', 'Transcribed', 'dnaseI']:
+				methylationMarks.append(element)
+		
+		methylationMarks = np.array(methylationMarks, dtype='object')	
+		
+		for element in elements:
+			
+			if element[3] not in allowedElements:
+				continue
+			
+			elementStr = element[0] + "_" + str(element[1]) + "_" + str(element[2]) + "_" + element[3]
+
+			#Check if the element is methylated or not
+			#first, just set the things for enhancers only, this should later be element un-specific
+			#For all the other elements, determine if the enhancer has a specific mark or not (at the same position)
+			
+			#Find overlap with the methylated elements
+			#Any overlap is accepted
+			methylationMatches = []
+			if len(methylationMarks) > 0:
+				methylationMatches = methylationMarks[(methylationMarks[:,0] == element[0]) * (methylationMarks[:,2] >= element[1]) * (methylationMarks[:,1] <= element[2])]
+			
+			#Fix this later and make it not-so-hardcoded
+			elementMethylation = [0, 0, 0, 0, 0, 0, 0] #keep order of elements
+			for match in methylationMatches:
+				if match[3] == 'h3k27ac':
+					elementMethylation[0] = 1
+				if match[3] == 'h3k4me1':
+					elementMethylation[1] = 1
+				if match[3] == 'Heterochromatin':
+					elementMethylation[2] = 1
+				if match[3] == 'Repeat':
+					elementMethylation[3] = 1
+				if match[3] == 'Repressed':
+					elementMethylation[4] = 1
+				if match[3] == 'Transcribed':
+					elementMethylation[5] = 1
+				if match[3] == 'dnaseI':
+					elementMethylation[6] = 1
+			
+			lossGains = [0,0]
+			if alterationType == 'loss':
+				if element[3] in elementsNotLinkedToGenes:
+					lossGains[0] = 1
+				else: #make sure that elements that belong to the gene are only lost. 
+					if element[4] == self.name:
+						lossGains[0] = 1
+					else: #if 
+						continue
+
+			if alterationType == "gain":
+				lossGains[1] = 1
+			
+			#if we get here, we passed all checks and there is a valid gain OR loss
+			if elementStr not in self.alteredElements[sv]:
+				self.alteredElements[sv][elementStr] = lossGains + elementMethylation
+				
+			
+		
+		
+		

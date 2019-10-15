@@ -196,6 +196,8 @@ class InputParser:
 					s1 = e1
 					e1 = tmpS1
 				
+				#remove the underscore from SV type
+				svType = svType.replace("_", ".")
 	
 				if list(chr1)[0] == "c": #add the chr notation only when it is not already there
 					svObject = SV(chr1, s1, e1, o1, chr2, s2, e2, o2, sampleName, cancerType, svType)
@@ -863,4 +865,8 @@ class InputParser:
 		
 		return np.array(chromHmmSites, dtype='object')
 
-	
+	def getMethylationFromFile(self, methylationFile):
+		
+		
+		
+		return 1

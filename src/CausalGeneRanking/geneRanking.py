@@ -6,6 +6,7 @@ import sys
 import os
 from six.moves import range
 import re
+import pickle as pkl
 
 class GeneRanking:
 	"""
@@ -97,6 +98,8 @@ class GeneRanking:
 		#Score per cancer type individually
 		for cancerType in cancerTypes:
 			print("current cancer type: ", cancerType)
+
+			###1. Scoring per SV-gene pair
 
 			#Do the scoring of the genes
 			#We make a scoring matrix of patients x genes. Each gene has a score in each patient of if an SV overlaps with that element in the neighborhood of the gene yes/no.
@@ -487,7 +490,33 @@ class GeneRanking:
 			geneScores = np.array(geneScores, dtype="object")
 			scores[cancerType] = geneScores
 	
+			###3. Make the feature file for MIL for each sv-gene pair
+			#Each SV-gene pair is a bag. A bag can contain a variable set of isntances, which represent the gained/lost elements
+			#The feature vector was pre-defined in the gene class for each instance.
+			
+			bags = dict()
+			for geneInd in sortedGenesInd:
+				gene = reverseGeneMap[geneInd] #Get the gene back from the scoring matrix by index
+				
+				
+				for sv in gene.alteredElements:
+					
+					instances = []
+					for element in gene.alteredElements[sv]:
+						instances.append(gene.alteredElements[sv][element])
+					
+					if len(instances) > 0:
+						bags[gene.name + "_" + sv] = instances
+				
+			print(bags)	
+		
+			#output the bags to a file
+			with open(settings.files['rankedGeneScoreDir'] + '/' + runId+ '/' + cancerType + '/bags.pkl', 'wb') as handle:
+				pkl.dump(bags, handle, protocol=pkl.HIGHEST_PROTOCOL)
+
+	
 		self.scores = scores #Currently, we make it part of the object, but in principle this could be returned and that would be a bit nicer.
+
 				
 	def scoreBySVsInGenes(self, genes, sampleMap, geneMap):
 		"""

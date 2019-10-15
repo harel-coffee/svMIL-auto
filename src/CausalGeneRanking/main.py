@@ -46,7 +46,6 @@ from outputWriter import OutputWriter
 # from genome import Genome
 import settings
 
-
 ###############
 ###Main code###
 

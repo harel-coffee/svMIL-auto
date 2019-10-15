@@ -26,21 +26,40 @@ from cleanlab.util import print_noise_matrix
 from sklearn.model_selection import cross_val_score
 from sklearn.model_selection import StratifiedKFold
 from scipy import interp
+import pickle as pkl
 
 #1. Process the data
-#Use the input parser to parse the SV-gene pairs and return labels
-pairs, labels = InputParser().processSVGenePairs(sys.argv[1], sys.argv[2])
 
-#2. Define a feature matrix
-featureMatrixDefiner = FeatureMatrixDefiner()
-featureMatrixDefiner.setFeatureData()
-svGenePairsRules = np.loadtxt(sys.argv[3], dtype='object')
-bags, instances, bagLabels = featureMatrixDefiner.defineFeatureMatrix(pairs, labels, svGenePairsRules)
+#Get the bags
+with open(sys.argv[1], 'rb') as handle:
+	bagDict = pkl.load(handle)
 
-print(bags.shape)
+#determine the bag labels given a file of DEG pairs
+degPairs = np.load(sys.argv[2], allow_pickle=True, encoding='latin1')
+
+bags = []
+bagLabels = []
+posCount = 0
+negCount = 0
+for pair in bagDict:
+	
+	#get the label of the bag by checking if it exists in degPairs
+	if pair in degPairs[:,0]:
+		bagLabels.append(1)
+		posCount += 1
+	else:
+		bagLabels.append(0)
+		negCount += 1
+
+	bags.append(bagDict[pair])
+
+bags = np.array(bags)
+instances = np.vstack(bags)
+bagLabels = np.array(bagLabels)
 print(instances.shape)
 print(bagLabels.shape)
-
+print("positive bags: ", posCount)
+print("negative bags: ", negCount)
 #Make similarity matrix
 
 print("generating similarity matrix")
@@ -68,11 +87,11 @@ for bagInd in range(0, bags.shape[0]):
 	instanceSubset = instances[instanceIndices,:]
 	otherInstances = np.vstack(bags[bagIndices != bagInd])
 	
-	instanceAvg = [np.mean(instanceSubset[:,0]), np.mean(instanceSubset[:,1])]
+	instanceAvg = np.mean(instanceSubset, axis=0)
 	
 	#compute distance to all other instances
 	distance = np.abs(instanceAvg - instances)
-
+	
 	summedDistance = np.sum(distance,axis=1)
 	similarityMatrix[bagInd,:] = summedDistance
 	continue
@@ -80,50 +99,46 @@ for bagInd in range(0, bags.shape[0]):
 	
 	
 	#Compute the pairwise distance matrix here
-	minDistance = float("inf")
-	minDistanceInd = 0
-	for instanceInd in range(0, instanceSubset.shape[0]):
-		instance = instanceSubset[instanceInd]
-		distance = np.abs(instance - instances) #compute the distances to the train instances, otherwise we are not in the same similarity space. 
-
-		#distance = np.abs(instance - otherInstances)
-
-		summedDistance = np.sum(distance,axis=1)
-
-		currentMinDistance = np.mean(summedDistance)
-		if currentMinDistance < np.mean(minDistance):
-			minDistance = summedDistance
-			minDistanceInd = instanceInd
+	# minDistance = float("inf")
+	# minDistanceInd = 0
+	# for instanceInd in range(0, instanceSubset.shape[0]):
+	# 	instance = instanceSubset[instanceInd]
+	# 	distance = np.abs(instance - instances) #compute the distances to the train instances, otherwise we are not in the same similarity space. 
+	# 
+	# 	#distance = np.abs(instance - otherInstances)
+	# 
+	# 	summedDistance = np.sum(distance,axis=1)
+	# 
+	# 	currentMinDistance = np.mean(summedDistance)
+	# 	if currentMinDistance < np.mean(minDistance):
+	# 		minDistance = summedDistance
+	# 		minDistanceInd = instanceInd
 
 	#This instance will be used as representative for this bag. We use this value as the similarity to all other instances.  
 	similarityMatrix[bagInd] = minDistance
 
 print(similarityMatrix)
 print(bagLabels)
-# 
-# plt.scatter(similarityMatrix[0,:], similarityMatrix[1,:])
-# plt.show()
-# exit()
 
 
-# pca = PCA(n_components=2)
-# projected = pca.fit_transform(similarityMatrix)
-# 
-# colorLabels = []
-# 
-# for label in bagLabels:
-# 	
-# 	if label == 1:
-# 		colorLabels.append('r')
-# 	else:
-# 		colorLabels.append('b')
-# 
-# fig,ax=plt.subplots(figsize=(7,5))
-# plt.scatter(projected[:, 0], projected[:, 1], c=colorLabels)
-# plt.show()
+pca = PCA(n_components=2)
+projected = pca.fit_transform(similarityMatrix)
+
+colorLabels = []
+
+for label in bagLabels:
+	
+	if label == 1:
+		colorLabels.append('r')
+	else:
+		colorLabels.append('b')
+
+fig,ax=plt.subplots(figsize=(7,5))
+plt.scatter(projected[:, 0], projected[:, 1], edgecolors=colorLabels, facecolors='none')
+plt.show()
 
 from random import shuffle
-shuffle(bagLabels)
+#shuffle(bagLabels)
 
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import auc, precision_recall_curve
@@ -134,6 +149,7 @@ np.random.seed(500)
 
 accs = []
 aucs = []
+auprcs = []
 coeffs = []
 predDiffs = []
 for train, test in cv.split(similarityMatrix, bagLabels):
@@ -158,9 +174,55 @@ for train, test in cv.split(similarityMatrix, bagLabels):
 	
 	aucs.append(aucScore)
 	predDiffs.append(predsDiff)
+	
+	precision, recall, thresholds = precision_recall_curve(bagLabels[test], predictions)
+	aucScore = auc(recall, precision)
+	auprcs.append(aucScore)
 
 print("Actual acc: ", np.mean(predDiffs))
 print("Mean AUC: ", np.mean(aucs))
+print("Mean AUPRC: ", np.mean(auprcs))
+
+#repeat for shuffled labels
+shuffle(bagLabels)
+
+
+accs = []
+aucs = []
+auprcs = []
+coeffs = []
+predDiffs = []
+for train, test in cv.split(similarityMatrix, bagLabels):
+	
+	rfClassifier = RandomForestClassifier(max_depth=5, n_estimators=2)
+	rfClassifier.fit(similarityMatrix[train], bagLabels[train]) #Use the bag labels, not the instance labels
+
+	predictions = rfClassifier.predict(similarityMatrix[test])
+	precision, recall, thresholds = precision_recall_curve(bagLabels[test], predictions)
+	aucScore = auc(recall, precision)
+	predsDiff = np.average(bagLabels[test] == np.sign(predictions))
+	#Now select the most important features with random forest
+	importances = rfClassifier.feature_importances_
+	std = np.std([tree.feature_importances_ for tree in rfClassifier.estimators_],
+				 axis=0)
+	indices = np.argsort(importances)[::-1]
+	
+	nonZeroIndices = []
+	for index in indices:
+		if importances[index] > 0:
+			nonZeroIndices.append(index)
+	
+	aucs.append(aucScore)
+	predDiffs.append(predsDiff)
+	
+	precision, recall, thresholds = precision_recall_curve(bagLabels[test], predictions)
+	aucScore = auc(recall, precision)
+	auprcs.append(aucScore)
+
+print("Shuffle: ")
+print("Actual acc: ", np.mean(predDiffs))
+print("Mean AUC: ", np.mean(aucs))
+print("Mean AUPRC: ", np.mean(auprcs))
 exit()
 # 
 # 
