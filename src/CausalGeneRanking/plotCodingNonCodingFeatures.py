@@ -19,203 +19,179 @@ import random
 
 degData = np.loadtxt(sys.argv[1], dtype='object')
 nonDegData = np.loadtxt(sys.argv[2], dtype='object')
+snvAnnotation = np.loadtxt(sys.argv[3], dtype='object')
+pathwayAnnotation = np.loadtxt(sys.argv[4], dtype='object')
 
-#Split into features for deg pairs and non-deg pairs.
-#allow option to split this per SV type
+#1. Split the DEG dataset into 4: 1 for SNVs, 1 for pathways, 1 for both, and 1 for neither. 
+#if the sets are empty because we are not using it or there are no SNVs for example, this should not affect things such as shuffling.
 
-svTypeDeg = "invers"
-svTypeNonDeg = 'invers'
-
-#Shuffle labels, randomly assign each entry to DEG or non-DEG. Will remain unbalanced!
-shuffle = False
-if svTypeDeg != "":
+snvDEGs = []
+pathwayDEGs = []
+snvAndPathwayDEGs = []
+unAnnotatedDEGs = []
+for degPair in degData:
 	
-	degFeatures = []
-	nonDegFeatures = []
+	#Here include per-SV type if necessary
+	features = degPair[1:]
 	
-	if shuffle == False:
-		for sv in degData:
-			splitSV = sv[0].split("_")
-			features = []
-			if len(splitSV) == 9: #for del, dup, inv
-				if re.search(splitSV[8], svTypeDeg, re.IGNORECASE):
-					features = sv[1:]
-			else:
-				if re.search("_".join([splitSV[8], splitSV[9]]), svTypeDeg, re.IGNORECASE):
-					features = sv[1:]
-			
-			if len(features) < 1:
-				continue
-			
-			if shuffle == False:
-				
-				degFeatures.append(features)
-			if shuffle == True:
-				flip = random.randint(0,1)
-				if flip == 0:
-					degFeatures.append(features)
-				else:
-					nonDegFeatures.append(features)
-		
-		for sv in nonDegData:
-			
-			splitSV = sv[0].split("_")
-			features = []
-			if len(splitSV) == 9: #for del, dup, inv
-				if re.search(splitSV[8], svTypeNonDeg, re.IGNORECASE):
-					features = sv[1:]
-			else:
-				if re.search("_".join([splitSV[8], splitSV[9]]), svTypeNonDeg, re.IGNORECASE):
-					features = sv[1:]
-			
-			if len(features) < 1:
-				continue
-			
-			if shuffle == False:
-				nonDegFeatures.append(features)
-			if shuffle == True:
-				flip = random.randint(0,1)
-				if flip == 0:
-					degFeatures.append(features)
-				else:
-					nonDegFeatures.append(features)		
-	
-	degFeatures = np.array(degFeatures)
-	nonDegFeatures = np.array(nonDegFeatures)
-else:
-	
-	
-	if shuffle == False:
-		degFeatures = degData[:,1:]
-		nonDegFeatures = nonDegData[:,1:]
+	if degPair[0] in snvAnnotation[:,0] and degPair[0] in pathwayAnnotation[:,0]:
+		snvAndPathwayDEGs.append(features)
+	elif degPair[0] in snvAnnotation[:,0]:
+		snvDEGs.append(features)
+	elif degPair[0] in pathwayAnnotation[:,0]:
+		pathwayDEGs.append(features)
 	else:
-		degFeatures = []
-		nonDegFeatures = []
-		for sv in degData:
-			flip = random.randint(0,1)
-			if flip == 0:
-				degFeatures.append(sv[1:])
-			else:
-				nonDegFeatures.append(sv[1:])
-				
-		for sv in nonDegData:
-			flip = random.randint(0,1)
-			if flip == 0:
-				degFeatures.append(sv[1:])
-			else:
-				nonDegFeatures.append(sv[1:])
-				
-		degFeatures = np.array(degFeatures)
-		nonDegFeatures = np.array(nonDegFeatures)
+		unAnnotatedDEGs.append(features)
+	
+snvDEGs = np.array(snvDEGs)
+pathwayDEGs = np.array(pathwayDEGs)
+snvAndPathwayDEGs = np.array(snvAndPathwayDEGs)
+unAnnotatedDEGs = np.array(unAnnotatedDEGs)
 
-print(degFeatures)
-print(nonDegFeatures)
+# 
+# 
+# degData = np.array(filteredDegData, dtype='object')
+# 
+# #Split into features for deg pairs and non-deg pairs.
+# #allow option to split this per SV type
+# 
+# svTypeDeg = ""
+# svTypeNonDeg = ''
+# 
+# #Shuffle labels, randomly assign each entry to DEG or non-DEG. Will remain unbalanced!
+# shuffle = False
+# if svTypeDeg != "":
+# 	
+# 	degFeatures = []
+# 	nonDegFeatures = []
+# 	
+# 	if shuffle == False:
+# 		for sv in degData:
+# 			
+# 			splitSV = sv[0].split("_")
+# 			features = []
+# 			if len(splitSV) == 9: #for del, dup, inv
+# 				if re.search(splitSV[8], svTypeDeg, re.IGNORECASE):
+# 					features = sv[1:]
+# 			else:
+# 				if re.search("_".join([splitSV[8], splitSV[9]]), svTypeDeg, re.IGNORECASE):
+# 					features = sv[1:]
+# 			
+# 			if len(features) < 1:
+# 				continue
+# 			
+# 			if shuffle == False:
+# 				
+# 				degFeatures.append(features)
+# 			if shuffle == True:
+# 				flip = random.randint(0,1)
+# 				if flip == 0:
+# 					degFeatures.append(features)
+# 				else:
+# 					nonDegFeatures.append(features)
+# 		
+# 		for sv in nonDegData:
+# 			
+# 			splitSV = sv[0].split("_")
+# 			features = []
+# 			if len(splitSV) == 9: #for del, dup, inv
+# 				if re.search(splitSV[8], svTypeNonDeg, re.IGNORECASE):
+# 					features = sv[1:]
+# 			else:
+# 				if re.search("_".join([splitSV[8], splitSV[9]]), svTypeNonDeg, re.IGNORECASE):
+# 					features = sv[1:]
+# 			
+# 			if len(features) < 1:
+# 				continue
+# 			
+# 			if shuffle == False:
+# 				nonDegFeatures.append(features)
+# 			if shuffle == True:
+# 				flip = random.randint(0,1)
+# 				if flip == 0:
+# 					degFeatures.append(features)
+# 				else:
+# 					nonDegFeatures.append(features)		
+# 	
+# 	degFeatures = np.array(degFeatures)
+# 	nonDegFeatures = np.array(nonDegFeatures)
+# else:
+# 	
+# 	
+# 	if shuffle == False:
+# 		degFeatures = degData[:,1:]
+# 		nonDegFeatures = nonDegData[:,1:]
+# 	else:
+# 		degFeatures = []
+# 		nonDegFeatures = []
+# 		for sv in degData:
+# 			flip = random.randint(0,1)
+# 			if flip == 0:
+# 				degFeatures.append(sv[1:])
+# 			else:
+# 				nonDegFeatures.append(sv[1:])
+# 				
+# 		for sv in nonDegData:
+# 			flip = random.randint(0,1)
+# 			if flip == 0:
+# 				degFeatures.append(sv[1:])
+# 			else:
+# 				nonDegFeatures.append(sv[1:])
+# 				
+# 		degFeatures = np.array(degFeatures)
+# 		nonDegFeatures = np.array(nonDegFeatures)
+# 
+# print(degFeatures.shape)
+# print(nonDegFeatures.shape)
 
-#Make the bar plots
-leftFeatures = nonDegFeatures
-rightFeatures = degFeatures
+#To make the bar plots, add SNV/pathway annotation as stacked bars.
+#First add the SNVs, then the pathwyas, a set with both pathways and SNVs, and the remaining are the pairs that are in neither. 
 
-eQTLLosses = leftFeatures[:,0].astype(float)
-enhancerLosses = leftFeatures[:,1].astype(float)
-promoterLosses = leftFeatures[:,2].astype(float)
-cpgLosses = leftFeatures[:,3].astype(float)
-tfLosses = leftFeatures[:,4].astype(float)
-hicLosses = leftFeatures[:,5].astype(float)
-h3k9me3Losses = leftFeatures[:,6].astype(float)
-h3k4me3Losses = leftFeatures[:,7].astype(float)
-h3k27acLosses = leftFeatures[:,8].astype(float)
-h3k27me3Losses = leftFeatures[:,9].astype(float)
-h3k4me1Losses = leftFeatures[:,10].astype(float)
-h3k36me3Losses = leftFeatures[:,11].astype(float)
-dnaseLosses = leftFeatures[:,12].astype(float)
+def getLossData(features, totalFeatures): #provide the features for the set of pairs that we are interested in. E.g. for SNVs only, or for pathways only
+	
+	if len(features) < 1:
+		return np.array([])
+		
+	leftLosses = []
+	for i in range(0, 23): #+1 because this goes until 22
+		leftLosses.append(features[:,i].astype(float))
+	
+	for i in range(46, 51):
+		leftLosses.append(features[:,i].astype(float))
+	
+	leftLosses = np.array(leftLosses)
+	
+	lossData = []
+	for loss in leftLosses:
+		lossData.append(np.sum(loss))
+	
+	lossData = np.array(lossData)
+	lossData = (lossData / float(totalFeatures.shape[0]))
+	
+	return np.array(lossData)
 
-ctcfLosses = leftFeatures[:,13].astype(float)
-ctcfEnhancerLosses = leftFeatures[:,14].astype(float)
-ctcfPromoterLosses = leftFeatures[:,15].astype(float)
-chromHmmEnhancerLosses = leftFeatures[:,16].astype(float)
-heterochromatinLosses = leftFeatures[:,17].astype(float)
-poisedPromoterLosses = leftFeatures[:,18].astype(float)
-chromHmmPromoterLosses = leftFeatures[:,19].astype(float)
-repeatLosses = leftFeatures[:,20].astype(float)
-repressedLosses = leftFeatures[:,21].astype(float)
-transcribedLosses = leftFeatures[:,22].astype(float)
-
-deletionsLeft = leftFeatures[:,46].astype(float)
-duplicationsLeft = leftFeatures[:,47].astype(float)
-inversionsLeft = leftFeatures[:,48].astype(float)
-translocationsLeft = leftFeatures[:,49].astype(float)
-cosmicLeft = leftFeatures[:,50].astype(float)
-
-lossData = [np.sum(eQTLLosses), np.sum(enhancerLosses), np.sum(promoterLosses), np.sum(cpgLosses),
-			np.sum(tfLosses), np.sum(hicLosses), np.sum(h3k9me3Losses), np.sum(h3k4me3Losses), np.sum(h3k27acLosses),
-			np.sum(h3k27me3Losses), np.sum(h3k4me1Losses), np.sum(h3k36me3Losses), np.sum(dnaseLosses),
-			np.sum(ctcfLosses), np.sum(ctcfEnhancerLosses), np.sum(ctcfPromoterLosses), np.sum(chromHmmEnhancerLosses),
-			np.sum(heterochromatinLosses), np.sum(poisedPromoterLosses), np.sum(chromHmmPromoterLosses),
-			np.sum(repeatLosses), np.sum(repressedLosses), np.sum(transcribedLosses),
-			np.sum(deletionsLeft),np.sum(duplicationsLeft), np.sum(inversionsLeft), np.sum(translocationsLeft),
-			np.sum(cosmicLeft)]
-lossData = np.array(lossData)
-
-lossData = (lossData / float(leftFeatures.shape[0]))
-print(lossData)
-#lossData = np.log(lossData)
+#1. Set with SNVs only
+snvLosses = getLossData(snvDEGs, degData)
+pathwayLosses = getLossData(pathwayDEGs, degData)
+snvAndPathwayLosses = getLossData(snvAndPathwayDEGs, degData)
+unAnnotatedLosses = getLossData(unAnnotatedDEGs, degData)
 
 
+#Stack the bars for the DEG data
 width = 0.35
-
-plt.barh(np.arange(len(lossData)), lossData, width, label='Non-DEG pairs', color='blue')
-# plt.xticks(range(0, len(lossData)),
-	   # ['eQTLs', 'enhancers', 'promoters', 'CpG', 'TF', 'HiC', 'h3k9me3', 'h3k4me3', 'h3k27ac', 'h3k27me3', 'h3k4me1', 'h3k36me3', 'DNAseI'], rotation=90)
-# plt.show()
-
-eQTLLosses = rightFeatures[:,0].astype(float)
-enhancerLosses = rightFeatures[:,1].astype(float)
-promoterLosses = rightFeatures[:,2].astype(float)
-cpgLosses = rightFeatures[:,3].astype(float)
-tfLosses = rightFeatures[:,4].astype(float)
-hicLosses = rightFeatures[:,5].astype(float)
-h3k9me3Losses = rightFeatures[:,6].astype(float)
-h3k4me3Losses = rightFeatures[:,7].astype(float)
-h3k27acLosses = rightFeatures[:,8].astype(float)
-h3k27me3Losses = rightFeatures[:,9].astype(float)
-h3k4me1Losses = rightFeatures[:,10].astype(float)
-h3k36me3Losses = rightFeatures[:,11].astype(float)
-dnaseLosses = rightFeatures[:,12].astype(float)
+plt.barh(np.arange(len(unAnnotatedLosses)), unAnnotatedLosses, width, label='DEG pairs without SNV or pathway effects', color='red')
+plt.barh(np.arange(len(snvLosses)), snvLosses, width, unAnnotatedLosses, label='DEG pairs with SNVs', color='cyan')
+plt.barh(np.arange(len(pathwayLosses)), pathwayLosses, width, unAnnotatedLosses+snvLosses, label='DEG pairs with pathway effects', color='orange')
+if len(snvAndPathwayLosses) > 0:
+	plt.barh(np.arange(len(snvAndPathwayLosses)), snvAndPathwayLosses, width, unAnnotatedLosses+snvLosses+pathwayLosses, label='DEG pairs with both SNV and pathway effects', color='green')
 
 
-ctcfLosses = rightFeatures[:,13].astype(float)
-ctcfEnhancerLosses = rightFeatures[:,14].astype(float)
-ctcfPromoterLosses = rightFeatures[:,15].astype(float)
-chromHmmEnhancerLosses = rightFeatures[:,16].astype(float)
-heterochromatinLosses = rightFeatures[:,17].astype(float)
-poisedPromoterLosses = rightFeatures[:,18].astype(float)
-chromHmmPromoterLosses = rightFeatures[:,19].astype(float)
-repeatLosses = rightFeatures[:,20].astype(float)
-repressedLosses = rightFeatures[:,21].astype(float)
-transcribedLosses = rightFeatures[:,22].astype(float)
 
-deletionsRight = rightFeatures[:,46].astype(float)
-duplicationsRight = rightFeatures[:,47].astype(float)
-inversionsRight = rightFeatures[:,48].astype(float)
-translocationsRight = rightFeatures[:,49].astype(float)
-cosmicRight = rightFeatures[:,50].astype(float)
+#non-DEGs
+nonDegLosses = getLossData(nonDegData[:,1:], nonDegData)
 
-lossData = [np.sum(eQTLLosses), np.sum(enhancerLosses), np.sum(promoterLosses), np.sum(cpgLosses),
-			np.sum(tfLosses), np.sum(hicLosses), np.sum(h3k9me3Losses), np.sum(h3k4me3Losses), np.sum(h3k27acLosses),
-			np.sum(h3k27me3Losses), np.sum(h3k4me1Losses), np.sum(h3k36me3Losses), np.sum(dnaseLosses),
-			np.sum(ctcfLosses), np.sum(ctcfEnhancerLosses), np.sum(ctcfPromoterLosses), np.sum(chromHmmEnhancerLosses),
-			np.sum(heterochromatinLosses), np.sum(poisedPromoterLosses), np.sum(chromHmmPromoterLosses),
-			np.sum(repeatLosses), np.sum(repressedLosses), np.sum(transcribedLosses),
-			np.sum(deletionsRight),np.sum(duplicationsRight), np.sum(inversionsRight), np.sum(translocationsRight),
-			np.sum(cosmicRight)]
-lossData = np.array(lossData)
-lossData = (lossData / float(rightFeatures.shape[0]))
-print(lossData)
-#lossData = np.log(lossData)
-
-
-plt.barh(np.arange(len(lossData)) + width, lossData, width, label='DEG pairs', color='red')
-plt.yticks(np.arange(len(lossData) + width / 2), ['eQTLs', 'enhancers', 'promoters', 'CpG', 'TF', 'HiC', 'h3k9me3', 'h3k4me3',
+plt.barh(np.arange(len(nonDegLosses)) + width, nonDegLosses, width, label='non-DEG pairs', color='blue')
+plt.yticks(np.arange(len(nonDegLosses) + width / 2), ['eQTLs', 'enhancers', 'promoters', 'CpG', 'TF', 'HiC', 'h3k9me3', 'h3k4me3',
 												  'h3k27ac', 'h3k27me3', 'h3k4me1', 'h3k36me3','DNAseI', 'CTCF', 'CTCF+Enhancer',
 												  'CTCF+Promoter', 'chromHMM Enhancer', 'heterochromatin', 'poised promoter',
 												  'chromHMM Promoter', 'repeat', 'repressed', 'transcribed',
@@ -227,113 +203,69 @@ plt.tight_layout()
 plt.show()
 #plt.savefig('Output/degNonDeg_losses.svg')
 plt.clf()
+
 #Gains
 
-eQTLGains = leftFeatures[:,23].astype(float)
-enhancerGains = leftFeatures[:,24].astype(float)
-promoterGains = leftFeatures[:,25].astype(float)
-cpgGains = leftFeatures[:,26].astype(float)
-tfGains = leftFeatures[:,27].astype(float)
-hicGains = leftFeatures[:,28].astype(float)
-h3k9me3Gains = leftFeatures[:,29].astype(float)
-h3k4me3Gains = leftFeatures[:,30].astype(float)
-h3k27acGains = leftFeatures[:,31].astype(float)
-h3k27me3Gains = leftFeatures[:,32].astype(float)
-h3k4me1Gains = leftFeatures[:,33].astype(float)
-h3k36me3Gains = leftFeatures[:,34].astype(float)
-dnaseGains = leftFeatures[:,35].astype(float)
-
-ctcfGains = leftFeatures[:,36].astype(float)
-ctcfEnhancerGains = leftFeatures[:,37].astype(float)
-ctcfPromoterGains = leftFeatures[:,38].astype(float)
-chromHmmEnhancerGains = leftFeatures[:,39].astype(float)
-heterochromatinGains = leftFeatures[:,40].astype(float)
-poisedPromoterGains = leftFeatures[:,41].astype(float)
-chromHmmPromoterGains = leftFeatures[:,42].astype(float)
-repeatGains = leftFeatures[:,43].astype(float)
-repressedGains = leftFeatures[:,44].astype(float)
-transcribedGains = leftFeatures[:,45].astype(float)
-
-gainData = [np.sum(eQTLGains), np.sum(enhancerGains), np.sum(promoterGains), np.sum(cpgGains),
-			np.sum(tfGains), np.sum(hicGains), np.sum(h3k9me3Gains), np.sum(h3k4me3Gains), np.sum(h3k27acGains),
-			np.sum(h3k27me3Gains), np.sum(h3k4me1Gains), np.sum(h3k36me3Gains), np.sum(dnaseGains),
-			np.sum(ctcfGains), np.sum(ctcfEnhancerGains), np.sum(ctcfPromoterGains), np.sum(chromHmmEnhancerGains),
-			np.sum(heterochromatinGains), np.sum(poisedPromoterGains), np.sum(chromHmmPromoterGains),
-			np.sum(repeatGains), np.sum(repressedGains), np.sum(transcribedGains),
-			np.sum(deletionsLeft),np.sum(duplicationsLeft), np.sum(inversionsLeft), np.sum(translocationsLeft),
-			np.sum(cosmicLeft)]
-
-gainData = np.array(gainData)
-gainData = (gainData / float(leftFeatures.shape[0]))
-print(gainData)
-#gainData = np.log(gainData)
-
-
-plt.barh(np.arange(len(gainData)), gainData, width, label='Non-DEG pairs', color='blue')
-# plt.xticks(np.arange(len(gainData)),
-# 		   ['eQTLs', 'enhancers', 'promoters', 'CpG', 'TF', 'HiC', 'h3k9me3', 'h3k4me3', 'h3k27ac', 'h3k27me3', 'h3k4me1', 'h3k36me3', 'DNAseI'], rotation=90)
-# plt.show()
+def getGainData(features, totalFeatures): #provide the features for the set of pairs that we are interested in. E.g. for SNVs only, or for pathways only
 	
-eQTLGains = rightFeatures[:,23].astype(float)
-enhancerGains = rightFeatures[:,24].astype(float)
-promoterGains = rightFeatures[:,25].astype(float)
-cpgGains = rightFeatures[:,26].astype(float)
-tfGains = rightFeatures[:,27].astype(float)
-hicGains = rightFeatures[:,28].astype(float)
-h3k9me3Gains = rightFeatures[:,29].astype(float)
-h3k4me3Gains = rightFeatures[:,30].astype(float)
-h3k27acGains = rightFeatures[:,31].astype(float)
-h3k27me3Gains = rightFeatures[:,32].astype(float)
-h3k4me1Gains = rightFeatures[:,33].astype(float)
-h3k36me3Gains = rightFeatures[:,34].astype(float)
-dnaseGains = rightFeatures[:,35].astype(float)
+	if len(features) < 1:
+		return np.array([])
+			
+		
+	leftGains = []
+	for i in range(23, 46): #+1 because this goes until 45
+		leftGains.append(features[:,i].astype(float))
+	
+	for i in range(46, 51):
+		leftGains.append(features[:,i].astype(float))
+	
+	leftGains = np.array(leftGains)
+	
+	gainData = []
+	for loss in leftGains:
+		gainData.append(np.sum(loss))
+	
+	gainData = np.array(gainData)
+	gainData = (gainData / float(totalFeatures.shape[0]))
 
-ctcfGains = rightFeatures[:,36].astype(float)
-ctcfEnhancerGains = rightFeatures[:,37].astype(float)
-ctcfPromoterGains = rightFeatures[:,38].astype(float)
-chromHmmEnhancerGains = rightFeatures[:,39].astype(float)
-heterochromatinGains = rightFeatures[:,40].astype(float)
-poisedPromoterGains = rightFeatures[:,41].astype(float)
-chromHmmPromoterGains = rightFeatures[:,42].astype(float)
-repeatGains = rightFeatures[:,43].astype(float)
-repressedGains = rightFeatures[:,44].astype(float)
-transcribedGains = rightFeatures[:,45].astype(float)
+	return np.array(gainData)
 
-gainData = [np.sum(eQTLGains), np.sum(enhancerGains), np.sum(promoterGains), np.sum(cpgGains),
-			np.sum(tfGains), np.sum(hicGains), np.sum(h3k9me3Gains), np.sum(h3k4me3Gains), np.sum(h3k27acGains),
-			np.sum(h3k27me3Gains), np.sum(h3k4me1Gains), np.sum(h3k36me3Gains), np.sum(dnaseGains),
-			np.sum(ctcfGains), np.sum(ctcfEnhancerGains), np.sum(ctcfPromoterGains), np.sum(chromHmmEnhancerGains),
-			np.sum(heterochromatinGains), np.sum(poisedPromoterGains), np.sum(chromHmmPromoterGains),
-			np.sum(repeatGains), np.sum(repressedGains), np.sum(transcribedGains),
-			np.sum(deletionsRight),np.sum(duplicationsRight), np.sum(inversionsRight), np.sum(translocationsRight),
-			np.sum(cosmicRight)]
-
-gainData = np.array(gainData)
-gainData = (gainData / float(rightFeatures.shape[0]))
-print(gainData)
-#gainData = np.log(gainData)
+#1. Set with SNVs only
+snvGains = getGainData(snvDEGs, degData)
+pathwayGains = getGainData(pathwayDEGs, degData)
+snvAndPathwayGains = getGainData(snvAndPathwayDEGs, degData)
+unAnnotatedGains = getGainData(unAnnotatedDEGs, degData)
 
 
+#Stack the bars for the DEG data
+width = 0.35
+plt.barh(np.arange(len(unAnnotatedGains)), unAnnotatedGains, width, label='DEG pairs without SNV or pathway effects', color='red')
+plt.barh(np.arange(len(snvGains)), snvGains, width, unAnnotatedGains, label='DEG pairs with SNVs', color='cyan')
+plt.barh(np.arange(len(pathwayGains)), pathwayGains, width, unAnnotatedGains+snvGains, label='DEG pairs with pathway effects', color='orange')
+if len(snvAndPathwayGains) > 0:
+	plt.barh(np.arange(len(snvAndPathwayGains)), snvAndPathwayGains, width, unAnnotatedGains+snvGains+pathwayGains, label='DEG pairs with both SNV and pathway effects', color='green')
 
-plt.barh(np.arange(len(gainData)) + width, gainData, width, label='DEG pairs',color='red')
-plt.yticks(np.arange(len(gainData) + width / 2),['eQTLs', 'enhancers', 'promoters', 'CpG', 'TF', 'HiC', 'h3k9me3', 'h3k4me3',
-												 'h3k27ac', 'h3k27me3', 'h3k4me1', 'h3k36me3', 'DNAseI', 'CTCF', 'CTCF+Enhancer',
-												 'CTCF+Promoter', 'chromHMM Enhancer', 'heterochromatin', 'poised promoter',
-												 'chromHMM Promoter', 'repeat', 'repressed', 'transcribed',
-												 'Deletions', 'Duplications', 'Inversions', 'Translocations',
-												 'COSMIC'])
+#non-DEGs
+nonDegGains = getGainData(nonDegData[:,1:], nonDegData)
 
+plt.barh(np.arange(len(nonDegGains)) + width, nonDegGains, width, label='non-DEG pairs', color='blue')
+plt.yticks(np.arange(len(nonDegGains) + width / 2), ['eQTLs', 'enhancers', 'promoters', 'CpG', 'TF', 'HiC', 'h3k9me3', 'h3k4me3',
+												  'h3k27ac', 'h3k27me3', 'h3k4me1', 'h3k36me3','DNAseI', 'CTCF', 'CTCF+Enhancer',
+												  'CTCF+Promoter', 'chromHMM Enhancer', 'heterochromatin', 'poised promoter',
+												  'chromHMM Promoter', 'repeat', 'repressed', 'transcribed',
+												  'Deletions', 'Duplications', 'Inversions', 'Translocations',
+												  'COSMIC'])
 plt.xlim([0,1])
 plt.legend(loc='best')
 plt.tight_layout()
 plt.show()
-#plt.savefig('Output/degNonDeg_gains.svg')
+#plt.savefig('Output/degNonDeg_losses.svg')
+plt.clf()
 
 
 
 
-
-allFeatures = np.concatenate((leftFeatures, rightFeatures), axis=0)
+allFeatures = np.concatenate((nonDegData[:,1:], degData[:,1:]), axis=0)
 
 #Make a PCA plot for the left/right set and see if these are really different
 
@@ -358,10 +290,10 @@ labels = []
 
 for i in range(0, allFeatures.shape[0]):
 	
-	if i < leftFeatures.shape[0]:
+	if i < nonDegData.shape[0]:
 		colorLabels.append('b')
 		labels.append(0)
-	elif i >= leftFeatures.shape[0] and i < (leftFeatures.shape[0] + rightFeatures.shape[0]):
+	elif i >= nonDegData.shape[0] and i < (nonDegData.shape[0] + degData.shape[0]):
 		colorLabels.append('r')
 		labels.append(1)
 

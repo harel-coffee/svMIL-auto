@@ -3,6 +3,7 @@
 import sys
 import numpy as np
 
+
 svGenePairs = np.loadtxt(sys.argv[1], dtype='object')
 degPairs = np.load(sys.argv[2], allow_pickle=True, encoding='latin1')
 

@@ -5,6 +5,8 @@ import sys
 import numpy as np
 import re
 from scipy import stats
+from os import listdir
+from os.path import isfile, join
 from six.moves import range
 
 # Get the expression z-scores for every SV. 
@@ -12,8 +14,40 @@ from six.moves import range
 nonCodingPairs = np.loadtxt(sys.argv[1], dtype="object")
 codingPairs = np.loadtxt(sys.argv[2], dtype="object")
 
+print(codingPairs)
 
-expressionFile = sys.argv[3]
+#Get the SNV data for these patients, make sure to map to the same identifiers
+snvDir = sys.argv[3]
+allFiles = [f for f in listdir(snvDir) if isfile(join(snvDir, f))]
+
+mutations = []
+for currentFile in allFiles:
+	
+	if currentFile == "MANIFEST.txt":
+		continue
+	splitFileName = currentFile.split(".")
+	patientID = splitFileName[0]
+
+	
+	#Load the contents of the file
+	with open(snvDir + "/" + currentFile, 'r') as inF:
+		lineCount = 0
+		for line in inF:
+			line = line.strip() #remove newlines
+			if lineCount < 1: #only read the line if it is not a header line
+				lineCount += 1
+				continue
+
+			splitLine = line.split("\t")
+			geneName = splitLine[0]
+			shortPatientID = 'brca' + patientID.split("-")[2]
+			mutations.append([geneName, shortPatientID])
+		
+			
+
+mutations = np.array(mutations, dtype="object")
+
+expressionFile = sys.argv[4]
 
 expressionData = []
 samples = []
@@ -57,10 +91,16 @@ for pair in codingPairs:
 	splitPair = pair.split("_")
 	gene = splitPair[0]
 	sample = splitPair[7]
-	
+
 	if gene not in geneSampleRef:
 		geneSampleRef[gene] = []
 	geneSampleRef[gene].append(sample)
+
+for pair in mutations:
+
+	if pair[0] not in geneSampleRef:
+		geneSampleRef[pair[0]] = []
+	geneSampleRef[pair[0]].append(pair[1])
 
 #Set for every gene the expression values in all possible samples for lookup
 geneSampleExpr = dict()
@@ -70,25 +110,27 @@ for gene in geneSampleRef:
 		continue
 	
 	geneSamples = geneSampleRef[gene]
+	
 	geneSampleExpr[gene] = dict()
 	geneExpression = expressionData[expressionData[:,0] == gene][0]
 	for geneSample in geneSamples:
-		
 		shortSampleName = geneSample.split("brca")[1]
 		
 		#match the sample name with the expression sample name
 		for sampleInd in range(0, len(samples)):
 			sample = samples[sampleInd]
+			
 			if re.search(shortSampleName, sample, re.IGNORECASE) is not None:
 				
 				splitSampleName = sample.split("-")
 				code = int("".join(list(splitSampleName[3])[0:2]))
-				
 				if code < 10: #above 9 are the normal samples, which we do not want to include here
 					sampleInd = samples.index(sample)
 					
 					geneSampleExpr[gene][geneSample] = float(geneExpression[sampleInd])
 print("done getting expr for samples")
+
+
 
 #Also set the negative set for every gene consisting of the expression of all samples wthout any SV
 negativeExpr = dict()
@@ -125,6 +167,8 @@ def getDEPairs(pairs, geneSampleRef, epressionData, perPairDifferentialExpressio
 		if gene not in expressionData[:,0]:
 			continue
 		
+		if pairSample not in geneSampleExpr[gene]:
+			continue
 		
 		sampleExpressionValue = geneSampleExpr[gene][pairSample] #expression values of this gene in all samples
 		matchedFullSampleNames = list(geneSampleExpr[gene].keys())
@@ -140,6 +184,35 @@ def getDEPairs(pairs, geneSampleRef, epressionData, perPairDifferentialExpressio
 		pValue = stats.norm.sf(abs(z))*2
 	
 		perPairDifferentialExpression[pair] = pValue
+		
+	return perPairDifferentialExpression
+
+def getDEPairsSNVs(pairs, geneSampleRef, epressionData, perPairDifferentialExpression, geneSampleExpr, negativeExpr):
+									
+	for pair in pairs:
+		
+		gene = pair[0]
+		pairSample = pair[1]
+		
+		if gene not in expressionData[:,0]:
+			continue
+		
+		if pairSample not in geneSampleExpr[gene]: #sometimes there is no expr data for that sample
+			continue 
+		
+		sampleExpressionValue = geneSampleExpr[gene][pairSample] #expression values of this gene in all samples
+		matchedFullSampleNames = list(geneSampleExpr[gene].keys())
+					
+		negativeSampleExpressionValues = negativeExpr[gene]
+		
+		#Get the expression z-score for this pair
+		if np.std(negativeSampleExpressionValues) == 0:
+			continue
+	
+		z = (sampleExpressionValue - np.mean(negativeSampleExpressionValues)) / float(np.std(negativeSampleExpressionValues))
+		pValue = stats.norm.sf(abs(z))*2
+	
+		perPairDifferentialExpression[pair[0] + "_" + pair[1]] = pValue
 		
 	return perPairDifferentialExpression
 
@@ -226,3 +299,18 @@ perPairDifferentialExpressionArrayFiltered = perPairDifferentialExpressionArray[
 
 np.save(sys.argv[1] + '_codingPairDEGs.npy', perPairDifferentialExpressionArrayFiltered)
 
+#finally repeat for SNVs as well
+
+perPairDifferentialExpression = getDEPairsSNVs(mutations, geneSampleRef, expressionData, dict(), geneSampleExpr, negativeExpr)
+print("done")
+
+perPairDifferentialExpressionArray = np.empty([len(perPairDifferentialExpression), 2], dtype="object")
+perPairDifferentialExpressionArray[:,0] = list(perPairDifferentialExpression.keys())
+perPairDifferentialExpressionArray[:,1] = list(perPairDifferentialExpression.values())
+
+from statsmodels.sandbox.stats.multicomp import multipletests
+reject, pAdjusted, _, _ = multipletests(perPairDifferentialExpressionArray[:,1], method='bonferroni')
+
+perPairDifferentialExpressionArrayFiltered = perPairDifferentialExpressionArray[reject]
+
+np.save(sys.argv[1] + '_codingSNVDEGs.npy', perPairDifferentialExpressionArrayFiltered)

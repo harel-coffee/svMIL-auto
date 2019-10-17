@@ -278,7 +278,7 @@ class GeneRanking:
 					translocation = 1
 				if re.search("del", svType, re.IGNORECASE):
 					deletion = 1
-				if re.search("tandem_dup", svType, re.IGNORECASE):
+				if re.search("tandem.dup", svType, re.IGNORECASE):
 					duplication = 1
 				if re.search("invers", svType, re.IGNORECASE):
 					inversion = 1
