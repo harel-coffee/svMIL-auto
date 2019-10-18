@@ -22,16 +22,114 @@ nonDegData = np.loadtxt(sys.argv[2], dtype='object')
 snvAnnotation = np.loadtxt(sys.argv[3], dtype='object')
 pathwayAnnotation = np.loadtxt(sys.argv[4], dtype='object')
 
+
 #1. Split the DEG dataset into 4: 1 for SNVs, 1 for pathways, 1 for both, and 1 for neither. 
 #if the sets are empty because we are not using it or there are no SNVs for example, this should not affect things such as shuffling.
+
+svType = ''
+shuffle = False
+# pairs = True
+# 
+# #For pairs, use only the genes that are both in the DEG data and non-DEG data. 
+# degPairsGenes = []
+# for degPair in degData:
+# 	
+# 	splitPair = degPair[0].split("_")
+# 	if splitPair[0] not in degPairsGenes:
+# 		degPairsGenes.append(splitPair[0])
+# 
+# print(degPairsGenes)
+# 
+# #check in the non-deg pairs if that gene matches.
+# matchingGenes = []
+# nonDegPairsGenes = []
+# nonDegDataFiltered = []
+# for pair in nonDegData:
+# 	splitPair = degPair[0].split("_")
+# 	if splitPair[0] in degPairsGenes:
+# 		if splitPair[0] not in matchingGenes:
+# 			matchingGenes.append(splitPair[0])
+# 		nonDegDataFiltered.append(pair)
+# 	
+# 	if splitPair[0] not in nonDegPairsGenes:
+# 		nonDegPairsGenes.append(splitPair[0])
+# 	
+# print(nonDegPairsGenes)
+# print(np.intersect1d(degPairsGenes, nonDegPairsGenes))
+# exit()
+# #then also get the genes of the pairs for the deg data
+# degDataFiltered = []
+# for pair in degData:
+# 	splitPair = degPair[0].split("_")
+# 	if splitPair[0] in matchingGenes:
+# 		degDataFiltered.append(pair)
+# 
+# degData = np.array(degDataFiltered, dtype='object')
+# nonDegData = np.array(nonDegDataFiltered, dtype='object')
+# 
+# print(matchingGenes)
+# print(len(matchingGenes))
+# print(degData.shape)
+# print(nonDegData.shape)
+# exit()
+
+shuffledDegData = []
+shuffledNonDegData = []
+if shuffle == True:
+			
+	for degPair in degData:
+		flip = random.randint(0,1)
+		if flip == 0:
+			shuffledDegData.append(degPair)
+		else:
+			shuffledNonDegData.append(degPair)
+
+	for degPair in nonDegData:
+		flip = random.randint(0,1)
+		if flip == 0:
+			shuffledDegData.append(degPair)
+		else:
+			shuffledNonDegData.append(degPair)
+			
+	degData = np.array(shuffledDegData, dtype='object')
+	nonDegData = np.array(shuffledNonDegData, dtype='object')
+
+nonDEGs = []
+
+for degPair in nonDegData:
+	
+	sv = degPair[0].split("_")
+	if svType != '':
+		if sv[8] != svType:
+			continue
+	nonDEGs.append(degPair)
+
+degs = []
+for degPair in degData:
+	
+	sv = degPair[0].split("_")
+	if svType != '':
+		if sv[8] != svType:
+			continue
+
+	degs.append(degPair)
+	
+degs = np.array(degs)
+nonDEGs = np.array(nonDEGs)
+
 
 snvDEGs = []
 pathwayDEGs = []
 snvAndPathwayDEGs = []
 unAnnotatedDEGs = []
-for degPair in degData:
+for degPair in degs:
 	
 	#Here include per-SV type if necessary
+	sv = degPair[0].split("_")
+	if svType != '':
+		if sv[8] != svType:
+			continue
+	
 	features = degPair[1:]
 	
 	if degPair[0] in snvAnnotation[:,0] and degPair[0] in pathwayAnnotation[:,0]:
@@ -47,7 +145,10 @@ snvDEGs = np.array(snvDEGs)
 pathwayDEGs = np.array(pathwayDEGs)
 snvAndPathwayDEGs = np.array(snvAndPathwayDEGs)
 unAnnotatedDEGs = np.array(unAnnotatedDEGs)
+	
 
+print(snvDEGs.shape[0] + pathwayDEGs.shape[0] + snvAndPathwayDEGs.shape[0] + unAnnotatedDEGs.shape[0])
+print(nonDEGs.shape[0])
 # 
 # 
 # degData = np.array(filteredDegData, dtype='object')
@@ -179,16 +280,19 @@ unAnnotatedLosses = getLossData(unAnnotatedDEGs, degData)
 
 #Stack the bars for the DEG data
 width = 0.35
-plt.barh(np.arange(len(unAnnotatedLosses)), unAnnotatedLosses, width, label='DEG pairs without SNV or pathway effects', color='red')
-plt.barh(np.arange(len(snvLosses)), snvLosses, width, unAnnotatedLosses, label='DEG pairs with SNVs', color='cyan')
-plt.barh(np.arange(len(pathwayLosses)), pathwayLosses, width, unAnnotatedLosses+snvLosses, label='DEG pairs with pathway effects', color='orange')
+if len(unAnnotatedLosses) > 0:
+	plt.barh(np.arange(len(unAnnotatedLosses)), unAnnotatedLosses, width, label='DEG pairs', color='red')
+if len(snvLosses) > 0:
+	plt.barh(np.arange(len(snvLosses)), snvLosses, width, unAnnotatedLosses, label='DEG pairs + SNVs', color='purple')
+if len(pathwayLosses) > 0:
+	plt.barh(np.arange(len(pathwayLosses)), pathwayLosses, width, unAnnotatedLosses+snvLosses, label='DEG pairs + pathways', color='cyan')
 if len(snvAndPathwayLosses) > 0:
-	plt.barh(np.arange(len(snvAndPathwayLosses)), snvAndPathwayLosses, width, unAnnotatedLosses+snvLosses+pathwayLosses, label='DEG pairs with both SNV and pathway effects', color='green')
+	plt.barh(np.arange(len(snvAndPathwayLosses)), snvAndPathwayLosses, width, unAnnotatedLosses+snvLosses+pathwayLosses, label='DEG pairs SNVs + pathways', color='green')
 
 
 
 #non-DEGs
-nonDegLosses = getLossData(nonDegData[:,1:], nonDegData)
+nonDegLosses = getLossData(nonDEGs[:,1:], nonDegData)
 
 plt.barh(np.arange(len(nonDegLosses)) + width, nonDegLosses, width, label='non-DEG pairs', color='blue')
 plt.yticks(np.arange(len(nonDegLosses) + width / 2), ['eQTLs', 'enhancers', 'promoters', 'CpG', 'TF', 'HiC', 'h3k9me3', 'h3k4me3',
@@ -239,14 +343,17 @@ unAnnotatedGains = getGainData(unAnnotatedDEGs, degData)
 
 #Stack the bars for the DEG data
 width = 0.35
-plt.barh(np.arange(len(unAnnotatedGains)), unAnnotatedGains, width, label='DEG pairs without SNV or pathway effects', color='red')
-plt.barh(np.arange(len(snvGains)), snvGains, width, unAnnotatedGains, label='DEG pairs with SNVs', color='cyan')
-plt.barh(np.arange(len(pathwayGains)), pathwayGains, width, unAnnotatedGains+snvGains, label='DEG pairs with pathway effects', color='orange')
+if len(unAnnotatedGains) > 0:
+	plt.barh(np.arange(len(unAnnotatedGains)), unAnnotatedGains, width, label='DEG pairs', color='red')
+if len(snvGains) > 0:
+	plt.barh(np.arange(len(snvGains)), snvGains, width, unAnnotatedGains, label='DEG pairs + SNVs', color='purple')
+if len(pathwayGains) > 0:
+	plt.barh(np.arange(len(pathwayGains)), pathwayGains, width, unAnnotatedGains+snvGains, label='DEG pairs + pathways', color='cyan')
 if len(snvAndPathwayGains) > 0:
-	plt.barh(np.arange(len(snvAndPathwayGains)), snvAndPathwayGains, width, unAnnotatedGains+snvGains+pathwayGains, label='DEG pairs with both SNV and pathway effects', color='green')
+	plt.barh(np.arange(len(snvAndPathwayGains)), snvAndPathwayGains, width, unAnnotatedGains+snvGains+pathwayGains, label='DEG pairs SNVs + pathways', color='green')
 
 #non-DEGs
-nonDegGains = getGainData(nonDegData[:,1:], nonDegData)
+nonDegGains = getGainData(nonDEGs[:,1:], nonDegData)
 
 plt.barh(np.arange(len(nonDegGains)) + width, nonDegGains, width, label='non-DEG pairs', color='blue')
 plt.yticks(np.arange(len(nonDegGains) + width / 2), ['eQTLs', 'enhancers', 'promoters', 'CpG', 'TF', 'HiC', 'h3k9me3', 'h3k4me3',
@@ -263,9 +370,7 @@ plt.show()
 plt.clf()
 
 
-
-
-allFeatures = np.concatenate((nonDegData[:,1:], degData[:,1:]), axis=0)
+allFeatures = np.concatenate((nonDEGs[:,1:], degs[:,1:]), axis=0)
 
 #Make a PCA plot for the left/right set and see if these are really different
 
@@ -290,10 +395,10 @@ labels = []
 
 for i in range(0, allFeatures.shape[0]):
 	
-	if i < nonDegData.shape[0]:
+	if i < nonDEGs.shape[0]:
 		colorLabels.append('b')
 		labels.append(0)
-	elif i >= nonDegData.shape[0] and i < (nonDegData.shape[0] + degData.shape[0]):
+	elif i >= nonDEGs.shape[0] and i < (nonDEGs.shape[0] + degs.shape[0]):
 		colorLabels.append('r')
 		labels.append(1)
 

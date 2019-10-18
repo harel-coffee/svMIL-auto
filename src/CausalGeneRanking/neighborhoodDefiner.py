@@ -198,7 +198,7 @@ class NeighborhoodDefiner:
 		# plt.show()
 		# exit()
 		
-			
+		
 		#2. Get eQTLs from the eQTL file, and map eQTLs to genes. 
 		eQTLData = [] #Keep empty by default in case we do not use eQTLs
 		if settings.general['eQTLs'] == True: #Always check if eQTLs are enabled in the settings

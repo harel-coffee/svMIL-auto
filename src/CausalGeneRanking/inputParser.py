@@ -866,7 +866,43 @@ class InputParser:
 		return np.array(chromHmmSites, dtype='object')
 
 	def getMethylationFromFile(self, methylationFile):
+		"""
+			The methylation data is really different. WIll not be used for gains/losses, but for now just for the MIL purposes.
+			So it can be encoded slightly differently. 
+		"""
 		
+		methylation = dict()
+		patients = []
+		with open(methylationFile, 'r') as f:
+			lineCount = 0
+			for line in f:
+				
+				line = line.strip()
+				splitLine = line.split("\t")
+				if lineCount < 1:
+					patients = np.unique(splitLine[1:]) #skip hybridization ref
+					lineCount += 1
+					continue
+				if lineCount < 2:
+					lineCount += 1
+					continue
 		
-		
-		return 1
+				#the format is:
+				#locus, chromosome, coordinates, beta value
+				
+				#there are 4 values per patient
+				#skipping the hybrid ref, we can start at pos 1
+				lineInd = 1
+				for patientInd in range(0, len(patients)):
+					patient = patients[patientInd]
+					#encode as: chromosome, coordinate, beta value, locus name, patient
+					#print([splitLine[lineInd+2], splitLine[lineInd+3], splitLine[lineInd], splitLine[lineInd+1], patient])
+					#methylation.append(['chr' + splitLine[lineInd+2], int(splitLine[lineInd+3]), splitLine[lineInd], splitLine[lineInd+1], patient])
+					if splitLine[lineInd+1] not in methylation:
+						methylation[splitLine[lineInd+1]] = []
+					methylation[splitLine[lineInd+1]].append(splitLine[lineInd])
+					
+					lineInd += 4
+				
+		exit()
+		#return np.array(methylation, dtype='object')

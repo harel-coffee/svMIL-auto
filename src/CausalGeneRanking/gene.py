@@ -214,7 +214,10 @@ class Gene:
 			if elementStr not in self.alteredElements[sv]:
 				self.alteredElements[sv][elementStr] = lossGains + elementMethylation
 				
-			
+		#something with methylation for the affected genes only
+		#first make sure that all elements are gathered, then afterwards, add the methylation specifically for each of them. 
+		#methylationData = InputParser().getMethylationFromFile('../../data/methylation/BRCA.methylation__humanmethylation450__jhu_usc_edu__Level_3__within_bioassay_data_set_function__data.data.txt')
+		
 		
 		
 		
