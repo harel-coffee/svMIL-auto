@@ -151,12 +151,15 @@ class Gene:
 		if len(elements) > 0:
 			if sv not in self.alteredElements:
 				self.alteredElements[sv] = dict()
+			else:
+				return #don't add the SV another time if we see it again for some reason, we already saw it once. 
 		
 		#For methylation marks, gather all relevant marks here for easy lookup.
 		#For now, just focus on what is relevant for enhancers
 		methylationMarks = []
 		for element in elements:
 			
+			#if element[3] in ['h3k27ac', 'h3k4me1']:
 			if element[3] in ['h3k27ac', 'h3k4me1', 'CTCF', 'CTCF+Enhancer', 'Enhancer', 'Heterochromatin', 'Repeat', 'Repressed', 'Transcribed', 'dnaseI']:
 				methylationMarks.append(element)
 		
@@ -180,6 +183,7 @@ class Gene:
 				methylationMatches = methylationMarks[(methylationMarks[:,0] == element[0]) * (methylationMarks[:,2] >= element[1]) * (methylationMarks[:,1] <= element[2])]
 			
 			#Fix this later and make it not-so-hardcoded
+			#elementMethylation = [0, 0] #keep order of elements
 			elementMethylation = [0, 0, 0, 0, 0, 0, 0] #keep order of elements
 			for match in methylationMatches:
 				if match[3] == 'h3k27ac':
@@ -196,7 +200,7 @@ class Gene:
 					elementMethylation[5] = 1
 				if match[3] == 'dnaseI':
 					elementMethylation[6] = 1
-			
+				
 			lossGains = [0,0]
 			if alterationType == 'loss':
 				if element[3] in elementsNotLinkedToGenes:
@@ -204,8 +208,8 @@ class Gene:
 				else: #make sure that elements that belong to the gene are only lost. 
 					if element[4] == self.name:
 						lossGains[0] = 1
-					else: #if 
-						continue
+					else: #if the loss is from an element that was not interacting with this gene, it is not a true loss. 
+						lossGains[0] = 0
 
 			if alterationType == "gain":
 				lossGains[1] = 1
@@ -213,7 +217,7 @@ class Gene:
 			#if we get here, we passed all checks and there is a valid gain OR loss
 			if elementStr not in self.alteredElements[sv]:
 				self.alteredElements[sv][elementStr] = lossGains + elementMethylation
-				
+				#self.alteredElements[sv][elementStr] = lossGains
 		#something with methylation for the affected genes only
 		#first make sure that all elements are gathered, then afterwards, add the methylation specifically for each of them. 
 		#methylationData = InputParser().getMethylationFromFile('../../data/methylation/BRCA.methylation__humanmethylation450__jhu_usc_edu__Level_3__within_bioassay_data_set_function__data.data.txt')

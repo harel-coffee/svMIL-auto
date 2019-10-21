@@ -304,77 +304,9 @@ class NeighborhoodDefiner:
 			print("Mapping SVs to the neighborhood")
 			self.mapSVsToNeighborhood(genes, svData, tadData, excludedSVs)
 
-
-		# samplesPerTad = dict()
-		# samplesPerGene = dict()
-		# for tad in tadData:
-		# 	
-		# 	#Get the genes
-		# 	genes = tad[3].genes
-		# 	tadSamples = dict()
-		# 	for gene in genes:
-		# 		sampleGains = gene.gainedElements.keys()
-		# 		sampleLosses = gene.lostElements.keys()
-		# 		samples = sampleGains + sampleLosses
-		# 		uniqueSamples = np.unique(samples)
-		# 		for sample in uniqueSamples:
-		# 			tadSamples[sample] = 0
-		# 		if len(uniqueSamples) not in samplesPerGene:
-		# 			samplesPerGene[len(uniqueSamples)] = 0
-		# 		samplesPerGene[len(uniqueSamples)] += 1
-		# 	
-		# 	if len(tadSamples) not in samplesPerTad:
-		# 		samplesPerTad[len(tadSamples)] = 0
-		# 	samplesPerTad[len(tadSamples)] += 1
-		# 	
-		# 	#Check which TADs are recurrently affected
-		# 	if len(tadSamples) > 15:
-		# 		print tad
-		# 		
-		# 	#Count the number of samples that are affected per gene
-		# exit()
-		# #Frequency
-		# print samplesPerTad
-		# 
-		# 
-		
-		
-		
-		# np.save('Output/samplesPerTad_somatic_dup.npy', samplesPerTad)
-		# 
-		# import matplotlib.pyplot as plt
-		# plt.bar(samplesPerTad.keys(), samplesPerTad.values())
-		# plt.show()
-		# exit()
-		# plt.clf()
-		# plt.bar(samplesPerGene.keys(), samplesPerGene.values())
-		# plt.show()
-		# exit()
-		
-		#Plot how many SVs disrupt how many TADs. 
-		# samplesPerTad = dict()
-		# samplesPerGene = dict()
-		# for tad in tadData:
-		# 	
-		# 	#Get the genes
-		# 	genes = tad[3].genes
-		# 	tadSamples = []
-		# 	for gene in genes:
-		# 		sampleGains = gene.gainedElements.keys()
-		# 		sampleLosses = gene.lostElements.keys()
-		# 		samples = sampleGains + sampleLosses
-		# 		for sample in samples:
-		# 			tadSamples.append(sample)
-		# 
-		# 	if len(tadSamples) not in samplesPerTad:
-		# 		samplesPerTad[len(tadSamples)] = 0
-		# 	samplesPerTad[len(tadSamples)] += 1
-		# 		
-		# import matplotlib.pyplot as plt
-		# plt.bar(samplesPerTad.keys(), samplesPerTad.values())
-		# plt.show()
-		# exit()
-		
+		#Add the gene methylation to genes for MIL. Do this step here, because the file is huge and takes a long time to process.
+		if settings.general['methylation'] == True:
+			InputParser().getMethylationFromFile(settings.files['methylationFile'], genes)
 		
 			
 	

@@ -508,7 +508,8 @@ class GeneRanking:
 					if len(instances) > 0:
 						bags[gene.name + "_" + sv] = instances
 				
-			print(bags)	
+			print(bags)
+			print(len(bags))
 		
 			#output the bags to a file
 			with open(settings.files['rankedGeneScoreDir'] + '/' + runId+ '/' + cancerType + '/bags.pkl', 'wb') as handle:

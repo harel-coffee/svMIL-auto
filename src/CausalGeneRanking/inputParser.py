@@ -122,17 +122,18 @@ class InputParser:
 			
 				if settings.general['cancerType'] == "BRCA":
 					
-					if svType != "del" and svType != "invers" and svType != "tandem_dup" and svType != "DEL" and svType != "INV" and svType != "DUP":
-						
-						interChrTypeMatch = re.search("chr", svType, re.IGNORECASE)
-						transTypeMatch = re.search("trans", svType, re.IGNORECASE)
-						rangeTypeMatch = re.search("range", svType, re.IGNORECASE)
-						itxTypeMatch = re.search("ITX", svType, re.IGNORECASE)
-						ctxTypeMatch = re.search("CTX", svType, re.IGNORECASE)
-						if interChrTypeMatch is None and transTypeMatch is None and rangeTypeMatch is None and itxTypeMatch is None and ctxTypeMatch is None:
-							continue
-					
-					
+					# if svType != "del" and svType != "invers" and svType != "tandem_dup" and svType != "DEL" and svType != "INV" and svType != "DUP":
+					# 	
+					# 	interChrTypeMatch = re.search("chr", svType, re.IGNORECASE)
+					# 	transTypeMatch = re.search("trans", svType, re.IGNORECASE)
+					# 	rangeTypeMatch = re.search("range", svType, re.IGNORECASE)
+					# 	itxTypeMatch = re.search("ITX", svType, re.IGNORECASE)
+					# 	ctxTypeMatch = re.search("CTX", svType, re.IGNORECASE)
+					# 	if interChrTypeMatch is None and transTypeMatch is None and rangeTypeMatch is None and itxTypeMatch is None and ctxTypeMatch is None:
+					# 		continue
+					#
+					if svType != 'del':
+						continue
 				
 				# if svType != "inversion":
 				# 	continue
@@ -865,14 +866,20 @@ class InputParser:
 		
 		return np.array(chromHmmSites, dtype='object')
 
-	def getMethylationFromFile(self, methylationFile):
+	def getMethylationFromFile(self, methylationFile, genes):
 		"""
-			The methylation data is really different. WIll not be used for gains/losses, but for now just for the MIL purposes.
-			So it can be encoded slightly differently. 
+			Add the methylation information of the genes to the sv-gene pair altered elements for the given genes. This will be used in the MIL feature vector. 
 		"""
 		
+		#get a list of the genes that have altered elements. These are the ones that we need to get from the methylation file
+		affectedGenes = []
+		for gene in genes:
+			if len(gene[3].alteredElements) > 0:
+				affectedGenes.append([gene[3].name, gene[3]])
+		affectedGenes = np.array(affectedGenes, dtype='object')
+		
 		methylation = dict()
-		patients = []
+		patients = dict() #make a lookup for patients, so that we can easily calculate the line number at which the beta value for that patient/gene pair is located. 
 		with open(methylationFile, 'r') as f:
 			lineCount = 0
 			for line in f:
@@ -880,29 +887,68 @@ class InputParser:
 				line = line.strip()
 				splitLine = line.split("\t")
 				if lineCount < 1:
-					patients = np.unique(splitLine[1:]) #skip hybridization ref
+					patientsList = splitLine[1:] #skip hybridization ref
+					for patientInd in range(0, len(patientsList)):
+						splitPatientName = patientsList[patientInd].split("-")
+						patientID = 'brca' + splitPatientName[2] #we need a way around this later, because now it is specific for brca... due to the bad naming in the SV file.
+						if patientID not in patients: #make sure to keep this unique, and always start with the first position of that patient in the line for later lookup.
+							patients[patientID] = patientInd + 1 # +1 to avoid the hybrid ref position
+					
 					lineCount += 1
 					continue
 				if lineCount < 2:
 					lineCount += 1
 					continue
 		
-				#the format is:
-				#locus, chromosome, coordinates, beta value
+				#this information is repeated across the entire line.
+				geneName = splitLine[2]
+				if geneName not in methylation:
+					methylation[geneName] = [] #only take the first patient as an example
+				methylation[geneName].append(splitLine[1])
 				
-				#there are 4 values per patient
-				#skipping the hybrid ref, we can start at pos 1
-				lineInd = 1
-				for patientInd in range(0, len(patients)):
-					patient = patients[patientInd]
-					#encode as: chromosome, coordinate, beta value, locus name, patient
-					#print([splitLine[lineInd+2], splitLine[lineInd+3], splitLine[lineInd], splitLine[lineInd+1], patient])
-					#methylation.append(['chr' + splitLine[lineInd+2], int(splitLine[lineInd+3]), splitLine[lineInd], splitLine[lineInd+1], patient])
-					if splitLine[lineInd+1] not in methylation:
-						methylation[splitLine[lineInd+1]] = []
-					methylation[splitLine[lineInd+1]].append(splitLine[lineInd])
+				
+				if geneName not in affectedGenes[:,0]:
+					continue #skip this line if the gene is not affected
+				
+				#get the affected gene.
+				affectedGene = affectedGenes[affectedGenes[:,0] == geneName][0][1]
+				
+				#get the index of the patients that affect this gene.
+				for sv in affectedGene.alteredElements:
+					splitSV = sv.split("_")
+					patientID = splitSV[6]
+					#use the lookup to determine the first position in this line that we find data for this patient
+					if patientID not in patients: #some patients appear to not have methylation data
+						betaValue = 0
+					else:
+						patientLineInd = patients[patientID]
+						
+						#then the beta value should be the first entry. Gene is the second, then the chromosome, then the coordinates of the methylation. 
+						betaValue = splitLine[patientLineInd]
 					
-					lineInd += 4
-				
-		exit()
+						if betaValue == 'NA':
+							betaValue = 0 #for now
+					
+					#Add the beta value to the altered elements
+					for element in affectedGene.alteredElements[sv]:
+						affectedGene.alteredElements[sv][element] += [float(betaValue)]
+
+				# 
+				# #there are 4 values per patient
+				# #skipping the hybrid ref, we can start at pos 1
+				# lineInd = 1
+				# for patientInd in range(0, len(patients)):
+				# 	patient = patients[patientInd]
+				# 	#encode as: chromosome, coordinate, beta value, locus name, patient
+				# 	#print([splitLine[lineInd+2], splitLine[lineInd+3], splitLine[lineInd], splitLine[lineInd+1], patient])
+				# 	#methylation.append(['chr' + splitLine[lineInd+2], int(splitLine[lineInd+3]), splitLine[lineInd], splitLine[lineInd+1], patient])
+				# 	if splitLine[lineInd+1] not in methylation:
+				# 		methylation[splitLine[lineInd+1]] = []
+				# 	methylation[splitLine[lineInd+1]].append(splitLine[lineInd])
+				# 	
+				# 	lineInd += 4
+		for gene in methylation:
+			if len(methylation[gene]) > 1:
+				print(gene, methylation[gene])
+		exit()		
 		#return np.array(methylation, dtype='object')

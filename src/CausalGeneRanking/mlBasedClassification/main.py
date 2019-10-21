@@ -41,25 +41,39 @@ bags = []
 bagLabels = []
 posCount = 0
 negCount = 0
+positiveBags = []
+negativeBags = []
 for pair in bagDict:
 	
 	#get the label of the bag by checking if it exists in degPairs
 	if pair in degPairs[:,0]:
 		bagLabels.append(1)
 		posCount += 1
+		positiveBags.append(bagDict[pair])
 	else:
 		bagLabels.append(0)
 		negCount += 1
+		negativeBags.append(bagDict[pair])
 
-	bags.append(bagDict[pair])
+	#bags.append(bagDict[pair])
 
-bags = np.array(bags)
+positiveBags = np.array(positiveBags)
+negativeBags = np.array(negativeBags)
+np.random.seed(0)
+negativeBagsSubsampled = np.random.choice(negativeBags, posCount)
+
+#bags = np.array(bags)
+#bags = np.concatenate((positiveBags, negativeBagsSubsampled))
+#bagLabels = np.array([1]*positiveBags.shape[0] + [0]*negativeBagsSubsampled.shape[0])
+bags = np.concatenate((positiveBags, negativeBags))
+bagLabels = np.array([1]*positiveBags.shape[0] + [0]*negativeBags.shape[0])
+
 instances = np.vstack(bags)
-bagLabels = np.array(bagLabels)
+
 print(instances.shape)
 print(bagLabels.shape)
 print("positive bags: ", posCount)
-print("negative bags: ", negCount)
+print("negative bags: ", negativeBags.shape[0])
 #Make similarity matrix
 
 print("generating similarity matrix")
@@ -123,6 +137,13 @@ print(bagLabels)
 
 pca = PCA(n_components=2)
 projected = pca.fit_transform(similarityMatrix)
+projectedWithOffset = projected
+
+for row in range(0, projected.shape[0]):
+	for col in range(0, projected.shape[1]):
+		projectedWithOffset[row][col] += np.random.normal(-1, 1) * 0.5
+		
+projected = projectedWithOffset
 
 colorLabels = []
 
@@ -137,6 +158,89 @@ fig,ax=plt.subplots(figsize=(7,5))
 plt.scatter(projected[:, 0], projected[:, 1], edgecolors=colorLabels, facecolors='none')
 plt.show()
 
+
+#rasterize the PCA plot and make a density heatmap
+import math
+
+#
+colorLabels = np.array(colorLabels)
+
+#Get the minimum and maximum to determine the bounds of the plot.
+xmin = np.min(projected[:,0])
+xmax = np.max(projected[:,0])
+ymin = np.min(projected[:,1])
+ymax = np.max(projected[:,1])
+
+#Define the box size and how many boxes we should make
+print(xmin, xmax, ymin, ymax)
+
+#round the values to get covering boxes
+xmin = round(xmin)
+xmax = round(xmax)
+ymin = round(ymin)
+ymax = round(ymax)
+
+boxWidth = 2
+#Take the ceil to get the maximum possible without leaving out points
+xBoxNum = int(math.ceil((xmax - xmin) / boxWidth))
+yBoxNum = int(math.ceil((ymax - ymin) / boxWidth))
+
+#Placeholder for smoothed data
+plotGrid = np.zeros([xBoxNum, yBoxNum])
+
+#Loop through the data and show the data in the boxes
+yBoxStart = ymin
+yBoxEnd = ymin + boxWidth
+xBoxStart = xmin
+xBoxEnd = xmin + boxWidth
+for yInd in range(0, yBoxNum):
+	for xInd in range(0, xBoxNum):
+		
+		#Find all data points that are within the current box
+		xStartMatches = projected[:,0] >= xBoxStart
+		xEndMatches = projected[:,0] <= xBoxEnd
+		
+		xMatches = xStartMatches * xEndMatches
+		
+		yStartMatches = projected[:,1] >= yBoxStart
+		yEndMatches = projected[:,1] <= yBoxEnd
+		
+		yMatches = yStartMatches * yEndMatches
+		
+		dataInBox = projected[xMatches * yMatches]
+		boxLabels = colorLabels[xMatches * yMatches]
+		
+		if len(dataInBox) > 0:
+			#print dataInBox
+			
+			posCount = len(np.where(boxLabels == 'r')[0]) + 0.01
+			negCount = len(np.where(boxLabels == 'b')[0]) + 0.01
+			
+			#Normalize for the total count of that label
+			posCount = posCount / len(np.where(colorLabels == 'r')[0])
+			negCount = negCount / len(np.where(colorLabels == 'b')[0])
+			
+			if negCount > 0:
+				plotGrid[xInd,yInd] = np.log(posCount / float(negCount))
+			
+
+		#Move the box along x
+		xBoxStart += boxWidth
+		xBoxEnd += boxWidth
+	
+	yBoxStart += boxWidth
+	yBoxEnd += boxWidth
+	#Reset the box on x
+	xBoxStart = xmin
+	xBoxEnd = xmin + boxWidth
+
+plotGrid = np.ma.masked_where(plotGrid == 0, plotGrid)
+cmap = plt.cm.seismic
+cmap.set_bad(color='white')
+print(plotGrid)
+plt.imshow(plotGrid, cmap=cmap, interpolation='nearest')		
+plt.show()
+
 from random import shuffle
 #shuffle(bagLabels)
 
@@ -147,82 +251,63 @@ from sklearn.model_selection import StratifiedKFold
 cv = StratifiedKFold(n_splits=10)
 np.random.seed(500)
 
-accs = []
-aucs = []
-auprcs = []
-coeffs = []
-predDiffs = []
-for train, test in cv.split(similarityMatrix, bagLabels):
+def cvClassification(similarityMatrix, bagLabels, clf):
 	
-	rfClassifier = RandomForestClassifier(max_depth=5, n_estimators=2)
-	rfClassifier.fit(similarityMatrix[train], bagLabels[train]) #Use the bag labels, not the instance labels
+	accs = []
+	aucs = []
+	auprcs = []
+	coeffs = []
+	predDiffs = []
+	for train, test in cv.split(similarityMatrix, bagLabels):
+		
+		
+		clf.fit(similarityMatrix[train], bagLabels[train]) #Use the bag labels, not the instance labels
+	
+		predictions = clf.predict(similarityMatrix[test])
+		precision, recall, thresholds = precision_recall_curve(bagLabels[test], predictions)
+		aucScore = auc(recall, precision)
+		predsDiff = np.average(bagLabels[test] == np.sign(predictions))
+		#Now select the most important features with random forest
+		# importances = clf.feature_importances_
+		# std = np.std([tree.feature_importances_ for tree in clf.estimators_],
+		# 			 axis=0)
+		# indices = np.argsort(importances)[::-1]
+		# 
+		# nonZeroIndices = []
+		# for index in indices:
+		# 	if importances[index] > 0:
+		# 		nonZeroIndices.append(index)
+		# 
+		# print(nonZeroIndices)
+		
+		aucs.append(aucScore)
+		predDiffs.append(predsDiff)
+		
+		precision, recall, thresholds = precision_recall_curve(bagLabels[test], predictions)
+		aucScore = auc(recall, precision)
+		auprcs.append(aucScore)
+	
+	print("Mean accuracy: ", np.mean(predDiffs))
+	print("Mean AUPRC: ", np.mean(auprcs))
 
-	predictions = rfClassifier.predict(similarityMatrix[test])
-	precision, recall, thresholds = precision_recall_curve(bagLabels[test], predictions)
-	aucScore = auc(recall, precision)
-	predsDiff = np.average(bagLabels[test] == np.sign(predictions))
-	#Now select the most important features with random forest
-	importances = rfClassifier.feature_importances_
-	std = np.std([tree.feature_importances_ for tree in rfClassifier.estimators_],
-				 axis=0)
-	indices = np.argsort(importances)[::-1]
-	
-	nonZeroIndices = []
-	for index in indices:
-		if importances[index] > 0:
-			nonZeroIndices.append(index)
-	
-	aucs.append(aucScore)
-	predDiffs.append(predsDiff)
-	
-	precision, recall, thresholds = precision_recall_curve(bagLabels[test], predictions)
-	aucScore = auc(recall, precision)
-	auprcs.append(aucScore)
 
-print("Actual acc: ", np.mean(predDiffs))
-print("Mean AUC: ", np.mean(aucs))
-print("Mean AUPRC: ", np.mean(auprcs))
+from sklearn import svm
+rfClassifier = RandomForestClassifier(max_depth=5, n_estimators=2)
+svmClassifier = svm.SVC(gamma='scale')
+
+print("Random forest")
+cvClassification(similarityMatrix, bagLabels, rfClassifier)
+print("SVC:")
+#cvClassification(similarityMatrix, bagLabels, svmClassifier)
 
 #repeat for shuffled labels
+print("Shuffled labels: ")
 shuffle(bagLabels)
+print("Random forest")
+cvClassification(similarityMatrix, bagLabels, rfClassifier)
+print("SVC:")
+#cvClassification(similarityMatrix, bagLabels, svmClassifier)
 
-
-accs = []
-aucs = []
-auprcs = []
-coeffs = []
-predDiffs = []
-for train, test in cv.split(similarityMatrix, bagLabels):
-	
-	rfClassifier = RandomForestClassifier(max_depth=5, n_estimators=2)
-	rfClassifier.fit(similarityMatrix[train], bagLabels[train]) #Use the bag labels, not the instance labels
-
-	predictions = rfClassifier.predict(similarityMatrix[test])
-	precision, recall, thresholds = precision_recall_curve(bagLabels[test], predictions)
-	aucScore = auc(recall, precision)
-	predsDiff = np.average(bagLabels[test] == np.sign(predictions))
-	#Now select the most important features with random forest
-	importances = rfClassifier.feature_importances_
-	std = np.std([tree.feature_importances_ for tree in rfClassifier.estimators_],
-				 axis=0)
-	indices = np.argsort(importances)[::-1]
-	
-	nonZeroIndices = []
-	for index in indices:
-		if importances[index] > 0:
-			nonZeroIndices.append(index)
-	
-	aucs.append(aucScore)
-	predDiffs.append(predsDiff)
-	
-	precision, recall, thresholds = precision_recall_curve(bagLabels[test], predictions)
-	aucScore = auc(recall, precision)
-	auprcs.append(aucScore)
-
-print("Shuffle: ")
-print("Actual acc: ", np.mean(predDiffs))
-print("Mean AUC: ", np.mean(aucs))
-print("Mean AUPRC: ", np.mean(auprcs))
 exit()
 # 
 # 

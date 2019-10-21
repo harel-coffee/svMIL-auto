@@ -26,7 +26,7 @@ pathwayAnnotation = np.loadtxt(sys.argv[4], dtype='object')
 #1. Split the DEG dataset into 4: 1 for SNVs, 1 for pathways, 1 for both, and 1 for neither. 
 #if the sets are empty because we are not using it or there are no SNVs for example, this should not affect things such as shuffling.
 
-svType = ''
+svType = 'del'
 shuffle = False
 # pairs = True
 # 
@@ -117,6 +117,18 @@ for degPair in degData:
 degs = np.array(degs)
 nonDEGs = np.array(nonDEGs)
 
+enhGains = 0
+enhLosses = 0
+for deg in degs:
+	print(deg)
+	if deg[2] == '1.0':
+		enhLosses += 1
+	if deg[25] == '1.0':
+		enhGains += 1
+
+print(enhGains)
+print(enhLosses)
+exit()
 
 snvDEGs = []
 pathwayDEGs = []
