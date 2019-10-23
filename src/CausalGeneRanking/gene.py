@@ -146,7 +146,7 @@ class Gene:
 		
 		elementsNotLinkedToGenes = ['cpg', 'tf', 'hic', 'dnaseI', 'h3k9me3', 'h3k4me3', 'h3k27ac', 'h3k27me3', 'h3k4me1', 'h3k36me3',
 									'CTCF', 'CTCF+Enhancer', 'CTCF+Promoter', 'Enhancer', 'Heterochromatin',
-									'Poised_Promoter', 'Promoter', 'Repeat', 'Repressed', 'Transcribed']
+									'Poised_Promoter', 'Promoter', 'Repeat', 'Repressed', 'Transcribed', 'rnaPol']
 
 		if len(elements) > 0:
 			if sv not in self.alteredElements:
@@ -160,7 +160,7 @@ class Gene:
 		for element in elements:
 			
 			#if element[3] in ['h3k27ac', 'h3k4me1']:
-			if element[3] in ['h3k27ac', 'h3k4me1', 'CTCF', 'CTCF+Enhancer', 'Enhancer', 'Heterochromatin', 'Repeat', 'Repressed', 'Transcribed', 'dnaseI']:
+			if element[3] in ['h3k27ac', 'h3k4me1', 'CTCF', 'CTCF+Enhancer', 'Enhancer', 'Heterochromatin', 'Repeat', 'Repressed', 'Transcribed', 'dnaseI', 'rnaPol']:
 				methylationMarks.append(element)
 		
 		methylationMarks = np.array(methylationMarks, dtype='object')	
@@ -184,7 +184,7 @@ class Gene:
 			
 			#Fix this later and make it not-so-hardcoded
 			#elementMethylation = [0, 0] #keep order of elements
-			elementMethylation = [0, 0, 0, 0, 0, 0, 0] #keep order of elements
+			elementMethylation = [0, 0, 0, 0, 0, 0, 0, 0] #keep order of elements
 			for match in methylationMatches:
 				if match[3] == 'h3k27ac':
 					elementMethylation[0] = 1
@@ -200,6 +200,8 @@ class Gene:
 					elementMethylation[5] = 1
 				if match[3] == 'dnaseI':
 					elementMethylation[6] = 1
+				if match[3] == 'rnaPol':
+					elementMethylation[7] = 1
 				
 			lossGains = [0,0]
 			if alterationType == 'loss':

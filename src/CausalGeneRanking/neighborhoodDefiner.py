@@ -299,6 +299,13 @@ class NeighborhoodDefiner:
 			
 			tadData = self.mapElementsToTads(chromHmmData, tadData)
 		
+		#11. get RNAPolII peaks
+		if settings.general['rnaPol'] == True:
+			print("Getting rnaPol binding sites")
+			rnaPolData = InputParser().getRnaPolFromFile(settings.files['rnaPolFile'])
+			
+			tadData = self.mapElementsToTads(rnaPolData, tadData)
+		
 		#3. Map SVs to all neighborhood elements
 		if mode == "SV":
 			print("Mapping SVs to the neighborhood")

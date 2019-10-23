@@ -84,36 +84,7 @@ class InputParser:
 				svType = splitLine[svTypeIndex]
 				
 				
-				# doubleTypeMatch = re.search("_", svType, re.IGNORECASE)
-				# if doubleTypeMatch is not None:
-				# 	continue
-				#
-				# 
-				# if svType != "tandem_dup":
-				# 	continue
-				
-				# if svType != "del" and svType != "invers" and svType != "tandem_dup":
-				# 	continue
-				
-				
-				
-				#  
-				# interChrTypeMatch = re.search("chr", svType, re.IGNORECASE)
-				# transTypeMatch = re.search("trans", svType, re.IGNORECASE)
-				# rangeTypeMatch = re.search("range", svType, re.IGNORECASE)
-				# 
-				# if interChrTypeMatch is None and transTypeMatch is None and rangeTypeMatch is None:
-				# 	continue
-				
-				# only keep the main 4 types
-				# if svType != "del" and svType != "invers" and svType != "tandem_dup":
-				# 	
-				# 	interChrTypeMatch = re.search("chr", svType, re.IGNORECASE)
-				# 	transTypeMatch = re.search("trans", svType, re.IGNORECASE)
-				# 	rangeTypeMatch = re.search("range", svType, re.IGNORECASE)
-				# 	if interChrTypeMatch is None and transTypeMatch is None and rangeTypeMatch is None:
-				# 		continue
-				#
+			
 				
 				if settings.general['cancerType'] == "germline":
 					
@@ -122,38 +93,19 @@ class InputParser:
 			
 				if settings.general['cancerType'] == "BRCA":
 					
-					# if svType != "del" and svType != "invers" and svType != "tandem_dup" and svType != "DEL" and svType != "INV" and svType != "DUP":
-					# 	
-					# 	interChrTypeMatch = re.search("chr", svType, re.IGNORECASE)
-					# 	transTypeMatch = re.search("trans", svType, re.IGNORECASE)
-					# 	rangeTypeMatch = re.search("range", svType, re.IGNORECASE)
-					# 	itxTypeMatch = re.search("ITX", svType, re.IGNORECASE)
-					# 	ctxTypeMatch = re.search("CTX", svType, re.IGNORECASE)
-					# 	if interChrTypeMatch is None and transTypeMatch is None and rangeTypeMatch is None and itxTypeMatch is None and ctxTypeMatch is None:
-					# 		continue
-					#
-					if svType != 'del':
-						continue
+					if svType != "del" and svType != "invers" and svType != "tandem_dup" and svType != "DEL" and svType != "INV" and svType != "DUP":
+						
+						interChrTypeMatch = re.search("chr", svType, re.IGNORECASE)
+						transTypeMatch = re.search("trans", svType, re.IGNORECASE)
+						rangeTypeMatch = re.search("range", svType, re.IGNORECASE)
+						itxTypeMatch = re.search("ITX", svType, re.IGNORECASE)
+						ctxTypeMatch = re.search("CTX", svType, re.IGNORECASE)
+						if interChrTypeMatch is None and transTypeMatch is None and rangeTypeMatch is None and itxTypeMatch is None and ctxTypeMatch is None:
+							continue
+					
+					
 				
-				# if svType != "inversion":
-				# 	continue
-				
-				# interChrTypeMatch = re.search("chr", svType, re.IGNORECASE)
-				# transTypeMatch = re.search("trans", svType, re.IGNORECASE)
-				# rangeTypeMatch = re.search("range", svType, re.IGNORECASE)
-				# if interChrTypeMatch is None and transTypeMatch is None and rangeTypeMatch is None:
-				# 	continue
-				# 
-				
-				# if typeFilter != "all":
-				# 	#Check if the SV type matches deletions
-				# 	match = re.search("deletion", svType, re.IGNORECASE)
-				# 	if match is None: #only focus on deletions for now
-				# 		continue
-				# 
-				
-				#if cancerType not in uniqueCancerTypes:
-				#	uniqueCancerTypes.append(cancerType)
+			
 		
 				#If the coordinates are missing on the second chromosome, we use the coordinates of the first chromosome unless chr 1 and chr 2 are different.
 				if splitLine[chr1Index] == splitLine[chr2Index]:
@@ -865,6 +817,28 @@ class InputParser:
 				
 		
 		return np.array(chromHmmSites, dtype='object')
+
+	def getRnaPolFromFile(self, rnaPolFile):
+
+		rnaPolSites = []
+		with open(rnaPolFile, 'r') as f:
+			lineCount = 0
+			for line in f:
+				if lineCount < 1:
+					lineCount += 1
+					continue
+				
+				line = line.strip()
+				splitLine = line.split("\t")
+				
+				chrName = splitLine[0]
+				start = int(splitLine[1])
+				end = int(splitLine[2])
+				
+				rnaPolSites.append([chrName, start, end, 'rnaPol', None])
+				
+		
+		return np.array(rnaPolSites, dtype='object')
 
 	def getMethylationFromFile(self, methylationFile, genes):
 		"""
