@@ -247,66 +247,54 @@ from random import shuffle
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import auc, precision_recall_curve
 from sklearn.model_selection import StratifiedKFold
+from inspect import signature
+from sklearn import model_selection
+from sklearn.metrics import average_precision_score
+from sklearn.metrics import make_scorer, accuracy_score, precision_score, recall_score, f1_score
 
 cv = StratifiedKFold(n_splits=10)
 np.random.seed(500)
 
-def cvClassification(similarityMatrix, bagLabels, clf):
+def cvClassification(similarityMatrix, bagLabels, clf, shuffle):
 	
-	accs = []
-	aucs = []
-	auprcs = []
-	coeffs = []
-	predDiffs = []
-	for train, test in cv.split(similarityMatrix, bagLabels):
-		
-		
-		clf.fit(similarityMatrix[train], bagLabels[train]) #Use the bag labels, not the instance labels
 	
-		predictions = clf.predict(similarityMatrix[test])
-		precision, recall, thresholds = precision_recall_curve(bagLabels[test], predictions)
-		aucScore = auc(recall, precision)
-		predsDiff = np.average(bagLabels[test] == np.sign(predictions))
-		#Now select the most important features with random forest
-		# importances = clf.feature_importances_
-		# std = np.std([tree.feature_importances_ for tree in clf.estimators_],
-		# 			 axis=0)
-		# indices = np.argsort(importances)[::-1]
-		# 
-		# nonZeroIndices = []
-		# for index in indices:
-		# 	if importances[index] > 0:
-		# 		nonZeroIndices.append(index)
-		# 
-		# print(nonZeroIndices)
-		
-		aucs.append(aucScore)
-		predDiffs.append(predsDiff)
-		
-		precision, recall, thresholds = precision_recall_curve(bagLabels[test], predictions)
-		aucScore = auc(recall, precision)
-		auprcs.append(aucScore)
+	scoring = {'accuracy' : make_scorer(accuracy_score), 
+			   'precision' : make_scorer(precision_score),
+			   'recall' : make_scorer(recall_score), 
+			   'f1_score' : make_scorer(f1_score),
+			   'average_precision' : make_scorer(average_precision_score)}
 	
-	print("Mean accuracy: ", np.mean(predDiffs))
-	print("Mean AUPRC: ", np.mean(auprcs))
+	kfold = model_selection.StratifiedKFold(n_splits=10, random_state=42)
+	
+	results = model_selection.cross_validate(estimator=clf,
+											  X=similarityMatrix,
+											  y=bagLabels,
+											  cv=kfold,
+											  scoring=scoring)
 
+	print('accuracy: ', np.mean(results['test_accuracy']), np.std(results['test_accuracy']))
+	print('precision: ', np.mean(results['test_precision']), np.std(results['test_precision']))
+	print('recall: ', np.mean(results['test_recall']), np.std(results['test_recall']))
+	print('F1 score: ', np.mean(results['test_f1_score']), np.std(results['test_f1_score']))
+	print('AP: ', np.mean(results['test_average_precision']), np.std(results['test_average_precision']))
+	
 
 from sklearn import svm
 rfClassifier = RandomForestClassifier(max_depth=5, n_estimators=2)
 svmClassifier = svm.SVC(gamma='scale')
 
 print("Random forest")
-cvClassification(similarityMatrix, bagLabels, rfClassifier)
-print("SVC:")
-#cvClassification(similarityMatrix, bagLabels, svmClassifier)
+cvClassification(similarityMatrix, bagLabels, rfClassifier, '')
+# print("SVC:")
+# cvClassification(similarityMatrix, bagLabels, svmClassifier)
 
 #repeat for shuffled labels
 print("Shuffled labels: ")
 shuffle(bagLabels)
 print("Random forest")
-cvClassification(similarityMatrix, bagLabels, rfClassifier)
-print("SVC:")
-#cvClassification(similarityMatrix, bagLabels, svmClassifier)
+cvClassification(similarityMatrix, bagLabels, rfClassifier, 'shuffle')
+# print("SVC:")
+# cvClassification(similarityMatrix, bagLabels, svmClassifier)
 
 exit()
 # 

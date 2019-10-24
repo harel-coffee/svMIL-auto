@@ -26,7 +26,7 @@ pathwayAnnotation = np.loadtxt(sys.argv[4], dtype='object')
 #if the sets are empty because we are not using it or there are no SNVs for example, this should not affect things such as shuffling.
 
 svType = ''
-shuffle = True
+shuffle = False
 
 #to shuffle, make sure that we keep the same set size. 
 allDegPairs = np.concatenate((degData[:,0], nonDegData[:,0]))
@@ -137,16 +137,15 @@ unAnnotatedLosses = getLossData(unAnnotatedDEGs, degData)
 nonDegLosses = getLossData(nonDEGs[:,1:], nonDegData)
 
 #normalize
-if shuffle == True:
-	
-	#1. get random losses of the same size as the unannotated DEGs
-	degLossesShuffled = getLossData(unAnnotatedDEGsShuffled, degData)
-	unAnnotatedLossesNorm = np.log(unAnnotatedLosses / degLossesShuffled)
-else:
-	unAnnotatedLossesNorm = np.log(unAnnotatedLosses / nonDegLosses)
-	snvAndPathwayLossesNorm = snvAndPathwayLosses / nonDegLosses
-	pathwayLossesNorm = pathwayLosses / nonDegLosses
-	snvLossesNorm = snvLosses / nonDegLosses
+#1. get random losses of the same size as the unannotated DEGs
+#degLossesShuffled = getLossData(unAnnotatedDEGsShuffled, degData)
+degLossesShuffled = getLossData(unAnnotatedDEGsShuffled, shuffledNonDegData)
+unAnnotatedLossesNormShuffled = np.log(unAnnotatedLosses / degLossesShuffled)
+
+unAnnotatedLossesNorm = np.log(unAnnotatedLosses / nonDegLosses)
+snvAndPathwayLossesNorm = snvAndPathwayLosses / nonDegLosses
+pathwayLossesNorm = pathwayLosses / nonDegLosses
+snvLossesNorm = snvLosses / nonDegLosses
 
 print(unAnnotatedLosses)
 print(degLossesShuffled)
@@ -154,8 +153,17 @@ print(unAnnotatedLosses / degLossesShuffled)
 
 #Stack the bars for the DEG data
 width = 0.35
-if len(unAnnotatedLossesNorm) > 0:
-	plt.barh(np.arange(len(unAnnotatedLosses)), unAnnotatedLossesNorm, width, label='DEG pairs', color='red')
+# if len(unAnnotatedLossesNorm) > 0:
+# 	plt.barh(np.arange(len(unAnnotatedLosses)), unAnnotatedLossesNorm, width, label='DEG pairs', color='red')
+
+if shuffle == True:
+	if len(unAnnotatedLossesNorm) > 0:
+		plt.barh(np.arange(len(unAnnotatedLosses)), unAnnotatedLossesNorm, width, label='DEG pairs / non-DEG pairs', color='red')
+	if len(unAnnotatedLossesNormShuffled) > 0:
+		plt.barh(np.arange(len(unAnnotatedLossesNormShuffled))+ width, unAnnotatedLossesNormShuffled, width, label='DEG pairs / shuffled DEG labels', color='blue')
+else:
+	if len(unAnnotatedLossesNorm) > 0:
+		plt.barh(np.arange(len(unAnnotatedLosses)), unAnnotatedLossesNorm, width, label='DEG pairs / non-DEG pairs', color='red')
 # if len(snvLossesNorm) > 0:
 # 	plt.barh(np.arange(len(snvLosses)), snvLossesNorm, width, unAnnotatedLossesNorm, label='DEG pairs + SNVs', color='purple')
 # if len(pathwayLossesNorm) > 0:
@@ -171,7 +179,7 @@ plt.yticks(np.arange(len(nonDegLosses) + width / 2), ['eQTLs', 'enhancers', 'pro
 												  'chromHMM Promoter', 'repeat', 'repressed', 'transcribed',
 												  'Deletions', 'Duplications', 'Inversions', 'Translocations',
 												  'COSMIC'])
-#plt.xlim([0,1])
+plt.xlim([-2,1])
 plt.legend(loc='best')
 plt.tight_layout()
 plt.show()
@@ -214,21 +222,27 @@ unAnnotatedGains = getGainData(unAnnotatedDEGs, degData)
 nonDegGains = getGainData(nonDEGs[:,1:], nonDegData)
 
 #normalize
-if shuffle == True:
-	degGainsShuffled = getGainData(unAnnotatedDEGsShuffled, degData)
-	unAnnotatedGainsNorm = np.log(unAnnotatedGains / degGainsShuffled)
-else:
-	unAnnotatedGainsNorm = np.log(unAnnotatedGains / nonDegGains)
-	snvAndPathwayGainsNorm = snvAndPathwayGains / nonDegGains
-	pathwayGainsNorm = pathwayGains / nonDegGains
-	snvGainsNorm = snvGains / nonDegGains
 
-print(unAnnotatedGains / degGainsShuffled)
+#degGainsShuffled = getGainData(unAnnotatedDEGsShuffled, degData)
+degGainsShuffled = getGainData(unAnnotatedDEGsShuffled, shuffledNonDegData)
+unAnnotatedGainsNormShuffled = np.log(unAnnotatedGains / degGainsShuffled)
+
+unAnnotatedGainsNorm = np.log(unAnnotatedGains / nonDegGains)
+snvAndPathwayGainsNorm = snvAndPathwayGains / nonDegGains
+pathwayGainsNorm = pathwayGains / nonDegGains
+snvGainsNorm = snvGains / nonDegGains
+
 
 #Stack the bars for the DEG data
 width = 0.35
-if len(unAnnotatedGains) > 0:
-	plt.barh(np.arange(len(unAnnotatedGainsNorm)), unAnnotatedGainsNorm, width, label='DEG pairs', color='red')
+if shuffle == True:
+	if len(unAnnotatedGains) > 0:
+		plt.barh(np.arange(len(unAnnotatedGainsNorm)), unAnnotatedGainsNorm, width, label='DEG pairs / non-DEG pairs', color='red')
+	if len(unAnnotatedGains) > 0:
+		plt.barh(np.arange(len(unAnnotatedGainsNormShuffled)) + width, unAnnotatedGainsNormShuffled, width, label='DEG pairs / shuffled DEG labels', color='blue')
+else:
+	if len(unAnnotatedGains) > 0:
+		plt.barh(np.arange(len(unAnnotatedGainsNorm)), unAnnotatedGainsNorm, width, label='DEG pairs / non-DEG pairs', color='red')
 # if len(snvGains) > 0:
 # 	plt.barh(np.arange(len(snvGainsNorm)), snvGainsNorm, width, unAnnotatedGainsNorm, label='DEG pairs + SNVs', color='purple')
 # if len(pathwayGains) > 0:
@@ -243,7 +257,7 @@ plt.yticks(np.arange(len(nonDegGains) + width / 2), ['eQTLs', 'enhancers', 'prom
 												  'chromHMM Promoter', 'repeat', 'repressed', 'transcribed',
 												  'Deletions', 'Duplications', 'Inversions', 'Translocations',
 												  'COSMIC'])
-#plt.xlim([0,1])
+plt.xlim([-2,1])
 plt.legend(loc='best')
 plt.tight_layout()
 plt.show()

@@ -93,16 +93,17 @@ class InputParser:
 			
 				if settings.general['cancerType'] == "BRCA":
 					
-					if svType != "del" and svType != "invers" and svType != "tandem_dup" and svType != "DEL" and svType != "INV" and svType != "DUP":
-						
-						interChrTypeMatch = re.search("chr", svType, re.IGNORECASE)
-						transTypeMatch = re.search("trans", svType, re.IGNORECASE)
-						rangeTypeMatch = re.search("range", svType, re.IGNORECASE)
-						itxTypeMatch = re.search("ITX", svType, re.IGNORECASE)
-						ctxTypeMatch = re.search("CTX", svType, re.IGNORECASE)
-						if interChrTypeMatch is None and transTypeMatch is None and rangeTypeMatch is None and itxTypeMatch is None and ctxTypeMatch is None:
-							continue
-					
+					# if svType != "del" and svType != "invers" and svType != "tandem_dup" and svType != "DEL" and svType != "INV" and svType != "DUP":
+					# 	
+					# 	interChrTypeMatch = re.search("chr", svType, re.IGNORECASE)
+					# 	transTypeMatch = re.search("trans", svType, re.IGNORECASE)
+					# 	rangeTypeMatch = re.search("range", svType, re.IGNORECASE)
+					# 	itxTypeMatch = re.search("ITX", svType, re.IGNORECASE)
+					# 	ctxTypeMatch = re.search("CTX", svType, re.IGNORECASE)
+					# 	if interChrTypeMatch is None and transTypeMatch is None and rangeTypeMatch is None and itxTypeMatch is None and ctxTypeMatch is None:
+					# 		continue
+					if svType != 'del':
+					 	continue
 					
 				
 			
@@ -539,6 +540,25 @@ class InputParser:
 				neighborhoodDefiner.mapElementsToGenes(element, geneDict, geneName)
 				enhancers.append(element)
 		
+		
+		return np.array(enhancers, dtype='object')
+		
+		#unlinked enhancers for the time being
+		enhancers = []
+		with open(enhancerFile, 'r') as f:
+			
+			lineCount = 0
+			for line in f:
+				if lineCount < 1:
+					lineCount += 1
+					continue
+				
+				line = line.strip()
+				splitLine = line.split("\t")
+				
+				
+				element = [splitLine[0], int(splitLine[1]), int(splitLine[2]), 'enhancer', None]
+				enhancers.append(element)
 		
 		return np.array(enhancers, dtype='object')
 	

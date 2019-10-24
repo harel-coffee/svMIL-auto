@@ -24,7 +24,9 @@ class Gene:
 		self.lostElementsSVs = dict() #lost elements per SV, not per sample
 		self.gainedElementsSVs = dict()
 		self.alteredElements = dict()
-		
+		self.elementsNotLinkedToGenes = ['cpg', 'tf', 'hic', 'dnaseI', 'h3k9me3', 'h3k4me3', 'h3k27ac', 'h3k27me3', 'h3k4me1', 'h3k36me3',
+									'CTCF', 'CTCF+Enhancer', 'CTCF+Promoter', 'Enhancer', 'Heterochromatin',
+									'Poised_Promoter', 'Promoter', 'Repeat', 'Repressed', 'Transcribed']
 	def setTADs(self, leftTAD, rightTAD):
 		
 		self.leftTAD = leftTAD
@@ -92,12 +94,10 @@ class Gene:
 		
 		#Have a dictionary where we count the number of elements of a specific type that are lost per sample.
 		#This is much faster than storing the actual elements that are lost, and we do not use that information in the ranking, so it can be discarded here.
-		elementsNotLinkedToGenes = ['cpg', 'tf', 'hic', 'dnaseI', 'h3k9me3', 'h3k4me3', 'h3k27ac', 'h3k27me3', 'h3k4me1', 'h3k36me3',
-									'CTCF', 'CTCF+Enhancer', 'CTCF+Promoter', 'Enhancer', 'Heterochromatin',
-									'Poised_Promoter', 'Promoter', 'Repeat', 'Repressed', 'Transcribed']
+	
 
 		for lostElement in lostElements:
-			if lostElement[3] in elementsNotLinkedToGenes:
+			if lostElement[3] in self.elementsNotLinkedToGenes:
 				if lostElement[3] not in self.lostElements[sample]:
 					self.lostElements[sample][lostElement[3]] = 0
 				self.lostElements[sample][lostElement[3]] +=1
@@ -118,12 +118,10 @@ class Gene:
 		
 		#Have a dictionary where we count the number of elements of a specific type that are lost per sample.
 		#This is much faster than storing the actual elements that are lost, and we do not use that information in the ranking, so it can be discarded here.
-		elementsNotLinkedToGenes = ['cpg', 'tf', 'hic', 'dnaseI', 'h3k9me3', 'h3k4me3', 'h3k27ac', 'h3k27me3', 'h3k4me1', 'h3k36me3',
-									'CTCF', 'CTCF+Enhancer', 'CTCF+Promoter', 'Enhancer', 'Heterochromatin',
-									'Poised_Promoter', 'Promoter', 'Repeat', 'Repressed', 'Transcribed']
+		
 		
 		for lostElement in lostElements:
-			if lostElement[3] in elementsNotLinkedToGenes:
+			if lostElement[3] in self.elementsNotLinkedToGenes:
 				if lostElement[3] not in self.lostElementsSVs[sv]:
 					self.lostElementsSVs[sv][lostElement[3]] = 0
 				self.lostElementsSVs[sv][lostElement[3]] +=1
@@ -146,7 +144,8 @@ class Gene:
 		
 		elementsNotLinkedToGenes = ['cpg', 'tf', 'hic', 'dnaseI', 'h3k9me3', 'h3k4me3', 'h3k27ac', 'h3k27me3', 'h3k4me1', 'h3k36me3',
 									'CTCF', 'CTCF+Enhancer', 'CTCF+Promoter', 'Enhancer', 'Heterochromatin',
-									'Poised_Promoter', 'Promoter', 'Repeat', 'Repressed', 'Transcribed', 'rnaPol']
+									'Poised_Promoter', 'Promoter', 'Repeat', 'Repressed', 'Transcribed', 'rnaPol',
+									'enhancer'] #add enhancer temporarily to work with unlinked data
 
 		if len(elements) > 0:
 			if sv not in self.alteredElements:
@@ -157,10 +156,13 @@ class Gene:
 		#For methylation marks, gather all relevant marks here for easy lookup.
 		#For now, just focus on what is relevant for enhancers
 		methylationMarks = []
+		annotationElements = ['dnaseI', 'h3k9me3', 'h3k4me3', 'h3k27ac', 'h3k27me3', 'h3k4me1', 'h3k36me3', 'CTCF', 'CTCF+Enhancer', 'Enhancer',
+							  'Heterochromatin', 'Repeat', 'Repressed', 'Transcribed', 'rnaPol']
 		for element in elements:
 			
 			#if element[3] in ['h3k27ac', 'h3k4me1']:
-			if element[3] in ['h3k27ac', 'h3k4me1', 'CTCF', 'CTCF+Enhancer', 'Enhancer', 'Heterochromatin', 'Repeat', 'Repressed', 'Transcribed', 'dnaseI', 'rnaPol']:
+			#if element[3] in ['h3k27ac', 'h3k4me1', 'CTCF', 'CTCF+Enhancer', 'Enhancer', 'Heterochromatin', 'Repeat', 'Repressed', 'Transcribed', 'dnaseI', 'rnaPol']:
+			if element[3] in annotationElements:
 				methylationMarks.append(element)
 		
 		methylationMarks = np.array(methylationMarks, dtype='object')	
@@ -184,28 +186,17 @@ class Gene:
 			
 			#Fix this later and make it not-so-hardcoded
 			#elementMethylation = [0, 0] #keep order of elements
-			elementMethylation = [0, 0, 0, 0, 0, 0, 0, 0] #keep order of elements
+			elementMethylation = [0]*len(annotationElements) #keep order of elements
 			for match in methylationMatches:
-				if match[3] == 'h3k27ac':
-					elementMethylation[0] = 1
-				if match[3] == 'h3k4me1':
-					elementMethylation[1] = 1
-				if match[3] == 'Heterochromatin':
-					elementMethylation[2] = 1
-				if match[3] == 'Repeat':
-					elementMethylation[3] = 1
-				if match[3] == 'Repressed':
-					elementMethylation[4] = 1
-				if match[3] == 'Transcribed':
-					elementMethylation[5] = 1
-				if match[3] == 'dnaseI':
-					elementMethylation[6] = 1
-				if match[3] == 'rnaPol':
-					elementMethylation[7] = 1
+				
+				for elementInd in range(0, len(annotationElements)):
+					annotationElement = annotationElements[elementInd]
+					if match[3] == annotationElement:
+						elementMethylation[elementInd] = 1
 				
 			lossGains = [0,0]
 			if alterationType == 'loss':
-				if element[3] in elementsNotLinkedToGenes:
+				if element[3] in self.elementsNotLinkedToGenes:
 					lossGains[0] = 1
 				else: #make sure that elements that belong to the gene are only lost. 
 					if element[4] == self.name:
