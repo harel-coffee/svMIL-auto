@@ -264,8 +264,7 @@ plt.show()
 #plt.savefig('Output/degNonDeg_losses.svg')
 plt.clf()
 
-exit()
-allFeatures = np.concatenate((nonDEGs[:,1:], degs[:,1:]), axis=0)
+allFeatures = np.concatenate((nonDEGs[:,1:], unAnnotatedDEGs), axis=0)
 
 #Make a PCA plot for the left/right set and see if these are really different
 
@@ -293,7 +292,7 @@ for i in range(0, allFeatures.shape[0]):
 	if i < nonDEGs.shape[0]:
 		colorLabels.append('b')
 		labels.append(0)
-	elif i >= nonDEGs.shape[0] and i < (nonDEGs.shape[0] + degs.shape[0]):
+	elif i >= nonDEGs.shape[0] and i < (nonDEGs.shape[0] + unAnnotatedDEGs.shape[0]):
 		colorLabels.append('r')
 		labels.append(1)
 
@@ -388,64 +387,41 @@ from sklearn.model_selection import train_test_split
 from sklearn import metrics
 from sklearn.metrics import roc_curve, auc
 from sklearn.metrics import auc, precision_recall_curve
+from sklearn import model_selection
+from sklearn.metrics import average_precision_score
+from sklearn.metrics import make_scorer, accuracy_score, precision_score, recall_score, f1_score
 
 from random import shuffle
 
+def cvClassification(similarityMatrix, bagLabels, clf):
+	
+	
+	scoring = {'accuracy' : make_scorer(accuracy_score), 
+			   'precision' : make_scorer(precision_score),
+			   'recall' : make_scorer(recall_score), 
+			   'f1_score' : make_scorer(f1_score),
+			   'average_precision' : make_scorer(average_precision_score)}
+	
+	kfold = model_selection.StratifiedKFold(n_splits=10, random_state=42)
+	
+	results = model_selection.cross_validate(estimator=clf,
+											  X=similarityMatrix,
+											  y=bagLabels,
+											  cv=kfold,
+											  scoring=scoring)
 
-def performCV(featureMatrix, labels, clf):
+	print('accuracy: ', np.mean(results['test_accuracy']), np.std(results['test_accuracy']))
+	print('precision: ', np.mean(results['test_precision']), np.std(results['test_precision']))
+	print('recall: ', np.mean(results['test_recall']), np.std(results['test_recall']))
+	print('F1 score: ', np.mean(results['test_f1_score']), np.std(results['test_f1_score']))
+	print('AP: ', np.mean(results['test_average_precision']), np.std(results['test_average_precision']))
 	
-	cv = StratifiedKFold(n_splits=10)
-	
-	#dirty
-	X = featureMatrix
-	y = np.array(labels)
-	
-	tprs = []
-	aucs = []
-	auprcs = []
-	scores = []
-	mean_fpr = np.linspace(0, 1, 100)
-	
-	i = 0
-	for train, test in cv.split(X, y):
-		clf.fit(X[train], y[train])
-		
-		predictions = clf.predict(X[test])
-		score = np.average(y[test] == np.sign(predictions))
-		scores.append(score)
-		
-		probas_ = clf.predict_proba(X[test])
-		
-		# Compute ROC curve and area the curve
-		fpr, tpr, thresholds = roc_curve(y[test], probas_[:, 1])
-		tprs.append(interp(mean_fpr, fpr, tpr))
-		tprs[-1][0] = 0.0
-		roc_auc = auc(fpr, tpr)
-		aucs.append(roc_auc)
-
-		precision, recall, thresholds = precision_recall_curve(y[test], predictions)
-		aucScore = auc(recall, precision)
-		auprcs.append(aucScore)
-		
-		i += 1
-	
-	mean_tpr = np.mean(tprs, axis=0)
-	mean_tpr[-1] = 1.0
-	mean_auc = auc(mean_fpr, mean_tpr)
-	std_auc = np.std(aucs)
-	mean_score = np.mean(scores)
-	
-	
-	
-	print("Score: ", mean_score)
-	print("AUC: ", mean_auc)
-	print("AUPRC: ", np.mean(auprcs))
 
 print("Random forest")
 from sklearn.ensemble import RandomForestClassifier
 rfClassifier = RandomForestClassifier(max_depth=5, n_estimators=2)
-performCV(allFeatures, labels, rfClassifier)
+cvClassification(allFeatures, labels, rfClassifier)
 
 print("Shuffled:")
 shuffle(labels)
-performCV(allFeatures, labels, rfClassifier)
+cvClassification(allFeatures, labels, rfClassifier)

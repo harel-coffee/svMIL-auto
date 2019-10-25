@@ -36,6 +36,7 @@ with open(sys.argv[1], 'rb') as handle:
 
 #determine the bag labels given a file of DEG pairs
 degPairs = np.load(sys.argv[2], allow_pickle=True, encoding='latin1')
+pathwayAnnotation = np.loadtxt(sys.argv[3], dtype='object')
 
 bags = []
 bagLabels = []
@@ -43,10 +44,14 @@ posCount = 0
 negCount = 0
 positiveBags = []
 negativeBags = []
+removedPathwayPairs = 0
 for pair in bagDict:
 	
 	#get the label of the bag by checking if it exists in degPairs
 	if pair in degPairs[:,0]:
+		if pair in pathwayAnnotation[:,0]: #skip the ones that have possible pathway effects
+			removedPathwayPairs += 1
+			continue
 		bagLabels.append(1)
 		posCount += 1
 		positiveBags.append(bagDict[pair])
@@ -57,6 +62,7 @@ for pair in bagDict:
 
 	#bags.append(bagDict[pair])
 
+print('removed pathway pairs: ', removedPathwayPairs)
 positiveBags = np.array(positiveBags)
 negativeBags = np.array(negativeBags)
 np.random.seed(0)
