@@ -34,6 +34,11 @@ import pickle as pkl
 with open(sys.argv[1], 'rb') as handle:
 	bagDict = pkl.load(handle)
 
+gl = False
+if gl == True:
+	with open(sys.argv[4], 'rb') as handle:
+		glBagDict = pkl.load(handle)
+
 #determine the bag labels given a file of DEG pairs
 degPairs = np.load(sys.argv[2], allow_pickle=True, encoding='latin1')
 pathwayAnnotation = np.loadtxt(sys.argv[3], dtype='object')
@@ -45,13 +50,19 @@ negCount = 0
 positiveBags = []
 negativeBags = []
 removedPathwayPairs = 0
+svType = 'del'
 for pair in bagDict:
 	
+	if svType != '':
+		splitPair = pair.split("_")
+		if splitPair[8] != svType:
+			continue
+	print(pair)
 	#get the label of the bag by checking if it exists in degPairs
 	if pair in degPairs[:,0]:
 		if pair in pathwayAnnotation[:,0]: #skip the ones that have possible pathway effects
 			removedPathwayPairs += 1
-			continue
+		#	continue
 		bagLabels.append(1)
 		posCount += 1
 		positiveBags.append(bagDict[pair])
@@ -61,6 +72,11 @@ for pair in bagDict:
 		negativeBags.append(bagDict[pair])
 
 	#bags.append(bagDict[pair])
+
+if gl == True:
+	for bag in glBagDict:
+		negativeBags.append(glBagDict[bag])
+		
 
 print('removed pathway pairs: ', removedPathwayPairs)
 positiveBags = np.array(positiveBags)
@@ -258,11 +274,9 @@ from sklearn import model_selection
 from sklearn.metrics import average_precision_score
 from sklearn.metrics import make_scorer, accuracy_score, precision_score, recall_score, f1_score
 
-cv = StratifiedKFold(n_splits=10)
-np.random.seed(500)
-
-def cvClassification(similarityMatrix, bagLabels, clf, shuffle):
-	
+cv = StratifiedKFold(n_splits=10, random_state=42)
+f, axes = plt.subplots()	
+def cvClassification(similarityMatrix, bagLabels, clf, color):
 	
 	scoring = {'accuracy' : make_scorer(accuracy_score), 
 			   'precision' : make_scorer(precision_score),
@@ -284,13 +298,66 @@ def cvClassification(similarityMatrix, bagLabels, clf, shuffle):
 	print('F1 score: ', np.mean(results['test_f1_score']), np.std(results['test_f1_score']))
 	print('AP: ', np.mean(results['test_average_precision']), np.std(results['test_average_precision']))
 	
+	print(results['test_average_precision'])
+	#print(results['test_precision'])
+	#print(results['test_recall'])
+	
+	#plot PR curves
+	
+	#f, axes = plt.subplots()	
+	cv = StratifiedKFold(n_splits=10, random_state=42)
+	
+	accs = []
+	aucs = []
+	coeffs = []
+	predDiffs = []
+	y_real = []
+	y_proba = []
+	y_pred = []
+	i = -1
+	for train, test in cv.split(similarityMatrix, bagLabels):
+		i+=1
+		clf.fit(similarityMatrix[train], bagLabels[train]) #Use the bag labels, not the instance labels
+	
+		predictions = clf.predict_proba(similarityMatrix[test])
+		precision, recall, thresholds = precision_recall_curve(bagLabels[test], predictions[:,1])
+		preds = clf.predict(similarityMatrix[test])
+		predsDiff = np.average(bagLabels[test] == np.sign(preds))
+		aucScore = auc(recall, precision)
+		aucs.append(aucScore)
+		predDiffs.append(predsDiff)
+
+		#lab = 'Fold %d AP=%.4f' % (i+1, average_precision_score(bagLabels[test], predictions[:,1]))
+		#axes.step(recall, precision, label=lab)
+		y_real.append(bagLabels[test])
+		y_proba.append(predictions[:,1])
+		y_pred.append(preds)
+	
+	#print("Actual acc: ", np.mean(predDiffs))
+	print("Mean AUC: ", np.mean(aucs))
+	print(aucs)
+	
+	y_real = np.concatenate(y_real)
+	
+	y_proba = np.concatenate(y_proba)
+	y_pred = np.concatenate(y_pred)
+	precision, recall, thresholds = precision_recall_curve(y_real, y_proba)
+	lab = 'Overall AP=%.4f' % average_precision_score(y_real, y_proba)
+	axes.step(recall, precision, label=lab, lw=2, color=color)
+	axes.set_xlabel('Recall')
+	axes.set_ylabel('Precision')
+	axes.legend(loc='lower right', fontsize='small')
+	
+	#plt.show()
+	print("overall CV AP: ", average_precision_score(y_real, y_proba))
+	print("overall CV F1: ", f1_score(y_real, y_pred))
 
 from sklearn import svm
 rfClassifier = RandomForestClassifier(max_depth=5, n_estimators=2)
 svmClassifier = svm.SVC(gamma='scale')
 
 print("Random forest")
-cvClassification(similarityMatrix, bagLabels, rfClassifier, '')
+cvClassification(similarityMatrix, bagLabels, rfClassifier, 'black')
 # print("SVC:")
 # cvClassification(similarityMatrix, bagLabels, svmClassifier)
 
@@ -298,10 +365,10 @@ cvClassification(similarityMatrix, bagLabels, rfClassifier, '')
 print("Shuffled labels: ")
 shuffle(bagLabels)
 print("Random forest")
-cvClassification(similarityMatrix, bagLabels, rfClassifier, 'shuffle')
+cvClassification(similarityMatrix, bagLabels, rfClassifier, 'red')
 # print("SVC:")
 # cvClassification(similarityMatrix, bagLabels, svmClassifier)
-
+plt.show()
 exit()
 # 
 # 
