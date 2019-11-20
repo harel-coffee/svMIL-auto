@@ -18,6 +18,7 @@ from tad import TAD
 from element import Element
 import numpy as np
 from random import randint
+import glob
 import re
 import settings
 
@@ -93,17 +94,17 @@ class InputParser:
 			
 				if settings.general['cancerType'] == "BRCA":
 					
-					# if svType != "del" and svType != "invers" and svType != "tandem_dup" and svType != "DEL" and svType != "INV" and svType != "DUP":
-					# 	
-					# 	interChrTypeMatch = re.search("chr", svType, re.IGNORECASE)
-					# 	transTypeMatch = re.search("trans", svType, re.IGNORECASE)
-					# 	rangeTypeMatch = re.search("range", svType, re.IGNORECASE)
-					# 	itxTypeMatch = re.search("ITX", svType, re.IGNORECASE)
-					# 	ctxTypeMatch = re.search("CTX", svType, re.IGNORECASE)
-					# 	if interChrTypeMatch is None and transTypeMatch is None and rangeTypeMatch is None and itxTypeMatch is None and ctxTypeMatch is None:
-					# 		continue
-					if svType != 'del':
-					 	continue
+					if svType != "del" and svType != "invers" and svType != "tandem_dup" and svType != "DEL" and svType != "INV" and svType != "DUP":
+						
+						interChrTypeMatch = re.search("chr", svType, re.IGNORECASE)
+						transTypeMatch = re.search("trans", svType, re.IGNORECASE)
+						rangeTypeMatch = re.search("range", svType, re.IGNORECASE)
+						itxTypeMatch = re.search("ITX", svType, re.IGNORECASE)
+						ctxTypeMatch = re.search("CTX", svType, re.IGNORECASE)
+						if interChrTypeMatch is None and transTypeMatch is None and rangeTypeMatch is None and itxTypeMatch is None and ctxTypeMatch is None:
+							continue
+					#if svType != 'del':
+					# 	continue
 					
 				
 			
@@ -180,6 +181,174 @@ class InputParser:
 		
 		return regions
 	
+	def getSVsFromFile_hmf(self, svDir): 
+		"""
+			Parse the SV data from the SV input file.
+			
+			svFile: (string) location of the SV file to read
+			typeFilter: (string) meant to filter by which types of SVs to include in the model, but does not work. 
+			
+			return
+			regions: (numpy array) array with the SVs and their information. chr1, s1, e1, chr2, s2, e2, cancerType, sampleName, svObject.
+		"""
+		
+		#Get all parsed and annotated SV type files from the main dir
+		
+		vcfs = glob.glob(svDir + '/**/*.svTypes.passed', recursive=True)
+		
+		variantsList = []
+		addedVariants = [] #check if based on pairs no duplicates are added. 
+		
+		for vcf in vcfs:
+			print(vcf)
+			
+			#get the samplename from the vcf
+			sampleName = re.search('.*\/([A-Z\d]+)\.', vcf).group(1)
+			
+			#open the .gz file
+			with open(vcf, 'r') as inF:
+				
+				for line in inF:
+
+					if re.search('^#', line): #skip header
+						continue
+					
+					#skip the SV if it did not pass.
+					splitLine = line.split("\t")
+					filterInfo = splitLine[6]
+					if filterInfo != 'PASS':
+						continue
+					
+					chr1 = splitLine[0]
+					pos1 = int(splitLine[1])
+					pos2Info = splitLine[4]
+					
+					#match the end position and orientation. if there is no orientation info, this is an insertion, which we can skip.
+					if not re.search(':', pos2Info):
+						continue
+
+					if re.match('[A-Z]*\[.*\:\d+\[$', pos2Info):
+						o1 = '+'
+						o2 = '-'
+					elif re.match('[A-Z]*\].*\:\d+\]$', pos2Info):
+						o1 = '-'
+						o2 = '+'
+					elif re.match('^\].*\:\d+\][A-Z]*', pos2Info):
+						o1 = '+'
+						o2 = '+'
+					elif re.match('^\[.*\:\d+\[[A-Z]*', pos2Info):
+						o1 = '-'
+						o2 = '-'
+					else:
+						print('unmatched: ', pos2Info)
+						print(line)
+						exit()
+					
+					#get the chr2 information
+					chr2 = re.search('[\[\]]+(.*):(\d+).*', pos2Info).group(1)
+					pos2 = int(re.search('.*\:(\d+).*', pos2Info).group(1))
+					
+					infoField = splitLine[7]
+					splitInfoField = infoField.split(";")
+					svType = ''
+					for field in splitInfoField:
+						
+						splitField = field.split("=")
+						if splitField[0] == 'SIMPLE_TYPE':
+							svType = splitField[1]
+					
+					#skip SV types that we do not consider
+					if svType not in ['DEL', 'DUP', 'ITX', 'INV']:
+						continue
+					
+					#default positions
+					s1 = pos1
+					e1 = pos1
+					s2 = pos2
+					e2 = pos2
+					orderedChr1 = chr1
+					orderedChr2 = chr2
+					
+					#switch chromosomes if necessary
+					if chr1 != chr2:
+						if chr1 == 'Y' and chr2 == 'X':
+							orderedChr1 = chr2
+							orderedChr2 = chr1
+						if (chr1 == 'X' or chr1 == 'Y' or chr1 == 'MT') and (chr2 != 'X' and chr2 != 'Y' and chr2 != 'MT'):
+							orderedChr1 = chr2
+							orderedChr2 = chr1
+						if (chr1 != 'X' and chr1 != 'Y' and chr1 != 'MT') and (chr2 != 'X' and chr2 != 'Y' and chr2 != 'MT'):
+							if int(chr1) > int(chr2):
+								orderedChr1 = chr2
+								orderedChr2 = chr1
+						if (chr1 in ['X', 'Y', 'MT']) and (chr2 in ['X', 'Y', 'MT']): #order these as well
+							if chr1 == 'Y' and chr2 == 'X':
+								orderedChr1 = chr2
+								orderedChr2 = chr1
+							if chr1 == 'MT' and chr2 in ['X', 'Y']:
+								orderedChr1 = chr2
+								orderedChr2 = chr1
+	
+						
+						#always switch the coordinates as well if chromosomes are switched.
+						if orderedChr1 == chr2:
+							s1 = pos2
+							e1 = pos2
+							s2  = pos1
+							e2 = pos1	
+					
+					else: #if the chr are the same but the positions are reversed, change these as well. 
+						if pos2 < pos1:
+							s1 = pos2
+							e1 = pos2
+							s2  = pos1
+							e2 = pos1	
+
+					finalChr1 = 'chr' + orderedChr1
+					finalChr2 = 'chr' + orderedChr2
+					svObject = SV(finalChr1, s1, e1, o1, finalChr2, s1, e2, o2, sampleName, settings.general['cancerType'], svType)
+					
+					#check if this SV is already added. That may happen with the pair IDs. 
+					svStr = finalChr1 + "_" + str(s1) + "_" + str(e1) + "_" + finalChr2 + "_" + str(s2) + "_" + str(e2) + "_" + sampleName
+					
+					if svStr in addedVariants:
+						continue
+
+
+					variantsList.append([finalChr1, s1, e1, finalChr2, s2, e2, settings.general['cancerType'], sampleName, svObject])
+					addedVariants.append(svStr)
+
+				#Get the required information for this SV:
+				
+				#chr1, s1, e1, o1, chr2, s2, e2, o2, samplename, cancer type, svType
+				
+			
+		svs = np.array(variantsList, dtype='object')
+		return svs
+		#np.savetxt('hmf_svs.txt', svs, fmt='%s', delimiter='\t')
+		
+		# print(np.unique(svs[:,7]).shape)
+		# 
+		# svTypes = dict()
+		# patientDistr = dict()
+		# for sv in svs:
+		# 	
+		# 	if sv[8].svType not in svTypes:
+		# 		svTypes[sv[8].svType] = 0
+		# 	svTypes[sv[8].svType] += 1
+		# 	
+		# 	if sv[7] not in patientDistr:
+		# 		patientDistr[sv[7]] = 0
+		# 	patientDistr[sv[7]] += 1
+		# 	
+		# print(svTypes)
+		# print(patientDistr)
+		# import matplotlib.pyplot as plt
+		# plt.hist(list(patientDistr.values()))
+		# plt.show()
+		# 	
+		# exit()
+		
 
 	#What do we want from the SNV file?
 	#chromosome (combined with position in 'position' field)
@@ -507,7 +676,8 @@ class InputParser:
 				splitLine = line.split("\t")
 				
 				interaction = splitLine[0]
-				splitInteraction = interaction.split("_") #first part is the enhancer, 2nd part the gene
+				splitInteraction = interaction.split(",") #first part is the enhancer, 2nd part the gene
+				#splitInteraction = interaction.split("_")
 				
 				enhancerInfo = splitInteraction[0]
 				splitEnhancerInfo = enhancerInfo.split(":")
@@ -522,9 +692,12 @@ class InputParser:
 				start = int(splitPosInfo[0])
 				end = int(splitPosInfo[1])
 				
+				score = float(splitInteraction[2])
+				
 				#Get the gene name
 				splitGeneInfo = splitInteraction[1].split("$")
 				geneName = splitGeneInfo[1]
+
 				
 				if geneName not in geneDict:
 					continue
@@ -536,7 +709,7 @@ class InputParser:
 				#The mapping information is in the file, so we can already do it here
 				
 						
-				element = [chrName, start, end, "enhancer", geneName]
+				element = [chrName, start, end, "enhancer", geneName, score]
 				neighborhoodDefiner.mapElementsToGenes(element, geneDict, geneName)
 				enhancers.append(element)
 		

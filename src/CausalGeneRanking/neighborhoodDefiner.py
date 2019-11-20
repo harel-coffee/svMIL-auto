@@ -5,6 +5,9 @@ import json
 import pickle as pkl
 import re
 import os.path
+from os import listdir
+from os.path import isfile, join
+import glob
 
 from tad import TAD
 from sv import SV
@@ -310,6 +313,11 @@ class NeighborhoodDefiner:
 		if mode == "SV":
 			print("Mapping SVs to the neighborhood")
 			self.mapSVsToNeighborhood(genes, svData, tadData, excludedSVs)
+
+		if settings.general['snvs'] == False: #in this case, we want to filter out pairs that have SNV effects.
+			print('Mapping SNVs to genes')
+			self.mapSNVsToNeighborhood(genes, settings.files['snvDir'])
+			
 
 		#Add the gene methylation to genes for MIL. Do this step here, because the file is huge and takes a long time to process.
 		if settings.general['methylation'] == True:
@@ -740,7 +748,9 @@ class NeighborhoodDefiner:
 			svEntry = sv[0] + "_" + str(sv[1]) + "_" + str(sv[2]) + "_" + sv[3] + "_" + str(sv[4]) + "_" + str(sv[5]) + "_" + sv[8].sampleName
 			if svEntry not in excludedSVs:
 				filteredSVs.append(sv)
-		
+			#if svEntry in excludedSVs:
+			#	filteredSVs.append(sv)
+
 		filteredSVs = np.array(filteredSVs, dtype='object')
 		
 		#filteredSVs = svData
@@ -750,4 +760,115 @@ class NeighborhoodDefiner:
 		#Specific for deletions, this will need to be part of the derivative TAD maker later on
 		#if settings.general['gainOfInteractions'] == True:
 		#	self.determineGainedInteractions(filteredSVs, tadData)
+		
+	def mapSNVsToNeighborhood(self, genes, snvDir):
+		
+		geneMap = dict() #know which gene object to add to by name
+		for geneInd in range(0, genes.shape[0]):
+			gene = genes[geneInd]
+			geneName = gene[3].name
+			geneMap[geneName] = geneInd
+		
+		if settings.general['source'] == 'TCGA':
+			
+			#go through the snv dir, and make a note per gene if it has an SNV in that patient.
+
+			allFiles = [f for f in listdir(snvDir) if isfile(join(snvDir, f))]
+			
+			for currentFile in allFiles:
+				
+				if currentFile == "MANIFEST.txt":
+					continue
+				splitFileName = currentFile.split(".")
+				patientID = splitFileName[0]
+				splitPatientID = patientID.split("-")
+				shortPatientID = 'brca' + splitPatientID[2]
+			
+				#Load the contents of the file
+				with open(snvDir + "/" + currentFile, 'r') as inF:
+					lineCount = 0
+					for line in inF:
+						line = line.strip() #remove newlines
+						if lineCount < 1: #only read the line if it is not a header line
+							lineCount += 1
+							continue
+			
+						splitLine = line.split("\t")
+						geneName = splitLine[0]
+						
+						if splitLine[8] == 'Silent':
+							continue
+						
+						if geneName not in geneMap:
+							continue
+						geneInd = geneMap[geneName]
+						geneObj = genes[geneInd,3]
+						geneObj.addSNV(shortPatientID)
+		if settings.general['source'] == 'HMF':
+			
+			#Make a map from ENSG identifiers to our gene names
+			geneNameConversionFile = settings.files['geneNameConversionFile']
+			
+			geneNameConversionMap = dict()
+			with open(geneNameConversionFile, 'r') as inF:
+				
+				for line in inF:
+					
+					line = line.strip()
+					splitLine = line.split("\t")
+					ensgId = splitLine[3]
+					splitEnsgId = ensgId.split('.') #we only keep everything before the dot
+					geneName = splitLine[4]
+					geneNameConversionMap[splitEnsgId[0]] = geneName
+			
+			import gzip
+			#search through the SNVs and link these to genes.
+			vcfs = glob.glob(snvDir + '/**/*.somatic.vcf.gz', recursive=True)
+		
+			variantsList = []
+			addedVariants = [] #check if based on pairs no duplicates are added. 
+			
+			for vcf in vcfs:
+				print(vcf)
+				
+				#get the samplename from the vcf
+				sampleName = re.search('.*\/([A-Z\d]+)\.', vcf).group(1)
+				
+				#open the .gz file
+				with gzip.open(vcf, 'rb') as inF:
+					
+					for line in inF:
+						line = line.strip().decode('utf-8')
+	
+						if re.search('^#', line): #skip header
+							continue
+						
+						#skip the SV if it did not pass.
+						splitLine = line.split("\t")
+						filterInfo = splitLine[6]
+						if filterInfo != 'PASS':
+							continue
+				
+						#print(line)
+						
+						#Check if this SNV has any affiliation with a gene. This means that in the info field, a gene is mentioned somewhere. That is, there is an ENSG identifier.
+						infoField = splitLine[7]
+						
+						geneSearch = re.search('(ENSG\d+)', infoField)
+						if geneSearch:
+							geneMatch = re.search('(ENSG\d+)', infoField).group(1)
+							#skip genes for which we do not know the name
+							if geneMatch not in geneNameConversionMap:
+								continue
+							geneName = geneNameConversionMap[geneMatch]
+							
+							if geneName not in geneMap:
+								continue
+							
+							geneInd = geneMap[geneName]
+							geneObj = genes[geneInd,3]
+							geneObj.addSNV(sampleName)
+
+			
+		
 		

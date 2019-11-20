@@ -50,6 +50,7 @@ class DerivativeTADMaker:
 		delCount = 0
 		
 		#Inversions
+		print('Checking inversions')
 		for sv in svData:
 			typeMatch = re.search("inv", sv[8].svType, re.IGNORECASE)
 			if typeMatch is not None:
@@ -59,6 +60,7 @@ class DerivativeTADMaker:
 		
 		
 		#Duplications
+		print('Checking duplications')
 		for sv in svData:
 			typeMatch = re.search("dup", sv[8].svType, re.IGNORECASE)
 			if typeMatch is not None:
@@ -67,7 +69,8 @@ class DerivativeTADMaker:
 				dupCount += 1
 				#print("duplication count: ", dupCount)
 				
-		#Deletions		
+		#Deletions
+		print('Checking deletions')
 		for sv in svData:
 			typeMatch = re.search("del", sv[8].svType, re.IGNORECASE)
 			if typeMatch is not None:
@@ -172,10 +175,9 @@ class DerivativeTADMaker:
 		for sv in svData:
 			
 			#Focus on translocations only
-			interChrTypeMatch = re.search("chr", sv[8].svType, re.IGNORECASE)
 			transTypeMatch = re.search("trans", sv[8].svType, re.IGNORECASE)
-			rangeTypeMatch = re.search("range", sv[8].svType, re.IGNORECASE)
-			if interChrTypeMatch is None and transTypeMatch is None and rangeTypeMatch is None:
+			itxTypeMatch = re.search("itx", sv[8].svType, re.IGNORECASE)
+			if itxTypeMatch is None and transTypeMatch is None:
 				continue
 			
 			#1. Check which TADs are affected by the breakpoint (there should be only 1 on each side of the SV)
@@ -687,16 +689,16 @@ class DerivativeTADMaker:
 					gene.addGainedElements(remainingRightElements, svData[8].sampleName)
 					gene.addGainedElementsSVs(remainingRightElements, svData[0] + "_" + str(svData[1]) + "_" + str(svData[2]) + "_" + svData[3] + "_" + str(svData[4]) + "_" + str(svData[5]) + "_" + svData[8].sampleName + "_" + svData[8].svType)
 				
-				gene.addLostElements(deletedLeftElements, svData[8].sampleName)
-				gene.addLostElementsSVs(deletedLeftElements, svData[0] + "_" + str(svData[1]) + "_" + str(svData[2]) + "_" + svData[3] + "_" + str(svData[4]) + "_" + str(svData[5]) + "_" + svData[8].sampleName + "_" + svData[8].svType)
+				#gene.addLostElements(deletedLeftElements, svData[8].sampleName)
+				#gene.addLostElementsSVs(deletedLeftElements, svData[0] + "_" + str(svData[1]) + "_" + str(svData[2]) + "_" + svData[3] + "_" + str(svData[4]) + "_" + str(svData[5]) + "_" + svData[8].sampleName + "_" + svData[8].svType)
 				
 			for gene in remainingRightGenes: #add gains from the left
 				if len(remainingRightElements) > 0:
 					gene.addGainedElements(remainingLeftElements, svData[8].sampleName)
 					gene.addGainedElementsSVs(remainingLeftElements, svData[0] + "_" + str(svData[1]) + "_" + str(svData[2]) + "_" + svData[3] + "_" + str(svData[4]) + "_" + str(svData[5]) + "_" + svData[8].sampleName + "_" + svData[8].svType)
 			
-				gene.addLostElements(deletedRightElements, svData[8].sampleName)
-				gene.addLostElementsSVs(deletedRightElements, svData[0] + "_" + str(svData[1]) + "_" + str(svData[2]) + "_" + svData[3] + "_" + str(svData[4]) + "_" + str(svData[5]) + "_" + svData[8].sampleName + "_" + svData[8].svType)
+				#gene.addLostElements(deletedRightElements, svData[8].sampleName)
+				#gene.addLostElementsSVs(deletedRightElements, svData[0] + "_" + str(svData[1]) + "_" + str(svData[2]) + "_" + svData[3] + "_" + str(svData[4]) + "_" + str(svData[5]) + "_" + svData[8].sampleName + "_" + svData[8].svType)
 				
 			
 				
@@ -878,7 +880,6 @@ class DerivativeTADMaker:
 			#- The duplication ends in a TAD on both sides.
 			#- We skip cases where the duplication does not end in a TAD on either side. 
 			
-			
 			if len(filteredTads) > 1: #The SV spans multiple TADs
 				
 				#First get all TADs overlapped by the start of the inversion
@@ -907,24 +908,9 @@ class DerivativeTADMaker:
 					followingTads.append(filteredTads[tadInd])
 				
 				if len(followingTads) > 0: #We now do not have the case where the dup crosses only 1 boundary but does end in two TADs
-					
-					
-					
-					#Make the final affected TAD
-					#The boundary starts at the end of the last appended TAD.
-					#Then the duplication is the first part of the TAD.
-					#So, the end of this TAD is the last TAD boundary + (end of duplication - last TAD boundary) + (end of original TAD - duplication end) + duplication size
-					newLastTadStart = followingTads[len(followingTads)-1][2] + (svData[5] - svData[1])
-					newLastTadEnd = followingTads[len(followingTads)-1][2] + (svData[5] - followingTads[len(followingTads)-1][2]) + (filteredTads[len(filteredTads)-1][2] - svData[5]) + (svData[5] - svData[1])
-					
-					newLastTad = TAD(svData[0], newLastTadStart, newLastTadEnd)
-					
-					
+
 					#Assign the gained elements to the TAD.
-					#1. Get all eQTLs that are until the SV (unaffected) in both TADs. 
-					firstTadInteractions = filteredTads[0][3].getElementsByRange(filteredTads[0][1], svData[1])
-					lastTadInteractions = filteredTads[len(filteredTads)-1][3].getElementsByRange(svData[5], filteredTads[len(filteredTads)-1][2])
-				
+
 					#Assign the elements to the new TADs in the right order.
 					#The first TAD gets the eQTLs within the SV of the last TAD.
 					#The last TAD gets the eQTLs within the SV of the last TAD.
@@ -951,64 +937,4 @@ class DerivativeTADMaker:
 						gene.addGainedElements(svInteractionsFirstTad, svData[7])
 						gene.addGainedElementsSVs(svInteractionsFirstTad, svData[0] + "_" + str(svData[1]) + "_" + str(svData[2]) + "_" + svData[3] + "_" + str(svData[4]) + "_" + str(svData[5]) + "_" + svData[8].sampleName + "_" + svData[8].svType)
 					
-					#The last TAD remains the same overall.
-					#Only the TADs in the middle are duplicated.
-					
-					#Each gene gains the eQTLs that are within the TAD that the gene is located in. 
-					
-					# for tad in followingTads:
-					# 	for gene in tad[3].genes:
-					# 		
-					# 		#1. Get all eQTLs within this TAD
-					# 		tadEQTLs = tad[3].elements
-					# 		
-					# 			
-					# 		#2. Filter these for the eQTLs of the gene
-					# 		gainedEQTLs = []
-					# 		for eQTL in tadEQTLs:
-					# 			if eQTL[4] == gene.name:
-					# 				gainedEQTLs.append(eQTL)
-					# 			# if eQTL in gene.elements:
-					# 			# 	gainedEQTLs.append(eQTL)
-					# 			# if gene in eQTL.genes:
-					# 			# 	gainedEQTLs.append(eQTL)
-					# 		#3. Add the eQTLs to the gene for the current sample
-					# 		gene.addGainedElements(gainedEQTLs, svData[7])
-					# 		gene.addGainedElementsSVs(gainedEQTLs, svData[0] + "_" + str(svData[1]) + "_" + str(svData[2]) + "_" + svData[3] + "_" + str(svData[4]) + "_" + str(svData[5]) + "_" + svData[8].sampleName)
-					# 		
-				else: #Case where the duplication crosses 1 boundary
 				
-					#The left TAD (A) stays the same
-					#A new TAD originates in the middle, where the dup part of B can interact with the dup part of A
-					#The right TAD is a dup part of B with the original B, and here everything remains the same.
-					#So we only need to model the gained interactions in the middle TAD (the new TAD)
-					
-					
-					newTad1Start = filteredTads[0][2]
-					#The end of the new TAD1 is the leftmost TAD (A) end + leftmostTAD (A) end - duplication start
-					newTad1End = filteredTads[0][2] + (filteredTads[0][2] - svData[1])
-					
-					#Get all interactions from the start of the SV until the end of the first TAD (A).
-					svInteractionsFirstTad = filteredTads[0][3].getElementsByRange(svData[1], filteredTads[0][2])
-					svGenesFirstTad = filteredTads[0][3].getGenesByRange(svData[1], filteredTads[0][2])
-					
-					#Get the second TAD (B) and the interactions inside the SV part specifically
-					
-					svInteractionsSecondTad = filteredTads[1][3].getElementsByRange(filteredTads[0][2], svData[5])
-					svGenesSecondTad = filteredTads[1][3].getGenesByRange(filteredTads[0][2], svData[5])
-					
-					#Genes in the sv part of the first TAD will interact with the eQTLs in the SV of the second TAD
-					
-					
-					for gene in svGenesFirstTad:
-						
-						#Each gene in this bin gets all eQTLs that are within the SV.
-						gene.addGainedElements(svInteractionsSecondTad, svData[7])
-						gene.addGainedElementsSVs(svInteractionsSecondTad, svData[0] + "_" + str(svData[1]) + "_" + str(svData[2]) + "_" + svData[3] + "_" + str(svData[4]) + "_" + str(svData[5]) + "_" + svData[8].sampleName + "_" + svData[8].svType)
-						
-					for gene in svGenesSecondTad:
-						
-						#Each gene here gains eQTLs from outside of the SV in the bin.
-						gene.addGainedElements(svInteractionsFirstTad, svData[7])
-						gene.addGainedElementsSVs(svInteractionsFirstTad, svData[0] + "_" + str(svData[1]) + "_" + str(svData[2]) + "_" + svData[3] + "_" + str(svData[4]) + "_" + str(svData[5]) + "_" + svData[8].sampleName + "_" + svData[8].svType)
-		

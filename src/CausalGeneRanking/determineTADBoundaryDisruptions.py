@@ -11,14 +11,11 @@ import sys
 import numpy as np
 import matplotlib.pyplot as plt
 from six.moves import range
+import settings
 
-somaticSVs = InputParser().getSVsFromFile(sys.argv[1], "all")
 
-# # Shuffling SVs randomly
-# print "Shuffling variants"
-# genomicShuffler = GenomicShuffler()
-# #Shuffle the variants, provide the mode such that the function knows how to permute
-# somaticSVs = genomicShuffler.shuffleSVs(somaticSVs)
+excludedSVs = np.loadtxt(settings.files['excludedSVs'], dtype='object')
+somaticSVs = InputParser().getSVsFromFile(sys.argv[1], "all", excludedSVs)
 
 filteredSomaticSVs = [] #first filter the SVs to remove the translocations, there are not relevant here
 for somaticSV in somaticSVs:
@@ -26,6 +23,20 @@ for somaticSV in somaticSVs:
 		filteredSomaticSVs.append(somaticSV)
 filteredSomaticSVs = np.array(filteredSomaticSVs, dtype="object")
 
+
+filteredSVs = []
+for sv in filteredSomaticSVs:
+	svEntry = sv[0] + "_" + str(sv[1]) + "_" + str(sv[2]) + "_" + sv[3] + "_" + str(sv[4]) + "_" + str(sv[5]) + "_" + sv[8].sampleName
+	if svEntry not in excludedSVs:
+		filteredSVs.append(sv)
+
+filteredSVs = np.array(filteredSVs, dtype='object')
+
+# # Shuffling SVs randomly
+print("Shuffling variants")
+genomicShuffler = GenomicShuffler()
+#Shuffle the variants, provide the mode such that the function knows how to permute
+filteredSVs = genomicShuffler.shuffleSVs(filteredSVs)
 
 tads = InputParser().getTADsFromFile(sys.argv[2])
 
@@ -41,7 +52,7 @@ for tad in tads:
 	#we can exclude translocations here, so no need to look at chr2
 	#if the same SV overlaps both the start and the end, count it only once
 
-	svChrSubset = filteredSomaticSVs[filteredSomaticSVs[:,0] == tad[0],:]
+	svChrSubset = filteredSVs[filteredSVs[:,0] == tad[0],:]
 	
 	startMatches = (tad[1] >= svChrSubset[:,1]) * (tad[1] <= svChrSubset[:,5])
 	endMatches = (tad[2] >= svChrSubset[:,1]) * (tad[2] <= svChrSubset[:,5])

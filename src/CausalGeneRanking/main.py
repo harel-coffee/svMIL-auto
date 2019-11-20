@@ -70,10 +70,16 @@ excludedSVs = np.loadtxt(settings.files['excludedSVs'], dtype='object')
 #2. Read the SVs or SNVs depending on the mode.
 variantData = []
 if mode == "SV":
-	print("Reading SV data")
-	svFile = settings.files['svFile']
-	svData = InputParser().getSVsFromFile(svFile, "all", excludedSVs)
 	
+	if settings.general['source'] == 'TCGA':
+		
+		print("Reading SV data")
+		svFile = settings.files['svFile']
+		svData = InputParser().getSVsFromFile(svFile, "all", excludedSVs)
+	if settings.general['source'] == 'HMF':
+		print("Reading SV data")
+		svDir = settings.files['svDir']
+		svData = InputParser().getSVsFromFile_hmf(svDir)
 	
 #3. If this is a permutation run, we wish to shuffle these SVs or SNVs.
 if permutationYN == "True":

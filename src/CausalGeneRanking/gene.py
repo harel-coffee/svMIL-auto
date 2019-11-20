@@ -15,7 +15,7 @@ class Gene:
 		self.start = start
 		self.end = end
 		self.SVs = dict()
-		self.SNVs = None
+		self.SNVs = []
 		self.leftTAD = None
 		self.rightTAD = None
 		self.elements = []
@@ -50,6 +50,10 @@ class Gene:
 		
 	def setSNVs(self, SNVs):
 		self.SNVs = SNVs
+		
+	def addSNV(self, sample):
+		if sample not in self.SNVs:
+			self.SNVs.append(sample)
 		
 	def addElement(self, element):
 		self.elements.append(element)
@@ -141,11 +145,7 @@ class Gene:
 		"""
 		
 		allowedElements = ['enhancer']
-		
-		elementsNotLinkedToGenes = ['cpg', 'tf', 'hic', 'dnaseI', 'h3k9me3', 'h3k4me3', 'h3k27ac', 'h3k27me3', 'h3k4me1', 'h3k36me3',
-									'CTCF', 'CTCF+Enhancer', 'CTCF+Promoter', 'Enhancer', 'Heterochromatin',
-									'Poised_Promoter', 'Promoter', 'Repeat', 'Repressed', 'Transcribed', 'rnaPol',
-									'enhancer'] #add enhancer temporarily to work with unlinked data
+
 
 		if len(elements) > 0:
 			if sv not in self.alteredElements:
@@ -207,9 +207,12 @@ class Gene:
 			if alterationType == "gain":
 				lossGains[1] = 1
 			
+			#activity score of the enhancer
+			enhScore = [element[5]]
+			
 			#if we get here, we passed all checks and there is a valid gain OR loss
 			if elementStr not in self.alteredElements[sv]:
-				self.alteredElements[sv][elementStr] = lossGains + elementMethylation
+				self.alteredElements[sv][elementStr] = lossGains + elementMethylation + enhScore
 				#self.alteredElements[sv][elementStr] = lossGains
 		#something with methylation for the affected genes only
 		#first make sure that all elements are gathered, then afterwards, add the methylation specifically for each of them. 

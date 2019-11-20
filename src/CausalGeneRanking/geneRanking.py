@@ -508,7 +508,7 @@ class GeneRanking:
 					if len(instances) > 0:
 						bags[gene.name + "_" + sv] = instances
 				
-			print(bags)
+			#print(bags)
 			print(len(bags))
 		
 			#output the bags to a file
@@ -600,6 +600,13 @@ class GeneRanking:
 						if sample in geneSVSamples:
 							continue
 					
+					#check if we need to ignore a pair if it has an SNV in that patient.  
+					if settings.general['nonCoding'] == True and settings.general['snvs'] == False: 
+
+						if sample in gene.SNVs:
+							continue
+					
+					
 					gain = False #Make sure that we only focus on gained elements of the provided type. 
 					for element in gene.gainedElements[sample]:
 						if element == elementType:
@@ -652,6 +659,11 @@ class GeneRanking:
 						if sample in geneSVSamples:
 							continue
 					
+					#check if we need to ignore a pair if it has an SNV in that patient.  
+					if settings.general['nonCoding'] == True and settings.general['snvs'] == False: 
+
+						if sample in gene.SNVs:
+							continue
 					
 					loss = False #Make sure that we only focus on lost elements of the provided type. 
 					for element in gene.lostElements[sample]:
@@ -711,6 +723,14 @@ class GeneRanking:
 						if splitSV[len(splitSV)-1] in geneSVSamples:
 							continue
 					
+					#check if we need to ignore a pair if it has an SNV in that patient.  
+					if settings.general['nonCoding'] == True and settings.general['snvs'] == False: 
+						
+						splitSV = sv.split("_")
+						patientID = splitSV[6]
+						if patientID in gene.SNVs:
+							continue
+					
 					if pairId not in svGeneMap: #Check if we already used this index for a different feature
 						svInd = len(svGeneIndices)
 						svGeneMap[pairId] = svInd
@@ -768,6 +788,14 @@ class GeneRanking:
 						splitSV = sv.split("_")
 
 						if splitSV[len(splitSV)-1] in geneSVSamples:
+							continue
+					
+					#check if we need to ignore a pair if it has an SNV in that patient.  
+					if settings.general['nonCoding'] == True and settings.general['snvs'] == False: 
+						
+						splitSV = sv.split("_")
+						patientID = splitSV[6]
+						if patientID in gene.SNVs:
 							continue
 						
 					if pairId not in svGeneMap: #Check if we already used this index for a different feature
