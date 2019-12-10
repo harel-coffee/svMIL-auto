@@ -8,6 +8,7 @@ import os.path
 from os import listdir
 from os.path import isfile, join
 import glob
+import gzip
 
 from tad import TAD
 from sv import SV
@@ -317,6 +318,11 @@ class NeighborhoodDefiner:
 		if settings.general['snvs'] == False: #in this case, we want to filter out pairs that have SNV effects.
 			print('Mapping SNVs to genes')
 			self.mapSNVsToNeighborhood(genes, settings.files['snvDir'])
+			
+		if settings.general['cnvs'] == False: #in this case, we want to filter out pairs that have SNV effects.
+			print('Mapping CNVs to genes')
+			self.mapCNVsToNeighborhood(genes, settings.files['cnvDir'])
+				
 			
 
 		#Add the gene methylation to genes for MIL. Do this step here, because the file is huge and takes a long time to process.
@@ -700,6 +706,9 @@ class NeighborhoodDefiner:
 			
 			if sv[0] == sv[3]: #intrachromosomal SV
 				
+				svEntry = sv[0] + "_" + str(sv[1]) + "_" + str(sv[2]) + "_" + sv[3] + "_" + str(sv[4]) + "_" + str(sv[5]) + "_" + sv[8].sampleName
+				
+				
 				geneChrSubset = genes[sv[0] == genes[:,0]]
 				
 				#Find all genes overlapped by this SV. 
@@ -707,6 +716,8 @@ class NeighborhoodDefiner:
 				endMatches = sv[5] >= geneChrSubset[:,1]
 				
 				matchingGenes = geneChrSubset[startMatches * endMatches]
+				
+				
 				
 				for gene in matchingGenes[:,3]:
 					svEntry = sv[0] + "_" + str(sv[1]) + "_" + str(sv[2]) + "_" + sv[3] + "_" + str(sv[4]) + "_" + str(sv[5]) + "_" + sv[8].sampleName
@@ -820,8 +831,7 @@ class NeighborhoodDefiner:
 					splitEnsgId = ensgId.split('.') #we only keep everything before the dot
 					geneName = splitLine[4]
 					geneNameConversionMap[splitEnsgId[0]] = geneName
-			
-			import gzip
+
 			#search through the SNVs and link these to genes.
 			vcfs = glob.glob(snvDir + '/**/*.somatic.vcf.gz', recursive=True)
 		
@@ -869,6 +879,44 @@ class NeighborhoodDefiner:
 							geneObj = genes[geneInd,3]
 							geneObj.addSNV(sampleName)
 
+	
+	def mapCNVsToNeighborhood(self, genes, cnvDir):
+		
+		geneMap = dict() #know which gene object to add to by name
+		for geneInd in range(0, genes.shape[0]):
+			gene = genes[geneInd]
+			geneName = gene[3].name
+			geneMap[geneName] = geneInd
+		
+		if settings.general['source'] == 'HMF':
 			
+			tsvs = glob.glob(cnvDir + '/**/*.gene.tsv', recursive=True)
+			
+			for tsv in tsvs:
+				
+				#get the samplename from the vcf
+				sampleName = re.search('.*\/([A-Z\d]+)\.', tsv).group(1)
+				
+				#open the .gz file
+				with open(tsv, 'r') as inF:
+					
+					lineCount = 0
+					for line in inF:
 		
-		
+						if lineCount < 1: #skip header
+							lineCount += 1
+							continue
+			
+						splitLine = line.split("\t")
+						
+						gene = splitLine[3]
+						
+						if float(splitLine[5]) > 1.7 and float(splitLine[5]) < 2.3: #these are not CNVs
+							continue
+						
+						if gene not in geneMap:
+							continue
+						
+						geneInd = geneMap[gene]
+						geneObj = genes[geneInd,3]
+						geneObj.addCNV(sampleName)

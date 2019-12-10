@@ -16,6 +16,7 @@ class Gene:
 		self.end = end
 		self.SVs = dict()
 		self.SNVs = []
+		self.CNVs = []
 		self.leftTAD = None
 		self.rightTAD = None
 		self.elements = []
@@ -54,7 +55,11 @@ class Gene:
 	def addSNV(self, sample):
 		if sample not in self.SNVs:
 			self.SNVs.append(sample)
-		
+	
+	def addCNV(self, sample):
+		if sample not in self.CNVs:
+			self.CNVs.append(sample)
+	
 	def addElement(self, element):
 		self.elements.append(element)
 		

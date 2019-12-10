@@ -12,17 +12,12 @@ from featureMatrixDefiner import FeatureMatrixDefiner
 from sklearn.decomposition import PCA
 import matplotlib.pyplot as plt
 import math
-from tsne import bh_sne
 from sklearn.model_selection import train_test_split
 from sklearn import metrics
 from sklearn.metrics import roc_curve, auc
 from sklearn.linear_model import Lasso
 from sklearn.metrics import auc, precision_recall_curve
 from sklearn.svm import LinearSVC
-from cleanlab.classification import LearningWithNoisyLabels
-from cleanlab.noise_generation import generate_noise_matrix_from_trace
-from cleanlab.noise_generation import generate_noisy_labels
-from cleanlab.util import print_noise_matrix
 from sklearn.model_selection import cross_val_score
 from sklearn.model_selection import StratifiedKFold
 from scipy import interp
@@ -39,126 +34,163 @@ if gl == True:
 	with open(sys.argv[4], 'rb') as handle:
 		glBagDict = pkl.load(handle)
 
+
+
 #determine the bag labels given a file of DEG pairs
 degPairs = np.load(sys.argv[2], allow_pickle=True, encoding='latin1')
-pathwayAnnotation = np.loadtxt(sys.argv[3], dtype='object')
+#pathwayAnnotation = np.loadtxt(sys.argv[3], dtype='object')
 
-bags = []
+print("initial bag num: ", len(bagDict))
+print('initial deg pairs: ', degPairs.shape[0])
+
+#feature selection, increase number of features
+featureCount = len(bagDict[list(bagDict.keys())[0]][0])
+featureStart = featureCount #set this to featureCount to run with all features.
+similarityMatrices = dict()
 bagLabels = []
-posCount = 0
-negCount = 0
-positiveBags = []
-negativeBags = []
-removedPathwayPairs = 0
-svType = 'del'
-for pair in bagDict:
+for featureInd in range(featureStart, featureCount+1):
 	
-	if svType != '':
-		splitPair = pair.split("_")
-		if splitPair[8] != svType:
-			continue
-	print(pair)
-	#get the label of the bag by checking if it exists in degPairs
-	if pair in degPairs[:,0]:
-		if pair in pathwayAnnotation[:,0]: #skip the ones that have possible pathway effects
-			removedPathwayPairs += 1
-		#	continue
-		bagLabels.append(1)
-		posCount += 1
-		positiveBags.append(bagDict[pair])
-	else:
-		bagLabels.append(0)
-		negCount += 1
-		negativeBags.append(bagDict[pair])
-
-	#bags.append(bagDict[pair])
-
-if gl == True:
-	for bag in glBagDict:
-		negativeBags.append(glBagDict[bag])
+	bags = []
+	bagLabels = []
+	posCount = 0
+	negCount = 0
+	positiveBags = []
+	negativeBags = []
+	removedPathwayPairs = 0
+	svType = ''
+	for pair in bagDict:
 		
-
-print('removed pathway pairs: ', removedPathwayPairs)
-positiveBags = np.array(positiveBags)
-negativeBags = np.array(negativeBags)
-np.random.seed(0)
-negativeBagsSubsampled = np.random.choice(negativeBags, posCount)
-
-#bags = np.array(bags)
-#bags = np.concatenate((positiveBags, negativeBagsSubsampled))
-#bagLabels = np.array([1]*positiveBags.shape[0] + [0]*negativeBagsSubsampled.shape[0])
-bags = np.concatenate((positiveBags, negativeBags))
-bagLabels = np.array([1]*positiveBags.shape[0] + [0]*negativeBags.shape[0])
-
-instances = np.vstack(bags)
-
-print(instances.shape)
-print(bagLabels.shape)
-print("positive bags: ", posCount)
-print("negative bags: ", negativeBags.shape[0])
-#Make similarity matrix
-
-print("generating similarity matrix")
-
-#Unfold the training bags so that we can compute the distance matrix at once to all genes
-bagMap = dict()
-reverseBagMap = dict()
-geneInd = 0
-for bagInd in range(0, bags.shape[0]):
-	reverseBagMap[bagInd] = []
-	for gene in bags[bagInd]:
-		bagMap[geneInd] = bagInd
-		reverseBagMap[bagInd].append(geneInd)
+		if svType != '':
+			splitPair = pair.split("_")
+			if splitPair[8] != svType:
+				continue
 		
-		geneInd += 1
+		#get the label of the bag by checking if it exists in degPairs
+		if pair in degPairs[:,0]:
+			#if pair in pathwayAnnotation[:,0]: #skip the ones that have possible pathway effects
+			#	removedPathwayPairs += 1
+				#continue
+			bagLabels.append(1)
+			posCount += 1
+			#get the right number of features per instance
+			instances = []
+			for instance in bagDict[pair]:
+				instances.append(instance[0:featureInd+1])
+				
+			positiveBags.append(instances)
+			#positiveBags.append(bagDict[pair])
+		else:
+			bagLabels.append(0)
+			negCount += 1
+			
+			#get the right number of features per instance
+			instances = []
+			for instance in bagDict[pair]:
 
-bagIndices = np.arange(bags.shape[0])
-similarityMatrix = np.zeros([bags.shape[0], instances.shape[0]])
-print("Number of bags: ", bags.shape[0])
-for bagInd in range(0, bags.shape[0]):
+				instances.append(instance[0:featureInd+1])
+			#print(instances)	
+			negativeBags.append(instances)
+			
+			#negativeBags.append(bagDict[pair])
 	
-	#Get the indices of the instances that are in this bag
-	instanceIndices = reverseBagMap[bagInd]
+		#bags.append(bagDict[pair])
 	
-	instanceSubset = instances[instanceIndices,:]
-	otherInstances = np.vstack(bags[bagIndices != bagInd])
+	if gl == True:
+		for bag in glBagDict:
+			negativeBags.append(glBagDict[bag])
 	
-	instanceAvg = np.mean(instanceSubset, axis=0)
+	print('removed pathway pairs: ', removedPathwayPairs)
+	positiveBags = np.array(positiveBags)
+	negativeBags = np.array(negativeBags)
 	
-	#compute distance to all other instances
-	distance = np.abs(instanceAvg - instances)
+	#take a random subset for speed
+	#positiveBags = np.random.choice(positiveBags, 2000)
+	#negativeBags = np.random.choice(negativeBags, 2000)
 	
-	summedDistance = np.sum(distance,axis=1)
-	similarityMatrix[bagInd,:] = summedDistance
-	continue
+	#print(positiveBags.shape)
+	#print(negativeBags.shape)
+	#exit()
+	print("positive bags: ", positiveBags.shape[0])
+	print("negative bags: ", negativeBags.shape[0])
 	
+	#np.random.seed(0)
+	#negativeBagsSubsampled = np.random.choice(negativeBags, posCount)
 	
+	#bags = np.array(bags)
+	#bags = np.concatenate((positiveBags, negativeBagsSubsampled))
+	#bagLabels = np.array([1]*positiveBags.shape[0] + [0]*negativeBagsSubsampled.shape[0])
+	bags = np.concatenate((positiveBags, negativeBags))
+	bagLabels = np.array([1]*positiveBags.shape[0] + [0]*negativeBags.shape[0])
 	
-	#Compute the pairwise distance matrix here
-	# minDistance = float("inf")
-	# minDistanceInd = 0
-	# for instanceInd in range(0, instanceSubset.shape[0]):
-	# 	instance = instanceSubset[instanceInd]
-	# 	distance = np.abs(instance - instances) #compute the distances to the train instances, otherwise we are not in the same similarity space. 
-	# 
-	# 	#distance = np.abs(instance - otherInstances)
-	# 
-	# 	summedDistance = np.sum(distance,axis=1)
-	# 
-	# 	currentMinDistance = np.mean(summedDistance)
-	# 	if currentMinDistance < np.mean(minDistance):
-	# 		minDistance = summedDistance
-	# 		minDistanceInd = instanceInd
+	instances = np.vstack(bags)
+	
+	print(instances.shape)
+	print(bagLabels.shape)
 
-	#This instance will be used as representative for this bag. We use this value as the similarity to all other instances.  
-	similarityMatrix[bagInd] = minDistance
-
-print(similarityMatrix)
-print(bagLabels)
-
+	#Make similarity matrix
+	
+	print("generating similarity matrix")
+	
+	#Unfold the training bags so that we can compute the distance matrix at once to all genes
+	bagMap = dict()
+	reverseBagMap = dict()
+	geneInd = 0
+	for bagInd in range(0, bags.shape[0]):
+		reverseBagMap[bagInd] = []
+		for gene in bags[bagInd]:
+			bagMap[geneInd] = bagInd
+			reverseBagMap[bagInd].append(geneInd)
+			
+			geneInd += 1
+	
+	bagIndices = np.arange(bags.shape[0])
+	similarityMatrix = np.zeros([bags.shape[0], instances.shape[0]])
+	print("Number of bags: ", bags.shape[0])
+	for bagInd in range(0, bags.shape[0]):
+		
+		#Get the indices of the instances that are in this bag
+		instanceIndices = reverseBagMap[bagInd]
+		
+		instanceSubset = instances[instanceIndices,:]
+		otherInstances = np.vstack(bags[bagIndices != bagInd])
+		
+		instanceAvg = np.mean(instanceSubset, axis=0)
+		
+		#compute distance to all other instances
+		distance = np.abs(instanceAvg - instances)
+		
+		summedDistance = np.sum(distance,axis=1)
+		similarityMatrix[bagInd,:] = summedDistance
+		continue
+		
+		
+		
+		#Compute the pairwise distance matrix here
+		# minDistance = float("inf")
+		# minDistanceInd = 0
+		# for instanceInd in range(0, instanceSubset.shape[0]):
+		# 	instance = instanceSubset[instanceInd]
+		# 	distance = np.abs(instance - instances) #compute the distances to the train instances, otherwise we are not in the same similarity space. 
+		# 
+		# 	#distance = np.abs(instance - otherInstances)
+		# 
+		# 	summedDistance = np.sum(distance,axis=1)
+		# 
+		# 	currentMinDistance = np.mean(summedDistance)
+		# 	if currentMinDistance < np.mean(minDistance):
+		# 		minDistance = summedDistance
+		# 		minDistanceInd = instanceInd
+		# 
+		#This instance will be used as representative for this bag. We use this value as the similarity to all other instances.  
+		similarityMatrix[bagInd] = minDistance
+	
+	print(similarityMatrix)
+	print(bagLabels)
+	similarityMatrices[featureInd] = similarityMatrix
+	print(featureInd)
 
 pca = PCA(n_components=2)
-projected = pca.fit_transform(similarityMatrix)
+projected = pca.fit_transform(similarityMatrices[featureCount])
 projectedWithOffset = projected
 
 for row in range(0, projected.shape[0]):
@@ -274,9 +306,8 @@ from sklearn import model_selection
 from sklearn.metrics import average_precision_score
 from sklearn.metrics import make_scorer, accuracy_score, precision_score, recall_score, f1_score
 
-cv = StratifiedKFold(n_splits=10, random_state=42)
 f, axes = plt.subplots()	
-def cvClassification(similarityMatrix, bagLabels, clf, color):
+def cvClassification(similarityMatrix, bagLabels, clf, color, plot, aps, f1s):
 	
 	scoring = {'accuracy' : make_scorer(accuracy_score), 
 			   'precision' : make_scorer(precision_score),
@@ -284,7 +315,7 @@ def cvClassification(similarityMatrix, bagLabels, clf, color):
 			   'f1_score' : make_scorer(f1_score),
 			   'average_precision' : make_scorer(average_precision_score)}
 	
-	kfold = model_selection.StratifiedKFold(n_splits=10, random_state=42)
+	kfold = model_selection.StratifiedKFold(n_splits=10)
 	
 	results = model_selection.cross_validate(estimator=clf,
 											  X=similarityMatrix,
@@ -298,77 +329,135 @@ def cvClassification(similarityMatrix, bagLabels, clf, color):
 	print('F1 score: ', np.mean(results['test_f1_score']), np.std(results['test_f1_score']))
 	print('AP: ', np.mean(results['test_average_precision']), np.std(results['test_average_precision']))
 	
-	print(results['test_average_precision'])
-	#print(results['test_precision'])
-	#print(results['test_recall'])
-	
+	print('APs: ', results['test_average_precision'])
+	print('Precisions: ', results['test_precision'])
+	print('Recalls: ', results['test_recall'])
+	return 0, 0
 	#plot PR curves
 	
 	#f, axes = plt.subplots()	
-	cv = StratifiedKFold(n_splits=10, random_state=42)
+	cv = StratifiedKFold(n_splits=10)
 	
 	accs = []
 	aucs = []
 	coeffs = []
 	predDiffs = []
-	y_real = []
-	y_proba = []
-	y_pred = []
+	thresholds = []
+	precisions = []
+	recalls = []
 	i = -1
 	for train, test in cv.split(similarityMatrix, bagLabels):
+		#f, axes = plt.subplots()
 		i+=1
 		clf.fit(similarityMatrix[train], bagLabels[train]) #Use the bag labels, not the instance labels
 	
 		predictions = clf.predict_proba(similarityMatrix[test])
 		precision, recall, thresholds = precision_recall_curve(bagLabels[test], predictions[:,1])
 		preds = clf.predict(similarityMatrix[test])
-		predsDiff = np.average(bagLabels[test] == np.sign(preds))
-		aucScore = auc(recall, precision)
-		aucs.append(aucScore)
-		predDiffs.append(predsDiff)
 
+		print(i)
+		print(thresholds)
+		print(len(precision))
+		print(len(recall))
+		recalls.append(recall)
+		precisions.append(precision)
+		
+		
 		#lab = 'Fold %d AP=%.4f' % (i+1, average_precision_score(bagLabels[test], predictions[:,1]))
+		# print('fold: ', i, ':', average_precision_score(bagLabels[test], predictions[:,1]))
+		# print(precision)
+		# print(recall)
+		#plt.plot(recall, precision)
 		#axes.step(recall, precision, label=lab)
-		y_real.append(bagLabels[test])
-		y_proba.append(predictions[:,1])
-		y_pred.append(preds)
-	
-	#print("Actual acc: ", np.mean(predDiffs))
-	print("Mean AUC: ", np.mean(aucs))
-	print(aucs)
-	
-	y_real = np.concatenate(y_real)
-	
-	y_proba = np.concatenate(y_proba)
-	y_pred = np.concatenate(y_pred)
-	precision, recall, thresholds = precision_recall_curve(y_real, y_proba)
-	lab = 'Overall AP=%.4f' % average_precision_score(y_real, y_proba)
-	axes.step(recall, precision, label=lab, lw=2, color=color)
-	axes.set_xlabel('Recall')
-	axes.set_ylabel('Precision')
-	axes.legend(loc='lower right', fontsize='small')
-	
-	#plt.show()
-	print("overall CV AP: ", average_precision_score(y_real, y_proba))
-	print("overall CV F1: ", f1_score(y_real, y_pred))
+		#axes.set_xlabel('Recall')
+		#axes.set_ylabel('Precision')
+		#axes.legend(loc='lower right', fontsize='small')
+		#y_real.append(bagLabels[test])
+		#y_proba.append(predictions[:,1])
+		#y_pred.append(preds)
 
-from sklearn import svm
+		# step_kwargs = ({'step': 'post'} if 'step' in signature(plt.fill_between).parameters else {})
+		# plt.step(recall, precision, color='b', alpha=0.2, where='post')
+		# plt.fill_between(recall, precision, alpha=0.2, color='b', **step_kwargs)
+		#  
+		# plt.xlabel('Recall')
+		# plt.ylabel('Precision')
+		# plt.ylim([0.0, 1.05])
+		# plt.xlim([0.0, 1.0])
+		# plt.title('2-class Precision-Recall curve: AP={0:0.2f}'.format(average_precision_score(bagLabels[test], predictions[:,1])))
+		# plt.show()
+		
+	
+	
+	# y_real = np.concatenate(y_real)
+	# y_proba = np.concatenate(y_proba)
+	# y_pred = np.concatenate(y_pred)
+	# print("overall CV AP: ", average_precision_score(y_real, y_proba))
+	# print("overall CV F1: ", f1_score(y_real, y_pred))
+	# aps.append(average_precision_score(y_real, y_proba))
+	# f1s.append( f1_score(y_real, y_pred))
+
+	# if plot == True:
+	# 	precision, recall, thresholds = precision_recall_curve(y_real, y_proba)
+	# 	lab = 'Overall AP=%.4f' % average_precision_score(y_real, y_proba)
+	# 	axes.step(recall, precision, label=lab, lw=2, color=color)
+	# 	axes.set_xlabel('Recall')
+	# 	axes.set_ylabel('Precision')
+	# 	axes.legend(loc='lower right', fontsize='small')
+	
+	return aps, f1s
+
+
 rfClassifier = RandomForestClassifier(max_depth=5, n_estimators=2)
-svmClassifier = svm.SVC(gamma='scale')
 
-print("Random forest")
-cvClassification(similarityMatrix, bagLabels, rfClassifier, 'black')
-# print("SVC:")
-# cvClassification(similarityMatrix, bagLabels, svmClassifier)
+#For each feature round, save the f1 and AP scores
+#Then at the end, show the curves only for the last round (all features)
+#show a separate figure for the feature selection scores
+aps = []
+f1s = []
+for featureInd in range(featureStart, featureCount+1):
+	
+	plot = False
+	if featureInd == featureCount:
+		plot = True
 
-#repeat for shuffled labels
-print("Shuffled labels: ")
+	aps, f1s = cvClassification(similarityMatrices[featureInd], bagLabels, rfClassifier, 'black', plot, aps, f1s)
+
+#print("All APS: ", aps)
+#print("All F1S: ", f1s)
+
+#repeat for shuffled labels, do this separately to make sure that labels are only shuffled from here
 shuffle(bagLabels)
-print("Random forest")
-cvClassification(similarityMatrix, bagLabels, rfClassifier, 'red')
-# print("SVC:")
-# cvClassification(similarityMatrix, bagLabels, svmClassifier)
+shuffledAps = []
+shuffledF1s = []
+print("shuffled")
+for featureInd in range(featureStart, featureCount+1):
+
+	plot = False
+	if featureInd == featureCount:
+		plot = True
+	shuffledAps, shuffledF1s = cvClassification(similarityMatrices[featureInd], bagLabels, rfClassifier, 'red', plot, shuffledAps, shuffledF1s)
+
+#print("Shuffled APs: ", shuffledAps)
+#print("Shuffled F1s: ", shuffledF1s)
+exit()
 plt.show()
+
+plt.clf()
+plt.title('Non-shuffled APs (black) and F1s (blue)')
+plt.plot(aps, color='black')
+plt.plot(f1s, color='blue')
+plt.ylim([0.5, 0.9])
+plt.show()
+plt.clf()
+
+plt.title('Shuffled APs (black) and F1s (blue)')
+plt.plot(shuffledAps, color='black')
+plt.plot(shuffledF1s, color='blue')
+plt.ylim([0.5, 0.9])
+plt.show()
+plt.clf()
+
 exit()
 # 
 # 

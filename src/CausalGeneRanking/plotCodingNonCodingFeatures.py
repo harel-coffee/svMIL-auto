@@ -19,7 +19,7 @@ import random
 
 #The truth data, DEG pairs
 degData = np.loadtxt(sys.argv[1], dtype='object')
-pathwayAnnotation = np.loadtxt(sys.argv[1] + '_pathwayAnnotation.txt', dtype='object')
+#pathwayAnnotation = np.loadtxt(sys.argv[1] + '_pathwayAnnotation.txt', dtype='object')
 
 #Other comparisons: non-DEG pairs, coding SV-gene pairs, germline pairs, shuffled pairs.
 nonDegData = np.loadtxt(sys.argv[2], dtype='object')
@@ -108,10 +108,10 @@ for degPair in degs:
 
 	features = degPair[1:]
 	
-	if degPair[0] in pathwayAnnotation[:,0]:
-		pathwayDEGs.append(features)
-	else:
-		unAnnotatedDEGs.append(features)
+	#if degPair[0] in pathwayAnnotation[:,0]:
+	#	pathwayDEGs.append(features)
+	#else:
+	unAnnotatedDEGs.append(features)
 	
 #pathwayDEGs = np.array(pathwayDEGs)
 unAnnotatedDEGs = np.array(unAnnotatedDEGs)
@@ -308,7 +308,8 @@ def plotGainsLossesSamePlot(losses,gains, label, typeLabel, xlabel,  figInd):
 	plt.title(label + ': ' + typeLabel)
 	plt.legend(loc='best')
 	plt.tight_layout()
-	plt.savefig('gains_losses_' + label + '_' + svType + '.svg')
+	#plt.savefig('gains_losses_' + label + '_' + svType + '.svg')
+	plt.show()
 	plt.clf()
 	
 	

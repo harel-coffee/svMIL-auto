@@ -306,7 +306,7 @@ class InputParser:
 
 					finalChr1 = 'chr' + orderedChr1
 					finalChr2 = 'chr' + orderedChr2
-					svObject = SV(finalChr1, s1, e1, o1, finalChr2, s1, e2, o2, sampleName, settings.general['cancerType'], svType)
+					svObject = SV(finalChr1, s1, e1, o1, finalChr2, s2, e2, o2, sampleName, settings.general['cancerType'], svType)
 					
 					#check if this SV is already added. That may happen with the pair IDs. 
 					svStr = finalChr1 + "_" + str(s1) + "_" + str(e1) + "_" + finalChr2 + "_" + str(s2) + "_" + str(e2) + "_" + sampleName

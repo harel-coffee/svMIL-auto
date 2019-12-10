@@ -25,6 +25,7 @@ files = dict(
 	hg19CoordinatesFile = "../../data/chromosomes/hg19Coordinates.txt",
 	#snvDir = '../../data/snvs/gdac.broadinstitute.org_BRCA.Mutation_Packager_Calls.Level_3.2016012800.0.0/',
 	snvDir = '../../../../somatics',
+	cnvDir = '../../../../somatics',
 	geneNameConversionFile = '../../data/genes/allGenesAndIdsHg19.txt', #used with HMF SNVs, converting ENSG identifiers to gene names.
 	
 	#specific for HMEC
@@ -62,6 +63,7 @@ general = dict(
 	nonCoding = True, #Should we count gains/losses for genes that are affected by non-coding SVS?
 	coding = False, #Should we include gains and losses of non-coding elements, or only genes that are directly affected by SVs? 
 	snvs = False, #Should we include or exclude genes that have SNVs?  
+	cnvs = False, #should we include or exclude genes that have CNVs? 
 	gains = True, #Enable looking at gains of features
 	losses = True, #enable looking at losses of features
 	tads = True, #Include TADs in the ranking yes/no, only to rank by how often TAD boundaries themselves are disrupted by SVs. (we are getting very dependent on TADs, so perhaps force this as always required)

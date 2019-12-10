@@ -75,6 +75,39 @@ for vcf in vcfs:
 
 mutations = np.array(mutations, dtype="object")
 print(mutations)
+
+cnvs = []
+tsvs = glob.glob(snvDir + '/**/*.gene.tsv', recursive=True)
+
+for tsv in tsvs:
+	
+	#get the samplename from the vcf
+	sampleName = re.search('.*\/([A-Z\d]+)\.', tsv).group(1)
+	
+	#open the .gz file
+	with open(tsv, 'r') as inF:
+		
+		lineCount = 0
+		for line in inF:
+
+			if lineCount < 1: #skip header
+				lineCount += 1
+				continue
+
+			splitLine = line.split("\t")
+			
+			gene = splitLine[3]
+			
+			if float(splitLine[5]) > 1.7 and float(splitLine[5]) < 2.3: #these are not CNVs
+				continue
+
+			cnvs.append([gene, sampleName])
+
+cnvs = np.array(cnvs, dtype='object')
+
+geneCheck = 'ACAD8'
+patientCheck = 'CPCT02050143T'
+
 expressionFile = sys.argv[5]
 
 expressionData = []
@@ -94,14 +127,15 @@ with open(expressionFile, 'r') as inF:
 			continue
 		geneName = geneNameConversionMap[fullGeneName] #get the gene name rather than the ENSG ID
 
+		if geneName != geneCheck:
+			continue
+
 		data = splitLine[1:len(splitLine)] 
 		fixedData = [geneName]
 		fixedData += data
 		expressionData.append(fixedData)
-print(samples)
 
 expressionData = np.array(expressionData, dtype="object")	
-print(expressionData)
 
 #Get the z-scores for every pair
 
@@ -131,9 +165,17 @@ for pair in mutations:
 		geneSampleRef[pair[0]] = []
 	geneSampleRef[pair[0]].append(pair[1])
 
+for pair in cnvs:
+
+	if pair[0] not in geneSampleRef:
+		geneSampleRef[pair[0]] = []
+	geneSampleRef[pair[0]].append(pair[1])
+
+
 #Set for every gene the expression values in all possible samples for lookup
 geneSampleExpr = dict()
 for gene in geneSampleRef:
+	
 	
 	if gene not in expressionData[:,0]:
 		continue
@@ -149,6 +191,10 @@ for gene in geneSampleRef:
 			continue
 		sampleInd = samples.index(geneSample)
 		geneSampleExpr[gene][geneSample] = float(geneExpression[sampleInd])
+		
+		if geneSample == patientCheck:
+			print('expression: ', geneExpression[sampleInd])
+			
 				
 print("done getting expr for samples")
 
@@ -158,7 +204,7 @@ for gene in geneSampleExpr:
 	matchedFullSampleNames = list(geneSampleExpr[gene].keys())
 	
 	#Get all the samples without an SV for this gene
-	unmatchedSamples = np.setdiff1d(samples[1:len(samples)-1], matchedFullSampleNames) #exclude hybrid ref
+	unmatchedSamples = np.setdiff1d(samples[1:len(samples)], matchedFullSampleNames) #exclude hybrid ref
 	negativeSamples = []
 	for sample in unmatchedSamples: #sample tumor samples, exclude normals
 		
@@ -169,10 +215,26 @@ for gene in geneSampleExpr:
 	for sample in negativeSamples:
 		if sample not in samples: #this sample has no RNA-seq data
 			continue
-		sampleInd = samples.index(sample)				
+		sampleInd = samples.index(sample)
+		
+		if gene == geneCheck:
+			print(sample)
+		
 		negativeSampleExpressionValues.append(float(geneExpression[sampleInd]))
 	
 	negativeExpr[gene] = negativeSampleExpressionValues
+	
+	print(len(negativeExpr[gene]))
+	
+	print(np.mean(negativeExpr[geneCheck]))
+	print(np.std(negativeExpr[geneCheck]))
+	
+	z = (geneSampleExpr[geneCheck][patientCheck] - np.mean(negativeExpr[geneCheck])) / float(np.std(negativeExpr[geneCheck]))
+	pValue = stats.norm.sf(abs(z))*2
+	
+	print(pValue)
+	
+	
 print("negative expr done")
 
 def getDEPairs(pairs, geneSampleRef, epressionData, perPairDifferentialExpression, geneSampleExpr, negativeExpr):
@@ -280,3 +342,20 @@ reject, pAdjusted, _, _ = multipletests(perPairDifferentialExpressionArray[:,1],
 perPairDifferentialExpressionArrayFiltered = perPairDifferentialExpressionArray[reject]
 
 np.save(sys.argv[1] + '_codingSNVDEGs.npy', perPairDifferentialExpressionArrayFiltered)
+
+#CNVs
+
+perPairDifferentialExpression = getDEPairsSNVs(cnvs, geneSampleRef, expressionData, dict(), geneSampleExpr, negativeExpr)
+print("done")
+
+perPairDifferentialExpressionArray = np.empty([len(perPairDifferentialExpression), 2], dtype="object")
+perPairDifferentialExpressionArray[:,0] = list(perPairDifferentialExpression.keys())
+perPairDifferentialExpressionArray[:,1] = list(perPairDifferentialExpression.values())
+
+from statsmodels.sandbox.stats.multicomp import multipletests
+reject, pAdjusted, _, _ = multipletests(perPairDifferentialExpressionArray[:,1], method='bonferroni')
+
+perPairDifferentialExpressionArrayFiltered = perPairDifferentialExpressionArray[reject]
+
+np.save(sys.argv[1] + '_codingCNVDEGs.npy', perPairDifferentialExpressionArrayFiltered)
+

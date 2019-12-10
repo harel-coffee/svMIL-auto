@@ -498,8 +498,20 @@ class GeneRanking:
 			for geneInd in sortedGenesInd:
 				gene = reverseGeneMap[geneInd] #Get the gene back from the scoring matrix by index
 				
-				
+				geneSVSamples = []
+				for sv in gene.SVs:
+					splitSV = sv.split("_")
+					geneSVSamples.append(splitSV[len(splitSV)-1])
+					
 				for sv in gene.alteredElements:
+					
+					#filter out SNV/CNV effects
+					splitSV = sv.split("_")
+					sample = splitSV[6]
+					
+					if sample in gene.SNVs or sample in gene.CNVs or sample in geneSVSamples:
+						
+						continue
 					
 					instances = []
 					for element in gene.alteredElements[sv]:
@@ -606,6 +618,11 @@ class GeneRanking:
 						if sample in gene.SNVs:
 							continue
 					
+					#check if there is a CNV in the patient. 
+					if settings.general['nonCoding'] == True and settings.general['cnvs'] == False: 
+
+						if sample in gene.CNVs:
+							continue
 					
 					gain = False #Make sure that we only focus on gained elements of the provided type. 
 					for element in gene.gainedElements[sample]:
@@ -665,6 +682,11 @@ class GeneRanking:
 						if sample in gene.SNVs:
 							continue
 					
+					if settings.general['nonCoding'] == True and settings.general['cnvs'] == False: 
+
+						if sample in gene.CNVs:
+							continue
+					
 					loss = False #Make sure that we only focus on lost elements of the provided type. 
 					for element in gene.lostElements[sample]:
 						if element == elementType:
@@ -720,7 +742,7 @@ class GeneRanking:
 						
 						splitSV = sv.split("_")
 
-						if splitSV[len(splitSV)-1] in geneSVSamples:
+						if splitSV[len(splitSV)-2] in geneSVSamples:
 							continue
 					
 					#check if we need to ignore a pair if it has an SNV in that patient.  
@@ -730,6 +752,14 @@ class GeneRanking:
 						patientID = splitSV[6]
 						if patientID in gene.SNVs:
 							continue
+					
+					if settings.general['nonCoding'] == True and settings.general['cnvs'] == False: 
+						
+						splitSV = sv.split("_")
+						patientID = splitSV[6]
+						if patientID in gene.CNVs:
+							continue
+					
 					
 					if pairId not in svGeneMap: #Check if we already used this index for a different feature
 						svInd = len(svGeneIndices)
@@ -786,8 +816,9 @@ class GeneRanking:
 					if settings.general['nonCoding'] == True and settings.general['coding'] == False:
 						
 						splitSV = sv.split("_")
+					
 
-						if splitSV[len(splitSV)-1] in geneSVSamples:
+						if splitSV[len(splitSV)-2] in geneSVSamples:
 							continue
 					
 					#check if we need to ignore a pair if it has an SNV in that patient.  
@@ -797,6 +828,13 @@ class GeneRanking:
 						patientID = splitSV[6]
 						if patientID in gene.SNVs:
 							continue
+						
+					if settings.general['nonCoding'] == True and settings.general['cnvs'] == False: 
+						
+						splitSV = sv.split("_")
+						patientID = splitSV[6]
+						if patientID in gene.CNVs:
+							continue	
 						
 					if pairId not in svGeneMap: #Check if we already used this index for a different feature
 						svInd = len(svGeneIndices)
