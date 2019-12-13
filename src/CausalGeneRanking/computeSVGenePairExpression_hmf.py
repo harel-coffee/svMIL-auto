@@ -9,13 +9,14 @@ from os import listdir
 from os.path import isfile, join
 from six.moves import range
 import glob
+from scipy.stats import rankdata
+from inputParser import InputParser
+import settings
 
 # Get the expression z-scores for every SV. 
 
 nonCodingPairs = np.loadtxt(sys.argv[1], dtype="object")
 codingPairs = np.loadtxt(sys.argv[2], dtype="object")
-
-print(codingPairs.shape)
 
 #Get the SNV data for these patients, make sure to map to the same identifiers
 snvDir = sys.argv[3]
@@ -127,9 +128,7 @@ with open(expressionFile, 'r') as inF:
 			continue
 		geneName = geneNameConversionMap[fullGeneName] #get the gene name rather than the ENSG ID
 
-		if geneName != geneCheck:
-			continue
-
+		
 		data = splitLine[1:len(splitLine)] 
 		fixedData = [geneName]
 		fixedData += data
@@ -192,8 +191,6 @@ for gene in geneSampleRef:
 		sampleInd = samples.index(geneSample)
 		geneSampleExpr[gene][geneSample] = float(geneExpression[sampleInd])
 		
-		if geneSample == patientCheck:
-			print('expression: ', geneExpression[sampleInd])
 			
 				
 print("done getting expr for samples")
@@ -217,28 +214,17 @@ for gene in geneSampleExpr:
 			continue
 		sampleInd = samples.index(sample)
 		
-		if gene == geneCheck:
-			print(sample)
 		
 		negativeSampleExpressionValues.append(float(geneExpression[sampleInd]))
 	
 	negativeExpr[gene] = negativeSampleExpressionValues
 	
-	print(len(negativeExpr[gene]))
-	
-	print(np.mean(negativeExpr[geneCheck]))
-	print(np.std(negativeExpr[geneCheck]))
-	
-	z = (geneSampleExpr[geneCheck][patientCheck] - np.mean(negativeExpr[geneCheck])) / float(np.std(negativeExpr[geneCheck]))
-	pValue = stats.norm.sf(abs(z))*2
-	
-	print(pValue)
-	
 	
 print("negative expr done")
 
 def getDEPairs(pairs, geneSampleRef, epressionData, perPairDifferentialExpression, geneSampleExpr, negativeExpr):
-								 	
+	
+	zScores = dict()							 	
 	for pair in pairs:
 		splitPair = pair.split("_")
 		gene = splitPair[0]
@@ -265,8 +251,8 @@ def getDEPairs(pairs, geneSampleRef, epressionData, perPairDifferentialExpressio
 		pValue = stats.norm.sf(abs(z))*2
 	
 		perPairDifferentialExpression[pair] = pValue
-		
-	return perPairDifferentialExpression
+		zScores[pair] = z
+	return perPairDifferentialExpression, zScores
 
 def getDEPairsSNVs(pairs, geneSampleRef, epressionData, perPairDifferentialExpression, geneSampleExpr, negativeExpr):
 									
@@ -299,19 +285,82 @@ def getDEPairsSNVs(pairs, geneSampleRef, epressionData, perPairDifferentialExpre
 
 # Output DEG pairs for non-coding only
 from statsmodels.sandbox.stats.multicomp import multipletests
-perPairDifferentialExpression = getDEPairs(nonCodingPairs[:,0], geneSampleRef, expressionData, dict(), geneSampleExpr, negativeExpr)
+perPairDifferentialExpression, zScores = getDEPairs(nonCodingPairs[:,0], geneSampleRef, expressionData, dict(), geneSampleExpr, negativeExpr)
 print("done")
 
-perPairDifferentialExpressionArray = np.empty([len(perPairDifferentialExpression), 2], dtype="object")
+perPairDifferentialExpressionArray = np.empty([len(perPairDifferentialExpression), 5], dtype="object")
 perPairDifferentialExpressionArray[:,0] = list(perPairDifferentialExpression.keys())
 perPairDifferentialExpressionArray[:,1] = list(perPairDifferentialExpression.values())
 
-from statsmodels.sandbox.stats.multicomp import multipletests
 reject, pAdjusted, _, _ = multipletests(perPairDifferentialExpressionArray[:,1], method='bonferroni')
 
-perPairDifferentialExpressionArrayFiltered = perPairDifferentialExpressionArray[reject]
+perPairDifferentialExpressionArray[:,2] = reject
+perPairDifferentialExpressionArray[:,3] = list(zScores.values())
 
-np.save(sys.argv[1] + '_nonCodingPairDEGs.npy', perPairDifferentialExpressionArrayFiltered)
+#Then convert the z-scores to ranks.
+
+#The rank should be within the patient.
+#so first gather all patients, then all genes.
+genes = []
+zScoresPerGene = dict()
+scorePairs = []
+for pair in perPairDifferentialExpressionArray:
+	splitPair = pair[0].split('_')
+	
+	gene = splitPair[0]
+	patient = splitPair[7]
+	genes.append(gene)
+	
+	if gene not in zScoresPerGene:
+		zScoresPerGene[gene] = dict()
+	zScoresPerGene[gene][patient] = pair[3]
+	scorePairs.append(patient + '_' + gene)
+
+#add remaining genes that we did not link to SVs.
+causalGenes = InputParser().readCausalGeneFile(settings.files['causalGenesFile'])
+nonCausalGenes = InputParser().readNonCausalGeneFile(settings.files['nonCausalGenesFile'], causalGenes) #In the same format as the causal genes.
+
+#Combine the genes into one set. 
+allGenes = np.concatenate((causalGenes, nonCausalGenes), axis=0)
+
+for gene in allGenes:
+	if gene[3].name not in zScoresPerGene:
+		zScoresPerGene[gene[3].name] = dict()
+
+for gene in zScoresPerGene:
+	for patient in samples:
+		if patient == '':
+			continue
+
+		if patient not in zScoresPerGene[gene]:
+			zScoresPerGene[gene][patient] = 0
+		
+
+#Get the ranks
+ranks = []
+for gene in zScoresPerGene:
+	
+	patients = list(zScoresPerGene[gene].keys())
+	zScores = np.array(list(zScoresPerGene[gene].values()))
+
+	rankedZScores = rankdata(zScores, method='min')
+	
+	#normalize rans between -1 and 1
+	minVal = np.min(rankedZScores)
+	maxVal = np.max(rankedZScores)
+	
+	normalizedRanks = 2 * ((rankedZScores - minVal) / (maxVal - minVal)) - 1
+	
+	for zScoreInd in range(0, len(zScores)):
+		omitted = True
+		if patients[zScoreInd] + '_' + gene in scorePairs:
+			omitted = False
+		ranks.append([patients[zScoreInd] + '_' + gene, zScores[zScoreInd], normalizedRanks[zScoreInd], omitted])
+
+
+#np.save(sys.argv[1] + '_nonCodingPairDEGs.npy', perPairDifferentialExpressionArray)
+np.savetxt(sys.argv[1] + '_nonCodingPairsRanks.txt', ranks, delimiter='\t', fmt='%s')
+exit()
 
 perPairDifferentialExpression = getDEPairs(codingPairs, geneSampleRef, expressionData, dict(), geneSampleExpr, negativeExpr)
 print("done")

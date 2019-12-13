@@ -14,6 +14,7 @@ from scipy import stats
 from statsmodels.sandbox.stats.multicomp import multipletests
 from scipy import stats
 import matplotlib.pyplot as plt
+from scipy.stats import rankdata
 
 permutationRound = sys.argv[4]
 
@@ -77,38 +78,37 @@ expressionData = np.array(expressionData, dtype="object")
 print(expressionData)
 
 #Get all SVs
-svDir = settings.files['svDir']
-svData = InputParser().getSVsFromFile_hmf(svDir)
-
-#Filter out the coding effect SVs, we want to focus on non-coding SVs. 
-excludedSVs = np.loadtxt(settings.files['excludedSVs'], dtype='object')
-
-svType = 'ITX'
-
-filteredSVs = []
-types = []
-for sv in svData:
-
-	if sv[8].svType != svType:
-		continue
-	
-	svEntry = sv[0] + "_" + str(sv[1]) + "_" + str(sv[2]) + "_" + sv[3] + "_" + str(sv[4]) + "_" + str(sv[5]) + "_" + sv[8].sampleName
-	if svEntry not in excludedSVs:
-		filteredSVs.append(sv)
-		
-		if sv[8].svType not in types:
-			types.append(sv[8].svType)
-
-	
-
-filteredSVs = np.array(filteredSVs, dtype='object')
-
-np.save('filteredSVs.npy', filteredSVs)
+# svDir = settings.files['svDir']
+# svData = InputParser().getSVsFromFile_hmf(svDir)
+# 
+# #Filter out the coding effect SVs, we want to focus on non-coding SVs. 
+# excludedSVs = np.loadtxt(settings.files['excludedSVs'], dtype='object')
+# 
+# #svType = 'ITX'
+# 
+# filteredSVs = []
+# types = []
+# for sv in svData:
+# 
+# 	# if sv[8].svType != svType:
+# 	# 	continue
+# 	# 
+# 	svEntry = sv[0] + "_" + str(sv[1]) + "_" + str(sv[2]) + "_" + sv[3] + "_" + str(sv[4]) + "_" + str(sv[5]) + "_" + sv[8].sampleName
+# 	if svEntry not in excludedSVs:
+# 		filteredSVs.append(sv)
+# 		
+# 		if sv[8].svType not in types:
+# 			types.append(sv[8].svType)
+# 
+# 	
+# 
+# filteredSVs = np.array(filteredSVs, dtype='object')
+# 
+# np.save('filteredSVs.npy', filteredSVs)
 
 filteredSVs = np.load('filteredSVs.npy', allow_pickle=True, encoding='latin1')
-print(filteredSVs)
+print(filteredSVs.shape)
 
-patients = np.unique(filteredSVs[:,7])
 
 #Get the TADs.
 #For each TAD, if there is an SV disrupting either of the boundaries, it goes into the disrupted class for that patient.
@@ -173,6 +173,9 @@ for tad in tadData:
 		
 		svStr = match[0] + '_' + str(match[1]) + '_' + str(match[2]) + '_' + match[3] + '_' + str(match[4]) + '_' + str(match[5]) + '_' + match[7]
 		
+		if svStr == 'RNF5_chr6_32378658_32378658_chr20_26123870_26123870_CPCT02010447T':
+			print('matched on chr1: ', tadStr)
+		
 		if match[7] not in tadDisruptions[tadStr]:
 			
 			
@@ -181,6 +184,9 @@ for tad in tadData:
 	for match in allChr2Matches:
 		
 		svStr = match[0] + '_' + str(match[1]) + '_' + str(match[2]) + '_' + match[3] + '_' + str(match[4]) + '_' + str(match[5]) + '_' + match[7]
+		
+		if svStr == 'RNF5_chr6_32378658_32378658_chr20_26123870_26123870_CPCT02010447T':
+				print('matched on chr2: ', tadStr)
 		
 		if match[7] not in tadDisruptions[tadStr]:
 			
@@ -206,28 +212,28 @@ print('non-disrupted tads: ', nonDisrCount)
 
 #to shuffle across patients, first transpose, the shuffle, then transpose back.
 
-# genes = expressionData[:,0]
-# expression = expressionData[:,1:]
-# expressionT = expression.T
-# print(expressionT)
-# print(expressionT.shape)
-# np.random.shuffle(expressionT)
-# print(expressionT)
-# print(expressionT.shape)
-# shuffledExpression = expressionT.T
-# print(shuffledExpression)
-# print(shuffledExpression.shape)
-# 
-# shuffledExpressionData = np.empty(expressionData.shape, dtype='object')
-# shuffledExpressionData[:,0] = genes
-# shuffledExpressionData[:,1:] = shuffledExpression
-# 
-# #shuffledExpressionData = np.concatenate((genes, shuffledExpression), axis=1)
-# 
-# print(samples)
-# print(shuffledExpressionData)
-# 
-# expressionData = shuffledExpressionData
+genes = expressionData[:,0]
+expression = expressionData[:,1:]
+expressionT = expression.T
+print(expressionT)
+print(expressionT.shape)
+np.random.shuffle(expressionT)
+print(expressionT)
+print(expressionT.shape)
+shuffledExpression = expressionT.T
+print(shuffledExpression)
+print(shuffledExpression.shape)
+
+shuffledExpressionData = np.empty(expressionData.shape, dtype='object')
+shuffledExpressionData[:,0] = genes
+shuffledExpressionData[:,1:] = shuffledExpression
+
+#shuffledExpressionData = np.concatenate((genes, shuffledExpression), axis=1)
+
+print(samples)
+print(shuffledExpressionData)
+
+expressionData = shuffledExpressionData
 
 
 #Get a list of all genes * patients that have mutations.
@@ -498,23 +504,23 @@ cnvPatients = np.load('cnvPatients.npy', allow_pickle=True, encoding='latin1').i
 # print('sets in sv: ', len(svSets))
 # print('sets without mutation: ', len(noMutationSets))
 # 
-# geneCheck = 'ACAD8'
-# patientCheck = 'CPCT02050143T'
-# 
-# if 'CPCT02220008T' in cnvPatients:
-# 	
-# 	if geneCheck in cnvPatients['CPCT02220008T']:
-# 		print('cnv')
-# 
-# if 'CPCT02220008T' in snvPatients:
-# 	
-# 	if geneCheck in snvPatients['CPCT02220008T']:
-# 		print('snv')
-# 		
-# if 'CPCT02220008T' in svPatients:
-# 	
-# 	if geneCheck in svPatients['CPCT02220008T']:
-# 		print('sv')		
+geneCheck = 'RNF5'
+patientCheck = 'CPCT02010447T'
+
+if patientCheck in cnvPatients:
+	
+	if geneCheck in cnvPatients[patientCheck]:
+		print('cnv')
+
+if patientCheck in snvPatients:
+	
+	if geneCheck in snvPatients[patientCheck]:
+		print('snv')
+		
+if patientCheck in svPatients:
+	
+	if geneCheck in svPatients[patientCheck]:
+		print('sv')		
 
 disruptedTadExpression = []
 nonDisruptedTadExpression = []
@@ -561,6 +567,7 @@ for tad in tadDisruptions:
 		if gene[3].name not in expressionData[:,0]:
 			continue
 		
+		
 		geneExpr = expressionData[expressionData[:,0] == gene[3].name][0]
 		
 		#for each patient, append the expression to either the disrupted or non-disrupted based on the tad patient list
@@ -568,71 +575,53 @@ for tad in tadDisruptions:
 			
 			patient = samples[patientInd]
 			
-			#skip the gene if it is in any of the mutated patient matches
 			if gene[3].name in cnvPatients[patient] or gene[3].name in snvPatients[patient] or gene[3].name in svPatients[patient]:
 				continue
+		
 
-			
 			if patient in tadDisruptions[tad]:
-
 				disruptedPairs[patient][gene[3].name] = float(geneExpr[patientInd])
-
+			
 			else:
-
+				
 				nonDisruptedPairs[gene[3].name][patient] = float(geneExpr[patientInd])
 
 #Make a plot of the expression of genes in disrupted TADs compared to the expression in non-disrupted TADs.
 
-disruptedTadExpression = []
-nonDisruptedTadExpression = []
-
-for patient in disruptedPairs:
-	for gene in disruptedPairs[patient]:
-		if disruptedPairs[patient][gene] != 0:
-			disruptedTadExpression.append(np.log(disruptedPairs[patient][gene]))
-		
-for gene in nonDisruptedPairs:
-	for patient in nonDisruptedPairs[gene]:
-		if nonDisruptedPairs[gene][patient] != 0:
-			nonDisruptedTadExpression.append(np.log(nonDisruptedPairs[gene][patient]))
-
-allData = [disruptedTadExpression, nonDisruptedTadExpression]
-plt.boxplot(allData)
-plt.show()
-
-exit()
-
-#pairs = np.loadtxt('Output/RankedGenes/0/BRCA/nonCoding_geneSVPairs.txt_', dtype='object')
-
-# noSamplePairs = 0
-# for deg in svDegs:
-# 	splitDeg = deg[0].split('_')
-# 	
-# 	gene = splitDeg[0]
-# 	patient = splitDeg[7]
-# 	
-# 	combi = gene + '_' + patient
-# 	
-# 	if combi not in foundPairs:
-# 		if patient in samples: 
-# 			if gene in expressionData[:,0]:
-# 				print('did not find pair: ', combi)
-# 				noSamplePairs += 1
-# 		
-# 		#if patient not in samples:
-# 		#	print('patient is not in expression list')
+# disruptedTadExpression = []
+# nonDisruptedTadExpression = []
 # 
-# 			
-# print('pairs not found: ', noSamplePairs)	
+# for patient in disruptedPairs:
+# 	for gene in disruptedPairs[patient]:
+# 		if disruptedPairs[patient][gene] != 0:
+# 			disruptedTadExpression.append(np.log(disruptedPairs[patient][gene]))
+# 		
+# for gene in nonDisruptedPairs:
+# 	for patient in nonDisruptedPairs[gene]:
+# 		if nonDisruptedPairs[gene][patient] != 0:
+# 			nonDisruptedTadExpression.append(np.log(nonDisruptedPairs[gene][patient]))
+# 
+# allData = [disruptedTadExpression, nonDisruptedTadExpression]
+# plt.boxplot(allData)
+# plt.show()
+
+
 
 #For each gene in the disrupted group, compute the z-score of the gene compared to the expression of all patients in the negative group
 
 #store the z-scores in an aggregated way, gene/patient pairs. Then we can get the overall plots. 
 zScores = []
 pValues = []
+zScoresPerGene = dict()
+scorePairs = [] #keep a list of the pairs that have a z-score originally, and which were set to 0 for the ranks. 
 for patient in disruptedPairs:
+
 	
 	for gene in disruptedPairs[patient]:
+		
+		if gene not in zScoresPerGene:
+			zScoresPerGene[gene] = dict()
+			
 
 		expr = disruptedPairs[patient][gene]
 
@@ -647,24 +636,69 @@ for patient in disruptedPairs:
 			
 			negExpr.append(negExprPatients[negPatient])
 		
+		if patient == patientCheck and gene == geneCheck: 
+			print(np.std(negExpr), np.mean(negExpr))
 		if np.std(negExpr) == 0:
 			continue
 
 		#compute the z-score
 		z = (float(expr) - np.mean(negExpr)) / float(np.std(negExpr))
-		zScores.append([patient + '_' + gene, z])
+		
+		zScoresPerGene[gene][patient] = z
+		scorePairs.append(patient + '_' + gene)
+		
+		#pValue = stats.norm.sf(abs(z))*2
+		#pValues.append([patient + '_' + gene, pValue, expr, np.mean(negExpr), np.std(negExpr)])
+
+ #if we did not add the z-score for this patient, set it to 0 for every gene.That way we can compute ranks across all patients for each gene. 
+for gene in allGenes:
+	if gene[3].name not in zScoresPerGene:
+		
+		zScoresPerGene[gene[3].name] = dict()
+
+for gene in zScoresPerGene:
+	for patient in samples:
+		if patient == '':
+			continue
+
+		if patient not in zScoresPerGene[gene]:
+			zScoresPerGene[gene][patient] = 0
+
+#Go through the patients and compute the ranking of the z-scores inside the list.
+
+
+for gene in zScoresPerGene:
+	
+	patients = list(zScoresPerGene[gene].keys())
+	zScores = np.array(list(zScoresPerGene[gene].values()))
+
+	rankedZScores = rankdata(zScores, method='min')
+	
+	#normalize rans between -1 and 1
+	minVal = np.min(rankedZScores)
+	maxVal = np.max(rankedZScores)
+	
+	normalizedRanks = 2 * ((rankedZScores - minVal) / (maxVal - minVal)) - 1
+
+	#instead of ranks, we can also add a normalized/sigmoid value of the z-score. 
+
+	for zScoreInd in range(0, len(zScores)):
+		
+		z = zScores[zScoreInd]
+		patient = patients[zScoreInd]
 		
 		pValue = stats.norm.sf(abs(z))*2
-		pValues.append([patient + '_' + gene, pValue, expr, np.mean(negExpr), np.std(negExpr)])
-	
-zScores = np.array(zScores, dtype='object')
+		
+		omitted = True
+		if patient + '_' + gene in scorePairs:
+			omitted = False
+		
+		
+		pValues.append([patient + '_' + gene, pValue, z, normalizedRanks[zScoreInd], omitted])
+
 pValues = np.array(pValues, dtype='object')
 
 print(pValues.shape)
-
-for pValue in pValues:
-	
-	print(pValue)
 
 #Do MTC on the pValues
 reject, pAdjusted, _, _ = multipletests(pValues[:,1], method='bonferroni') #fdr_bh or bonferroni
@@ -673,7 +707,7 @@ print(pAdjusted)
 signPatients = []
 for pValueInd in range(0, len(pValues[:,1])):
 
-	signPatients.append([pValues[pValueInd][0], pValues[pValueInd][1], pAdjusted[pValueInd], reject[pValueInd], zScores[pValueInd][1], pValues[pValueInd][2], pValues[pValueInd][3], pValues[pValueInd][4]])
+	signPatients.append([pValues[pValueInd][0], pValues[pValueInd][1], pAdjusted[pValueInd], reject[pValueInd], pValues[pValueInd][1], pValues[pValueInd][2], pValues[pValueInd][3], pValues[pValueInd][4]])
 
 signPatients = np.array(signPatients, dtype='object')
 
@@ -681,7 +715,7 @@ print(signPatients.shape)
 
 #np.savetxt('tadDisr/zScores_random_degs_' + str(permutationRound) + '.txt', zScores, fmt='%s', delimiter='\t')
 np.savetxt('tadDisr/pValues_shuffled_' + str(permutationRound) + '.txt', signPatients, fmt='%s', delimiter='\t')
-#np.savetxt('pValues.txt', signPatients, fmt='%s', delimiter='\t')
+#np.savetxt('pValues_ranks.txt', signPatients, fmt='%s', delimiter='\t')
 exit()
 # import matplotlib.pyplot as plt
 # 

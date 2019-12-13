@@ -24,7 +24,7 @@ def plotExpressionComparison(zScores, allShuffledZScores, tadData, allGenes, fil
 	
 	genes = np.array(genes, dtype='object')
 	
-	svType = 'INV'
+	svType = 'ITX'
 	
 	disruptedZScores = []
 	shuffledZScores = []
@@ -194,28 +194,37 @@ def plotExpressionComparison(zScores, allShuffledZScores, tadData, allGenes, fil
 	#to do the log transform, add a constant to remove negative values.
 	#this is the smallest value in the shuffled and non-shuffled set.
 	
-	minValue = 0
-	if np.min(disruptedZScores) < np.min(shuffledZScores):
-		minValue = np.abs(np.min(disruptedZScores))
-	else:
-		minValue = np.abs(np.min(shuffledZScores))
-		
-	constant = minValue + 0.0001
+	# minValue = 0
+	# if np.min(disruptedZScores) < np.min(shuffledZScores):
+	# 	minValue = np.abs(np.min(disruptedZScores))
+	# else:
+	# 	minValue = np.abs(np.min(shuffledZScores))
+	# 	
+	# constant = minValue + 0.0001
+	# disruptedZScores = np.array(disruptedZScores)
+	# shuffledZScores = np.array(shuffledZScores)
+	# 
+	# 
+	# 
+	# disruptedZScores += constant
+	# shuffledZScores += constant
+	# 
+	# disruptedZScores = np.log(disruptedZScores)
+	# shuffledZScores = np.log(shuffledZScores)
+	
 	disruptedZScores = np.array(disruptedZScores)
 	shuffledZScores = np.array(shuffledZScores)
-	
-	
-	
-	disruptedZScores += constant
-	shuffledZScores += constant
-	
-	disruptedZScores = np.log(disruptedZScores)
-	shuffledZScores = np.log(shuffledZScores)
 	
 	allData = [disruptedZScores, shuffledZScores]
 	
 	plt.boxplot(allData)
 	plt.show()
+
+	#do a quick t-test
+	z = (np.mean(disruptedZScores) - np.mean(shuffledZScores)) / float(np.std(shuffledZScores))
+	pValue = stats.norm.sf(abs(z))*2
+	
+	print(pValue)
 
 	exit()
 	return 0
@@ -227,8 +236,8 @@ def getBinScores(zScores, randomPValuesDir):
 	for zScore in zScores:
 		splitScore = zScore[0].split("_")
 		
-		if zScore[3] == 'True': #only keep the ones that are DEG. 
-			splitZScores.append([splitScore[0], splitScore[1], zScore[4], zScore[5]])
+		if zScore[7] == 'False': #only look at the ones which we actually mapped. 
+			splitZScores.append([splitScore[0], splitScore[1], zScore[5]])
 	
 	zScores = np.array(splitZScores, dtype='object')
 
@@ -236,8 +245,10 @@ def getBinScores(zScores, randomPValuesDir):
 	shuffledZScoreFiles = glob.glob(randomPValuesDir + '/pValues*')
 	
 	allShuffledZScores = []
+	shuffleCount = 0
 	for shuffledFile in shuffledZScoreFiles:
-		
+		if shuffleCount > 0: #check only 1 shuffle for now. 
+			continue
 		print(shuffledFile)
 		
 		shuffledZScores = np.loadtxt(shuffledFile, dtype='object')
@@ -245,13 +256,14 @@ def getBinScores(zScores, randomPValuesDir):
 		for zScore in shuffledZScores:
 			splitScore = zScore[0].split("_")
 			
-			if zScore[3] == 'True':
+			if zScore[7] == 'False':
 			
-				splitShuffledZScores.append([splitScore[0], splitScore[1], zScore[4], zScore[5]])
+				splitShuffledZScores.append([splitScore[0], splitScore[1], zScore[5]])
 			
 		splitShuffledZScores = np.array(splitShuffledZScores, dtype='object')
 	
 		allShuffledZScores.append(splitShuffledZScores)
+		shuffleCount += 1
 
 	allShuffledZScores = np.array(allShuffledZScores, dtype='object')
 
@@ -548,7 +560,7 @@ def getBinScores(zScores, randomPValuesDir):
 #Get the DEGs and their p-values
 
 #plot the z-scores.
-pValues = np.loadtxt('pValues.txt', dtype='object')
+pValues = np.loadtxt('pValues_ranks.txt', dtype='object')
 randomPValuesDir = 'tadDisr/'
 binScores, randomBinScores = getBinScores(pValues, randomPValuesDir)
 

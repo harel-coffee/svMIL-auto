@@ -6,41 +6,37 @@
 import sys
 import numpy as np
 
-tadDegs = np.loadtxt('tadDisr/pValues_shuffled_0.txt', dtype='object')
-svDegs = np.load(sys.argv[1], allow_pickle=True, encoding='latin1')
+tadPairs = np.loadtxt('pValues_ranks.txt', dtype='object')
+rulePairs = np.loadtxt('Output/RankedGenes/0/BRCA/nonCoding_geneSVPairs.txt__nonCodingPairsRanks.txt', dtype='object')
 
-degs = 0
-for deg in tadDegs:
-	
-	if deg[3] == 'True':
-		degs += 1
-		print(deg)
+print(tadPairs)
 
-print(degs)
+tadPairsAnn = []
+for pair in tadPairs:
+
+	if pair[0] == 'CPCT02010447T_RNF5':
+		print('tad pair')
+		print(pair)
+	else:
+		continue
+	if pair[7] == 'False':
+		tadPairsAnn.append(pair[0] + '_' + pair[7])
+		print(tadPairsAnn)
 exit()
+for pair in rulePairs:
 
-print(svDegs.shape)
-print(tadDegs)
+	if pair[0] == 'CPCT02010447T_RNF5':
+		print('rule pair')
+	else:
+		continue
 
-missingSets = []
-for deg in svDegs:
-	
-	splitDeg = deg[0].split('_')
-	
-	gene = splitDeg[0]
-	patient = splitDeg[7]
-	
-	combi = patient + '_' + gene
-	
-	
-	
-	if combi in tadDegs:
-		
-		print('overlap: ', combi)
-		match = tadDegs[tadDegs[:,0] == combi]
-		print(match)
-		missingSets.append(combi)
-	
-#np.savetxt('missingSets.txt', missingSets, fmt='%s')	
-	
 
+	if pair[3] == 'False':
+		rulePairAnn = pair[0] + '_' + pair[3]
+		#check if the rule pair is also found in the TAD pairs.
+		#everything found by rule-pairs should also be in TAD pairs.
+		if rulePairAnn not in tadPairsAnn:
+			
+			print('pair not in tad pairs: ', rulePairAnn)
+			print(pair)
+	
