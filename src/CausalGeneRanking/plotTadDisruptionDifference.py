@@ -211,29 +211,29 @@ print('non-disrupted tads: ', nonDisrCount)
 
 
 #to shuffle across patients, first transpose, the shuffle, then transpose back.
-
-genes = expressionData[:,0]
-expression = expressionData[:,1:]
-expressionT = expression.T
-print(expressionT)
-print(expressionT.shape)
-np.random.shuffle(expressionT)
-print(expressionT)
-print(expressionT.shape)
-shuffledExpression = expressionT.T
-print(shuffledExpression)
-print(shuffledExpression.shape)
-
-shuffledExpressionData = np.empty(expressionData.shape, dtype='object')
-shuffledExpressionData[:,0] = genes
-shuffledExpressionData[:,1:] = shuffledExpression
-
-#shuffledExpressionData = np.concatenate((genes, shuffledExpression), axis=1)
-
-print(samples)
-print(shuffledExpressionData)
-
-expressionData = shuffledExpressionData
+# 
+# genes = expressionData[:,0]
+# expression = expressionData[:,1:]
+# expressionT = expression.T
+# print(expressionT)
+# print(expressionT.shape)
+# np.random.shuffle(expressionT)
+# print(expressionT)
+# print(expressionT.shape)
+# shuffledExpression = expressionT.T
+# print(shuffledExpression)
+# print(shuffledExpression.shape)
+# 
+# shuffledExpressionData = np.empty(expressionData.shape, dtype='object')
+# shuffledExpressionData[:,0] = genes
+# shuffledExpressionData[:,1:] = shuffledExpression
+# 
+# #shuffledExpressionData = np.concatenate((genes, shuffledExpression), axis=1)
+# 
+# print(samples)
+# print(shuffledExpressionData)
+# 
+# expressionData = shuffledExpressionData
 
 
 #Get a list of all genes * patients that have mutations.
@@ -634,6 +634,10 @@ for patient in disruptedPairs:
 		negExpr = []
 		for negPatient in negExprPatients:
 			
+			if gene == 'SEPT2' and patient == 'CPCT02030271T':
+				print('neg patient: ', negPatient)
+				print('expr: ', negExprPatients[negPatient])
+			
 			negExpr.append(negExprPatients[negPatient])
 		
 		if patient == patientCheck and gene == geneCheck: 
@@ -644,25 +648,22 @@ for patient in disruptedPairs:
 		#compute the z-score
 		z = (float(expr) - np.mean(negExpr)) / float(np.std(negExpr))
 		
+		if gene == 'SEPT2' and patient == 'CPCT02030271T':
+			print('expr: ', expr)
+			print('z:', z)
+			print('ean neg: ', np.mean(negExpr))
+			print('std neg: ', np.std(negExpr))
+			import matplotlib.pyplot as plt
+			plt.boxplot(negExpr)
+			plt.show()
+			exit()
+		
 		zScoresPerGene[gene][patient] = z
 		scorePairs.append(patient + '_' + gene)
 		
 		#pValue = stats.norm.sf(abs(z))*2
 		#pValues.append([patient + '_' + gene, pValue, expr, np.mean(negExpr), np.std(negExpr)])
 
- #if we did not add the z-score for this patient, set it to 0 for every gene.That way we can compute ranks across all patients for each gene. 
-for gene in allGenes:
-	if gene[3].name not in zScoresPerGene:
-		
-		zScoresPerGene[gene[3].name] = dict()
-
-for gene in zScoresPerGene:
-	for patient in samples:
-		if patient == '':
-			continue
-
-		if patient not in zScoresPerGene[gene]:
-			zScoresPerGene[gene][patient] = 0
 
 #Go through the patients and compute the ranking of the z-scores inside the list.
 
@@ -671,14 +672,6 @@ for gene in zScoresPerGene:
 	
 	patients = list(zScoresPerGene[gene].keys())
 	zScores = np.array(list(zScoresPerGene[gene].values()))
-
-	rankedZScores = rankdata(zScores, method='min')
-	
-	#normalize rans between -1 and 1
-	minVal = np.min(rankedZScores)
-	maxVal = np.max(rankedZScores)
-	
-	normalizedRanks = 2 * ((rankedZScores - minVal) / (maxVal - minVal)) - 1
 
 	#instead of ranks, we can also add a normalized/sigmoid value of the z-score. 
 
@@ -689,12 +682,7 @@ for gene in zScoresPerGene:
 		
 		pValue = stats.norm.sf(abs(z))*2
 		
-		omitted = True
-		if patient + '_' + gene in scorePairs:
-			omitted = False
-		
-		
-		pValues.append([patient + '_' + gene, pValue, z, normalizedRanks[zScoreInd], omitted])
+		pValues.append([patient + '_' + gene, pValue, z])
 
 pValues = np.array(pValues, dtype='object')
 
@@ -707,7 +695,7 @@ print(pAdjusted)
 signPatients = []
 for pValueInd in range(0, len(pValues[:,1])):
 
-	signPatients.append([pValues[pValueInd][0], pValues[pValueInd][1], pAdjusted[pValueInd], reject[pValueInd], pValues[pValueInd][1], pValues[pValueInd][2], pValues[pValueInd][3], pValues[pValueInd][4]])
+	signPatients.append([pValues[pValueInd][0], pValues[pValueInd][1], pAdjusted[pValueInd], reject[pValueInd], pValues[pValueInd][1], pValues[pValueInd][2]])
 
 signPatients = np.array(signPatients, dtype='object')
 

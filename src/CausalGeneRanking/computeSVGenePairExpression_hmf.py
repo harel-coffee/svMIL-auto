@@ -206,7 +206,8 @@ for gene in geneSampleExpr:
 	for sample in unmatchedSamples: #sample tumor samples, exclude normals
 		
 		negativeSamples.append(sample)
-		
+	
+	geneExpression = expressionData[expressionData[:,0] == gene][0]	
 	#Get the expression of these samples
 	negativeSampleExpressionValues = []
 	for sample in negativeSamples:
@@ -214,11 +215,14 @@ for gene in geneSampleExpr:
 			continue
 		sampleInd = samples.index(sample)
 		
-		
+		if gene == 'SEPT2':
+			print('neg sample: ', sample)
+			print(float(geneExpression[sampleInd]))
+			
 		negativeSampleExpressionValues.append(float(geneExpression[sampleInd]))
 	
 	negativeExpr[gene] = negativeSampleExpressionValues
-	
+exit()	
 	
 print("negative expr done")
 
@@ -249,6 +253,17 @@ def getDEPairs(pairs, geneSampleRef, epressionData, perPairDifferentialExpressio
 	
 		z = (sampleExpressionValue - np.mean(negativeSampleExpressionValues)) / float(np.std(negativeSampleExpressionValues))
 		pValue = stats.norm.sf(abs(z))*2
+		
+		if gene == 'SEPT2' and pairSample == 'CPCT02030271T':
+			print('expr: ', sampleExpressionValue)
+			print('z:', z)
+			print('ean neg: ', np.mean(negativeSampleExpressionValues))
+			print('std neg: ', np.std(negativeSampleExpressionValues))
+			import matplotlib.pyplot as plt
+			plt.boxplot(negativeSampleExpressionValues)
+			plt.show()
+			exit()
+		
 	
 		perPairDifferentialExpression[pair] = pValue
 		zScores[pair] = z
@@ -278,6 +293,9 @@ def getDEPairsSNVs(pairs, geneSampleRef, epressionData, perPairDifferentialExpre
 	
 		z = (sampleExpressionValue - np.mean(negativeSampleExpressionValues)) / float(np.std(negativeSampleExpressionValues))
 		pValue = stats.norm.sf(abs(z))*2
+		
+		
+		
 	
 		perPairDifferentialExpression[pair[0] + "_" + pair[1]] = pValue
 		
@@ -296,6 +314,8 @@ reject, pAdjusted, _, _ = multipletests(perPairDifferentialExpressionArray[:,1],
 
 perPairDifferentialExpressionArray[:,2] = reject
 perPairDifferentialExpressionArray[:,3] = list(zScores.values())
+
+np.savetxt(sys.argv[1] + '_nonCodingPairsZScores.txt', perPairDifferentialExpressionArray, delimiter='\t', fmt='%s')
 
 #Then convert the z-scores to ranks.
 

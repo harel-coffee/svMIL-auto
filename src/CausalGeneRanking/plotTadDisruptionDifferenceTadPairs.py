@@ -24,7 +24,9 @@ def plotExpressionComparison(zScores, allShuffledZScores, tadData, allGenes, fil
 	
 	genes = np.array(genes, dtype='object')
 	
-	svType = 'ITX'
+	#svType = 'DEL'
+	svType = sys.argv[1]
+	
 	
 	disruptedZScores = []
 	shuffledZScores = []
@@ -43,7 +45,12 @@ def plotExpressionComparison(zScores, allShuffledZScores, tadData, allGenes, fil
 			
 			tadChrSubset = tadData[tadData[:,0] == geneInfo[0]]
 
-			matchingTad = tadChrSubset[(geneInfo[1] <= tadChrSubset[:,2]) * (geneInfo[2] >= tadChrSubset[:,1])][0]
+			matchingTads = tadChrSubset[(geneInfo[1] <= tadChrSubset[:,2]) * (geneInfo[2] >= tadChrSubset[:,1])]
+			
+			if len(matchingTads) < 1:
+					continue
+	
+			matchingTad = matchingTads[0]
 
 			#Then see which SV disrupts this TAD. 
 			
@@ -78,8 +85,16 @@ def plotExpressionComparison(zScores, allShuffledZScores, tadData, allGenes, fil
 				#which TAD is the gene in?
 				
 				tadChrSubset = tadData[tadData[:,0] == geneInfo[0]]
+				
+				if len(tadChrSubset) < 1:
+					continue
+				
+				matchingTads = tadChrSubset[(geneInfo[1] <= tadChrSubset[:,2]) * (geneInfo[2] >= tadChrSubset[:,1])]
 	
-				matchingTad = tadChrSubset[(geneInfo[1] <= tadChrSubset[:,2]) * (geneInfo[2] >= tadChrSubset[:,1])][0]
+				if len(matchingTads) < 1:
+					continue
+	
+				matchingTad = matchingTads[0]
 	
 				#Then see which SV disrupts this TAD. 
 				
@@ -112,7 +127,12 @@ def plotExpressionComparison(zScores, allShuffledZScores, tadData, allGenes, fil
 			
 			tadChrSubset = tadData[tadData[:,0] == geneInfo[0]]
 
-			matchingTad = tadChrSubset[(geneInfo[1] <= tadChrSubset[:,2]) * (geneInfo[2] >= tadChrSubset[:,1])][0]
+			matchingTads = tadChrSubset[(geneInfo[1] <= tadChrSubset[:,2]) * (geneInfo[2] >= tadChrSubset[:,1])]
+			
+			if len(matchingTads) < 1:
+					continue
+	
+			matchingTad = matchingTads[0]
 
 			#Then see which SV disrupts this TAD. 
 			
@@ -146,35 +166,39 @@ def plotExpressionComparison(zScores, allShuffledZScores, tadData, allGenes, fil
 				
 				geneInfo = genes[genes[:,3] == pair[1]][0]
 	
-			#which TAD is the gene in?
-			
-			tadChrSubset = tadData[tadData[:,0] == geneInfo[0]]
-
-			matchingTad = tadChrSubset[(geneInfo[1] <= tadChrSubset[:,2]) * (geneInfo[2] >= tadChrSubset[:,1])][0]
-
-			#Then see which SV disrupts this TAD. 
-			
-			#first check which SVs have chr1 matches			
-			svChr1Subset = filteredSVs[(filteredSVs[:,0] == geneInfo[0]) * (filteredSVs[:,7] == pair[0])]
-			
-			overlappingSVs = svChr1Subset[(svChr1Subset[:,1] >= matchingTad[1]) * (svChr1Subset[:,1] <= matchingTad[2])]
-			
-			foundSV = False #make sure that each pair is added only once, even if there are more SVs
-			
-			for sv in overlappingSVs:
-				if sv[8].svType == svType:
-					foundSV = True
+				#which TAD is the gene in?
+				
+				tadChrSubset = tadData[tadData[:,0] == geneInfo[0]]
+	
+				matchingTads = tadChrSubset[(geneInfo[1] <= tadChrSubset[:,2]) * (geneInfo[2] >= tadChrSubset[:,1])]
+	
+				if len(matchingTads) < 1:
+						continue
 		
-			#repeat for chr2
-			svChr2Subset = filteredSVs[(filteredSVs[:,3] == geneInfo[0]) * (filteredSVs[:,7] == pair[0])]
+				matchingTad = matchingTads[0]
+				#Then see which SV disrupts this TAD. 
+				
+				#first check which SVs have chr1 matches			
+				svChr1Subset = filteredSVs[(filteredSVs[:,0] == geneInfo[0]) * (filteredSVs[:,7] == pair[0])]
+				
+				overlappingSVs = svChr1Subset[(svChr1Subset[:,1] >= matchingTad[1]) * (svChr1Subset[:,1] <= matchingTad[2])]
+				
+				foundSV = False #make sure that each pair is added only once, even if there are more SVs
+				
+				for sv in overlappingSVs:
+					if sv[8].svType == svType:
+						foundSV = True
 			
-			overlappingSVs = svChr2Subset[(svChr2Subset[:,5] >= matchingTad[1]) * (svChr2Subset[:,5] <= matchingTad[2])]
-			
-			for sv in overlappingSVs:
-				if sv[8].svType == svType:
-					foundSV = True
-			if foundSV == True:
-				shuffledZScores.append(float(pair[2]))
+				#repeat for chr2
+				svChr2Subset = filteredSVs[(filteredSVs[:,3] == geneInfo[0]) * (filteredSVs[:,7] == pair[0])]
+				
+				overlappingSVs = svChr2Subset[(svChr2Subset[:,5] >= matchingTad[1]) * (svChr2Subset[:,5] <= matchingTad[2])]
+				
+				for sv in overlappingSVs:
+					if sv[8].svType == svType:
+						foundSV = True
+				if foundSV == True:
+					shuffledZScores.append(float(pair[2]))
 	
 	else:
 		
@@ -215,18 +239,31 @@ def plotExpressionComparison(zScores, allShuffledZScores, tadData, allGenes, fil
 	disruptedZScores = np.array(disruptedZScores)
 	shuffledZScores = np.array(shuffledZScores)
 	
+	
+	filteredDisruptedZScores = disruptedZScores[disruptedZScores < np.percentile(disruptedZScores,95)]
+	filteredShuffledZScores = shuffledZScores[shuffledZScores < np.percentile(shuffledZScores,95)]
+	
+	print('plotting')
+	
+	allData = [filteredDisruptedZScores, filteredShuffledZScores]
+	
+	plt.boxplot(allData)
+	plt.ylim([-10,30])
+	plt.savefig('zScores_' + svType + '.svg')
+	#plt.show()
+	plt.clf()
 	allData = [disruptedZScores, shuffledZScores]
 	
 	plt.boxplot(allData)
-	plt.show()
+	plt.savefig('zScores_' + svType + '_unfiltered.svg')
+	#plt.show()
 
 	#do a quick t-test
-	z = (np.mean(disruptedZScores) - np.mean(shuffledZScores)) / float(np.std(shuffledZScores))
+	z = (np.mean(filteredDisruptedZScores) - np.mean(filteredShuffledZScores)) / float(np.std(filteredShuffledZScores))
 	pValue = stats.norm.sf(abs(z))*2
 	
 	print(pValue)
 
-	exit()
 	return 0
 	
 
@@ -235,11 +272,14 @@ def getBinScores(zScores, randomPValuesDir):
 	splitZScores = []
 	for zScore in zScores:
 		splitScore = zScore[0].split("_")
-		
-		if zScore[7] == 'False': #only look at the ones which we actually mapped. 
-			splitZScores.append([splitScore[0], splitScore[1], zScore[5]])
+
+		#if zScore[3] != 'False': #only look at the ones which we actually mapped. 
+		splitZScores.append([splitScore[0], splitScore[1], float(zScore[5])])
 	
 	zScores = np.array(splitZScores, dtype='object')
+	
+	filteredZScores = zScores[zScores[:,2] < np.percentile(zScores[:,2],95)]
+	zScores = filteredZScores
 
 	#also load all the zScores of the random shuffles.
 	shuffledZScoreFiles = glob.glob(randomPValuesDir + '/pValues*')
@@ -247,21 +287,28 @@ def getBinScores(zScores, randomPValuesDir):
 	allShuffledZScores = []
 	shuffleCount = 0
 	for shuffledFile in shuffledZScoreFiles:
-		if shuffleCount > 0: #check only 1 shuffle for now. 
+		#if shuffleCount > 0: #check only 1 shuffle for now. 
+		#	continue
+
+		if shuffledFile != 'tadDisr/pValues_shuffled_1.txt':
 			continue
-		print(shuffledFile)
 		
+		print(shuffledFile)
+
 		shuffledZScores = np.loadtxt(shuffledFile, dtype='object')
 		splitShuffledZScores = []
 		for zScore in shuffledZScores:
 			splitScore = zScore[0].split("_")
 			
-			if zScore[7] == 'False':
+			#if zScore[3] != 'False':
 			
-				splitShuffledZScores.append([splitScore[0], splitScore[1], zScore[5]])
+			splitShuffledZScores.append([splitScore[0], splitScore[1], float(zScore[5])])
 			
 		splitShuffledZScores = np.array(splitShuffledZScores, dtype='object')
-	
+		
+		filteredZScores = splitShuffledZScores[splitShuffledZScores[:,2] < np.percentile(splitShuffledZScores[:,2],95)]
+		splitShuffledZScores = filteredZScores
+
 		allShuffledZScores.append(splitShuffledZScores)
 		shuffleCount += 1
 
@@ -311,7 +358,7 @@ def getBinScores(zScores, randomPValuesDir):
 	tadData = InputParser().getTADsFromFile(tadFile)
 	
 	#plot the expression between disrupted and non-disrupted TADs
-	plotExpressionComparison(zScores, allShuffledZScores, tadData, allGenes, filteredSVs)
+	#plotExpressionComparison(zScores, allShuffledZScores, tadData, allGenes, filteredSVs)
 	
 	
 	
@@ -390,15 +437,16 @@ def getBinScores(zScores, randomPValuesDir):
 	splitPairs = []
 	for pair in tadPairs:
 		splitPair = pair.split('_')
-		splitPairs.append([splitPair[0], splitPair[1], splitPair[2], splitPair[3], splitPair[4], splitPair[5]])
+		splitPairs.append([splitPair[0], int(splitPair[1]), int(splitPair[2]), splitPair[3], int(splitPair[4]), int(splitPair[5])])
 		
 	splitPairs = np.array(splitPairs, dtype='object')
+	
 	
 	tadPairsFiltered = dict()
 	for pair in splitPairs:
 		
 		pairChrSubset = splitPairs[splitPairs[:,3] == pair[0]]
-		pairStr = '_'.join(pair)
+		pairStr = '_'.join([str(i) for i in pair])
 	
 		pairPatients = tadPairs[pairStr]
 		
@@ -409,29 +457,44 @@ def getBinScores(zScores, randomPValuesDir):
 			
 			#for these matches, check if they are also disrupted in the same patient.
 			for matchedPair in matchingPairs:
-				matchedPairStr = '_'.join(matchedPair)
+				matchedPairStr = '_'.join([str(i) for i in matchedPair])
 				
 				matchedPairPatients = tadPairs[matchedPairStr]
 				
 				for patient in matchedPairPatients:
 					if patient in pairPatients:
-						print(pair, ' has match in : ', matchedPairStr, ' patient: ', patient)
+						#print(pair, ' has match in : ', matchedPairStr, ' patient: ', patient)
 						matched = True
 						
 		if pair[5] in pairChrSubset[:,1]:
 			matchingPairs = pairChrSubset[pairChrSubset[:,1] == pair[5]]
 			#for these matches, check if they are also disrupted in the same patient.
 			for matchedPair in matchingPairs:
-				matchedPairStr = '_'.join(matchedPair)
+				matchedPairStr = '_'.join([str(i) for i in matchedPair])
 				
 				matchedPairPatients = tadPairs[matchedPairStr]
 				
 				for patient in matchedPairPatients:
 					if patient in pairPatients:
 						matched = True
-						print(pairStr, ' has match in : ', matchedPairStr, ' patient: ', patient)
+						#print(pairStr, ' has match in : ', matchedPairStr, ' patient: ', patient)
+		
+		#also check if there is not another affected TAD within 1 MB
+		
+		#if for the first part of the pair there is something overlapping within - 1MB, or for the second part + 1 MB, exclude this pair.
+		# overlapSize = 1000000
+		# #is there a TAD that starts or ends within the 1 MB?
+		# startOverlap = pairChrSubset[(int(pair[1]) - overlapSize >= pairChrSubset[:,4]) + (int(pair[1]) <= pairChrSubset[:,5])]
+		# endOverlap = pairChrSubset[(int(pair[5]) + overlapSize <= pairChrSubset[:,1]) + (int(pair[5]) >= pairChrSubset[:,2])]
+		# 
+		windowOverlap = False
+		# if len(startOverlap) > 0 or len(endOverlap) > 0:
+		# 	print(pairStr, ' has overlap: ')
+		# 	print(startOverlap)
+		# 	print(endOverlap)
+		# 	windowOverlap = True
 			
-		if matched == False:
+		if matched == False and windowOverlap == False:
 			if pairStr not in tadPairsFiltered:
 				tadPairsFiltered[pairStr] = pairPatients
 	
@@ -450,17 +513,23 @@ def getBinScores(zScores, randomPValuesDir):
 			
 		if binInd not in randomBinZScores:
 			randomBinZScores[binInd] = np.zeros([len(allShuffledZScores)])
-	
+
+	perTadPositivePatients = dict()
+
 	for tad in tadPairs:
-		
+		perTadPositivePatients[tad] = []
+
 		splitTad = tad.split('_')
 		
 		#Make a mapping for positions to the right bin.
 		
 		#determine the size and how large each bin should be
 		binSizeTad1 = (float(splitTad[2]) - float(splitTad[1])) / bins
+
+		#binSizeTad1 = (float(splitTad[2]) - (float(splitTad[1]) - offset)) / bins
 		
 		currentStart = float(splitTad[1]) #start at the TAD start
+		#currentStart = float(splitTad[1]) - offset
 		binStartsTad1 = [currentStart] #list at which position each bin should start.
 		for binInd in range(0, bins):
 			
@@ -469,6 +538,7 @@ def getBinScores(zScores, randomPValuesDir):
 	
 		#repeat for TAD 2
 		binSizeTad2 = (float(splitTad[5]) - float(splitTad[4])) / bins
+		#binSizeTad2 = ((float(splitTad[5]) + offset) - float(splitTad[4])) / bins
 		currentStart = float(splitTad[4]) #start at the TAD start
 		binStartsTad2 = [currentStart] #list at which position each bin should start.
 		for binInd in range(0, bins):
@@ -486,7 +556,7 @@ def getBinScores(zScores, randomPValuesDir):
 			genes = geneChrSubset[(geneChrSubset[:,2] >= binStartsTad1[binInd]) * (geneChrSubset[:,1] <= binStartsTad1[binInd+1])]
 			
 			#get the z-scores of these genes
-			
+			allGeneZScores = []
 			for gene in genes:
 				geneName = gene[3].name
 				
@@ -497,11 +567,12 @@ def getBinScores(zScores, randomPValuesDir):
 					
 					#keep the z-scores separate for each patient
 					for patient in range(0, len(geneZScores[:,0])):
-						if geneZScores[patient,2] != 'nan' and geneZScores[patient,2] != 'inf':
-							print('bin: ', binInd, geneName)
-							print(geneZScores)
+						
+						if geneZScores[patient,0] not in perTadPositivePatients[tad]:
+							perTadPositivePatients[tad].append(geneZScores[patient,0])
+						allGeneZScores.append(float(geneZScores[patient,2]))
 
-							binZScores[binInd].append(float(geneZScores[patient,2]))
+				
 					
 				#repeat for all shuffled p-values.
 				
@@ -511,11 +582,11 @@ def getBinScores(zScores, randomPValuesDir):
 					shuffledGeneZScores = iterationZScores[iterationZScores[:,1] == geneName]
 					
 					for patient in range(0, len(shuffledGeneZScores[:,0])):
-						if shuffledGeneZScores[patient,2] != 'nan' and shuffledGeneZScores[patient,2] != 'inf':
-							randomBinZScores[binInd][iterationInd] = randomBinZScores[binInd][iterationInd] + 1
+						randomBinZScores[binInd][iterationInd] = randomBinZScores[binInd][iterationInd] + 1
 							
 					iterationInd += 1
-			
+			if len(allGeneZScores) > 0:
+				binZScores[binInd].append(np.median(allGeneZScores))
 	
 		#now for TAD 2, start from where the TAD 1 indices left off. 
 		geneChrSubset = allGenes[allGenes[:,0] == splitTad[3]]
@@ -526,7 +597,7 @@ def getBinScores(zScores, randomPValuesDir):
 			genes = geneChrSubset[(geneChrSubset[:,2] >= binStartsTad2[binInd]) * (geneChrSubset[:,1] <= binStartsTad2[binInd+1])]
 			
 			#get the z-scores of these genes
-			
+			allGeneZScores = []
 			for gene in genes:
 				geneName = gene[3].name
 				
@@ -537,8 +608,12 @@ def getBinScores(zScores, randomPValuesDir):
 					
 					#keep the z-scores separate for each patient
 					for patient in range(0, len(geneZScores[:,0])):
-						if geneZScores[patient,2] != 'nan' and geneZScores[patient,2] != 'inf':
-							binZScores[binInd+bins].append(float(geneZScores[patient,2]))
+						
+						if geneZScores[patient,0] not in perTadPositivePatients[tad]:
+							perTadPositivePatients[tad].append(geneZScores[patient,0])
+						allGeneZScores.append(float(geneZScores[patient,2]))
+						
+			
 							
 				#I need to know for this TAD how many DEGs there are. So that should be per iteration.
 				iterationInd = 0
@@ -546,13 +621,170 @@ def getBinScores(zScores, randomPValuesDir):
 					
 					shuffledGeneZScores = iterationZScores[iterationZScores[:,1] == geneName]
 					for patient in range(0, len(shuffledGeneZScores[:,0])):
-						if shuffledGeneZScores[patient,2] != 'nan' and shuffledGeneZScores[patient,2] != 'inf':
-							randomBinZScores[binInd+bins][iterationInd] = randomBinZScores[binInd][iterationInd] + 1
+
+						randomBinZScores[binInd+bins][iterationInd] = randomBinZScores[binInd+bins][iterationInd] + 1
 					iterationInd += 1
-				
-						
+			if len(allGeneZScores) > 0:
+				binZScores[binInd+bins].append(np.median(allGeneZScores))
+	#now, we need the additional bins around the sides of the TADs. Where does the effect end?
+	#because we need to know what the affected patients are for this TAD, we need an extra loop here, where we use all patients from the previous loop to construct a positive and negative set. 
 	
-	return binZScores, randomBinZScores
+	#also use a map for the gene names
+	geneNameConversionMap = dict()
+	geneNameConversionFile = sys.argv[2]
+	with open(geneNameConversionFile, 'r') as inF:
+		
+		lineCount = 0
+		for line in inF:
+			
+			if lineCount < 1:
+				lineCount += 1
+				continue
+			line = line.strip()
+			splitLine = line.split("\t")
+			ensgId = splitLine[3]
+			splitEnsgId = ensgId.split('.') #we only keep everything before the dot
+			geneName = splitLine[4]
+			geneNameConversionMap[splitEnsgId[0]] = geneName
+	
+	#get the expression data
+	expressionFile = sys.argv[3]
+
+	expressionData = []
+	samples = []
+	with open(expressionFile, 'r') as inF:
+		lineCount = 0
+		for line in inF:
+			line = line.strip()
+			if lineCount == 0:
+				samples = ['']
+				samples += line.split("\t")
+	
+				lineCount += 1
+				continue
+			splitLine = line.split("\t")
+			fullGeneName = splitLine[0]
+			if fullGeneName not in geneNameConversionMap:
+				continue
+			geneName = geneNameConversionMap[fullGeneName] #get the gene name rather than the ENSG ID
+	
+			data = splitLine[1:len(splitLine)] 
+			fixedData = [geneName]
+			fixedData += data
+			expressionData.append(fixedData)
+	
+	expressionData = np.array(expressionData, dtype="object")
+	
+	#divide the region into 3 bins on each side.
+	#so, get the coordinates on each side depending on where the TAD pair starts and ends
+	#determine which genes are in these regions
+	#add the additional bins.
+	
+	offset = 500000
+	
+	leftSideOffset = (float(splitTad[1]) - (float(splitTad[1]) - offset)) / bins
+
+	currentStart = float(splitTad[1]) - offset #start at the TAD start
+	binStartsLeft = [currentStart] #list at which position each bin should start.
+	for binInd in range(0, 3):
+		
+		currentStart += leftSideOffset
+		binStartsLeft.append(currentStart)
+	
+	#repeat for the right side
+	rightSideOffset = ((float(splitTad[5]) + offset) - float(splitTad[5])) / bins
+
+	currentStart = float(splitTad[5])
+	binStartsRight = [currentStart] #list at which position each bin should start.
+	for binInd in range(0, 3):
+		
+		currentStart += rightSideOffset
+		binStartsRight.append(currentStart)
+	
+	#re-make the bin array so that we don't lose the old one in case this does not work.
+	#append the additional positions
+	
+	binZScoresOffset = dict()
+	for binInd in range(0, 26):
+			
+		if binInd not in binZScoresOffset:
+			binZScoresOffset[binInd] = []
+	
+	for binInd in range(0, bins*2):
+		binZScoresOffset[binInd+3] = binZScores[binInd]
+		
+	for tad in tadPairs:		
+
+		
+		for binInd in range(0, len(binStartsLeft)-1):
+			
+			#get the genes in this bin
+			genes = geneChrSubset[(geneChrSubset[:,2] >= binStartsLeft[binInd]) * (geneChrSubset[:,1] <= binStartsLeft[binInd+1])]
+			
+			#get the z-scores of these genes
+			
+			allGeneZScores = []
+			for gene in genes:
+				geneName = gene[3].name
+				
+				#get the expression of this gene in the negative set
+				negativeExpr = []
+				positiveExpr = []
+				
+				if geneName not in expressionData[:,0]:
+					continue
+				
+				geneExpr = expressionData[expressionData[:,0] == geneName][0]
+				for sample in range(0, len(samples)):
+					
+					if samples[sample] == '':
+						continue
+					
+					if samples[sample] not in perTadPositivePatients[tad]:
+						negativeExpr.append(float(geneExpr[sample]))
+					else:
+						positiveExpr.append(float(geneExpr[sample]))
+				
+				for patient in positiveExpr:
+					z = (float(patient) - np.mean(negativeExpr)) / float(np.std(negativeExpr))
+					allGeneZScores.append(z)
+			if len(allGeneZScores) > 0:
+				binZScoresOffset[binInd].append(np.median(allGeneZScores))
+				
+		for binInd in range(0, len(binStartsRight)-1):
+			
+			#get the genes in this bin
+			genes = geneChrSubset[(geneChrSubset[:,2] >= binStartsRight[binInd]) * (geneChrSubset[:,1] <= binStartsRight[binInd+1])]
+			
+			#get the z-scores of these genes
+			
+			allGeneZScores = []
+			for gene in genes:
+				geneName = gene[3].name
+				
+				if geneName not in expressionData[:,0]:
+					continue
+				
+				negativeExpr = []
+				positiveExpr = []
+				geneExpr = expressionData[expressionData[:,0] == geneName][0]
+				for sample in range(0, len(samples)):
+					
+					if samples[sample] == '':
+						continue
+					
+					if samples[sample] not in perTadPositivePatients[tad]:
+						negativeExpr.append(float(geneExpr[sample]))
+					else:
+						positiveExpr.append(float(geneExpr[sample]))
+				
+				for patient in positiveExpr:
+					z = (float(patient) - np.mean(negativeExpr)) / float(np.std(negativeExpr))
+					allGeneZScores.append(z)
+			if len(allGeneZScores) > 0:
+				binZScoresOffset[binInd+23].append(np.median(allGeneZScores))
+						
+	return binZScoresOffset, randomBinZScores
 
 
 ### based on DEGs
@@ -560,7 +792,8 @@ def getBinScores(zScores, randomPValuesDir):
 #Get the DEGs and their p-values
 
 #plot the z-scores.
-pValues = np.loadtxt('pValues_ranks.txt', dtype='object')
+pValues = np.loadtxt('pValues.txt', dtype='object')
+#pValues = np.loadtxt('tadDisr/pValues_shuffled_1.txt', dtype='object')
 randomPValuesDir = 'tadDisr/'
 binScores, randomBinScores = getBinScores(pValues, randomPValuesDir)
 
@@ -570,18 +803,21 @@ plt.figure()
 allData = []
 totalLen = 0
 for binInd in range(0, len(binScores)):
-	print('bin:', binInd)
-	print(len(binScores[binInd]))
-	totalLen += len(binScores[binInd])
-	plt.plot(binInd+1, len(binScores[binInd]), marker='*')
+	#print('bin:', binInd)
+	#print(len(binScores[binInd]))
+	#totalLen += len(binScores[binInd])
+	#plt.plot(binInd+1, len(binScores[binInd]), marker='*')
 	#plt.plot(binInd, len(randomBinScores[binInd]), marker='o') #this can later be a boxplot of 100 iterations
 
-	allData.append(randomBinScores[binInd])
+	allData.append(binScores[binInd])
+	#allData.append(randomBinScores[binInd])
+
 
 print(totalLen)
 
 #plt.xticks(range(1,len(binScores)+1))
 plt.boxplot(allData)
+plt.ylim(-5,25)
 plt.show()
 
 exit()
