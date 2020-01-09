@@ -86,9 +86,15 @@ def getZScoresOfZScores(zScores, shuffledZScoresDir):
 			continue
 
 		negScores = genePatientShuffledZScores[zScore[0]][zScore[1]]
+		
+		if np.std(negScores) == 0:
+			continue
+		
 		z = (zScore[2] - np.mean(negScores)) / np.std(negScores)
+		
+		
 
-		zScoresOfZScores.append([zScore[0] + '_' + zScore[1], z])
+		zScoresOfZScores.append([zScore[0] + '_' + zScore[1], np.abs(z)])
 
 	zScoresOfZScores = np.array(zScoresOfZScores, dtype='object')
 

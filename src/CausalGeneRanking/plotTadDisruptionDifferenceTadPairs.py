@@ -291,8 +291,8 @@ def getBinScores(zScores, randomPValuesDir):
 		#if shuffleCount > 0: #check only 1 shuffle for now. 
 		#	continue
 
-		#if shuffledFile != 'tadDisr/pValues_shuffled_1.txt':
-		#	continue
+		if shuffledFile == 'tadDisr/pValues_shuffled_0.txt':
+			continue
 		
 		print(shuffledFile)
 
@@ -350,32 +350,32 @@ def getBinScores(zScores, randomPValuesDir):
 	#then go through the TADs that are disrupted by a non-coding SV. 
 	
 	#Get all SVs
-	svDir = settings.files['svDir']
-	svData = InputParser().getSVsFromFile_hmf(svDir)
-	
-	#Filter out the coding effect SVs, we want to focus on non-coding SVs. 
-	excludedSVs = np.loadtxt(settings.files['excludedSVs'], dtype='object')
-	
-	svType = 'ITX'
-	
-	filteredSVs = []
-	types = []
-	for sv in svData:
-	
-		#if sv[8].svType != svType:
-		#	continue
-		
-		svEntry = sv[0] + "_" + str(sv[1]) + "_" + str(sv[2]) + "_" + sv[3] + "_" + str(sv[4]) + "_" + str(sv[5]) + "_" + sv[8].sampleName
-		if svEntry not in excludedSVs:
-			filteredSVs.append(sv)
-			
-			if sv[8].svType not in types:
-				types.append(sv[8].svType)
-	
-	print(types)
-	filteredSVs = np.array(filteredSVs, dtype='object')
-	
-	np.save('filteredSVs_tadPairs.npy', filteredSVs)
+	# svDir = settings.files['svDir']
+	# svData = InputParser().getSVsFromFile_hmf(svDir)
+	# 
+	# #Filter out the coding effect SVs, we want to focus on non-coding SVs. 
+	# excludedSVs = np.loadtxt(settings.files['excludedSVs'], dtype='object')
+	# 
+	# svType = 'ITX'
+	# 
+	# filteredSVs = []
+	# types = []
+	# for sv in svData:
+	# 
+	# 	#if sv[8].svType != svType:
+	# 	#	continue
+	# 	
+	# 	svEntry = sv[0] + "_" + str(sv[1]) + "_" + str(sv[2]) + "_" + sv[3] + "_" + str(sv[4]) + "_" + str(sv[5]) + "_" + sv[8].sampleName
+	# 	if svEntry not in excludedSVs:
+	# 		filteredSVs.append(sv)
+	# 		
+	# 		if sv[8].svType not in types:
+	# 			types.append(sv[8].svType)
+	# 
+	# print(types)
+	# filteredSVs = np.array(filteredSVs, dtype='object')
+	# 
+	# np.save('filteredSVs_tadPairs.npy', filteredSVs)
 	filteredSVs = np.load('filteredSVs_tadPairs.npy', allow_pickle=True, encoding='latin1')
 	
 	#For each SV, determine which TAD it starts and ends in.
@@ -738,6 +738,25 @@ def getBinScores(zScores, randomPValuesDir):
 	
 	for binInd in range(0, bins*2):
 		binZScoresOffset[binInd+3] = binZScores[binInd]
+	
+	#generate the randomized expression for the regions outside the TAD boundaries
+	from copy import deepcopy
+	randomizedExpressionMatrices = []
+	for i in range(0,50):
+		genes = expressionData[:,0]
+		expression = deepcopy(expressionData[:,1:])
+		expressionT = expression.T
+		np.random.shuffle(expressionT)
+		shuffledExpression = expressionT.T
+		shuffledExpressionData = np.empty(expressionData.shape, dtype='object')
+		shuffledExpressionData[:,0] = genes
+		shuffledExpressionData[:,1:] = shuffledExpression
+	
+		randomizedExpressionMatrices.append(shuffledExpressionData)
+	
+	svPatients = np.load('svPatients.npy', allow_pickle=True, encoding='latin1').item()
+	snvPatients = np.load('snvPatients.npy', allow_pickle=True, encoding='latin1').item()
+	cnvPatients = np.load('cnvPatients.npy', allow_pickle=True, encoding='latin1').item()
 		
 	for tad in tadPairs:		
 
@@ -761,20 +780,81 @@ def getBinScores(zScores, randomPValuesDir):
 					continue
 				
 				geneExpr = expressionData[expressionData[:,0] == geneName][0]
+				
+				positiveSampleInd = []
+				negativeSampleInd = []
+				positivePatients = []
 				for sample in range(0, len(samples)):
 					
 					if samples[sample] == '':
 						continue
 					
 					if samples[sample] not in perTadPositivePatients[tad]:
+						negativeSampleInd.append(sample)
 						negativeExpr.append(float(geneExpr[sample]))
 					else:
+						positiveSampleInd.append(sample)
 						positiveExpr.append(float(geneExpr[sample]))
+						positivePatients.append(samples[sample])
 				
-				for patient in positiveExpr:
+
+				for patientInd in range(0, len(positiveExpr)):
+					patient = positiveExpr[patientInd]
+
+					
+						
+					#exclude this gene if it overlaps a mutation 
+					if geneName in svPatients[positivePatients[patientInd]] or geneName in snvPatients[positivePatients[patientInd]] or geneName in cnvPatients[positivePatients[patientInd]]:
+						continue
+					
+					
 					z = (float(patient) - np.mean(negativeExpr)) / float(np.std(negativeExpr))
-					allGeneZScores.append(z)
+					#allGeneZScores.append(z)
+					
+					#to compute the z-score of z-scores, get the expression of this gene shuffled 100 times.
+					#then each time get a new z-score, and compute the final z-score against this distribution of z-scores.
+					randomZ = []
+					for i in range(0,50):
+
+						#compute random z-score
+						shuffledExpressionData = randomizedExpressionMatrices[i]
+						geneExpr = shuffledExpressionData[shuffledExpressionData[:,0] == geneName][0]
+						negativeExprRandom = [float(i) for i in geneExpr[negativeSampleInd]]
+						positiveExprRandom = [float(i) for i in geneExpr[positiveSampleInd]]
+
+						randomZScore = (float(positiveExpr[patientInd]) - np.mean(negativeExprRandom)) / float(np.std(negativeExprRandom))
+
+						randomZ.append(randomZScore)
+						
+						# print('random z: ', i, randomZScore)
+						# print('expr random: ', i, positiveExpr[patientInd])
+						# print('mean expr random: ', i, np.mean(negativeExprRandom))
+						# print('std expr random: ', i, np.std(negativeExprRandom))
+					
+					#compute z-score of z-scores
+
+					if np.std(randomZ) == 0:
+						continue
+
+					zOfZ = (z - np.mean(randomZ)) / float(np.std(randomZ))
+					
+					if zOfZ > 100:
+						print(gene)
+						print(geneName)
+						print(positivePatients[patientInd])
+						print('z:', z)
+						print('expr: ', patient)
+						print('mean expr: ', np.mean(negativeExpr))
+						print('std expr: ', np.std(negativeExpr))
+						
+						print('all it random mean: ', np.mean(randomZ))
+						print('all it random std: ', np.std(randomZ))
+						exit()
+					#zOfZ = []
+					allGeneZScores.append(zOfZ)	
+					
 			if len(allGeneZScores) > 0:
+				
 				binZScoresOffset[binInd].append(np.median(allGeneZScores))
 				
 		for binInd in range(0, len(binStartsRight)-1):
@@ -793,6 +873,9 @@ def getBinScores(zScores, randomPValuesDir):
 				
 				negativeExpr = []
 				positiveExpr = []
+				negativeSampleInd = []
+				positiveSampleInd = []
+				positivePatients = []
 				geneExpr = expressionData[expressionData[:,0] == geneName][0]
 				for sample in range(0, len(samples)):
 					
@@ -801,12 +884,47 @@ def getBinScores(zScores, randomPValuesDir):
 					
 					if samples[sample] not in perTadPositivePatients[tad]:
 						negativeExpr.append(float(geneExpr[sample]))
+						negativeSampleInd.append(sample)
 					else:
 						positiveExpr.append(float(geneExpr[sample]))
+						positiveSampleInd.append(sample)
+						positivePatients.append(samples[sample])
 				
-				for patient in positiveExpr:
+				for patientInd in range(0, len(positiveExpr)):
+					patient = positiveExpr[patientInd]
+					
+					#exclude this gene if it overlaps a mutation 
+					if geneName in svPatients[positivePatients[patientInd]] or geneName in snvPatients[positivePatients[patientInd]] or geneName in cnvPatients[positivePatients[patientInd]]:
+						continue
+					
 					z = (float(patient) - np.mean(negativeExpr)) / float(np.std(negativeExpr))
-					allGeneZScores.append(z)
+					#allGeneZScores.append(z)
+					#continue
+					
+					#to compute the z-score of z-scores, get the expression of this gene shuffled 100 times.
+					#then each time get a new z-score, and compute the final z-score against this distribution of z-scores.
+					randomZ = []
+					for i in range(0,2):
+
+						#compute random z-score
+						shuffledExpressionData = randomizedExpressionMatrices[i]
+						geneExpr = shuffledExpressionData[shuffledExpressionData[:,0] == geneName][0]
+						negativeExpr = [float(i) for i in geneExpr[negativeSampleInd]]
+						positiveExpr = [float(i) for i in geneExpr[positiveSampleInd]]
+
+						randomZScore = (float(positiveExpr[patientInd]) - np.mean(negativeExpr)) / float(np.std(negativeExpr))
+
+						randomZ.append(randomZScore)
+					
+					#compute z-score of z-scores
+
+					if np.std(randomZ) == 0:
+						continue
+
+					zOfZ = (z - np.mean(randomZ)) / float(np.std(randomZ))
+					#zOfZ = []
+					allGeneZScores.append(zOfZ)	
+					
 			if len(allGeneZScores) > 0:
 				binZScoresOffset[binInd+23].append(np.median(allGeneZScores))
 						
@@ -846,7 +964,7 @@ print(totalLen)
 plt.boxplot(allData)
 #plt.ylim(-5,25)
 plt.show()
-
+#plt.savefig('zScoresOfZScores_distanceBased_2.svg')
 exit()
 
 
