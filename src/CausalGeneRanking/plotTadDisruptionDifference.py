@@ -211,7 +211,7 @@ print('non-disrupted tads: ', nonDisrCount)
 
 
 #to shuffle across patients, first transpose, the shuffle, then transpose back.
-# 
+
 # genes = expressionData[:,0]
 # expression = expressionData[:,1:]
 # expressionT = expression.T
@@ -234,7 +234,13 @@ print('non-disrupted tads: ', nonDisrCount)
 # print(shuffledExpressionData)
 # 
 # expressionData = shuffledExpressionData
-
+expressionDataRavel = expressionData[:,1:].ravel()
+np.random.shuffle(expressionDataRavel)
+expression = expressionDataRavel.reshape(expressionData[:,1:].shape)
+shuffledExpressionData = np.empty(expressionData.shape, dtype='object')
+shuffledExpressionData[:,0] = expressionData[:,0]
+shuffledExpressionData[:,1:] = expression
+expressionData = shuffledExpressionData
 
 #Get a list of all genes * patients that have mutations.
 # 
@@ -464,46 +470,6 @@ svPatients = np.load('svPatients.npy', allow_pickle=True, encoding='latin1').ite
 snvPatients = np.load('snvPatients.npy', allow_pickle=True, encoding='latin1').item()
 cnvPatients = np.load('cnvPatients.npy', allow_pickle=True, encoding='latin1').item()
 
-
-#print(snvPatients)
-#print(svPatients)
-# 
-# svDegs = np.load('Output/RankedGenes/0/BRCA/nonCoding_geneSVPairs.txt__nonCodingPairDEGs.npy', allow_pickle=True, encoding='latin1')
-# #svDegs = np.loadtxt('Output/RankedGenes/0/BRCA/nonCoding_geneSVPairs.txt_', dtype='object')
-# 
-# print(svDegs.shape)
-# 
-# noMutationSets = []
-# cnvSets = []
-# snvSets = []
-# svSets = []
-# 
-# for missedSet in svDegs[:,0]:
-# 	
-# 	splitSet = missedSet.split('_')
-# 
-# 	geneMatch = False
-# 	
-# 	if splitSet[1] in cnvPatients:
-# 		if splitSet[0] in cnvPatients[splitSet[7]]:
-# 			cnvSets.append(missedSet)
-# 			geneMatch = True
-# 	if splitSet[1] in snvPatients:
-# 		if splitSet[0] in snvPatients[splitSet[7]]:
-# 			snvSets.append(missedSet)
-# 			geneMatch = True
-# 	if splitSet[1] in svPatients:
-# 		if splitSet[0] in svPatients[splitSet[7]]:
-# 			svSets.append(missedSet)
-# 			geneMatch = True
-# 	if geneMatch == False:
-# 		noMutationSets.append(missedSet)
-# 
-# print('sets in cnv: ', len(cnvSets))
-# print('sets in snv: ', len(snvSets))
-# print('sets in sv: ', len(svSets))
-# print('sets without mutation: ', len(noMutationSets))
-# 
 geneCheck = 'RNF5'
 patientCheck = 'CPCT02010447T'
 
@@ -586,25 +552,6 @@ for tad in tadDisruptions:
 				
 				nonDisruptedPairs[gene[3].name][patient] = float(geneExpr[patientInd])
 
-#Make a plot of the expression of genes in disrupted TADs compared to the expression in non-disrupted TADs.
-
-# disruptedTadExpression = []
-# nonDisruptedTadExpression = []
-# 
-# for patient in disruptedPairs:
-# 	for gene in disruptedPairs[patient]:
-# 		if disruptedPairs[patient][gene] != 0:
-# 			disruptedTadExpression.append(np.log(disruptedPairs[patient][gene]))
-# 		
-# for gene in nonDisruptedPairs:
-# 	for patient in nonDisruptedPairs[gene]:
-# 		if nonDisruptedPairs[gene][patient] != 0:
-# 			nonDisruptedTadExpression.append(np.log(nonDisruptedPairs[gene][patient]))
-# 
-# allData = [disruptedTadExpression, nonDisruptedTadExpression]
-# plt.boxplot(allData)
-# plt.show()
-
 
 
 #For each gene in the disrupted group, compute the z-score of the gene compared to the expression of all patients in the negative group
@@ -634,7 +581,7 @@ for patient in disruptedPairs:
 		negExpr = []
 		for negPatient in negExprPatients:
 			
-			if gene == 'SEPT2' and patient == 'CPCT02030271T':
+			if gene == 'PSMD13' and patient == 'CPCT02020490T':
 				print('neg patient: ', negPatient)
 				print('expr: ', negExprPatients[negPatient])
 			
@@ -648,15 +595,15 @@ for patient in disruptedPairs:
 		#compute the z-score
 		z = (float(expr) - np.mean(negExpr)) / float(np.std(negExpr))
 		
-		if gene == 'SEPT2' and patient == 'CPCT02030271T':
-			print('expr: ', expr)
-			print('z:', z)
-			print('ean neg: ', np.mean(negExpr))
-			print('std neg: ', np.std(negExpr))
-			import matplotlib.pyplot as plt
-			plt.boxplot(negExpr)
-			plt.show()
-			exit()
+		if gene == 'PSMD13' and patient == 'CPCT02020490T':
+		 	print('expr: ', expr)
+		 	print('z:', z)
+		 	print('ean neg: ', np.mean(negExpr))
+		 	print('std neg: ', np.std(negExpr))
+		# 	import matplotlib.pyplot as plt
+		# 	plt.boxplot(negExpr)
+		# 	plt.show()
+		# 	exit()
 		
 		zScoresPerGene[gene][patient] = z
 		scorePairs.append(patient + '_' + gene)
@@ -702,8 +649,9 @@ signPatients = np.array(signPatients, dtype='object')
 print(signPatients.shape)
 
 #np.savetxt('tadDisr/zScores_random_degs_' + str(permutationRound) + '.txt', zScores, fmt='%s', delimiter='\t')
-np.savetxt('tadDisr/pValues_shuffled_' + str(permutationRound) + '.txt', signPatients, fmt='%s', delimiter='\t')
-#np.savetxt('pValues_ranks.txt', signPatients, fmt='%s', delimiter='\t')
+#np.savetxt('tadDisr/pValues_shuffled_' + str(permutationRound) + '.txt', signPatients, fmt='%s', delimiter='\t')
+np.savetxt('pValues_shuffled_extra.txt', signPatients, fmt='%s', delimiter='\t')
+#np.savetxt('pValues.txt', signPatients, fmt='%s', delimiter='\t')
 exit()
 # import matplotlib.pyplot as plt
 # 

@@ -215,14 +215,10 @@ for gene in geneSampleExpr:
 			continue
 		sampleInd = samples.index(sample)
 		
-		if gene == 'SEPT2':
-			print('neg sample: ', sample)
-			print(float(geneExpression[sampleInd]))
-			
 		negativeSampleExpressionValues.append(float(geneExpression[sampleInd]))
 	
 	negativeExpr[gene] = negativeSampleExpressionValues
-exit()	
+	
 	
 print("negative expr done")
 
@@ -253,18 +249,7 @@ def getDEPairs(pairs, geneSampleRef, epressionData, perPairDifferentialExpressio
 	
 		z = (sampleExpressionValue - np.mean(negativeSampleExpressionValues)) / float(np.std(negativeSampleExpressionValues))
 		pValue = stats.norm.sf(abs(z))*2
-		
-		if gene == 'SEPT2' and pairSample == 'CPCT02030271T':
-			print('expr: ', sampleExpressionValue)
-			print('z:', z)
-			print('ean neg: ', np.mean(negativeSampleExpressionValues))
-			print('std neg: ', np.std(negativeSampleExpressionValues))
-			import matplotlib.pyplot as plt
-			plt.boxplot(negativeSampleExpressionValues)
-			plt.show()
-			exit()
-		
-	
+
 		perPairDifferentialExpression[pair] = pValue
 		zScores[pair] = z
 	return perPairDifferentialExpression, zScores

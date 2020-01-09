@@ -19,21 +19,25 @@ for rank in ruleRanks:
 		tadRanksFiltered.append(float(zScore))
 		ruleRanksFiltered.append(float(rank[3]))
 		
-		
-		if float(rank[3]) > 150:
-			print(splitPair)
-			print(zScore)
+		#if float(rank[3]) < -1.5:
+		#	print(rank)
+		#	print(zScore)
 
-exit()
+
 tadRanksFiltered = np.array(tadRanksFiltered)
 ruleRanksFiltered = np.array(ruleRanksFiltered)
 
-tadRanksFiltered = tadRanksFiltered[tadRanksFiltered < np.percentile(tadRanksFiltered,95)]
-ruleRanksFiltered = ruleRanksFiltered[ruleRanksFiltered < np.percentile(ruleRanksFiltered,95)]
+#tadRanksFiltered = tadRanksFiltered[tadRanksFiltered < np.percentile(tadRanksFiltered,95)]
+#ruleRanksFiltered = ruleRanksFiltered[ruleRanksFiltered < np.percentile(ruleRanksFiltered,95)]
 
 plt.scatter(np.sort(tadRanksFiltered), np.sort(ruleRanksFiltered))
-plt.ylim([-5,180])
-plt.xlim([-5,180])
+#plt.ylim([-5,30])
+#plt.xlim([-5,30])
 plt.xlabel('Z-scores for TAD-based')
 plt.ylabel('Z-scores for rule-based')
+plt.show()
+
+plt.clf()
+
+plt.boxplot([tadRanksFiltered, ruleRanksFiltered])
 plt.show()

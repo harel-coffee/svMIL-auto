@@ -278,20 +278,21 @@ def getBinScores(zScores, randomPValuesDir):
 	
 	zScores = np.array(splitZScores, dtype='object')
 	
-	filteredZScores = zScores[zScores[:,2] < np.percentile(zScores[:,2],95)]
-	zScores = filteredZScores
+	#filteredZScores = zScores[zScores[:,2] < np.percentile(zScores[:,2],95)]
+	#zScores = filteredZScores
 
 	#also load all the zScores of the random shuffles.
 	shuffledZScoreFiles = glob.glob(randomPValuesDir + '/pValues*')
 	
 	allShuffledZScores = []
 	shuffleCount = 0
+	genePatientShuffledZScores = dict()
 	for shuffledFile in shuffledZScoreFiles:
 		#if shuffleCount > 0: #check only 1 shuffle for now. 
 		#	continue
 
-		if shuffledFile != 'tadDisr/pValues_shuffled_1.txt':
-			continue
+		#if shuffledFile != 'tadDisr/pValues_shuffled_1.txt':
+		#	continue
 		
 		print(shuffledFile)
 
@@ -300,19 +301,44 @@ def getBinScores(zScores, randomPValuesDir):
 		for zScore in shuffledZScores:
 			splitScore = zScore[0].split("_")
 			
+			if splitScore[0] not in genePatientShuffledZScores:
+				genePatientShuffledZScores[splitScore[0]] = dict()
+			if splitScore[1] not in genePatientShuffledZScores[splitScore[0]]:
+				genePatientShuffledZScores[splitScore[0]][splitScore[1]] = []
+			
 			#if zScore[3] != 'False':
 			
 			splitShuffledZScores.append([splitScore[0], splitScore[1], float(zScore[5])])
+			genePatientShuffledZScores[splitScore[0]][splitScore[1]].append(float(zScore[5]))
 			
 		splitShuffledZScores = np.array(splitShuffledZScores, dtype='object')
 		
-		filteredZScores = splitShuffledZScores[splitShuffledZScores[:,2] < np.percentile(splitShuffledZScores[:,2],95)]
-		splitShuffledZScores = filteredZScores
+		#filteredZScores = splitShuffledZScores[splitShuffledZScores[:,2] < np.percentile(splitShuffledZScores[:,2],95)]
+		#splitShuffledZScores = filteredZScores
 
 		allShuffledZScores.append(splitShuffledZScores)
 		shuffleCount += 1
-
+	
 	allShuffledZScores = np.array(allShuffledZScores, dtype='object')
+
+	#compute z-score of z-scores
+	zScoresOfZScores = []
+	for zScore in zScores:
+		
+		if zScore[0] not in genePatientShuffledZScores:
+			continue
+		if zScore[1] not in genePatientShuffledZScores[zScore[0]]:
+			continue
+
+		negScores = genePatientShuffledZScores[zScore[0]][zScore[1]]
+		z = (zScore[2] - np.mean(negScores)) / np.std(negScores)
+
+		zScoresOfZScores.append([zScore[0], zScore[1], z])
+
+	zScoresOfZScores = np.array(zScoresOfZScores, dtype='object')
+	print(zScores.shape)
+	print(zScoresOfZScores.shape)
+	zScores = zScoresOfZScores
 
 	causalGenes = InputParser().readCausalGeneFile(settings.files['causalGenesFile'])
 	nonCausalGenes = InputParser().readNonCausalGeneFile(settings.files['nonCausalGenesFile'], causalGenes) #In the same format as the causal genes.
@@ -359,7 +385,7 @@ def getBinScores(zScores, randomPValuesDir):
 	
 	#plot the expression between disrupted and non-disrupted TADs
 	#plotExpressionComparison(zScores, allShuffledZScores, tadData, allGenes, filteredSVs)
-	
+	#exit()
 	
 	
 	tadPairs = dict() #keep the pair as name, and the patients as value. 
@@ -577,14 +603,14 @@ def getBinScores(zScores, randomPValuesDir):
 				#repeat for all shuffled p-values.
 				
 				#I need to know for this TAD how many DEGs there are. So that should be per iteration.
-				iterationInd = 0
-				for iterationZScores in allShuffledZScores:
-					shuffledGeneZScores = iterationZScores[iterationZScores[:,1] == geneName]
-					
-					for patient in range(0, len(shuffledGeneZScores[:,0])):
-						randomBinZScores[binInd][iterationInd] = randomBinZScores[binInd][iterationInd] + 1
-							
-					iterationInd += 1
+				# iterationInd = 0
+				# for iterationZScores in allShuffledZScores:
+				# 	shuffledGeneZScores = iterationZScores[iterationZScores[:,1] == geneName]
+				# 	
+				# 	for patient in range(0, len(shuffledGeneZScores[:,0])):
+				# 		randomBinZScores[binInd][iterationInd] = randomBinZScores[binInd][iterationInd] + 1
+				# 			
+				# 	iterationInd += 1
 			if len(allGeneZScores) > 0:
 				binZScores[binInd].append(np.median(allGeneZScores))
 	
@@ -616,14 +642,14 @@ def getBinScores(zScores, randomPValuesDir):
 			
 							
 				#I need to know for this TAD how many DEGs there are. So that should be per iteration.
-				iterationInd = 0
-				for iterationZScores in allShuffledZScores:
-					
-					shuffledGeneZScores = iterationZScores[iterationZScores[:,1] == geneName]
-					for patient in range(0, len(shuffledGeneZScores[:,0])):
-
-						randomBinZScores[binInd+bins][iterationInd] = randomBinZScores[binInd+bins][iterationInd] + 1
-					iterationInd += 1
+				# iterationInd = 0
+				# for iterationZScores in allShuffledZScores:
+				# 	
+				# 	shuffledGeneZScores = iterationZScores[iterationZScores[:,1] == geneName]
+				# 	for patient in range(0, len(shuffledGeneZScores[:,0])):
+				# 
+				# 		randomBinZScores[binInd+bins][iterationInd] = randomBinZScores[binInd+bins][iterationInd] + 1
+				# 	iterationInd += 1
 			if len(allGeneZScores) > 0:
 				binZScores[binInd+bins].append(np.median(allGeneZScores))
 	#now, we need the additional bins around the sides of the TADs. Where does the effect end?
@@ -794,10 +820,11 @@ def getBinScores(zScores, randomPValuesDir):
 #plot the z-scores.
 pValues = np.loadtxt('pValues.txt', dtype='object')
 #pValues = np.loadtxt('tadDisr/pValues_shuffled_1.txt', dtype='object')
+#pValues = np.loadtxt('pValues_shuffled_extra.txt', dtype='object')
 randomPValuesDir = 'tadDisr/'
 binScores, randomBinScores = getBinScores(pValues, randomPValuesDir)
 
-
+print('plotting')
 
 plt.figure()
 allData = []
@@ -817,101 +844,10 @@ print(totalLen)
 
 #plt.xticks(range(1,len(binScores)+1))
 plt.boxplot(allData)
-plt.ylim(-5,25)
+#plt.ylim(-5,25)
 plt.show()
 
 exit()
 
-
-pValues = []
-for binInd in range(0, len(binScores)):
-	
-	z = (np.mean(binScores[binInd]) - np.mean(randomBinScores[binInd])) / float(np.std(randomBinScores[binInd]))
-	pValue = stats.norm.sf(abs(z))
-	pValues.append(pValue)
-
-
-print(pValues)
-reject, pAdjusted, _, _ = multipletests(pValues, method='bonferroni') #fdr_bh or bonferroni
-print(reject)
-print(pAdjusted)
-
-
-
-allData = []
-for binInd in range(0, bins*2):
-	allData.append(binScores[binInd])
-	
-	#Add significance stars to the plot
-	if reject[binInd] == True:
-		plt.scatter(binInd, 1800, marker='*')
-
-plt.boxplot(allData)
-plt.ylim([-100, 1900])
-plt.show()
-plt.clf()
-
-
-allData = []
-for binInd in range(0, bins*2):
-	allData.append(randomBinScores[binInd])
-
-plt.boxplot(allData)
-plt.ylim([-100, 1900])
-plt.show()
-
-exit()
-
-##### old code based on z-scores
-
-
-#First collect the genes that have a z-score (filtered for mutation effects) and get their positions within the TAD
-zScores = np.loadtxt('zScores.txt', dtype='object')
-binScores = getBinScores(zScores)
-
-randomZScores = np.loadtxt('zScores_random_degs.txt', dtype='object')
-randomBinScores = getBinScores(randomZScores)
-
-#Compute the p-value between distributions, which is significant?
-pValues = []
-for binInd in range(0, len(binScores)):
-	
-	print(np.mean(binScores[binInd]))
-
-	print(np.mean(randomBinScores[binInd]))
-	print(np.std(randomBinScores[binInd]))
-	
-	#print(binScores[binInd])
-	#print(randomBinScores[binInd])
-	
-	z = (np.mean(binScores[binInd]) - np.mean(randomBinScores[binInd])) / float(np.std(randomBinScores[binInd]))
-	pValue = stats.norm.sf(abs(z))
-	pValues.append(pValue)
-
-
-print(pValues)
-reject, pAdjusted, _, _ = multipletests(pValues, method='bonferroni') #fdr_bh or bonferroni
-print(reject)
-print(pAdjusted)
-
-#Make a series of boxplots
-
-import matplotlib.pyplot as plt
-
-allData = []
-for binInd in range(0, bins*2):
-	allData.append(binScores[binInd])
-
-	#Add significance stars to the plot
-	if reject[binInd] == True:
-		plt.scatter(binInd, 1900, marker='*')
-
-
-plt.boxplot(allData)
-plt.ylim([-250, 1900])
-plt.show()
-	
-	
-	
 
 
