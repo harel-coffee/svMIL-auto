@@ -94,7 +94,7 @@ def getZScoresOfZScores(zScores, shuffledZScoresDir):
 		
 		
 
-		zScoresOfZScores.append([zScore[0] + '_' + zScore[1], np.abs(z)])
+		zScoresOfZScores.append([zScore[0] + '_' + zScore[1], z])
 
 	zScoresOfZScores = np.array(zScoresOfZScores, dtype='object')
 

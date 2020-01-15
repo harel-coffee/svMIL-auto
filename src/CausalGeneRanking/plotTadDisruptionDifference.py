@@ -69,15 +69,21 @@ with open(expressionFile, 'r') as inF:
 			continue
 		geneName = geneNameConversionMap[fullGeneName] #get the gene name rather than the ENSG ID
 
-		data = splitLine[1:len(splitLine)] 
+		data = splitLine[1:len(splitLine)]
+		
+		if geneName == 'ETV1':
+			plt.boxplot([float(i) for i in data])
+			plt.show()
+		
 		fixedData = [geneName]
 		fixedData += data
 		expressionData.append(fixedData)
 
 expressionData = np.array(expressionData, dtype="object")
 print(expressionData)
-
-#Get all SVs
+exit()
+# 
+# #Get all SVs
 # svDir = settings.files['svDir']
 # svData = InputParser().getSVsFromFile_hmf(svDir)
 # 
@@ -97,10 +103,11 @@ print(expressionData)
 # 	if svEntry not in excludedSVs:
 # 		filteredSVs.append(sv)
 # 		
-# 		if sv[8].svType not in types:
-# 			types.append(sv[8].svType)
+# 	#	if sv[8].svType not in types:
+# 	#		types.append(sv[8].svType)
+# 	#filteredSVs.append(sv)
 # 
-# 	
+# print(types)	
 # 
 # filteredSVs = np.array(filteredSVs, dtype='object')
 # 
@@ -145,12 +152,16 @@ for tad in tadData:
 	
 	for match in allMatches:
 		
+		if tadStr == 'chr7_13300000_14750000':
+			print(match)
+			print(match[8].svType)
+		
 		svStr = match[0] + '_' + str(match[1]) + '_' + str(match[2]) + '_' + match[3] + '_' + str(match[4]) + '_' + str(match[5]) + '_' + match[7]
 
 		
 		if match[7] not in tadDisruptions[tadStr]:
 
-			tadDisruptions[tadStr].append(match[7])
+			tadDisruptions[tadStr].append([match[7], match])
 
 	#then repeat for interchromosomal SVs.
 	#check if there is any bp in this TAD to count it as disrupted.
@@ -171,36 +182,40 @@ for tad in tadData:
 	
 	for match in allChr1Matches:
 		
-		svStr = match[0] + '_' + str(match[1]) + '_' + str(match[2]) + '_' + match[3] + '_' + str(match[4]) + '_' + str(match[5]) + '_' + match[7]
+		if tadStr == 'chr7_13300000_14750000':
+			print(match)
+			print(match[8].svType)
 		
-		if svStr == 'RNF5_chr6_32378658_32378658_chr20_26123870_26123870_CPCT02010447T':
-			print('matched on chr1: ', tadStr)
+		svStr = match[0] + '_' + str(match[1]) + '_' + str(match[2]) + '_' + match[3] + '_' + str(match[4]) + '_' + str(match[5]) + '_' + match[7]
 		
 		if match[7] not in tadDisruptions[tadStr]:
 			
 			
-			tadDisruptions[tadStr].append(match[7])
-	
+			tadDisruptions[tadStr].append([match[7], match])
+			
 	for match in allChr2Matches:
 		
-		svStr = match[0] + '_' + str(match[1]) + '_' + str(match[2]) + '_' + match[3] + '_' + str(match[4]) + '_' + str(match[5]) + '_' + match[7]
+		if tadStr == 'chr7_13300000_14750000':
+			print(match)
+			print(match[8].svType)
 		
-		if svStr == 'RNF5_chr6_32378658_32378658_chr20_26123870_26123870_CPCT02010447T':
-				print('matched on chr2: ', tadStr)
+		svStr = match[0] + '_' + str(match[1]) + '_' + str(match[2]) + '_' + match[3] + '_' + str(match[4]) + '_' + str(match[5]) + '_' + match[7]
 		
 		if match[7] not in tadDisruptions[tadStr]:
 			
 			
 			
-			tadDisruptions[tadStr].append(match[7])
+			tadDisruptions[tadStr].append([match[7], match])
 
 #check which TADs we have with disruptions, validate
 	
 disrCount = 0
 nonDisrCount = 0
-for tad in tadDisruptions:
+for tad in tadData:
 	
-	if len(tadDisruptions[tad]) > 0:
+	tadStr = tad[0] + '_' + str(tad[1]) + '_' + str(tad[2])
+	
+	if len(tadDisruptions[tadStr]) > 0:
 		disrCount += 1
 	else:
 		nonDisrCount += 1
@@ -234,13 +249,13 @@ print('non-disrupted tads: ', nonDisrCount)
 # print(shuffledExpressionData)
 # 
 # expressionData = shuffledExpressionData
-expressionDataRavel = expressionData[:,1:].ravel()
-np.random.shuffle(expressionDataRavel)
-expression = expressionDataRavel.reshape(expressionData[:,1:].shape)
-shuffledExpressionData = np.empty(expressionData.shape, dtype='object')
-shuffledExpressionData[:,0] = expressionData[:,0]
-shuffledExpressionData[:,1:] = expression
-expressionData = shuffledExpressionData
+# expressionDataRavel = expressionData[:,1:].ravel()
+# np.random.shuffle(expressionDataRavel)
+# expression = expressionDataRavel.reshape(expressionData[:,1:].shape)
+# shuffledExpressionData = np.empty(expressionData.shape, dtype='object')
+# shuffledExpressionData[:,0] = expressionData[:,0]
+# shuffledExpressionData[:,1:] = expression
+# expressionData = shuffledExpressionData
 
 #Get a list of all genes * patients that have mutations.
 # 
@@ -508,10 +523,11 @@ for gene in allGenes:
 
 #for the non-disrupted, the patient does not matter, so keep all patient just in 1 array.
 
+tadPositiveAndNegativeSet = []
 
-
+tadInd = 0
 for tad in tadDisruptions:
-	
+
 	#find the genes that are in this TAD
 	
 	splitTad = tad.split("_")
@@ -527,6 +543,9 @@ for tad in tadDisruptions:
 	#add genes only when these are not affected by any mutation
 
 	#go through all the genes and all the patients and their expression values.
+	positivePatients = []
+	svTypes = []
+	negativePatients = []
 	for gene in allMatches:
 
 		#extract the row for this gene
@@ -537,21 +556,43 @@ for tad in tadDisruptions:
 		geneExpr = expressionData[expressionData[:,0] == gene[3].name][0]
 		
 		#for each patient, append the expression to either the disrupted or non-disrupted based on the tad patient list
+		
+		for sv in tadDisruptions[tad]:
+			
+			patient = sv[0]
+			if patient not in samples:
+				continue
+			patientInd = samples.index(patient)
+			
+		
+			if gene[3].name in cnvPatients[patient] or gene[3].name in snvPatients[patient] or gene[3].name in svPatients[patient]:
+				continue
+			
+			disruptedPairs[patient][gene[3].name] = float(geneExpr[patientInd])
+			if patient not in positivePatients:
+				positivePatients.append(patient)
+				svTypes.append(sv[1][8].svType)
+		
+			
+		
 		for patientInd in range(1, len(samples)):
 			
 			patient = samples[patientInd]
 			
 			if gene[3].name in cnvPatients[patient] or gene[3].name in snvPatients[patient] or gene[3].name in svPatients[patient]:
 				continue
-		
 
-			if patient in tadDisruptions[tad]:
-				disruptedPairs[patient][gene[3].name] = float(geneExpr[patientInd])
-			
-			else:
+			if patient not in tadDisruptions[tad]:
 				
 				nonDisruptedPairs[gene[3].name][patient] = float(geneExpr[patientInd])
+				if patient not in negativePatients:
+					negativePatients.append(patient)
 
+
+	tadPositiveAndNegativeSet.append([tad, positivePatients, negativePatients, svTypes])
+	tadInd += 1
+tadPositiveAndNegativeSet = np.array(tadPositiveAndNegativeSet, dtype='object')
+#np.savetxt('tadPositiveAndNegativeSet.txt', tadPositiveAndNegativeSet, fmt='%s', delimiter='\t')
 
 
 #For each gene in the disrupted group, compute the z-score of the gene compared to the expression of all patients in the negative group
@@ -581,7 +622,7 @@ for patient in disruptedPairs:
 		negExpr = []
 		for negPatient in negExprPatients:
 			
-			if gene == 'PSMD13' and patient == 'CPCT02020490T':
+			if gene == 'ETV1' and patient == 'CPCT02080128T':
 				print('neg patient: ', negPatient)
 				print('expr: ', negExprPatients[negPatient])
 			
@@ -595,13 +636,15 @@ for patient in disruptedPairs:
 		#compute the z-score
 		z = (float(expr) - np.mean(negExpr)) / float(np.std(negExpr))
 		
-		if gene == 'PSMD13' and patient == 'CPCT02020490T':
-		 	print('expr: ', expr)
-		 	print('z:', z)
-		 	print('ean neg: ', np.mean(negExpr))
-		 	print('std neg: ', np.std(negExpr))
+		# if gene == 'ETV1' and patient == 'CPCT02080128T':
+		# 	print('expr: ', expr)
+		# 	print('z:', z)
+		# 	print('ean neg: ', np.mean(negExpr))
+		# 	print('std neg: ', np.std(negExpr))
+		# 	
 		# 	import matplotlib.pyplot as plt
 		# 	plt.boxplot(negExpr)
+		# 	plt.scatter([1],[expr])
 		# 	plt.show()
 		# 	exit()
 		
@@ -650,7 +693,7 @@ print(signPatients.shape)
 
 #np.savetxt('tadDisr/zScores_random_degs_' + str(permutationRound) + '.txt', zScores, fmt='%s', delimiter='\t')
 #np.savetxt('tadDisr/pValues_shuffled_' + str(permutationRound) + '.txt', signPatients, fmt='%s', delimiter='\t')
-np.savetxt('pValues_shuffled_extra.txt', signPatients, fmt='%s', delimiter='\t')
+np.savetxt('pValues2.txt', signPatients, fmt='%s', delimiter='\t')
 #np.savetxt('pValues.txt', signPatients, fmt='%s', delimiter='\t')
 exit()
 # import matplotlib.pyplot as plt
