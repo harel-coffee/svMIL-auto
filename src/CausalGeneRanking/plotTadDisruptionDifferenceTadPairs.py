@@ -12,6 +12,7 @@ from statsmodels.sandbox.stats.multicomp import multipletests
 from scipy import stats
 import matplotlib.pyplot as plt
 import glob
+import ast
 
 bins = 10
 
@@ -410,6 +411,10 @@ def getBinScores(zScores, randomPValuesDir):
 			#Get the leftmost and rightmost TADs
 			farLeftTad = tadMatches[0] #This list is sorted
 			farRightTad = tadMatches[tadMatches.shape[0]-1]
+			
+			if farRightTad[0] + '_' + str(farRightTad[1]) + '_' + str(farRightTad[2]) == 'chr6_161125000_161800000':
+				print(sv)
+				
 		
 			tadPair = farLeftTad[0] + '_' + str(farLeftTad[1]) + '_' + str(farLeftTad[2]) + '_' + farRightTad[0] + '_' + str(farRightTad[1]) + '_' + str(farRightTad[2])
 			
@@ -455,7 +460,9 @@ def getBinScores(zScores, randomPValuesDir):
 				tadPairs[tadPair] = []
 			tadPairs[tadPair].append(sv[7])
 			
-	
+			if farRightTad[0] + '_' + str(farRightTad[1]) + '_' + str(farRightTad[2]) == 'chr6_161125000_161800000':
+				print(sv)
+		
 	#have an additional filter here for the TADs; if there is one TAD pair where we also see the same TAD boundary disrupted again in the same patient, but on another side, we should ignore it for now. 
 	
 	#if the start of the left TAD is also the end of another pair, or te end of the right TAD is the start of another pair, then we should remove this pair.
@@ -581,6 +588,9 @@ def getBinScores(zScores, randomPValuesDir):
 
 	
 	#Collect all random iterations here as well. Get these at once for easy access. For each gene/patient combination, list the zScores. 
+	svPatients = np.load('svPatients.npy', allow_pickle=True, encoding='latin1').item()
+	snvPatients = np.load('snvPatients.npy', allow_pickle=True, encoding='latin1').item()
+	cnvPatients = np.load('cnvPatients.npy', allow_pickle=True, encoding='latin1').item()
 	
 						
 	bins = 10 #have 10 on each side. 
@@ -597,8 +607,14 @@ def getBinScores(zScores, randomPValuesDir):
 			randomBinZScores[binInd] = np.zeros([len(allShuffledZScores)])
 
 	perTadPositivePatients = dict()
-
+	
 	for tad in tadPairs:
+		
+		#print(tad)
+		#if tad != 'chr20_13775000_14050000_chr20_14075000_16775000':
+		#	continue
+		print('tad:', tad)
+		
 		perTadPositivePatients[tad] = []
 	
 		splitTad = tad.split('_')
@@ -642,21 +658,17 @@ def getBinScores(zScores, randomPValuesDir):
 			for gene in genes:
 				geneName = gene[3].name
 				
-				
-				
 				if geneName in zScores[:,1]: #only add the gene if it has a match.
 					
-					
-					
 					geneZScores = zScores[zScores[:,1] == geneName]
-					
+					print(geneZScores)
 					#keep the z-scores separate for each patient
 					for patient in range(0, len(geneZScores[:,0])):
 						
-						if geneName + '_' + geneZScores[patient,0] not in ruleBasedPairs:
-							continue
-						if geneZScores[patient,0] != 'CPCT02180028T':
-							continue
+						#if geneName + '_' + geneZScores[patient,0] not in ruleBasedPairs:
+						#	continue
+						#if geneZScores[patient,0] != 'CPCT02020493T':
+						#	continue
 						# if geneZScores[patient,0] == 'CPCT02080128T':
 						# 	
 						# 	print(geneName)
@@ -664,15 +676,17 @@ def getBinScores(zScores, randomPValuesDir):
 						# 	print(tad)
 						
 						if geneZScores[patient,0] not in perTadPositivePatients[tad]:
-							print('patient: ', geneZScores[patient,0])
+							
 							
 							perTadPositivePatients[tad].append(geneZScores[patient,0])
+						print('left')
+						print(geneZScores[patient,0])
 						allGeneZScores.append(float(geneZScores[patient,2]))
 	
 			if len(allGeneZScores) > 0:
 				#binZScores[binInd].append(np.mean(allGeneZScores))
 				binZScores[binInd] += allGeneZScores
-	
+		
 		#now for TAD 2, start from where the TAD 1 indices left off. 
 		geneChrSubset = allGenes[allGenes[:,0] == splitTad[3]]
 		
@@ -688,26 +702,26 @@ def getBinScores(zScores, randomPValuesDir):
 				
 				if geneName in zScores[:,1]:
 					
-					
 					geneZScores = zScores[zScores[:,1] == geneName]
 					
 					#keep the z-scores separate for each patient
 					for patient in range(0, len(geneZScores[:,0])):
+						print(geneZScores)
+						#if geneName + '_' + geneZScores[patient,0] not in ruleBasedPairs:
+						#	continue
 						
-						if geneName + '_' + geneZScores[patient,0] not in ruleBasedPairs:
-							continue
-						
-						if geneZScores[patient,0] != 'CPCT02180028T':
-							continue
+						#if geneZScores[patient,0] != 'CPCT02020493T':
+						#	continue
 						
 						if geneZScores[patient,0] not in perTadPositivePatients[tad]:
 							perTadPositivePatients[tad].append(geneZScores[patient,0])
+						print('right')
+						print(geneZScores[patient,0])	
 						allGeneZScores.append(float(geneZScores[patient,2]))
 
 			if len(allGeneZScores) > 0:
 				#binZScores[binInd+bins].append(np.mean(allGeneZScores))
 				binZScores[binInd+bins] += allGeneZScores
-	
 	
 	#divide the region into 3 bins on each side.
 	#so, get the coordinates on each side depending on where the TAD pair starts and ends
@@ -741,13 +755,9 @@ def getBinScores(zScores, randomPValuesDir):
 	
 	#expressionData = randomizedExpressionMatrices[0]
 	
-	svPatients = np.load('svPatients.npy', allow_pickle=True, encoding='latin1').item()
-	snvPatients = np.load('snvPatients.npy', allow_pickle=True, encoding='latin1').item()
-	cnvPatients = np.load('cnvPatients.npy', allow_pickle=True, encoding='latin1').item()
 	
 	tadPositiveAndNegativeSet = []
-	import ast
-	with open('tadPositiveAndNegativeSet.txt', 'r') as inF:
+	with open('tadPositiveAndNegativeSet_' + svType + '.txt', 'r') as inF:
 		
 		for line in inF:
 			
@@ -755,11 +765,13 @@ def getBinScores(zScores, randomPValuesDir):
 			tad = splitLine[0]
 			positiveSet = ast.literal_eval(splitLine[1])
 			negativeSet = ast.literal_eval(splitLine[2])
+			svTypes = ast.literal_eval(splitLine[3])
 			
-			tadPositiveAndNegativeSet.append([tad, positiveSet, negativeSet])
+			tadPositiveAndNegativeSet.append([tad, positiveSet, negativeSet, svTypes])
 	
 	tadPositiveAndNegativeSet = np.array(tadPositiveAndNegativeSet, dtype='object')
-			
+
+	
 	#so instead of looking at a region around the TADs, use the TADs that are not affected.
 	#so per pair, find where it is in the positive/negative set file
 	#get the previous or next one
@@ -767,6 +779,11 @@ def getBinScores(zScores, randomPValuesDir):
 	#if the tad is not affected, add the same amount of bins as the affected tads and plot these on the left and right. 
 	
 	for tad in tadPairs:
+		
+		#print(tad)
+		#if tad != 'chr20_13775000_14050000_chr20_14075000_16775000':
+		#	continue
+		print('tad: ', tad)
 	
 		splitTad = tad.split('_')
 		leftTad = splitTad[0] + '_' + splitTad[1] + '_' + splitTad[2]
@@ -777,7 +794,11 @@ def getBinScores(zScores, randomPValuesDir):
 		leftAdjacentTad = tadPositiveAndNegativeSet[leftTadPosition-1][0]
 		splitLeftAdjacentTad = leftAdjacentTad[0].split('_')
 		leftNegativeSet = leftAdjacentTad[2]
+		
+		splitPos = splitLeftAdjacentTad[0].split('_')
 
+		if splitPos[0] != splitTad[0]: #check if the TAD is on the next chromosome
+			continue
 
 		#check if this TAD is disrupted, if yes, skip this TAD pair
 		if len(leftAdjacentTad[1]) > 0:
@@ -848,7 +869,8 @@ def getBinScores(zScores, randomPValuesDir):
 				for patientInd in range(0, len(positiveExpr)):
 					patient = positiveExpr[patientInd]
 					
-					if positivePatients[patientInd] != 'CPCT02180028T':
+					#only the patients that we also selected for the disrupted TADs
+					if positivePatients[patientInd] not in perTadPositivePatients[tad]:
 						continue
 
 					#if geneName + '_' + positivePatients[patientInd] not in ruleBasedPairs:
@@ -856,6 +878,9 @@ def getBinScores(zScores, randomPValuesDir):
 					
 					z = (float(patient) - np.mean(negativeExpr)) / float(np.std(negativeExpr))
 					allGeneZScores.append(z)
+					
+					print('adjacent left')
+					print(positivePatients[patientInd])
 					
 					# if positivePatients[patientInd] == 'CPCT02080128T':
 					# 	print(geneName)
@@ -912,9 +937,13 @@ def getBinScores(zScores, randomPValuesDir):
 		#get the TAD to the left of this tad pair
 		rightTadPosition = np.where(tadPositiveAndNegativeSet[:,0] == rightTad)[0]
 
-		rightAdjacentTad = tadPositiveAndNegativeSet[rightTadPosition-1][0]
+		rightAdjacentTad = tadPositiveAndNegativeSet[rightTadPosition+1][0]
 		splitRightAdjacentTad = rightAdjacentTad[0].split('_')
 		rightNegativeSet = rightAdjacentTad[2]
+		
+		splitPos = splitRightAdjacentTad[0].split('_')
+		if splitPos[0] != splitTad[3]: #check if the TAD is on the next chromosome
+			continue
 
 		#check if this TAD is disrupted, if yes, skip this TAD pair
 		if len(rightAdjacentTad[1]) > 0:
@@ -948,6 +977,7 @@ def getBinScores(zScores, randomPValuesDir):
 				positiveExpr = []
 				
 				if geneName not in expressionData[:,0]:
+				
 					continue
 				
 				geneExpr = expressionData[expressionData[:,0] == geneName][0]
@@ -967,6 +997,7 @@ def getBinScores(zScores, randomPValuesDir):
 						
 						#exclude this gene if it overlaps a mutation 
 						if geneName in svPatients[samples[sample]] or geneName in snvPatients[samples[sample]] or geneName in cnvPatients[samples[sample]]:
+
 							continue
 						
 						positiveSampleInd.append(sample)
@@ -985,7 +1016,7 @@ def getBinScores(zScores, randomPValuesDir):
 				for patientInd in range(0, len(positiveExpr)):
 					patient = positiveExpr[patientInd]
 					
-					if positivePatients[patientInd] != 'CPCT02180028T':
+					if positivePatients[patientInd] not in perTadPositivePatients[tad]:
 						continue
 
 					#if geneName + '_' + positivePatients[patientInd] not in ruleBasedPairs:
@@ -994,6 +1025,11 @@ def getBinScores(zScores, randomPValuesDir):
 					z = (float(patient) - np.mean(negativeExpr)) / float(np.std(negativeExpr))
 					allGeneZScores.append(z)
 					#allGeneZScores.append(float(patient))
+					
+					print('adjacent right')
+					print(positivePatients[patientInd])
+
+					
 					continue
 					#to compute the z-score of z-scores, get the expression of this gene shuffled 100 times.
 					#then each time get a new z-score, and compute the final z-score against this distribution of z-scores.
@@ -1196,9 +1232,9 @@ def getBinScores(zScores, randomPValuesDir):
 ### based on DEGs
 
 #Get the DEGs and their p-values
-
+svType = sys.argv[1]
 #plot the z-scores.
-pValues = np.loadtxt('pValues.txt', dtype='object')
+pValues = np.loadtxt('pValues_' + svType + '.txt', dtype='object')
 #pValues = np.loadtxt('tadDisr/pValues_shuffled_1.txt', dtype='object')
 #pValues = np.loadtxt('pValues_shuffled_extra.txt', dtype='object')
 randomPValuesDir = 'tadDisr/'
@@ -1224,7 +1260,8 @@ print(totalLen)
 #plt.xticks(range(1,len(binScores)+1))
 plt.boxplot(allData)
 #plt.ylim(-3,13)
-plt.show()
+#plt.show()
+plt.savefig('distanceBased_ruleBased_' + sys.argv[1] + '.svg')
 #plt.savefig('zScoresOfZScores_distanceBased_2.svg')
 exit()
 

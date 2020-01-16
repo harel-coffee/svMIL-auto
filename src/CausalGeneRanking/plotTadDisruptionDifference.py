@@ -71,47 +71,43 @@ with open(expressionFile, 'r') as inF:
 
 		data = splitLine[1:len(splitLine)]
 		
-		if geneName == 'ETV1':
-			plt.boxplot([float(i) for i in data])
-			plt.show()
-		
 		fixedData = [geneName]
 		fixedData += data
 		expressionData.append(fixedData)
 
 expressionData = np.array(expressionData, dtype="object")
 print(expressionData)
-exit()
+
 # 
 # #Get all SVs
-# svDir = settings.files['svDir']
-# svData = InputParser().getSVsFromFile_hmf(svDir)
-# 
-# #Filter out the coding effect SVs, we want to focus on non-coding SVs. 
-# excludedSVs = np.loadtxt(settings.files['excludedSVs'], dtype='object')
-# 
-# #svType = 'ITX'
-# 
-# filteredSVs = []
-# types = []
-# for sv in svData:
-# 
-# 	# if sv[8].svType != svType:
-# 	# 	continue
-# 	# 
-# 	svEntry = sv[0] + "_" + str(sv[1]) + "_" + str(sv[2]) + "_" + sv[3] + "_" + str(sv[4]) + "_" + str(sv[5]) + "_" + sv[8].sampleName
-# 	if svEntry not in excludedSVs:
-# 		filteredSVs.append(sv)
-# 		
-# 	#	if sv[8].svType not in types:
-# 	#		types.append(sv[8].svType)
-# 	#filteredSVs.append(sv)
-# 
-# print(types)	
-# 
-# filteredSVs = np.array(filteredSVs, dtype='object')
-# 
-# np.save('filteredSVs.npy', filteredSVs)
+svDir = settings.files['svDir']
+svData = InputParser().getSVsFromFile_hmf(svDir)
+
+#Filter out the coding effect SVs, we want to focus on non-coding SVs. 
+excludedSVs = np.loadtxt(settings.files['excludedSVs'], dtype='object')
+
+svType = sys.argv[5]
+
+filteredSVs = []
+types = []
+for sv in svData:
+
+	if sv[8].svType != svType:
+	 	continue
+	# 
+	svEntry = sv[0] + "_" + str(sv[1]) + "_" + str(sv[2]) + "_" + sv[3] + "_" + str(sv[4]) + "_" + str(sv[5]) + "_" + sv[8].sampleName
+	if svEntry not in excludedSVs:
+		filteredSVs.append(sv)
+		
+	#	if sv[8].svType not in types:
+	#		types.append(sv[8].svType)
+	#filteredSVs.append(sv)
+
+print(types)	
+
+filteredSVs = np.array(filteredSVs, dtype='object')
+
+np.save('filteredSVs.npy', filteredSVs)
 
 filteredSVs = np.load('filteredSVs.npy', allow_pickle=True, encoding='latin1')
 print(filteredSVs.shape)
@@ -152,10 +148,6 @@ for tad in tadData:
 	
 	for match in allMatches:
 		
-		if tadStr == 'chr7_13300000_14750000':
-			print(match)
-			print(match[8].svType)
-		
 		svStr = match[0] + '_' + str(match[1]) + '_' + str(match[2]) + '_' + match[3] + '_' + str(match[4]) + '_' + str(match[5]) + '_' + match[7]
 
 		
@@ -182,10 +174,6 @@ for tad in tadData:
 	
 	for match in allChr1Matches:
 		
-		if tadStr == 'chr7_13300000_14750000':
-			print(match)
-			print(match[8].svType)
-		
 		svStr = match[0] + '_' + str(match[1]) + '_' + str(match[2]) + '_' + match[3] + '_' + str(match[4]) + '_' + str(match[5]) + '_' + match[7]
 		
 		if match[7] not in tadDisruptions[tadStr]:
@@ -194,10 +182,6 @@ for tad in tadData:
 			tadDisruptions[tadStr].append([match[7], match])
 			
 	for match in allChr2Matches:
-		
-		if tadStr == 'chr7_13300000_14750000':
-			print(match)
-			print(match[8].svType)
 		
 		svStr = match[0] + '_' + str(match[1]) + '_' + str(match[2]) + '_' + match[3] + '_' + str(match[4]) + '_' + str(match[5]) + '_' + match[7]
 		
@@ -588,11 +572,10 @@ for tad in tadDisruptions:
 				if patient not in negativePatients:
 					negativePatients.append(patient)
 
-
 	tadPositiveAndNegativeSet.append([tad, positivePatients, negativePatients, svTypes])
 	tadInd += 1
 tadPositiveAndNegativeSet = np.array(tadPositiveAndNegativeSet, dtype='object')
-#np.savetxt('tadPositiveAndNegativeSet.txt', tadPositiveAndNegativeSet, fmt='%s', delimiter='\t')
+np.savetxt('tadPositiveAndNegativeSet_' + svType + '.txt', tadPositiveAndNegativeSet, fmt='%s', delimiter='\t')
 
 
 #For each gene in the disrupted group, compute the z-score of the gene compared to the expression of all patients in the negative group
@@ -693,7 +676,7 @@ print(signPatients.shape)
 
 #np.savetxt('tadDisr/zScores_random_degs_' + str(permutationRound) + '.txt', zScores, fmt='%s', delimiter='\t')
 #np.savetxt('tadDisr/pValues_shuffled_' + str(permutationRound) + '.txt', signPatients, fmt='%s', delimiter='\t')
-np.savetxt('pValues2.txt', signPatients, fmt='%s', delimiter='\t')
+np.savetxt('pValues_' + svType + '.txt', signPatients, fmt='%s', delimiter='\t')
 #np.savetxt('pValues.txt', signPatients, fmt='%s', delimiter='\t')
 exit()
 # import matplotlib.pyplot as plt

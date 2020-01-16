@@ -173,8 +173,8 @@ svType = sys.argv[3]
 affectedZ = []
 for tad in tadPositiveAndNegativeSet:
 	
-	if svType not in tad[3]: #skip this that if no patient has this sv type at all
-		continue
+	#if svType not in tad[3]: #skip this that if no patient has this sv type at all
+	#	continue
 	
 	splitTad = tad[0].split('_')
 	
@@ -188,8 +188,14 @@ for tad in tadPositiveAndNegativeSet:
 		#first get the negative set for each gene.
 		for gene in genes:
 			
+			if gene[3].name == 'AGPAT4':
+				print(tad)
+				exit()
+			
 			if gene[3].name not in expressionData:
 				continue
+			
+			
 			
 			negativeExpr = []
 			for negativePatient in tad[2]:
