@@ -211,28 +211,28 @@ print('non-disrupted tads: ', nonDisrCount)
 
 #to shuffle across patients, first transpose, the shuffle, then transpose back.
 
-# genes = expressionData[:,0]
-# expression = expressionData[:,1:]
-# expressionT = expression.T
-# print(expressionT)
-# print(expressionT.shape)
-# np.random.shuffle(expressionT)
-# print(expressionT)
-# print(expressionT.shape)
-# shuffledExpression = expressionT.T
-# print(shuffledExpression)
-# print(shuffledExpression.shape)
-# 
-# shuffledExpressionData = np.empty(expressionData.shape, dtype='object')
-# shuffledExpressionData[:,0] = genes
-# shuffledExpressionData[:,1:] = shuffledExpression
-# 
+genes = expressionData[:,0]
+expression = expressionData[:,1:]
+expressionT = expression.T
+print(expressionT)
+print(expressionT.shape)
+np.random.shuffle(expressionT)
+print(expressionT)
+print(expressionT.shape)
+shuffledExpression = expressionT.T
+print(shuffledExpression)
+print(shuffledExpression.shape)
+
+shuffledExpressionData = np.empty(expressionData.shape, dtype='object')
+shuffledExpressionData[:,0] = genes
+shuffledExpressionData[:,1:] = shuffledExpression
+
 # #shuffledExpressionData = np.concatenate((genes, shuffledExpression), axis=1)
 # 
 # print(samples)
 # print(shuffledExpressionData)
 # 
-# expressionData = shuffledExpressionData
+expressionData = shuffledExpressionData
 # expressionDataRavel = expressionData[:,1:].ravel()
 # np.random.shuffle(expressionDataRavel)
 # expression = expressionDataRavel.reshape(expressionData[:,1:].shape)
@@ -676,7 +676,7 @@ print(signPatients.shape)
 
 #np.savetxt('tadDisr/zScores_random_degs_' + str(permutationRound) + '.txt', zScores, fmt='%s', delimiter='\t')
 #np.savetxt('tadDisr/pValues_shuffled_' + str(permutationRound) + '.txt', signPatients, fmt='%s', delimiter='\t')
-np.savetxt('pValues_' + svType + '.txt', signPatients, fmt='%s', delimiter='\t')
+np.savetxt('pValues_' + svType + '_shuffled.txt', signPatients, fmt='%s', delimiter='\t')
 #np.savetxt('pValues.txt', signPatients, fmt='%s', delimiter='\t')
 exit()
 # import matplotlib.pyplot as plt
