@@ -158,7 +158,7 @@ class InputParser:
 					svObject = SV(chr1, s1, e1, o1, chr2, s2, e2, o2, sampleName, cancerType, svType)
 					
 					#Check if this SV needs to be exluded
-					svStr = chr1 + "_" + str(s1) + "_" + str(e1) + "_" + chr2 + "_" + str(s2) + "_" + str(e2) + "_" + sampleName
+					svStr = chr1 + "_" + str(s1) + "_" + str(e1) + "_" + chr2 + "_" + str(s2) + "_" + str(e2) + "_" + sampleName + '_' + svType
 					# if svStr not in excludedSVs:
 					# 	continue
 
@@ -168,7 +168,7 @@ class InputParser:
 					svObject = SV('chr' + chr1, s1, e1, o1, 'chr' + chr2, s2, e2, o2, sampleName, cancerType, svType)
 					
 					#Check if this SV needs to be exluded
-					svStr = 'chr' + chr1 + "_" + str(s1) + "_" + str(e1) + "_" + 'chr' + chr2 + "_" + str(s2) + "_" + str(e2) + "_" + sampleName
+					svStr = 'chr' + chr1 + "_" + str(s1) + "_" + str(e1) + "_" + 'chr' + chr2 + "_" + str(s2) + "_" + str(e2) + "_" + sampleName + '_' + svType
 
 					# if svStr not in excludedSVs:
 					# 	continue
@@ -176,7 +176,8 @@ class InputParser:
 					variantsList.append(['chr' + chr1, s1, e1, 'chr' + chr2, s2, e2, cancerType, sampleName, svObject])
 				#chr 1, start, end, chr2, start2, end2
 				
-		
+				
+			
 		regions = np.array(variantsList, dtype='object')
 		
 		return regions
@@ -311,9 +312,10 @@ class InputParser:
 					#check if this SV is already added. That may happen with the pair IDs. 
 					svStr = finalChr1 + "_" + str(s1) + "_" + str(e1) + "_" + finalChr2 + "_" + str(s2) + "_" + str(e2) + "_" + sampleName
 					
+					
+					
 					if svStr in addedVariants:
 						continue
-
 
 					variantsList.append([finalChr1, s1, e1, finalChr2, s2, e2, settings.general['cancerType'], sampleName, svObject])
 					addedVariants.append(svStr)
@@ -321,8 +323,7 @@ class InputParser:
 				#Get the required information for this SV:
 				
 				#chr1, s1, e1, o1, chr2, s2, e2, o2, samplename, cancer type, svType
-				
-			
+	
 		svs = np.array(variantsList, dtype='object')
 		return svs
 		#np.savetxt('hmf_svs.txt', svs, fmt='%s', delimiter='\t')

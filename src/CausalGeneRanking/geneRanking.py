@@ -509,10 +509,6 @@ class GeneRanking:
 					splitSV = sv.split("_")
 					sample = splitSV[6]
 					
-					if sample in gene.SNVs or sample in gene.CNVs or sample in geneSVSamples:
-						
-						continue
-					
 					instances = []
 					for element in gene.alteredElements[sv]:
 						instances.append(gene.alteredElements[sv][element])
@@ -563,7 +559,7 @@ class GeneRanking:
 
 				#check the sample of this sv and get the right position of the samples in the scoring matrix
 				splitSV = sv.split("_")
-				sampleName = splitSV[len(splitSV)-1]
+				sampleName = splitSV[len(splitSV)-2]
 				sampleInd = sampleMap[sampleName]
 
 				scoringMatrix[sampleInd][matrixGeneInd] = 1 #set the score to 1 to ensure that per sample we count only 1 SV.
@@ -596,7 +592,7 @@ class GeneRanking:
 			geneSVSamples = []
 			for sv in gene.SVs:
 				splitSV = sv.split("_")
-				geneSVSamples.append(splitSV[len(splitSV)-1])
+				geneSVSamples.append(splitSV[len(splitSV)-2])
 
 			matrixGeneInd = geneMap[gene]
 			
@@ -662,7 +658,7 @@ class GeneRanking:
 			geneSVSamples = []
 			for sv in gene.SVs:
 				splitSV = sv.split("_")
-				geneSVSamples.append(splitSV[len(splitSV)-1])
+				geneSVSamples.append(splitSV[len(splitSV)-2])
 
 			matrixGeneInd = geneMap[gene]
 			
@@ -671,6 +667,7 @@ class GeneRanking:
 				for sample in gene.lostElements:
 					#If mutually exclusive mode, skip genes that also have coding SVs in the same sample. 
 					if settings.general['nonCoding'] == True and settings.general['coding'] == False:
+						
 						
 					
 						if sample in geneSVSamples:
@@ -723,8 +720,8 @@ class GeneRanking:
 			geneSVSamples = []
 			for sv in gene.SVs:
 				splitSV = sv.split("_")
-				geneSVSamples.append(splitSV[len(splitSV)-1])
-			
+				#geneSVSamples.append(splitSV[len(splitSV)-1])
+				geneSVSamples.append(sv)
 			
 			
 			if len(gene.lostElementsSVs) > 0:
@@ -738,28 +735,33 @@ class GeneRanking:
 						geneSVSamples.append(splitSV[len(splitSV)-1])
 					
 					#If mutually exclusive mode, skip genes that also have coding SVs in the same sample. 
-					if settings.general['nonCoding'] == True and settings.general['coding'] == False:
-						
-						splitSV = sv.split("_")
-
-						if splitSV[len(splitSV)-2] in geneSVSamples:
-							continue
-					
+					# if settings.general['nonCoding'] == True and settings.general['coding'] == False:
+					# 	
+					# 	splitSV = sv.split("_")
+					# 
+					# 	#if splitSV[len(splitSV)-2] in geneSVSamples:
+					# 	#	continue
+					# 
+					# 	if splitSV[7] != 'INV' and splitSV[7] != 'DUP':
+					# 		
+					# 		if sv in geneSVSamples:
+					# 			continue
+					# 
 					#check if we need to ignore a pair if it has an SNV in that patient.  
-					if settings.general['nonCoding'] == True and settings.general['snvs'] == False: 
-						
-						splitSV = sv.split("_")
-						patientID = splitSV[6]
-						if patientID in gene.SNVs:
-							continue
-					
-					if settings.general['nonCoding'] == True and settings.general['cnvs'] == False: 
-						
-						splitSV = sv.split("_")
-						patientID = splitSV[6]
-						if patientID in gene.CNVs:
-							continue
-					
+					# if settings.general['nonCoding'] == True and settings.general['snvs'] == False: 
+					# 	
+					# 	splitSV = sv.split("_")
+					# 	patientID = splitSV[6]
+					# 	if patientID in gene.SNVs:
+					# 		continue
+					# 
+					# if settings.general['nonCoding'] == True and settings.general['cnvs'] == False: 
+					# 	
+					# 	splitSV = sv.split("_")
+					# 	patientID = splitSV[6]
+					# 	if patientID in gene.CNVs:
+					# 		continue
+					# 
 					
 					if pairId not in svGeneMap: #Check if we already used this index for a different feature
 						svInd = len(svGeneIndices)
@@ -800,8 +802,6 @@ class GeneRanking:
 		for geneInd in range(0, len(genes)):
 			gene = genes[geneInd]
 			
-			
-			
 			if len(gene.gainedElementsSVs) > 0:
 				
 				for sv in gene.gainedElementsSVs:
@@ -809,33 +809,48 @@ class GeneRanking:
 					
 					geneSVSamples = []
 					for geneSV in gene.SVs:
+						
 						splitSV = geneSV.split("_")
-						geneSVSamples.append(splitSV[len(splitSV)-1])
-					
+						#geneSVSamples.append(splitSV[len(splitSV)-1])
+						geneSVSamples.append(geneSV)
+						
+						#print('gene SVs: ', geneSV)
+						
 					#If mutually exclusive mode, skip genes that also have coding SVs in the same sample. 
 					if settings.general['nonCoding'] == True and settings.general['coding'] == False:
 						
 						splitSV = sv.split("_")
-					
+						
+						#check properly. If DUP or INV, do not exclude the
+						#genes within that SV, because these are affected.
+						
 
-						if splitSV[len(splitSV)-2] in geneSVSamples:
-							continue
+						#if splitSV[len(splitSV)-2] in geneSVSamples:
+						#	continue
 					
+						#do not exclude inv or dup genes. 
+						# if splitSV[7] != 'INV' and splitSV[7] != 'DUP':
+						# 	
+						# 	if sv in geneSVSamples:
+						# 		continue
+						# 
 					#check if we need to ignore a pair if it has an SNV in that patient.  
-					if settings.general['nonCoding'] == True and settings.general['snvs'] == False: 
-						
-						splitSV = sv.split("_")
-						patientID = splitSV[6]
-						if patientID in gene.SNVs:
-							continue
-						
-					if settings.general['nonCoding'] == True and settings.general['cnvs'] == False: 
-						
-						splitSV = sv.split("_")
-						patientID = splitSV[6]
-						if patientID in gene.CNVs:
-							continue	
-						
+					# if settings.general['nonCoding'] == True and settings.general['snvs'] == False: 
+					# 	
+					# 	splitSV = sv.split("_")
+					# 	patientID = splitSV[6]
+					# 	if patientID in gene.SNVs:
+					# 		print('skipping, SNV')
+					# 		continue
+					# 	
+					# if settings.general['nonCoding'] == True and settings.general['cnvs'] == False: 
+					# 	
+					# 	splitSV = sv.split("_")
+					# 	patientID = splitSV[6]
+					# 	if patientID in gene.CNVs:
+					# 		print('skipping, cNV')
+					# 		continue	
+					# 	
 					if pairId not in svGeneMap: #Check if we already used this index for a different feature
 						svInd = len(svGeneIndices)
 						svGeneMap[pairId] = svInd
@@ -851,7 +866,6 @@ class GeneRanking:
 						pairScores[pairId] = 1 #assume that each SV can disrupt a gene only once
 						#pairScores[pairId] = gene.gainedElementsSVs[sv][element]
 						
-		
 		
 		return pairScores, svGeneMap, svGeneIndices	
 

@@ -15,6 +15,7 @@ from statsmodels.sandbox.stats.multicomp import multipletests
 from scipy import stats
 import matplotlib.pyplot as plt
 from scipy.stats import rankdata
+from genomicShuffler import GenomicShuffler
 
 #permutationRound = sys.argv[4]
 
@@ -26,6 +27,7 @@ nonCausalGenes = InputParser().readNonCausalGeneFile(settings.files['nonCausalGe
 
 #Combine the genes into one set. 
 allGenes = np.concatenate((causalGenes, nonCausalGenes), axis=0)
+#allGenes = causalGenes
 
 genes = []
 for gene in allGenes:
@@ -141,20 +143,24 @@ for tad in tadData:
 	
 	#In the intra set, check if there are SVs that start before the TAD, but end within the TAD.
 
-	#a fully overlapped TAD is also disrupted, so it should be kept
+	#This TAD is disrupted if an SV starts or ends in it.
+	#so an SV either starts before the end, and ends after the start
+	#or the sv ends after the start, but starts before the end. 
 
 	#SVs that start before the TAD end, and end after the TAD start. 
-	startMatches = intraSVSubset[:,1] <= tad[2]
-	endMatches = intraSVSubset[:,5] >= tad[1]
+	startMatches = (intraSVSubset[:,1] >= tad[1]) * (intraSVSubset[:,1] <= tad[2]) * (intraSVSubset[:,5] >= tad[2])
+	endMatches = (intraSVSubset[:,5] >= tad[1]) * (intraSVSubset[:,1] <= tad[1]) * (intraSVSubset[:,5] <= tad[2])
+	
+	#startMatches = intraSVSubset[:,1] <= tad[2]
+	#endMatches = intraSVSubset[:,5] >= tad[1]
 			
 	#either of these must be true for the TAD to be disrupted by an intra-chromosomal SV.
-	allMatches = intraSVSubset[startMatches * endMatches]
+	allMatches = intraSVSubset[startMatches + endMatches]
 	
 	for match in allMatches:
 		
 		svStr = match[0] + '_' + str(match[1]) + '_' + str(match[2]) + '_' + match[3] + '_' + str(match[4]) + '_' + str(match[5]) + '_' + match[7]
 
-		
 		if match[7] not in tadDisruptions[tadStr]:
 			
 			tadDisruptions[tadStr].append([match[7], match])
@@ -191,7 +197,7 @@ for tad in tadData:
 		if match[7] not in tadDisruptions[tadStr]:
 
 			tadDisruptions[tadStr].append([match[7], match])
-		
+	
 #check which TADs we have with disruptions, validate
 
 disrCount = 0
@@ -207,7 +213,6 @@ for tad in tadData:
 		
 print('disrupted tads: ', disrCount)
 print('non-disrupted tads: ', nonDisrCount)
-		
 
 
 #to shuffle across patients, first transpose, the shuffle, then transpose back.
@@ -559,6 +564,29 @@ tadInd = 0
 
 #We define the positive/negative TADs based on ALL SVs. the negative set is only truly negative if there is also no other SV type disrupting it. 
 for tad in tadDisruptions:
+
+	if tad != 'chr8_113800000_115100000' and tad != 'chr8_118325000_119725000':
+		continue
+	print(tad)	
+	
+	patientCount = dict()
+		
+	for sv in tadDisruptions[tad]:
+		
+		patient = sv[0]
+		if patient not in patientCount:
+			patientCount[patient] = []
+		patientCount[patient].append(sv[1][8].svType)
+	
+	# for patient in patientCount:
+	# 	
+	# 	if len(patientCount[patient]) > 1:
+	# 		print(tad)
+	# 		print(patient)
+	# 		print(patientCount[patient])
+	# 		exit()
+	# continue
+	
 	
 	#get the patient names that have disrupted TADs
 	patientsWithDisruptions = []
@@ -577,7 +605,6 @@ for tad in tadDisruptions:
 	geneMatches = (geneChrMatches[:,1] <= int(splitTad[2])) * (geneChrMatches[:,2] >= int(splitTad[1]))
 	
 	allMatches = geneChrMatches[geneMatches]
-
 	#add genes only when these are not affected by any mutation
 
 	#go through all the genes and all the patients and their expression values.
@@ -586,6 +613,8 @@ for tad in tadDisruptions:
 	svTypes = []
 	for gene in allMatches:
 		
+		print(gene[3].name)
+		print(gene)
 		#extract the row for this gene
 		if gene[3].name not in expressionData[:,0]:
 			continue
@@ -608,6 +637,15 @@ for tad in tadDisruptions:
 				positivePatients.append(patient)
 				svTypes.append(sv[1][8].svType)
 			
+			if patient != 'CPCT02050146T':
+				continue
+			
+			print(sv)
+			#if this patient has multiple SVs disrupting this TAD, we do not know which one is causing an effect.
+			#so we skip that TAD for this patient
+			# if len(patientCount[patient]) > 1 and 'DUP' in patientCount[patient]:
+			# 	continue
+			
 			#we filter genes in the TAD based on the SV type.
 			if svType == 'DEL':
 				#in case of DEL, we filter genes with any mutation. Deleted genes are not relevant
@@ -620,6 +658,8 @@ for tad in tadDisruptions:
 					continue
 
 			elif svType == 'DUP':
+				
+				
 				#in case of a DUP, we keep genes that are disrupted by the TAD disrupting DUP,
 				#because those are the ones that see the effect.
 				#because the CNV amp may overlap with the dup, ignore that one too. 
@@ -634,6 +674,7 @@ for tad in tadDisruptions:
 				gene[3].name in svPatientsItx[patient] or gene[3].name in cnvPatientsDel[patient] or \
 				gene[3].name in cnvPatientsAmp[patient] or gene[3].name in snvPatients[patient]:
 					continue
+				
 			else:
 				#if ITX, skip all mutations. 
 				if gene[3].name in svPatientsDel[patient] or gene[3].name in svPatientsInv[patient] or \
@@ -642,7 +683,7 @@ for tad in tadDisruptions:
 				gene[3].name in svPatientsDup[patient]:
 					continue
 			
-			
+			print('adding')
 			disruptedPairs[patient][gene[3].name] = float(geneExpr[patientInd])
 			
 
@@ -654,19 +695,20 @@ for tad in tadDisruptions:
 			
 			patient = samples[patientInd]
 			
-			if patient not in patientsWithDisruptions:
-				if patient not in negativePatients:
-					negativePatients.append(patient)
-
-
+			
 			#in the negative set, filter all genes that have ANY mutation. 
 			if gene[3].name in svPatientsDel[patient] or gene[3].name in svPatientsInv[patient] or \
 				gene[3].name in svPatientsDup[patient] or gene[3].name in svPatientsItx[patient] or \
 				gene[3].name in cnvPatientsDel[patient] or gene[3].name in cnvPatientsAmp[patient] or \
 				gene[3].name in snvPatients[patient]:
 					continue
-				
-				
+			
+			#only if there is at least 1 gene without a mutation in this patient,
+			#do we add the TAD as part of the negative set. 
+			if patient not in patientsWithDisruptions:
+				if patient not in negativePatients:
+					negativePatients.append(patient)
+	
 
 			if patient not in patientsWithDisruptions:
 				
@@ -676,8 +718,7 @@ for tad in tadDisruptions:
 	#	continue #so for this TAD, if it is not affected by e.g. a deletion, but it is by another SV type, then it should not be listed as specific for DEL. 
 	tadPositiveAndNegativeSet.append([tad, positivePatients, negativePatients, svTypes])
 	tadInd += 1
-	
-
+exit()
 tadPositiveAndNegativeSet = np.array(tadPositiveAndNegativeSet, dtype='object')
 np.savetxt('tadPositiveAndNegativeSet.txt', tadPositiveAndNegativeSet, fmt='%s', delimiter='\t')
 
@@ -777,7 +818,7 @@ print(signPatients.shape)
 
 #np.savetxt('tadDisr/zScores_random_degs_' + str(permutationRound) + '.txt', zScores, fmt='%s', delimiter='\t')
 #np.savetxt('tadDisr/pValues_shuffled_' + str(permutationRound) + '.txt', signPatients, fmt='%s', delimiter='\t')
-np.savetxt('pValues.txt', signPatients, fmt='%s', delimiter='\t')
+np.savetxt('pValues_allGenes_smallTads_dupFilter.txt', signPatients, fmt='%s', delimiter='\t')
 #np.savetxt('pValues_shuffled.txt', signPatients, fmt='%s', delimiter='\t')
 #np.savetxt('pValues.txt', signPatients, fmt='%s', delimiter='\t')
 exit()

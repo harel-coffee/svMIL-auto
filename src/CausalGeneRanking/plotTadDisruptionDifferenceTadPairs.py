@@ -13,6 +13,7 @@ from scipy import stats
 import matplotlib.pyplot as plt
 import glob
 import ast
+from genomicShuffler import GenomicShuffler
 
 bins = 10
 
@@ -419,15 +420,14 @@ def getBinScores(zScores, randomPValuesDir):
 			farLeftTad = tadMatches[0] #This list is sorted
 			farRightTad = tadMatches[tadMatches.shape[0]-1]
 			
-			if farRightTad[0] + '_' + str(farRightTad[1]) + '_' + str(farRightTad[2]) == 'chr6_161125000_161800000':
-				print(sv)
-				
 		
 			tadPair = farLeftTad[0] + '_' + str(farLeftTad[1]) + '_' + str(farLeftTad[2]) + '_' + farRightTad[0] + '_' + str(farRightTad[1]) + '_' + str(farRightTad[2])
 			
 			if tadPair not in tadPairs:
 				tadPairs[tadPair] = []
 			tadPairs[tadPair].append(sv[7])
+		
+		
 		
 		else: #if interchromosomal, determine the TAD based on breakpoints on either chromosome.
 
@@ -469,10 +469,9 @@ def getBinScores(zScores, randomPValuesDir):
 			
 			if farRightTad[0] + '_' + str(farRightTad[1]) + '_' + str(farRightTad[2]) == 'chr6_161125000_161800000':
 				print(sv)
-		
-
+			
 	#have an additional filter here for the TADs; if there is one TAD pair where we also see the same TAD boundary disrupted again in the same patient, but on another side, we should ignore it for now. 
-	
+
 	#if the start of the left TAD is also the end of another pair, or te end of the right TAD is the start of another pair, then we should remove this pair.
 	#how often does this happen?
 	splitPairs = []
@@ -540,7 +539,8 @@ def getBinScores(zScores, randomPValuesDir):
 				tadPairsFiltered[pairStr] = pairPatients
 	
 	np.save('tadPairsFiltered_' + svType + '.npy', tadPairsFiltered)
-	tadPairsFiltered = np.load('tadPairsFiltered_' + svType + '.npy', allow_pickle=True, encoding='latin1')
+	tadPairsFiltered = np.load('tadPairsFiltered_' + svType + '.npy', allow_pickle=True, encoding='latin1').item()
+	
 	
 	#also use a map for the gene names
 	geneNameConversionMap = dict()
@@ -562,7 +562,7 @@ def getBinScores(zScores, randomPValuesDir):
 	
 	
 	
-	ruleBasedCombinations = np.loadtxt('Output/RankedGenes/0/BRCA/nonCoding_geneSVPairs.txt_', dtype='object')
+	ruleBasedCombinations = np.loadtxt('Output/RankedGenes/02022020/BRCA/nonCoding_geneSVPairs.txt_', dtype='object')
 	ruleBasedPairs = []
 	for combination in ruleBasedCombinations:
 		
@@ -661,7 +661,11 @@ def getBinScores(zScores, randomPValuesDir):
 					geneZScores = zScores[zScores[:,1] == geneName]
 					
 					#keep the z-scores separate for each patient
+
 					for patient in range(0, len(geneZScores[:,0])):
+						
+						if geneZScores[patient,0] not in tadPairs[tad]:
+							continue
 						
 						if geneZScores[patient,0] not in perTadPositivePatients[tad]:
 							perTadPositivePatients[tad].append(geneZScores[patient,0])
@@ -669,31 +673,33 @@ def getBinScores(zScores, randomPValuesDir):
 						
 						sample = geneZScores[patient,0]
 						
-						if svType == 'DEL' or svType == 'ITX':
-							#in case of DEL, we filter genes with any mutation. Deleted genes are not relevant
-			
-							if gene[3].name in svPatientsDel[sample] or gene[3].name in svPatientsInv[sample] or \
-							gene[3].name in svPatientsItx[sample] or gene[3].name in cnvPatientsDel[sample] or \
-							gene[3].name in cnvPatientsAmp[sample] or gene[3].name in snvPatients[sample] or \
-							gene[3].name in svPatientsDup[sample]:
-								continue
-			
-						elif svType == 'DUP':
-							#in case of a DUP, we keep genes that are disrupted by the TAD disrupting DUP,
-							#because those are the ones that see the effect.
-							#because the CNV amp may overlap with the dup, ignore that one too. 
-							if gene[3].name in svPatientsDel[sample] or gene[3].name in svPatientsInv[sample] or \
-							gene[3].name in svPatientsItx[sample] or gene[3].name in cnvPatientsDel[sample] or \
-							gene[3].name in snvPatients[sample]:
-								continue
-							
-						elif svType == 'INV':
-							#only ignore genes that are in the INV.
-							if gene[3].name in svPatientsDel[sample] or gene[3].name in svPatientsDup[sample] or \
-							gene[3].name in svPatientsItx[sample] or gene[3].name in cnvPatientsDel[sample] or \
-							gene[3].name in cnvPatientsAmp[sample] or gene[3].name in snvPatients[sample]:
+						if geneName + '_' + sample not in ruleBasedPairs:
+							continue
+						
+						if svType == 'DEL':
+							#only for a deletion, we do not need to print the deleted genes.
+							#if a gene is deleted, the deletion will never result in the gain effect.
+							#this is only true for deletions. 
+						
+							if gene[3].name in svPatientsDel[sample] or gene[3].name in cnvPatientsDel[sample]:
 								continue
 						
+						# elif svType == 'DUP':
+						# 	#in case of a DUP, we keep genes that are disrupted by the TAD disrupting DUP,
+						# 	#because those are the ones that see the effect.
+						# 	#because the CNV amp may overlap with the dup, ignore that one too. 
+						# 	if gene[3].name in svPatientsDel[sample] or gene[3].name in svPatientsInv[sample] or \
+						# 	gene[3].name in svPatientsItx[sample] or gene[3].name in cnvPatientsDel[sample] or \
+						# 	gene[3].name in snvPatients[sample]:
+						# 		continue
+						# 	
+						# elif svType == 'INV':
+						# 	#only ignore genes that are in the INV.
+						# 	if gene[3].name in svPatientsDel[sample] or gene[3].name in svPatientsDup[sample] or \
+						# 	gene[3].name in svPatientsItx[sample] or gene[3].name in cnvPatientsDel[sample] or \
+						# 	gene[3].name in cnvPatientsAmp[sample] or gene[3].name in snvPatients[sample]:
+						# 		continue
+						# 
 						print('LT: ', binInd, geneName, geneZScores[patient,0])
 					
 						#if geneName not in expressionData[:,0]:
@@ -703,13 +709,13 @@ def getBinScores(zScores, randomPValuesDir):
 						# 	if samples[sample] == geneZScores[patient,0]:
 						# 		allGeneZScores.append(float(geneExpr[sample]))
 						# 		
-						# 	
+						#
+						if str(float(geneZScores[patient,2])) == 'nan':
+							continue
+						
 						allGeneZScores.append(float(geneZScores[patient,2]))
 						
-						if geneZScores[patient,0] not in geneZScoresPerPatient:
-							geneZScoresPerPatient[geneZScores[patient,0]] = []
-						geneZScoresPerPatient[geneZScores[patient,0]].append(float(geneZScores[patient,2]))
-	
+						
 			if len(allGeneZScores) > 0:
 				#binZScores[binInd].append(np.mean(allGeneZScores))
 				binZScores[binInd] += allGeneZScores
@@ -741,6 +747,8 @@ def getBinScores(zScores, randomPValuesDir):
 					#keep the z-scores separate for each patient
 					for patient in range(0, len(geneZScores[:,0])):
 						
+						if geneZScores[patient,0] not in tadPairs[tad]:
+							continue
 						
 						if geneZScores[patient,0] not in perTadPositivePatients[tad]:
 							perTadPositivePatients[tad].append(geneZScores[patient,0])
@@ -748,35 +756,47 @@ def getBinScores(zScores, randomPValuesDir):
 					
 						sample = geneZScores[patient,0]
 						
+						if geneName + '_' + sample not in ruleBasedPairs:
+							continue
+						
+						
 						#do the check per SV type, depending on which SV we are looking at.
 						#this is because if we have a deletion, there could still be effects from duplications in the same TAD, because we exclude genes overlapped by duplications to see dup effects.
 						#but for deletions, this is not relevant, and we should remove all such mutations.
 						
-						if svType == 'DEL' or svType == 'ITX':
-							#in case of DEL, we filter genes with any mutation. Deleted genes are not relevant
-			
-							if gene[3].name in svPatientsDel[sample] or gene[3].name in svPatientsInv[sample] or \
-							gene[3].name in svPatientsItx[sample] or gene[3].name in cnvPatientsDel[sample] or \
-							gene[3].name in cnvPatientsAmp[sample] or gene[3].name in snvPatients[sample] or \
-							gene[3].name in svPatientsDup[sample]:
-								continue
-			
-						elif svType == 'DUP':
-							#in case of a DUP, we keep genes that are disrupted by the TAD disrupting DUP,
-							#because those are the ones that see the effect.
-							#because the CNV amp may overlap with the dup, ignore that one too. 
-							if gene[3].name in svPatientsDel[sample] or gene[3].name in svPatientsInv[sample] or \
-							gene[3].name in svPatientsItx[sample] or gene[3].name in cnvPatientsDel[sample] or \
-							gene[3].name in snvPatients[sample]:
-								continue
-							
-						elif svType == 'INV':
-							#only ignore genes that are in the INV.
-							if gene[3].name in svPatientsDel[sample] or gene[3].name in svPatientsDup[sample] or \
-							gene[3].name in svPatientsItx[sample] or gene[3].name in cnvPatientsDel[sample] or \
-							gene[3].name in cnvPatientsAmp[sample] or gene[3].name in snvPatients[sample]:
+						if svType == 'DEL':
+							#only for a deletion, we do not need to print the deleted genes.
+							#if a gene is deleted, the deletion will never result in the gain effect.
+							#this is only true for deletions. 
+						
+							if gene[3].name in svPatientsDel[sample] or gene[3].name in cnvPatientsDel[sample]:
 								continue
 						
+						# if svType == 'DEL' or svType == 'ITX':
+						# 	#in case of DEL, we filter genes with any mutation. Deleted genes are not relevant
+						# 
+						# 	if gene[3].name in svPatientsDel[sample] or gene[3].name in svPatientsInv[sample] or \
+						# 	gene[3].name in svPatientsItx[sample] or gene[3].name in cnvPatientsDel[sample] or \
+						# 	gene[3].name in cnvPatientsAmp[sample] or gene[3].name in snvPatients[sample] or \
+						# 	gene[3].name in svPatientsDup[sample]:
+						# 		continue
+						# 
+						# elif svType == 'DUP':
+						# 	#in case of a DUP, we keep genes that are disrupted by the TAD disrupting DUP,
+						# 	#because those are the ones that see the effect.
+						# 	#because the CNV amp may overlap with the dup, ignore that one too. 
+						# 	if gene[3].name in svPatientsDel[sample] or gene[3].name in svPatientsInv[sample] or \
+						# 	gene[3].name in svPatientsItx[sample] or gene[3].name in cnvPatientsDel[sample] or \
+						# 	gene[3].name in snvPatients[sample]:
+						# 		continue
+						# 	
+						# elif svType == 'INV':
+						# 	#only ignore genes that are in the INV.
+						# 	if gene[3].name in svPatientsDel[sample] or gene[3].name in svPatientsDup[sample] or \
+						# 	gene[3].name in svPatientsItx[sample] or gene[3].name in cnvPatientsDel[sample] or \
+						# 	gene[3].name in cnvPatientsAmp[sample] or gene[3].name in snvPatients[sample]:
+						# 		continue
+						# 
 						print('RT: ', binInd, geneName, geneZScores[patient,0])
 						
 						#if geneName + '_' + geneZScores[patient,0] not in ruleBasedPairs:
@@ -792,10 +812,14 @@ def getBinScores(zScores, randomPValuesDir):
 						# for sample in range(0, len(samples)):
 						# 	if samples[sample] == geneZScores[patient,0]:
 						# 		allGeneZScores.append(float(geneExpr[sample]))
+						
+						if str(float(geneZScores[patient,2])) == 'nan':
+							continue
 						allGeneZScores.append(float(geneZScores[patient,2]))
 						if geneZScores[patient,0] not in geneZScoresPerPatient:
 							geneZScoresPerPatient[geneZScores[patient,0]] = []
 						geneZScoresPerPatient[geneZScores[patient,0]].append(float(geneZScores[patient,2]))
+						
 	
 			if len(allGeneZScores) > 0:
 				#binZScores[binInd+bins].append(np.mean(allGeneZScores))
@@ -968,12 +992,6 @@ def getBinScores(zScores, randomPValuesDir):
 			for gene in genes:
 				geneName = gene[3].name
 				
-				if geneName in zScores[:,1]:
-					
-					geneZScores = zScores[zScores[:,1] == geneName]
-				else:
-					continue
-				
 				#get the expression of this gene in the negative set
 				negativeExpr = []
 				positiveExpr = []
@@ -1016,49 +1034,23 @@ def getBinScores(zScores, randomPValuesDir):
 						negativeExpr.append(filteredExpressionData[samples[sample]][geneName])
 						negativePatients.append(samples[sample])
 						negativeSampleInd.append(sample)
-						
-				# for patient in range(0, len(geneZScores[:,0])):
-				# 		
-				# 		
-				# 	if geneZScores[patient,0] in positivePatients:
-				# 		allGeneZScores.append(float(geneZScores[patient,2]))
-				# 		
-				# continue
-				
+
 				for patientInd in range(0, len(positiveExpr)):
 					patient = positiveExpr[patientInd]
 					
-					#only the patients that we also selected for the disrupted TADs
-					if positivePatients[patientInd] not in perTadPositivePatients[tad]:
-						continue
-
 					print('LAT: ', binInd, geneName, positivePatients[patientInd])
 					
 					if float(np.std(negativeExpr)) == 0:
 						
 						continue
-	
-					
+
 					z = (float(patient) - np.mean(negativeExpr)) / float(np.std(negativeExpr))
 					
-					# if z > 5:
-					# 	print(geneName)
-					# 	print(positivePatients[patientInd])
-					# 	print(z)
-					# 	print(patient)
-					# 	print(np.mean(negativeExpr))
-					# 	print(np.std(negativeExpr))
-					# 	print(negativeExpr)
-					# 	print(positiveExpr)
-					# 	print(tad)
-					# 	print(leftAdjacentTad)
-						
+					if str(z) == 'nan':
+						continue
+					
 					allGeneZScores.append(z)
 					
-					if positivePatients[patientInd] not in geneZScoresPerPatient:
-						geneZScoresPerPatient[positivePatients[patientInd]] = []
-					geneZScoresPerPatient[positivePatients[patientInd]].append(z)
-	
 			if len(allGeneZScores) > 0:
 				#binZScoresOffset[binInd].append(np.mean(allGeneZScores))
 			
@@ -1105,12 +1097,6 @@ def getBinScores(zScores, randomPValuesDir):
 			for gene in genes:
 				geneName = gene[3].name
 				
-				if geneName in zScores[:,1]:
-					
-					geneZScores = zScores[zScores[:,1] == geneName]
-				else:
-					continue
-				
 				#get the expression of this gene in the negative set
 				negativeExpr = []
 				positiveExpr = []
@@ -1154,29 +1140,10 @@ def getBinScores(zScores, randomPValuesDir):
 						negativePatients.append(samples[sample])
 						negativeSampleInd.append(sample)
 					
-				# for patient in range(0, len(geneZScores[:,0])):
-				# 		
-				# 		
-				# 	if geneZScores[patient,0] in positivePatients:
-				# 		
-				# 		print('RAT')
-				# 		print(geneZScores[patient])
-				# 		print(tad)
-				# 		
-				# 		
-				# 		
-				# 		allGeneZScores.append(float(geneZScores[patient,2]))
-				# 
-				# continue
-						
+				
 				for patientInd in range(0, len(positiveExpr)):
 					patient = positiveExpr[patientInd]
 					
-					if positivePatients[patientInd] not in perTadPositivePatients[tad]:
-						continue
-
-					#if geneName + '_' + positivePatients[patientInd] not in ruleBasedPairs:
-					#	continue
 					
 					if float(np.std(negativeExpr)) == 0:
 						continue
@@ -1184,92 +1151,77 @@ def getBinScores(zScores, randomPValuesDir):
 					print('RAT: ', binInd, geneName, positivePatients[patientInd])
 					
 					z = (float(patient) - np.mean(negativeExpr)) / float(np.std(negativeExpr))
+					
+					if str(z) == 'nan':
+						continue
+					
 					allGeneZScores.append(z)
 					#allGeneZScores.append(float(patient))
-					
-					if positivePatients[patientInd] not in geneZScoresPerPatient:
-						geneZScoresPerPatient[positivePatients[patientInd]] = []
-					geneZScoresPerPatient[positivePatients[patientInd]].append(z)
 					
 			if len(allGeneZScores) > 0:
 				
 				#binZScoresOffset[binInd+30].append(np.mean(allGeneZScores))
 				binZScoresOffset[binInd+30] += allGeneZScores
 				
-				for patient in geneZScoresPerPatient:
-					binZScoresPerPatientOffset[patient][binInd+30] += geneZScoresPerPatient[patient]
-		
 		
 	return binZScoresOffset, randomBinZScores, binZScoresPerPatientOffset
 
 ### based on DEGs
-
-#Get the DEGs and their p-values
+# 
+# #Get the DEGs and their p-values
 svType = sys.argv[1]
 #plot the z-scores.
-#pValues = np.loadtxt('pValues2.txt', dtype='object')
-#pValues = np.loadtxt('pValues_' + svType + '_shuffled.txt', dtype='object')
-pValues = np.loadtxt('pValues.txt', dtype='object')
-#pValues = np.loadtxt('tadDisr/pValues_shuffled_1.txt', dtype='object')
-#pValues = np.loadtxt('pValues_shuffled_extra.txt', dtype='object')
-randomPValuesDir = 'tadDisr/'
-binScores, randomBinScores, binZScoresPerPatientOffset = getBinScores(pValues, randomPValuesDir)
 # 
-# for patient in binZScoresPerPatientOffset:
+# pValues = np.loadtxt('pValues_allGenes_smallTads_dupFilter.txt', dtype='object')
+# 
+# randomPValuesDir = 'tadDisr/'
+# binScores, randomBinScores, binZScoresPerPatientOffset = getBinScores(pValues, randomPValuesDir)
+# 
+# print('plotting')
+# 
+# allData = []
+# totalLen = 0
+# lat = []
+# lt = []
+# rt = []
+# rat = []
+# for binInd in range(0, len(binScores)):
+# 	#print('bin:', binInd)
+# 	#print(len(binScores[binInd]))
+# 	#totalLen += len(binScores[binInd])
+# 	#plt.plot(binInd+1, len(binScores[binInd]), marker='*')
+# 	#plt.plot(binInd, len(randomBinScores[binInd]), marker='o') #this can later be a boxplot of 100 iterations
+# 	allData.append(binScores[binInd])
+# 	#allData.append(randomBinScores[binInd])
 # 	
-# 	allData = []
-# 	for binInd in range(0, len(binZScoresPerPatientOffset[patient])):
-# 		
-# 		allData.append(binZScoresPerPatientOffset[patient][binInd])
+# 	if binInd < 10:
+# 		lat += binScores[binInd]
+# 	if binInd >= 10 and binInd < 20:
+# 		lt += binScores[binInd]
+# 	if binInd >= 20 and binInd < 30:
+# 		rt += binScores[binInd]
+# 	if binInd >= 30:
+# 		rat += binScores[binInd]
 # 
-# 	plt.boxplot(allData)
-# 	plt.show()
+# print(lat, lt, rt, rat)		
+# 
+# #plt.boxplot([lat, lt, rt, rat])
+# #plt.show()
+# 
+# 	
+# 
+# print(allData)
+# print(totalLen)
+# 
+# np.save('plotData_' + svType + '_oncogenes_rules.npy', allData)
+# # 
+# plt.xticks(range(1,len(binScores)+1))
+# plt.boxplot(allData)
+# plt.show()
+# 
 # exit()
 
-print('plotting')
-
-allData = []
-totalLen = 0
-lat = []
-lt = []
-rt = []
-rat = []
-for binInd in range(0, len(binScores)):
-	#print('bin:', binInd)
-	#print(len(binScores[binInd]))
-	#totalLen += len(binScores[binInd])
-	#plt.plot(binInd+1, len(binScores[binInd]), marker='*')
-	#plt.plot(binInd, len(randomBinScores[binInd]), marker='o') #this can later be a boxplot of 100 iterations
-	allData.append(binScores[binInd])
-	#allData.append(randomBinScores[binInd])
-	
-	if binInd < 10:
-		lat += binScores[binInd]
-	if binInd >= 10 and binInd < 20:
-		lt += binScores[binInd]
-	if binInd >= 20 and binInd < 30:
-		rt += binScores[binInd]
-	if binInd >= 30:
-		rat += binScores[binInd]
-
-print(lat, lt, rt, rat)		
-
-#plt.boxplot([lat, lt, rt, rat])
-#plt.show()
-
-	
-
-print(allData)
-print(totalLen)
-
-#np.save('plotData_' + svType + '.npy', allData)
-
-#plt.xticks(range(1,len(binScores)+1))
-plt.boxplot(allData)
-plt.show()
-exit()
-
-allData = np.load('plotData_' + svType + '.npy', allow_pickle=True, encoding='latin1')
+allData = np.load('plotData_' + svType + '_oncogenes_rules.npy', allow_pickle=True, encoding='latin1')
 
 plt.boxplot(allData)
 plt.show()
@@ -1282,14 +1234,15 @@ for binData in allData:
 		continue
 	
 	binData = np.array(binData)
-	filteredBinData = binData[binData < np.percentile(binData, 99)]
+	#filteredBinData = binData[binData < np.percentile(binData, 99)]
+	filteredBinData = binData[binData < 6]
 	filteredData.append(filteredBinData)
 
 plt.boxplot(filteredData)
-
+#plt.ylim(-2,5)
 #plt.ylim(-3,11)
 plt.show()
-plt.savefig('distanceBased_ruleBased_' + sys.argv[1] + '_shuffled.svg')
+#plt.savefig('distanceBased_ruleBased_' + sys.argv[1] + '_shuffled.svg')
 #plt.savefig('zScoresOfZScores_distanceBased_2.svg')
 exit()
 

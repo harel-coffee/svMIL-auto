@@ -706,9 +706,6 @@ class NeighborhoodDefiner:
 			
 			if sv[0] == sv[3]: #intrachromosomal SV
 				
-				svEntry = sv[0] + "_" + str(sv[1]) + "_" + str(sv[2]) + "_" + sv[3] + "_" + str(sv[4]) + "_" + str(sv[5]) + "_" + sv[8].sampleName
-				
-				
 				geneChrSubset = genes[sv[0] == genes[:,0]]
 				
 				#Find all genes overlapped by this SV. 
@@ -720,7 +717,7 @@ class NeighborhoodDefiner:
 				
 				
 				for gene in matchingGenes[:,3]:
-					svEntry = sv[0] + "_" + str(sv[1]) + "_" + str(sv[2]) + "_" + sv[3] + "_" + str(sv[4]) + "_" + str(sv[5]) + "_" + sv[8].sampleName
+					svEntry = sv[0] + "_" + str(sv[1]) + "_" + str(sv[2]) + "_" + sv[3] + "_" + str(sv[4]) + "_" + str(sv[5]) + "_" + sv[8].sampleName + '_' + sv[8].svType
 					gene.SVs[svEntry] = 1
 				
 			else: #interchromosomal SV
@@ -734,7 +731,7 @@ class NeighborhoodDefiner:
 				
 				matchingGenes = geneChr1Subset[startMatches * endMatches]
 				for gene in matchingGenes[:,3]:
-					svEntry = sv[0] + "_" + str(sv[1]) + "_" + str(sv[2]) + "_" + sv[3] + "_" + str(sv[4]) + "_" + str(sv[5]) + "_" + sv[8].sampleName
+					svEntry = sv[0] + "_" + str(sv[1]) + "_" + str(sv[2]) + "_" + sv[3] + "_" + str(sv[4]) + "_" + str(sv[5]) + "_" + sv[8].sampleName + '_' + sv[8].svType
 					gene.SVs[svEntry] = 1
 				
 				geneChr2Subset = genes[sv[3] == genes[:,0]]
@@ -745,7 +742,7 @@ class NeighborhoodDefiner:
 				matchingGenes = geneChr2Subset[startMatches * endMatches]
 				
 				for gene in matchingGenes[:,3]:
-					svEntry = sv[0] + "_" + str(sv[1]) + "_" + str(sv[2]) + "_" + sv[3] + "_" + str(sv[4]) + "_" + str(sv[5]) + "_" + sv[8].sampleName
+					svEntry = sv[0] + "_" + str(sv[1]) + "_" + str(sv[2]) + "_" + sv[3] + "_" + str(sv[4]) + "_" + str(sv[5]) + "_" + sv[8].sampleName + '_' + sv[8].svType
 					gene.SVs[svEntry] = 1
 			
 		
@@ -756,11 +753,13 @@ class NeighborhoodDefiner:
 		
 		filteredSVs = []
 		for sv in svData:
-			svEntry = sv[0] + "_" + str(sv[1]) + "_" + str(sv[2]) + "_" + sv[3] + "_" + str(sv[4]) + "_" + str(sv[5]) + "_" + sv[8].sampleName
-			if svEntry not in excludedSVs:
-				filteredSVs.append(sv)
+			svStr = sv[0] + "_" + str(sv[1]) + "_" + str(sv[2]) + "_" + sv[3] + "_" + str(sv[4]) + "_" + str(sv[5]) + "_" + sv[8].sampleName
+			#if svEntry not in excludedSVs:
+			#	filteredSVs.append(sv)
 			#if svEntry in excludedSVs:
 			#	filteredSVs.append(sv)
+			
+			filteredSVs.append(sv)
 
 		filteredSVs = np.array(filteredSVs, dtype='object')
 		
@@ -779,6 +778,7 @@ class NeighborhoodDefiner:
 			gene = genes[geneInd]
 			geneName = gene[3].name
 			geneMap[geneName] = geneInd
+		
 		
 		if settings.general['source'] == 'TCGA':
 			
@@ -839,7 +839,7 @@ class NeighborhoodDefiner:
 			addedVariants = [] #check if based on pairs no duplicates are added. 
 			
 			for vcf in vcfs:
-				print(vcf)
+				
 				
 				#get the samplename from the vcf
 				sampleName = re.search('.*\/([A-Z\d]+)\.', vcf).group(1)
@@ -878,7 +878,7 @@ class NeighborhoodDefiner:
 							geneInd = geneMap[geneName]
 							geneObj = genes[geneInd,3]
 							geneObj.addSNV(sampleName)
-
+	
 	
 	def mapCNVsToNeighborhood(self, genes, cnvDir):
 		

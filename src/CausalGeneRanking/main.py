@@ -62,7 +62,8 @@ causalGenes = InputParser().readCausalGeneFile(settings.files['causalGenesFile']
 nonCausalGenes = InputParser().readNonCausalGeneFile(settings.files['nonCausalGenesFile'], causalGenes) #In the same format as the causal genes.
 
 #Combine the genes into one set. 
-causalGenes = np.concatenate((causalGenes, nonCausalGenes), axis=0)
+#causalGenes = np.concatenate((causalGenes, nonCausalGenes), axis=0)
+
 
 #provide list of SVs that should be excluded from the model. 
 excludedSVs = np.loadtxt(settings.files['excludedSVs'], dtype='object')
@@ -80,6 +81,7 @@ if mode == "SV":
 		print("Reading SV data")
 		svDir = settings.files['svDir']
 		svData = InputParser().getSVsFromFile_hmf(svDir)
+		
 	
 #3. If this is a permutation run, we wish to shuffle these SVs or SNVs.
 if permutationYN == "True":
