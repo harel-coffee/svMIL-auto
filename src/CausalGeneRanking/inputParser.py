@@ -199,7 +199,7 @@ class InputParser:
 		
 		variantsList = []
 		addedVariants = [] #check if based on pairs no duplicates are added. 
-		
+		count = 0
 		for vcf in vcfs:
 			print(vcf)
 			
@@ -451,7 +451,7 @@ class InputParser:
 					continue
 				
 				gene = Gene(geneSymbol, "chr" + chromosome, int(start), int(end)) #Keep in objects for easy access of properties related to the neighborhood of the gene
-				
+				gene.cosmic = 1
 				cosmicGenes.append(["chr" + chromosome, int(start), int(end), gene])
 				
 		#Sort the genes
@@ -556,9 +556,32 @@ class InputParser:
 			
 				sortedTads.append(tad)
 			
-		
 		return np.array(sortedTads)
 	
+	def getCTCFSitesFromFile(self, ctcfFile):
+		
+		ctcfSites = []
+		with open(ctcfFile, 'r') as f:
+			
+			lineCount = 0
+			for line in f:
+				if lineCount < 1:
+					lineCount += 1
+					continue
+				
+				line = line.strip()
+				splitLine = line.split("\t")
+				
+				
+				ctcf = [splitLine[0], int(splitLine[1]), int(splitLine[2]), "ctcf", None, float(splitLine[4])]
+
+				ctcfSites.append(ctcf) #Keep the eQTL information raw as well for quick overlapping. 
+		
+		
+		return np.array(ctcfSites, dtype='object')
+		
+		
+
 	#Reading eQTL file
 	def getEQTLsFromFile(self, eQTLFile, genes, neighborhoodDefiner):
 		"""
@@ -608,7 +631,7 @@ class InputParser:
 				# #The mapping information is in the file, so we can already do it here
 				#This function belongs more to the neighborhood definer, so we use the function from there. 
 				#neighborhoodDefiner.mapElementsToGenes(eQTLObject, geneDict, splitLine[3])
-				eQTL = [chrName, int(splitLine[1]), int(splitLine[2]), "eQTL", splitLine[3]]
+				eQTL = [chrName, int(splitLine[1]), int(splitLine[2]), "eQTL", splitLine[3], None]
 				neighborhoodDefiner.mapElementsToGenes(eQTL, geneDict, splitLine[3])
 
 				#eQTLs.append([chrName, int(splitLine[1]), int(splitLine[2]), eQTLObject, "eQTL"]) #Keep the eQTL information raw as well for quick overlapping.
@@ -616,32 +639,6 @@ class InputParser:
 		
 		
 		return np.array(eQTLs, dtype='object')
-	
-	def getLncRNAsFromFile(self, lncRNAFile):
-		"""
-			TO DO:
-			- Currently unused function
-			- Needs to either be tested or removed
-		
-		"""
-		
-		
-		
-		
-		lncRNAs = []
-		with open(lncRNAFile, 'r') as f:
-			
-			for line in f:
-				line = line.strip()
-				splitLine = line.split("\t")
-				
-				#Quick and dirty
-				lncRNAObject = EQTL(splitLine[0], int(splitLine[1]), int(splitLine[2]))
-				
-				lncRNAs.append([splitLine[0], int(splitLine[1]), int(splitLine[2]), lncRNAObject])					
-		
-		return np.array(lncRNAs, dtype="object")
-	
 	
 	def getEnhancersFromFile(self, enhancerFile, genes, neighborhoodDefiner):
 		"""
@@ -793,7 +790,7 @@ class InputParser:
 				
 				#The mapping information is in the file, so we can already do it here
 				
-				promoter = [chrName, start, end, "promoter", finalGeneName]
+				promoter = [chrName, start, end, "promoter", finalGeneName, None]
 				neighborhoodDefiner.mapElementsToGenes(promoter, geneDict, finalGeneName)
 				promoters.append(promoter) #Keep the eQTL information raw as well for quick overlapping. 
 		
@@ -836,7 +833,7 @@ class InputParser:
 				# elementObject = Element(chrName, start, end)
 				# elementObject.type = "cpg"
 				
-				cpgIsland = [chrName, start, end, "cpg", None] #None because it is not associated with a gene
+				cpgIsland = [chrName, start, end, "cpg", None, None] #None because it is not associated with a gene
 				cpgIslands.append(cpgIsland) #Keep the eQTL information raw as well for quick overlapping. 
 		
 		return np.array(cpgIslands, dtype='object')	
@@ -879,7 +876,7 @@ class InputParser:
 				# elementObject.type = "tf"
 				# 
 
-				tfs.append([chrName, start, end, "tf", None])
+				tfs.append([chrName, start, end, "tf", None, None])
 		
 		return np.array(tfs, dtype='object')	
 
@@ -946,7 +943,7 @@ class InputParser:
 				end = int(splitLine[2])
 				
 			
-				histoneMarks.append([chrName, start, end, histoneType, None])
+				histoneMarks.append([chrName, start, end, histoneType, None, float(splitLine[4])])
 		
 		return np.array(histoneMarks, dtype='object')	
 	
@@ -984,7 +981,7 @@ class InputParser:
 				end = int(splitLine[2])
 				
 			
-				dnaseISites.append([chrName, start, end, "dnaseI", None])
+				dnaseISites.append([chrName, start, end, "dnaseI", None, float(splitLine[4])])
 		
 		return np.array(dnaseISites, dtype='object')	
 	
@@ -1007,7 +1004,7 @@ class InputParser:
 				end = int(splitLine[2])
 				chromState = splitLine[3]
 				
-				chromHmmSites.append([chrName, start, end, chromState, None])
+				chromHmmSites.append([chrName, start, end, chromState, None, None])
 				
 		
 		return np.array(chromHmmSites, dtype='object')
@@ -1029,10 +1026,23 @@ class InputParser:
 				start = int(splitLine[1])
 				end = int(splitLine[2])
 				
-				rnaPolSites.append([chrName, start, end, 'rnaPol', None])
+				rnaPolSites.append([chrName, start, end, 'rnaPol', None, float(splitLine[4])])
 				
 		
 		return np.array(rnaPolSites, dtype='object')
+
+	def getSuperEnhancersFromFile(self, superEnhancerFile):
+	
+		superEnhancers = []
+		with open(superEnhancerFile, 'r') as f:
+			
+			for line in f:
+				line = line.strip()
+				splitLine = line.split("\t")
+				
+				superEnhancers.append([splitLine[0], int(splitLine[1]), int(splitLine[2]), 'superEnhancer', None, None])					
+		
+		return np.array(superEnhancers, dtype="object")
 
 	def getMethylationFromFile(self, methylationFile, genes):
 		"""

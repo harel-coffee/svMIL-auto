@@ -38,11 +38,13 @@ files = dict(
 	h3k36me3 = '../../data/histones/ENCFF906MJM_H3K36me3.bed',
 	dnaseIFile = '../../data/dnase/ENCFF336OGZ_dnase_hmec.bed',
 	chromHmmFile = '../../data/chromhmm/GSE57498_HMEC_ChromHMM.bed',
-	rnaPolFile = '../../data/rnapol/ENCFF433ZKP.bed'
+	rnaPolFile = '../../data/rnapol/ENCFF433ZKP.bed',
+	superEnhancerFile = '../../data/enhancers/se_20200212_HMEC.bed',
+	ctcfFile = '../../data/ctcf/ENCFF288RFS.bed'
 	
 	#settings specific for mcf7
-	#enhancerFile = '../../data/enhancers/mcf7/mcf7_fantom5_elasticnet.409.txt',
-	# enhancerFile = '../../data/enhancers/mcf7/enhancer_gene_MCF-7.txt',
+	# enhancerFile = '../../data/enhancers/mcf7/mcf7_fantom5_elasticnet.409.txt',
+	# #enhancerFile = '../../data/enhancers/mcf7/enhancer_gene_MCF-7.txt',
 	# h3k9me3 = '../../data/histones/mcf7/ENCFF454ZUB_h3k9me3.bed',
 	# h3k4me3 = '../../data/histones/mcf7/ENCFF727UPU_h3k4me3.bed',
 	# h3k27ac = '../../data/histones/mcf7/ENCFF223CXM_h3k27ac.bed',
@@ -52,7 +54,7 @@ files = dict(
 	# dnaseIFile = '../../data/dnase/mcf7/ENCFF846DFL_dnaseI.bed',
 	# chromHmmFile = '../../data/chromhmm/mcf7/GSE57498_MCF7_ChromHMM.bed',
 	# rnaPolFile = '../../data/rnapol/mcf7/ENCFF002DBQ.bed'
-	# 
+	
 )
 
 general = dict(
@@ -77,6 +79,9 @@ general = dict(
 	dnaseI = True, #Include DNAse I hypersensitivity sites yes/no
 	chromHMM = True,
 	rnaPol = True,
+	superEnhancers = True,
+	ctcfSites = True,
+	boundaryStrength = True,
 	methylation = False,
 	gainOfInteractions = True, #This depends on TADs and interactions.
 	shuffleTads = False, #Should TAD positions be shuffled

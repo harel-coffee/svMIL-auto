@@ -17,6 +17,8 @@ class TAD:
 		self.elements = []
 		self.elementsStr = dict()
 		self.genes = []
+		self.startStrength = '0'
+		self.endStrength = '0'
 		
 	def setSVs(self, SVs): #All SVs that overlap with this TAD boundary (left or right depending on the gene. Is that safe?)
 		
@@ -65,5 +67,4 @@ class TAD:
 				genesInRange.append(gene)
 		
 		return genesInRange
-		
-		
+	

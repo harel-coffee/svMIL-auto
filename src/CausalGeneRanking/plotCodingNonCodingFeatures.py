@@ -19,16 +19,21 @@ import random
 
 #The truth data, DEG pairs
 degData = np.loadtxt(sys.argv[1], dtype='object')
+
 #pathwayAnnotation = np.loadtxt(sys.argv[1] + '_pathwayAnnotation.txt', dtype='object')
 
 #Other comparisons: non-DEG pairs, coding SV-gene pairs, germline pairs, shuffled pairs.
 nonDegData = np.loadtxt(sys.argv[2], dtype='object')
-codingData = np.loadtxt(sys.argv[3], dtype='object')
-germlineData = np.loadtxt(sys.argv[4], dtype='object')
-shuffledData = np.loadtxt(sys.argv[5], dtype='object')
+#codingData = np.loadtxt(sys.argv[3], dtype='object')
+#germlineData = np.loadtxt(sys.argv[4], dtype='object')
+#shuffledData = np.loadtxt(sys.argv[5], dtype='object')
+
+codingData = nonDegData
+germlineData = nonDegData
+shuffledData = nonDegData
 
 #Filter by SV type if required.  
-svType = ''
+svType = 'DEL'
 typeLabel = 'all SV types'
 nonDEGs = []
 
@@ -36,7 +41,7 @@ for degPair in nonDegData:
 	
 	sv = degPair[0].split("_")
 	if svType != '':
-		typeMatch = re.search(svType, sv[8], re.IGNORECASE)
+		typeMatch = re.search(svType, sv[12], re.IGNORECASE)
 		if typeMatch is None:
 			continue
 	nonDEGs.append(degPair)
@@ -46,7 +51,7 @@ for pair in codingData:
 	
 	sv = pair[0].split("_")
 	if svType != '':
-		typeMatch = re.match(svType, sv[8], re.IGNORECASE)
+		typeMatch = re.match(svType, sv[12], re.IGNORECASE)
 		if typeMatch is None:
 			continue
 	codingPairs.append(pair)
@@ -57,7 +62,7 @@ for pair in germlineData:
 	sv = pair[0].split("_")
 
 	if svType != '':
-		typeMatch = re.match(svType, sv[8], re.IGNORECASE)
+		typeMatch = re.match(svType, sv[12], re.IGNORECASE)
 		if typeMatch is None:
 			continue
 	germlinePairs.append(pair)
@@ -67,7 +72,7 @@ for pair in shuffledData:
 	
 	sv = pair[0].split("_")
 	if svType != '':
-		typeMatch = re.match(svType, sv[8], re.IGNORECASE)
+		typeMatch = re.match(svType, sv[12], re.IGNORECASE)
 		if typeMatch is None:
 			continue
 	shuffledPairs.append(pair)
@@ -78,7 +83,7 @@ for degPair in degData:
 	sv = degPair[0].split("_")
 
 	if svType != '':
-		typeMatch = re.match(svType, sv[8], re.IGNORECASE)
+		typeMatch = re.match(svType, sv[12], re.IGNORECASE)
 		if typeMatch is None:
 			continue
 
@@ -101,7 +106,7 @@ print(nonDEGs.shape)
 print(codingPairs.shape)
 print(germlinePairs.shape)
 print(shuffledPairs.shape)
-
+exit()
 pathwayDEGs = []
 unAnnotatedDEGs = []
 for degPair in degs:
@@ -129,7 +134,7 @@ def getLossData(features, totalFeatures): #provide the features for the set of p
 		return np.array([])
 		
 	leftLosses = []
-	for i in range(0, 23): #+1 because this goes until 22
+	for i in range(0, 25): #+1 because this goes until 22
 		leftLosses.append(features[:,i].astype(float))
 	
 	#for i in range(46, 51):
@@ -212,7 +217,7 @@ def getGainData(features, totalFeatures): #provide the features for the set of p
 			
 		
 	leftGains = []
-	for i in range(23, 46): #+1 because this goes until 45
+	for i in range(25, 51): #+1 because this goes until 45
 		leftGains.append(features[:,i].astype(float))
 	
 	#for i in range(46, 51):
@@ -301,7 +306,7 @@ def plotGainsLossesSamePlot(losses,gains, label, typeLabel, xlabel,  figInd):
 	plt.yticks(([p + 1.0 * width for p in np.arange(len(losses))]), ['eQTLs', 'enhancers', 'promoters', 'CpG', 'TF', 'HiC', 'h3k9me3', 'h3k4me3',
 													  'h3k27ac', 'h3k27me3', 'h3k4me1', 'h3k36me3','DNAseI', 'CTCF', 'CTCF+enhancer',
 													  'CTCF+promoter', 'chromHMM enhancer', 'heterochromatin', 'poised promoter',
-													  'chromHMM promoter', 'repeat', 'repressed', 'transcribed'])
+													  'chromHMM promoter', 'repeat', 'repressed', 'transcribed', 'super enhancer', 'ctcf'])
 	
 	plt.xlim([-2,3.5])
 	plt.xlabel(xlabel)
@@ -315,16 +320,39 @@ def plotGainsLossesSamePlot(losses,gains, label, typeLabel, xlabel,  figInd):
 	
 
 plotGainsLossesSamePlot(unAnnotatedLossesNormND, unAnnotatedGainsNormND, 'DEG pairs vs. non-DEG pairs', typeLabel, 'log(% of DEG pairs / % of non-DEG pairs)', 1)
-plotGainsLossesSamePlot(unAnnotatedLossesNormGL, unAnnotatedGainsNormGL, 'DEG pairs vs. germline pairs', typeLabel, 'log(% of DEG pairs / % of germline pairs)', 2)
-plotGainsLossesSamePlot(unAnnotatedLossesNormC, unAnnotatedGainsNormC, 'DEG pairs vs. coding pairs', typeLabel, 'log(% of DEG pairs / % of coding pairs)', 3)
-plotGainsLossesSamePlot(unAnnotatedLossesNormS, unAnnotatedGainsNormS, 'DEG pairs vs. shuffled pairs', typeLabel, 'log(% of DEG pairs / % of shuffled pairs)', 4)
+#plotGainsLossesSamePlot(unAnnotatedLossesNormGL, unAnnotatedGainsNormGL, 'DEG pairs vs. germline pairs', typeLabel, 'log(% of DEG pairs / % of germline pairs)', 2)
+#plotGainsLossesSamePlot(unAnnotatedLossesNormC, unAnnotatedGainsNormC, 'DEG pairs vs. coding pairs', typeLabel, 'log(% of DEG pairs / % of coding pairs)', 3)
+#plotGainsLossesSamePlot(unAnnotatedLossesNormS, unAnnotatedGainsNormS, 'DEG pairs vs. shuffled pairs', typeLabel, 'log(% of DEG pairs / % of shuffled pairs)', 4)
 #plt.tight_layout()
 #plt.savefig('gains_losses_' + svType + '.svg')
 #plt.show()
 
-exit()
-allFeatures = np.concatenate((nonDEGs[:,1:], unAnnotatedDEGs), axis=0)
+np.random.seed(0)
+positive = degs[:,1:]
 
+indices = np.arange(nonDEGs.shape[0])
+rnd_indices = np.random.choice(indices, size=positive.shape[0])
+
+negative = nonDEGs[rnd_indices][:,1:]
+
+allFeatures = np.concatenate((positive, negative), axis=0).astype(float)
+
+print(allFeatures)
+
+#remove some features
+# allFeaturesFiltered = []
+# for row in range(0, allFeatures.shape[0]):
+# 	rowFeatures = []	
+# 	for featureInd in range(0, allFeatures.shape[1]):
+# 	
+# 		if featureInd > 70 and featureInd < 75:
+# 			continue
+# 		else:
+# 			rowFeatures.append(allFeatures[row][featureInd])
+# 
+# 	allFeaturesFiltered.append(rowFeatures)
+# 	
+# allFeatures = np.array(allFeaturesFiltered)	
 #Make a PCA plot for the left/right set and see if these are really different
 
 from sklearn.decomposition import PCA
@@ -343,103 +371,94 @@ projected = pca.fit_transform(allFeatures)
 # 		
 # projected = projectedWithOffset
 
-colorLabels = []
-labels = []
-
-for i in range(0, allFeatures.shape[0]):
-	
-	if i < nonDEGs.shape[0]:
-		colorLabels.append('b')
-		labels.append(0)
-	elif i >= nonDEGs.shape[0] and i < (nonDEGs.shape[0] + unAnnotatedDEGs.shape[0]):
-		colorLabels.append('r')
-		labels.append(1)
+colorLabels = ['r']*positive.shape[0] + ['b']*negative.shape[0]
+labels = [1]*positive.shape[0] + [0]*negative.shape[0]
 
 fig,ax=plt.subplots(figsize=(7,5))
 plt.scatter(projected[:, 0], projected[:, 1], edgecolors=colorLabels, facecolors='none')
 plt.show()
 
 #rasterize the PCA plot and make a density heatmap
-import math
-
-#
-colorLabels = np.array(colorLabels)
-
-#Get the minimum and maximum to determine the bounds of the plot.
-xmin = np.min(projected[:,0])
-xmax = np.max(projected[:,0])
-ymin = np.min(projected[:,1])
-ymax = np.max(projected[:,1])
-
-#Define the box size and how many boxes we should make
-print(xmin, xmax, ymin, ymax)
-
-#round the values to get covering boxes
-xmin = round(xmin)
-xmax = round(xmax)
-ymin = round(ymin)
-ymax = round(ymax)
-
-boxWidth = 0.2
-#Take the ceil to get the maximum possible without leaving out points
-xBoxNum = int(math.ceil((xmax - xmin) / boxWidth))
-yBoxNum = int(math.ceil((ymax - ymin) / boxWidth))
-
-#Placeholder for smoothed data
-plotGrid = np.zeros([xBoxNum, yBoxNum])
-
-#Loop through the data and show the data in the boxes
-yBoxStart = ymin
-yBoxEnd = ymin + boxWidth
-xBoxStart = xmin
-xBoxEnd = xmin + boxWidth
-for yInd in range(0, yBoxNum):
-	for xInd in range(0, xBoxNum):
-		
-		#Find all data points that are within the current box
-		xStartMatches = projected[:,0] >= xBoxStart
-		xEndMatches = projected[:,0] <= xBoxEnd
-		
-		xMatches = xStartMatches * xEndMatches
-		
-		yStartMatches = projected[:,1] >= yBoxStart
-		yEndMatches = projected[:,1] <= yBoxEnd
-		
-		yMatches = yStartMatches * yEndMatches
-		
-		dataInBox = projected[xMatches * yMatches]
-		boxLabels = colorLabels[xMatches * yMatches]
-		
-		if len(dataInBox) > 0:
-			#print dataInBox
-			
-			posCount = len(np.where(boxLabels == 'r')[0]) + 0.01
-			negCount = len(np.where(boxLabels == 'b')[0]) + 0.01
-			
-			#Normalize for the total count of that label
-			posCount = posCount / len(np.where(colorLabels == 'r')[0])
-			negCount = negCount / len(np.where(colorLabels == 'b')[0])
-			
-			if negCount > 0:
-				plotGrid[xInd,yInd] = np.log(posCount / float(negCount))
-			
-
-		#Move the box along x
-		xBoxStart += boxWidth
-		xBoxEnd += boxWidth
-	
-	yBoxStart += boxWidth
-	yBoxEnd += boxWidth
-	#Reset the box on x
-	xBoxStart = xmin
-	xBoxEnd = xmin + boxWidth
-
-plotGrid = np.ma.masked_where(plotGrid == 0, plotGrid)
-cmap = plt.cm.seismic
-cmap.set_bad(color='white')
-print(plotGrid)
-plt.imshow(plotGrid, cmap=cmap, interpolation='nearest')		
-plt.show()
+# import math
+# 
+# #
+# colorLabels = np.array(colorLabels)
+# 
+# #Get the minimum and maximum to determine the bounds of the plot.
+# xmin = np.min(projected[:,0])
+# xmax = np.max(projected[:,0])
+# ymin = np.min(projected[:,1])
+# ymax = np.max(projected[:,1])
+# 
+# #Define the box size and how many boxes we should make
+# print(xmin, xmax, ymin, ymax)
+# 
+# #round the values to get covering boxes
+# xmin = round(xmin)
+# xmax = round(xmax)
+# ymin = round(ymin)
+# ymax = round(ymax)
+# 
+# boxWidth = 0.2
+# #Take the ceil to get the maximum possible without leaving out points
+# xBoxNum = int(math.ceil((xmax - xmin) / boxWidth))
+# yBoxNum = int(math.ceil((ymax - ymin) / boxWidth))
+# 
+# #Placeholder for smoothed data
+# plotGrid = np.zeros([xBoxNum, yBoxNum])
+# 
+# #Loop through the data and show the data in the boxes
+# yBoxStart = ymin
+# yBoxEnd = ymin + boxWidth
+# xBoxStart = xmin
+# xBoxEnd = xmin + boxWidth
+# for yInd in range(0, yBoxNum):
+# 	for xInd in range(0, xBoxNum):
+# 		
+# 		#Find all data points that are within the current box
+# 		xStartMatches = projected[:,0] >= xBoxStart
+# 		xEndMatches = projected[:,0] <= xBoxEnd
+# 		
+# 		xMatches = xStartMatches * xEndMatches
+# 		
+# 		yStartMatches = projected[:,1] >= yBoxStart
+# 		yEndMatches = projected[:,1] <= yBoxEnd
+# 		
+# 		yMatches = yStartMatches * yEndMatches
+# 		
+# 		dataInBox = projected[xMatches * yMatches]
+# 		boxLabels = colorLabels[xMatches * yMatches]
+# 		
+# 		if len(dataInBox) > 0:
+# 			#print dataInBox
+# 			
+# 			posCount = len(np.where(boxLabels == 'r')[0]) + 0.01
+# 			negCount = len(np.where(boxLabels == 'b')[0]) + 0.01
+# 			
+# 			#Normalize for the total count of that label
+# 			posCount = posCount / len(np.where(colorLabels == 'r')[0])
+# 			negCount = negCount / len(np.where(colorLabels == 'b')[0])
+# 			
+# 			if negCount > 0:
+# 				plotGrid[xInd,yInd] = np.log(posCount / float(negCount))
+# 			
+# 
+# 		#Move the box along x
+# 		xBoxStart += boxWidth
+# 		xBoxEnd += boxWidth
+# 	
+# 	yBoxStart += boxWidth
+# 	yBoxEnd += boxWidth
+# 	#Reset the box on x
+# 	xBoxStart = xmin
+# 	xBoxEnd = xmin + boxWidth
+# 
+# plotGrid = np.ma.masked_where(plotGrid == 0, plotGrid)
+# cmap = plt.cm.seismic
+# cmap.set_bad(color='white')
+# print(plotGrid)
+# plt.imshow(plotGrid, cmap=cmap, interpolation='nearest')		
+# plt.show()
 
 #very simple ml test
 from sklearn.model_selection import train_test_split
@@ -469,18 +488,43 @@ def cvClassification(similarityMatrix, bagLabels, clf):
 											  cv=kfold,
 											  scoring=scoring)
 
-	print('accuracy: ', np.mean(results['test_accuracy']), np.std(results['test_accuracy']))
-	print('precision: ', np.mean(results['test_precision']), np.std(results['test_precision']))
-	print('recall: ', np.mean(results['test_recall']), np.std(results['test_recall']))
-	print('F1 score: ', np.mean(results['test_f1_score']), np.std(results['test_f1_score']))
-	print('AP: ', np.mean(results['test_average_precision']), np.std(results['test_average_precision']))
+	#print('accuracy: ', np.mean(results['test_accuracy']), np.std(results['test_accuracy']))
+	#print('precision: ', np.mean(results['test_precision']), np.std(results['test_precision']))
+	#print('recall: ', np.mean(results['test_recall']), np.std(results['test_recall']))
+	#print('F1 score: ', np.mean(results['test_f1_score']), np.std(results['test_f1_score']))
+	#print('AP: ', np.mean(results['test_average_precision']), np.std(results['test_average_precision']))
 	
-
-print("Random forest")
+	return np.mean(results['test_f1_score']), np.mean(results['test_average_precision'])
+	
 from sklearn.ensemble import RandomForestClassifier
-rfClassifier = RandomForestClassifier(max_depth=5, n_estimators=2)
-cvClassification(allFeatures, labels, rfClassifier)
 
-print("Shuffled:")
-shuffle(labels)
-cvClassification(allFeatures, labels, rfClassifier)
+featureCount = allFeatures.shape[1]-1
+featureCount = 1
+f1s = []
+aps = []
+for featureInd in range(featureCount, allFeatures.shape[1]):
+	print(featureInd)
+	rfClassifier = RandomForestClassifier(max_depth=100, n_estimators=2)
+	
+	f1, ap = cvClassification(allFeatures[:,0:featureInd], labels, rfClassifier)
+	f1s.append(f1)
+	aps.append(ap)
+	
+f1Shuffled = []
+apShuffled = []
+for featureInd in range(featureCount, allFeatures.shape[1]):
+	print(featureInd)	
+		
+	shuffle(labels)
+	f1, ap = cvClassification(allFeatures[:,0:featureInd], labels, rfClassifier)
+	f1Shuffled.append(f1)
+	apShuffled.append(ap)
+
+
+print('F1 score: ', f1s)
+print('AP: ', aps)
+	
+print("Shuffled:")	
+
+print('F1 score: ', f1Shuffled)
+print('AP: ', apShuffled)	

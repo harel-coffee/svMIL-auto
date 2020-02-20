@@ -5,26 +5,35 @@ import numpy as np
 
 
 svGenePairs = np.loadtxt(sys.argv[1], dtype='object')
-degPairs = np.load(sys.argv[2], allow_pickle=True, encoding='latin1')
+#degPairs = np.load(sys.argv[2], allow_pickle=True, encoding='latin1')
+
+degPairs = np.loadtxt(sys.argv[2], dtype='object')
 
 positivePairsFeatures = []
 negativePairsFeatures = []
 
 for pair in svGenePairs:
-	features = pair
+	features = list(pair)
 	
-	#check f there are really no gains
-	gains = features[24:46]
-	splitSV = features[0].split("_")
-	if splitSV[8] == 'del':
-		print(pair[0])
-		print(gains)
+	splitPair = pair[0].split('_')
+	shortPair = splitPair[7] + '_' + splitPair[0]
 	
-	if pair[0] in degPairs[:,0]:
-		positivePairsFeatures.append(features)
+	if shortPair in degPairs[:,0]:
 		
-	else:
-		negativePairsFeatures.append(features)
+		#check if this is true or not.
+		degPairInfo = degPairs[degPairs[:,0] == shortPair][0]
+		#features.append(np.abs(float(degPairInfo[5])))
+			
+		#if degPairInfo[3] == 'True':
+		# 	positivePairsFeatures.append(features)
+		# else:
+		# 	negativePairsFeatures.append(features)
+
+		if float(degPairInfo[5]) > 2 or float(degPairInfo[5]) < -2:
+			positivePairsFeatures.append(features)
+		else:
+			negativePairsFeatures.append(features)
+
 
 positivePairsFeatures = np.array(positivePairsFeatures)
 negativePairsFeatures = np.array(negativePairsFeatures)

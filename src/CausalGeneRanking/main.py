@@ -62,7 +62,7 @@ causalGenes = InputParser().readCausalGeneFile(settings.files['causalGenesFile']
 nonCausalGenes = InputParser().readNonCausalGeneFile(settings.files['nonCausalGenesFile'], causalGenes) #In the same format as the causal genes.
 
 #Combine the genes into one set. 
-#causalGenes = np.concatenate((causalGenes, nonCausalGenes), axis=0)
+causalGenes = np.concatenate((causalGenes, nonCausalGenes), axis=0)
 
 
 #provide list of SVs that should be excluded from the model. 
@@ -109,7 +109,7 @@ if mode == "SV":
 #3. Do ranking of the genes and report the causal SVs
 print("Ranking the genes for the variants")
 geneRanking = GeneRanking(causalGenes[:,3], svData, mode, sys.argv[1], permutationRound)
-
+exit()
 #Save the causal genes up until here and load them for faster development of the deep learning part
 # import pickle
 # 

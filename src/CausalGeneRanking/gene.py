@@ -24,10 +24,16 @@ class Gene:
 		self.lostElements = dict()
 		self.lostElementsSVs = dict() #lost elements per SV, not per sample
 		self.gainedElementsSVs = dict()
+		self.gainedElementsStrengthsSVs = dict()
+		self.lostElementsStrengthsSVs = dict()
 		self.alteredElements = dict()
-		self.elementsNotLinkedToGenes = ['cpg', 'tf', 'hic', 'dnaseI', 'h3k9me3', 'h3k4me3', 'h3k27ac', 'h3k27me3', 'h3k4me1', 'h3k36me3',
+		self.elementsNotLinkedToGenes = ['ctcf', 'rnaPol', 'cpg', 'tf', 'hic', 'dnaseI', 'h3k9me3', 'h3k4me3', 'h3k27ac', 'h3k27me3', 'h3k4me1', 'h3k36me3',
 									'CTCF', 'CTCF+Enhancer', 'CTCF+Promoter', 'Enhancer', 'Heterochromatin',
-									'Poised_Promoter', 'Promoter', 'Repeat', 'Repressed', 'Transcribed']
+									'Poised_Promoter', 'Promoter', 'Repeat', 'Repressed', 'Transcribed', 'superEnhancer']
+		self.strengthElements = ['enhancer', 'ctcf', 'rnaPol', 'h3k9me3', 'h3k4me3', 'h3k27ac', 'h3k27me3', 'h3k4me1', 'h3k36me3']
+		self.cosmic = 0
+		
+		
 	def setTADs(self, leftTAD, rightTAD):
 		
 		self.leftTAD = leftTAD
@@ -83,7 +89,7 @@ class Gene:
 	def addGainedElementsSVs(self, gainedElements, sv):
 		
 		if len(gainedElements) > 0:
-			if sv not in self.gainedElements:
+			if sv not in self.gainedElementsSVs:
 				self.gainedElementsSVs[sv] = dict()
 		
 		#Have a dictionary where we count the number of elements of a specific type that are gained per sample.
@@ -93,8 +99,28 @@ class Gene:
 				self.gainedElementsSVs[sv][gainedElement[3]] = 0
 			self.gainedElementsSVs[sv][gainedElement[3]] += 1
 		
-		self.addAlteredElements(gainedElements, sv, 'gain')	
+		self.addAlteredElements(gainedElements, sv, 'gain')
+		self.addGainedElementsStrengthsSVs(gainedElements, sv)
 	
+	def addGainedElementsStrengthsSVs(self, gainedElements, sv):
+		
+		#for each element type, get the strongest one, and keep it as a feature.
+		if len(gainedElements) > 0:
+			if sv not in self.gainedElementsStrengthsSVs:
+				self.gainedElementsStrengthsSVs[sv] = dict()
+			
+		#list for each type what the max value is so far
+		strengthList = dict()
+		for gainedElement in gainedElements:
+			
+			if gainedElement[3] in self.strengthElements:
+				
+				if gainedElement[3] not in self.gainedElementsStrengthsSVs[sv]:
+					self.gainedElementsStrengthsSVs[sv][gainedElement[3]] = 0
+				
+				if gainedElement[5] > self.gainedElementsStrengthsSVs[sv][gainedElement[3]]:
+					self.gainedElementsStrengthsSVs[sv][gainedElement[3]] = gainedElement[5]
+				
 	def addLostElements(self, lostElements, sample):
 		
 		if len(lostElements) > 0:
@@ -122,7 +148,7 @@ class Gene:
 	def addLostElementsSVs(self, lostElements, sv):
 		
 		if len(lostElements) > 0:
-			if sv not in self.lostElements:
+			if sv not in self.lostElementsSVs:
 				self.lostElementsSVs[sv] = dict()
 		
 		#Have a dictionary where we count the number of elements of a specific type that are lost per sample.
@@ -130,6 +156,8 @@ class Gene:
 		
 		
 		for lostElement in lostElements:
+			
+		
 			if lostElement[3] in self.elementsNotLinkedToGenes:
 				if lostElement[3] not in self.lostElementsSVs[sv]:
 					self.lostElementsSVs[sv][lostElement[3]] = 0
@@ -142,7 +170,33 @@ class Gene:
 					self.lostElementsSVs[sv][lostElement[3]] +=1
 		
 		self.addAlteredElements(lostElements, sv, 'loss')
+		self.addLostElementsStrengthsSVs(lostElements, sv)
+	
+	def addLostElementsStrengthsSVs(self, lostElements, sv):
 		
+		#for each element type, get the strongest one, and keep it as a feature.
+		if len(lostElements) > 0:
+			if sv not in self.lostElementsStrengthsSVs:
+				self.lostElementsStrengthsSVs[sv] = dict()
+			
+		#list for each type what the max value is so far
+		strengthList = dict()
+		for lostElement in lostElements:
+			
+			if lostElement[3] in self.strengthElements:
+				
+				if lostElement[3] == 'dnaseI':
+					print(lostElement[3])
+
+				if lostElement[3] not in self.lostElementsStrengthsSVs[sv]:
+					self.lostElementsStrengthsSVs[sv][lostElement[3]] = 0
+				
+				if lostElement[5] > self.lostElementsStrengthsSVs[sv][lostElement[3]]:
+					self.lostElementsStrengthsSVs[sv][lostElement[3]] = lostElement[5]
+					if lostElement[3] == 'dnaseI':
+						print(lostElement)
+					
+			
 	def addAlteredElements(self, elements, sv, alterationType):
 		"""
 			For this gene, make a dictionary where we can look up by SV which elements were altered by that SV for this gene.
@@ -150,7 +204,8 @@ class Gene:
 		"""
 		
 		allowedElements = ['enhancer']
-
+		#allowedElements = ['superEnhancer']
+		#allowedElements = ['enhancer', 'promoter', 'eqtl']
 
 		if len(elements) > 0:
 			if sv not in self.alteredElements:
@@ -161,8 +216,10 @@ class Gene:
 		#For methylation marks, gather all relevant marks here for easy lookup.
 		#For now, just focus on what is relevant for enhancers
 		methylationMarks = []
-		annotationElements = ['dnaseI', 'h3k9me3', 'h3k4me3', 'h3k27ac', 'h3k27me3', 'h3k4me1', 'h3k36me3', 'CTCF', 'CTCF+Enhancer', 'Enhancer',
-							  'Heterochromatin', 'Repeat', 'Repressed', 'Transcribed', 'rnaPol']
+		annotationElements = ['ctcf', 'dnaseI', 'h3k9me3', 'h3k4me3', 'h3k27ac', 'h3k27me3', 'h3k4me1', 'h3k36me3', 'CTCF', 'CTCF+Enhancer', 'Enhancer',
+							  'Heterochromatin', 'Repeat', 'Repressed', 'Transcribed', 'rnaPol', 'superEnhancer']
+		
+		strengthElements = ['enhancer', 'ctcf', 'rnaPol', 'h3k9me3', 'h3k4me3', 'h3k27ac', 'h3k27me3', 'h3k4me1', 'h3k36me3']
 		for element in elements:
 			
 			#if element[3] in ['h3k27ac', 'h3k4me1']:
@@ -171,7 +228,7 @@ class Gene:
 				methylationMarks.append(element)
 		
 		methylationMarks = np.array(methylationMarks, dtype='object')	
-		
+
 		for element in elements:
 			
 			if element[3] not in allowedElements:
@@ -192,12 +249,20 @@ class Gene:
 			#Fix this later and make it not-so-hardcoded
 			#elementMethylation = [0, 0] #keep order of elements
 			elementMethylation = [0]*len(annotationElements) #keep order of elements
+			elementStrength = [0]*len(strengthElements) #keep order of elements
 			for match in methylationMatches:
 				
 				for elementInd in range(0, len(annotationElements)):
 					annotationElement = annotationElements[elementInd]
 					if match[3] == annotationElement:
 						elementMethylation[elementInd] = 1
+			
+				for elementInd in range(0, len(strengthElements)):
+					strengthElement = strengthElements[elementInd]
+					if match[3] == strengthElement:
+						elementStrength[elementInd] = match[5]
+			
+			
 				
 			lossGains = [0,0]
 			if alterationType == 'loss':
@@ -212,12 +277,23 @@ class Gene:
 			if alterationType == "gain":
 				lossGains[1] = 1
 			
-			#activity score of the enhancer
-			enhScore = [element[5]]
+			#confidence score of the enhancer
+			#enhScore = [element[5]]
+			
+			#distance of gene to element
+			startStartDist = np.abs(element[1] - self.start)
+			startEndDist = np.abs(element[1] - self.end)
+			endStartDist = np.abs(element[2] - self.start)
+			endEndDist = np.abs(element[2] - self.end)
+			
+			minDist = np.min([startStartDist, startEndDist, endStartDist, endEndDist])
 			
 			#if we get here, we passed all checks and there is a valid gain OR loss
 			if elementStr not in self.alteredElements[sv]:
-				self.alteredElements[sv][elementStr] = lossGains + elementMethylation + enhScore
+				#self.alteredElements[sv][elementStr] = lossGains + elementMethylation + enhScore
+				self.alteredElements[sv][elementStr] = lossGains + elementMethylation + elementStrength + [allowedElements.index(element[3])] + [self.cosmic]
+				
+				
 				#self.alteredElements[sv][elementStr] = lossGains
 		#something with methylation for the affected genes only
 		#first make sure that all elements are gathered, then afterwards, add the methylation specifically for each of them. 

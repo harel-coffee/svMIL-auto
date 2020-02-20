@@ -310,19 +310,34 @@ class NeighborhoodDefiner:
 			
 			tadData = self.mapElementsToTads(rnaPolData, tadData)
 		
+		#12. get super enhancers
+		if settings.general['superEnhancers'] == True:
+			print("Getting super enhancers")
+			superEnhancerData = InputParser().getSuperEnhancersFromFile(settings.files['superEnhancerFile'])
+			
+			tadData = self.mapElementsToTads(superEnhancerData, tadData)
+		
+		if settings.general['ctcfSites'] == True:
+			print("Getting ctcf sites")
+			ctcfData = InputParser().getCTCFSitesFromFile(settings.files['ctcfFile'])
+			
+			tadData = self.mapElementsToTads(ctcfData, tadData)
+			tadData = self.mapCTCFStrengthToTads(ctcfData, tadData)
+		
+		
 		#3. Map SVs to all neighborhood elements
 		if mode == "SV":
 			print("Mapping SVs to the neighborhood")
 			self.mapSVsToNeighborhood(genes, svData, tadData, excludedSVs)
 
-		if settings.general['snvs'] == False: #in this case, we want to filter out pairs that have SNV effects.
-			print('Mapping SNVs to genes')
-			self.mapSNVsToNeighborhood(genes, settings.files['snvDir'])
-			
-		if settings.general['cnvs'] == False: #in this case, we want to filter out pairs that have SNV effects.
-			print('Mapping CNVs to genes')
-			self.mapCNVsToNeighborhood(genes, settings.files['cnvDir'])
-				
+		# if settings.general['snvs'] == False: #in this case, we want to filter out pairs that have SNV effects.
+		# 	print('Mapping SNVs to genes')
+		# 	self.mapSNVsToNeighborhood(genes, settings.files['snvDir'])
+		# 	
+		# if settings.general['cnvs'] == False: #in this case, we want to filter out pairs that have SNV effects.
+		# 	print('Mapping CNVs to genes')
+		# 	self.mapCNVsToNeighborhood(genes, settings.files['cnvDir'])
+		# 		
 			
 
 		#Add the gene methylation to genes for MIL. Do this step here, because the file is huge and takes a long time to process.
@@ -330,6 +345,28 @@ class NeighborhoodDefiner:
 			InputParser().getMethylationFromFile(settings.files['methylationFile'], genes)
 		
 			
+	def mapCTCFStrengthToTads(self, ctcfData, tadData):
+		
+		#for each tad, check which ctcf site is overlapping the boundaries
+		for tad in tadData:
+			
+			ctcfChrSubset = ctcfData[ctcfData[:,0] == tad[0]]
+			
+			startMatches = (tad[1] >= ctcfChrSubset[:,1]) * (tad[1] <= ctcfChrSubset[:,2])
+			endMatches = (tad[2] >= ctcfChrSubset[:,1]) * (tad[2] <= ctcfChrSubset[:,2])
+			
+			if len(ctcfChrSubset[startMatches]) > 0:
+				
+				startSite = ctcfChrSubset[startMatches][0]
+				tad[3].startStrength = startSite[5]
+			
+			if len(ctcfChrSubset[endMatches]) > 0:	
+				endSite = ctcfChrSubset[endMatches][0]
+				tad[3].endStrength = endSite[5]
+			
+		
+		return tadData
+		
 	
 	def mapTADsToGenes(self, genes, tadData):
 		"""

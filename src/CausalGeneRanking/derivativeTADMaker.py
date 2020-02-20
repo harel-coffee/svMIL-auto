@@ -621,20 +621,23 @@ class DerivativeTADMaker:
 						
 						remainingElementsRight = rightTad.getElementsByRange(rightTad.start, sv.e2)
 						remainingGenesRight = rightTad.getGenesByRange(rightTad.start, sv.e2)
+					
+					svStr = sv.chr1 + "_" + str(sv.s1) + "_" + str(sv.e1) + "_" + sv.chr2 + "_" + str(sv.s2) + "_" + str(sv.e2) + "_" + sv.sampleName + "_" + str(leftTad.startStrength) + '_' + str(leftTad.endStrength) + '_' + str(rightTad.startStrength) + '_' + str(rightTad.endStrength) + '_' + sv.svType
+			
 						
 					for gene in leftSideGenes:		
 						gene.addLostElements(remainingElementsLeft, sv.sampleName)
-						gene.addLostElementsSVs(remainingElementsLeft, sv.chr1 + "_" + str(sv.s1) + "_" + str(sv.e1) + "_" + sv.chr2 + "_" + str(sv.s2) + "_" + str(sv.e2) + "_" + sv.sampleName + "_" + sv.svType)
+						gene.addLostElementsSVs(remainingElementsLeft, svStr)
 						
 						gene.addGainedElements(rightSideElements, sv.sampleName)
-						gene.addGainedElementsSVs(rightSideElements, sv.chr1 + "_" + str(sv.s1) + "_" + str(sv.e1) + "_" + sv.chr2 + "_" + str(sv.s2) + "_" + str(sv.e2) + "_" + sv.sampleName + "_" + sv.svType)
+						gene.addGainedElementsSVs(rightSideElements, svStr)
 						
 					for gene in rightSideGenes:		
 						gene.addLostElements(remainingElementsRight, sv.sampleName)
-						gene.addLostElementsSVs(remainingElementsRight, sv.chr1 + "_" + str(sv.s1) + "_" + str(sv.e1) + "_" + sv.chr2 + "_" + str(sv.s2) + "_" + str(sv.e2) + "_" + sv.sampleName + "_" + sv.svType)
+						gene.addLostElementsSVs(remainingElementsRight, svStr)
 					
 						gene.addGainedElements(leftSideElements, sv.sampleName)
-						gene.addGainedElementsSVs(leftSideElements, sv.chr1 + "_" + str(sv.s1) + "_" + str(sv.e1) + "_" + sv.chr2 + "_" + str(sv.s2) + "_" + str(sv.e2) + "_" + sv.sampleName + "_" + sv.svType)
+						gene.addGainedElementsSVs(leftSideElements, svStr)
 					
 						
 		### DELETIONS ###
@@ -688,12 +691,14 @@ class DerivativeTADMaker:
 			# 	exit()
 			
 			#for the losses, the remaining genes in the left lose the lost left elements
-			#for the gains, the remaining genes in the left gain the remaining elements on the right. 
+			#for the gains, the remaining genes in the left gain the remaining elements on the right.
+			svStr = svData[0] + "_" + str(svData[1]) + "_" + str(svData[2]) + "_" + svData[3] + "_" + str(svData[4]) + "_" + str(svData[5]) + "_" + svData[8].sampleName + "_" + str(farLeftTad[3].startStrength) + '_' + str(farLeftTad[3].endStrength) + '_' + str(farRightTad[3].startStrength) + '_' + str(farRightTad[3].endStrength) + '_' + svData[8].svType
+			
 			for gene in remainingLeftGenes: #add gains from the right
 				
 				if len(remainingRightElements) > 0:
 					gene.addGainedElements(remainingRightElements, svData[8].sampleName)
-					gene.addGainedElementsSVs(remainingRightElements, svData[0] + "_" + str(svData[1]) + "_" + str(svData[2]) + "_" + svData[3] + "_" + str(svData[4]) + "_" + str(svData[5]) + "_" + svData[8].sampleName + "_" + svData[8].svType)
+					gene.addGainedElementsSVs(remainingRightElements, svStr)
 				
 				#gene.addLostElements(deletedLeftElements, svData[8].sampleName)
 				#gene.addLostElementsSVs(deletedLeftElements, svData[0] + "_" + str(svData[1]) + "_" + str(svData[2]) + "_" + svData[3] + "_" + str(svData[4]) + "_" + str(svData[5]) + "_" + svData[8].sampleName + "_" + svData[8].svType)
@@ -702,7 +707,7 @@ class DerivativeTADMaker:
 				
 				if len(remainingRightElements) > 0:
 					gene.addGainedElements(remainingLeftElements, svData[8].sampleName)
-					gene.addGainedElementsSVs(remainingLeftElements, svData[0] + "_" + str(svData[1]) + "_" + str(svData[2]) + "_" + svData[3] + "_" + str(svData[4]) + "_" + str(svData[5]) + "_" + svData[8].sampleName + "_" + svData[8].svType)
+					gene.addGainedElementsSVs(remainingLeftElements, svStr)
 			
 				#gene.addLostElements(deletedRightElements, svData[8].sampleName)
 				#gene.addLostElementsSVs(deletedRightElements, svData[0] + "_" + str(svData[1]) + "_" + str(svData[2]) + "_" + svData[3] + "_" + str(svData[4]) + "_" + str(svData[5]) + "_" + svData[8].sampleName + "_" + svData[8].svType)
@@ -740,10 +745,7 @@ class DerivativeTADMaker:
 			# 		gene.addLostElements(lostElements, svData[8].sampleName)
 			# 		gene.addLostElementsSVs(lostElements, svData[0] + "_" + str(svData[1]) + "_" + str(svData[2]) + "_" + svData[3] + "_" + str(svData[4]) + "_" + str(svData[5]) + "_" + svData[8].sampleName + "_" + svData[8].svType)
 			# 		
-			
-					
-								
-							
+		
 		### INVERSION ###
 		if svType == "inv":
 			
@@ -770,8 +772,6 @@ class DerivativeTADMaker:
 			leftMostTad = tadChrSubset[invStartMatches]
 			rightMostTad = tadChrSubset[invEndMatches]
 			
-			if svStr != 'chr8_115081264_115081264_chr8_119674697_119674697_CPCT02050146T_INV':
-				return
 			
 			if len(leftMostTad) < 1 or len(rightMostTad) < 1:
 				return #for now skip all inversions that do not end in a TAD on either side. 
@@ -810,54 +810,43 @@ class DerivativeTADMaker:
 			#print "Copying genes and elements after SV"		
 			#All genes that were originally in the left TAD (outisde of the inversion) will gain elements of the right side of the inversion
 			#All unaffected genes on the left will lose the eQTLs that are in the left side of the inversion
+			svStr = svData[0] + "_" + str(svData[1]) + "_" + str(svData[2]) + "_" + svData[3] + "_" + str(svData[4]) + "_" + str(svData[5]) + "_" + svData[8].sampleName + "_" + str(leftMostTad[3].startStrength) + '_' + str(leftMostTad[3].endStrength) + '_' + str(rightMostTad[3].startStrength) + '_' + str(rightMostTad[3].endStrength) + '_' + svData[8].svType
 			for gene in unaffectedGenesLeft:
 				
-				print('left un')
-				print(gene.name)
-			
 				gene.addGainedElements(rightSideElements, svData[7])
-				gene.addGainedElementsSVs(rightSideElements, svData[0] + "_" + str(svData[1]) + "_" + str(svData[2]) + "_" + svData[3] + "_" + str(svData[4]) + "_" + str(svData[5]) + "_" + svData[8].sampleName + "_" + svData[8].svType)
+				gene.addGainedElementsSVs(rightSideElements, svStr)
 				
 				gene.addLostElements(leftSideElements, svData[7])
-				gene.addLostElementsSVs(leftSideElements, svData[0] + "_" + str(svData[1]) + "_" + str(svData[2]) + "_" + svData[3] + "_" + str(svData[4]) + "_" + str(svData[5]) + "_" + svData[8].sampleName + "_" + svData[8].svType)
+				gene.addLostElementsSVs(leftSideElements, svStr)
 				
 			#All genes in the right side of the inversion will gain elements from the original left TAD.
 			#All genes in the right side will lose interactions with eQTLs in the unaffected right TAD. 
 			for gene in rightSideGenes:
 				
-				print('right inv')
-				print(gene.name)
-				
 				gene.addGainedElements(unaffectedElementsLeft, svData[7])
-				gene.addGainedElementsSVs(unaffectedElementsLeft, svData[0] + "_" + str(svData[1]) + "_" + str(svData[2]) + "_" + svData[3] + "_" + str(svData[4]) + "_" + str(svData[5]) + "_" + svData[8].sampleName + "_" + svData[8].svType)
+				gene.addGainedElementsSVs(unaffectedElementsLeft, svStr)
 				#print "Number of unaffected elements right: ", len(unaffectedElementsRight), " for genes ", len(rightSideGenes)
 				gene.addLostElements(unaffectedElementsRight, svData[7])
-				gene.addLostElementsSVs(unaffectedElementsRight, svData[0] + "_" + str(svData[1]) + "_" + str(svData[2]) + "_" + svData[3] + "_" + str(svData[4]) + "_" + str(svData[5]) + "_" + svData[8].sampleName + "_" + svData[8].svType)
+				gene.addLostElementsSVs(unaffectedElementsRight, svStr)
 			
 			#vice versa but then for the right TAD and right side of the inversion.
 			#The lost eQTLs are the ones that are in the right side of the inversion
 			for gene in unaffectedGenesRight:
 				
-				print('right un')
-				print(gene.name)
-				
 				gene.addGainedElements(leftSideElements, svData[7])
-				gene.addGainedElementsSVs(leftSideElements, svData[0] + "_" + str(svData[1]) + "_" + str(svData[2]) + "_" + svData[3] + "_" + str(svData[4]) + "_" + str(svData[5]) + "_" + svData[8].sampleName + "_" + svData[8].svType)
+				gene.addGainedElementsSVs(leftSideElements, svStr)
 				
 				gene.addLostElements(rightSideElements, svData[7])
-				gene.addLostElementsSVs(rightSideElements, svData[0] + "_" + str(svData[1]) + "_" + str(svData[2]) + "_" + svData[3] + "_" + str(svData[4]) + "_" + str(svData[5]) + "_" + svData[8].sampleName + "_" + svData[8].svType)
+				gene.addLostElementsSVs(rightSideElements, svStr)
 			
 			#The lost eQTLs are the ones that are in the unaffected original left TAD
 			for gene in leftSideGenes:
 				
-				print('left inv')
-				print(gene.name)
-				
 				gene.addGainedElements(unaffectedElementsRight, svData[7])
-				gene.addGainedElementsSVs(unaffectedElementsRight, svData[0] + "_" + str(svData[1]) + "_" + str(svData[2]) + "_" + svData[3] + "_" + str(svData[4]) + "_" + str(svData[5]) + "_" + svData[8].sampleName + "_" + svData[8].svType)
+				gene.addGainedElementsSVs(unaffectedElementsRight, svStr)
 				
 				gene.addLostElements(unaffectedElementsLeft, svData[7])
-				gene.addLostElementsSVs(unaffectedElementsLeft, svData[0] + "_" + str(svData[1]) + "_" + str(svData[2]) + "_" + svData[3] + "_" + str(svData[4]) + "_" + str(svData[5]) + "_" + svData[8].sampleName + "_" + svData[8].svType)
+				gene.addLostElementsSVs(unaffectedElementsLeft, svStr)
 
 			return
 		
@@ -941,14 +930,16 @@ class DerivativeTADMaker:
 				svGenesFirstTad = leftMostTad[0][3].getGenesByRange(svData[1], leftMostTad[0][2])
 				svGenesLastTad = rightMostTad[0][3].getGenesByRange(rightMostTad[0][1], svData[5])
 				
+				svStr = svData[0] + "_" + str(svData[1]) + "_" + str(svData[2]) + "_" + svData[3] + "_" + str(svData[4]) + "_" + str(svData[5]) + "_" + svData[8].sampleName + "_" + str(leftMostTad[0][3].startStrength) + '_' + str(leftMostTad[0][3].endStrength) + '_' + str(rightMostTad[0][3].startStrength) + '_' + str(rightMostTad[0][3].endStrength) + '_' + svData[8].svType
+				
 				for gene in svGenesFirstTad:
 					
 					gene.addGainedElements(svInteractionsLastTad, svData[7])
-					gene.addGainedElementsSVs(svInteractionsLastTad, svData[0] + "_" + str(svData[1]) + "_" + str(svData[2]) + "_" + svData[3] + "_" + str(svData[4]) + "_" + str(svData[5]) + "_" + svData[8].sampleName + "_" + svData[8].svType)
+					gene.addGainedElementsSVs(svInteractionsLastTad, svStr)
 				
 				for gene in svGenesLastTad:
 				
 					gene.addGainedElements(svInteractionsFirstTad, svData[7])
-					gene.addGainedElementsSVs(svInteractionsFirstTad, svData[0] + "_" + str(svData[1]) + "_" + str(svData[2]) + "_" + svData[3] + "_" + str(svData[4]) + "_" + str(svData[5]) + "_" + svData[8].sampleName + "_" + svData[8].svType)
+					gene.addGainedElementsSVs(svInteractionsFirstTad, svStr)
 				
 				
