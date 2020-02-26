@@ -95,9 +95,11 @@ class Gene:
 		#Have a dictionary where we count the number of elements of a specific type that are gained per sample.
 		#This is much faster than storing the actual elements that are gained, and we do not use that information in the ranking, so it can be discarded here. 
 		for gainedElement in gainedElements:
+			
 			if gainedElement[3] not in self.gainedElementsSVs[sv]:
 				self.gainedElementsSVs[sv][gainedElement[3]] = 0
 			self.gainedElementsSVs[sv][gainedElement[3]] += 1
+		
 		
 		self.addAlteredElements(gainedElements, sv, 'gain')
 		self.addGainedElementsStrengthsSVs(gainedElements, sv)
@@ -147,6 +149,13 @@ class Gene:
 	
 	def addLostElementsSVs(self, lostElements, sv):
 		
+		# if sv == 'chr4_2479727_2479727_chr4_15029494_15029494_CPCT02080047T_0_0_0_0_INV':
+		# 	print('sv')
+		# 	print(self.name)
+		# 	for element in lostElements:
+		# 		if element[3] == 'enhancer':
+		# 			print(element)
+		# 
 		if len(lostElements) > 0:
 			if sv not in self.lostElementsSVs:
 				self.lostElementsSVs[sv] = dict()
@@ -157,7 +166,10 @@ class Gene:
 		
 		for lostElement in lostElements:
 			
-		
+			#if lostElement[3] == 'enhancer' and self.name == 'CPEB2':
+			#	print(sv)
+				
+			
 			if lostElement[3] in self.elementsNotLinkedToGenes:
 				if lostElement[3] not in self.lostElementsSVs[sv]:
 					self.lostElementsSVs[sv][lostElement[3]] = 0
@@ -185,16 +197,12 @@ class Gene:
 			
 			if lostElement[3] in self.strengthElements:
 				
-				if lostElement[3] == 'dnaseI':
-					print(lostElement[3])
-
+				
 				if lostElement[3] not in self.lostElementsStrengthsSVs[sv]:
 					self.lostElementsStrengthsSVs[sv][lostElement[3]] = 0
 				
 				if lostElement[5] > self.lostElementsStrengthsSVs[sv][lostElement[3]]:
 					self.lostElementsStrengthsSVs[sv][lostElement[3]] = lostElement[5]
-					if lostElement[3] == 'dnaseI':
-						print(lostElement)
 					
 			
 	def addAlteredElements(self, elements, sv, alterationType):
@@ -205,13 +213,12 @@ class Gene:
 		
 		allowedElements = ['enhancer']
 		#allowedElements = ['superEnhancer']
-		#allowedElements = ['enhancer', 'promoter', 'eqtl']
+		allowedElements = ['enhancer', 'promoter']
 
 		if len(elements) > 0:
 			if sv not in self.alteredElements:
 				self.alteredElements[sv] = dict()
-			else:
-				return #don't add the SV another time if we see it again for some reason, we already saw it once. 
+			
 		
 		#For methylation marks, gather all relevant marks here for easy lookup.
 		#For now, just focus on what is relevant for enhancers
@@ -231,11 +238,14 @@ class Gene:
 
 		for element in elements:
 			
+			
+			
+			#print(element[3])
 			if element[3] not in allowedElements:
 				continue
 			
 			elementStr = element[0] + "_" + str(element[1]) + "_" + str(element[2]) + "_" + element[3]
-
+			#print(elementStr, alterationType)
 			#Check if the element is methylated or not
 			#first, just set the things for enhancers only, this should later be element un-specific
 			#For all the other elements, determine if the enhancer has a specific mark or not (at the same position)
@@ -276,6 +286,9 @@ class Gene:
 
 			if alterationType == "gain":
 				lossGains[1] = 1
+			
+			if lossGains[0] == 0 and lossGains[1] == 0:
+				continue #this pair ended up with a bad loss, so we need to skip it then if it also has no gains. 
 			
 			#confidence score of the enhancer
 			#enhScore = [element[5]]

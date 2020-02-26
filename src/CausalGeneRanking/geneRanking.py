@@ -123,26 +123,29 @@ class GeneRanking:
 				allStrengthGainScores.append(gainScores)
 				
 				
-			
+			delCount = 0
+			dupCount = 0
+			invCount = 0
+			itxCount = 0
 			pairScores = np.zeros([len(svGeneIndices), 79])
 			pairIds = []
 			for ind in range(0, len(svGeneIndices)):
 				sv = svGeneIndices[ind]
 				
 				pairIds.append(sv)
-				print('gain/losses')
+				#print('gain/losses')
 				for featureInd in range(0, len(features)):
 					if sv in allLossScores[featureInd]:
 						pairScores[ind,featureInd] = allLossScores[featureInd][sv]
 					
 					if sv in allGainScores[featureInd]:
 						pairScores[ind,featureInd+len(features)] = allGainScores[featureInd][sv]
+					
 						
-						
-					print(featureInd, features[featureInd], 'loss')
-					print(featureInd+len(features), features[featureInd], 'gain')
+					#print(featureInd, features[featureInd], 'loss')
+					#print(featureInd+len(features), features[featureInd], 'gain')
 	
-				print('strengths')
+				#print('strengths')
 				for featureInd in range(0, len(strengthFeatures)):
 					if sv in allStrengthLossScores[featureInd]:
 						pairScores[ind,(featureInd+len(features)*2)] = allStrengthLossScores[featureInd][sv]
@@ -150,8 +153,8 @@ class GeneRanking:
 					if sv in allStrengthGainScores[featureInd]:
 						pairScores[ind,(featureInd+len(features)*2)+len(strengthFeatures)] = allStrengthGainScores[featureInd][sv]
 					
-					print(featureInd+len(features)*2, strengthFeatures[featureInd], 'loss')
-					print((featureInd+len(features)*2)+len(strengthFeatures), strengthFeatures[featureInd], 'gain')
+					#print(featureInd+len(features)*2, strengthFeatures[featureInd], 'loss')
+					#print((featureInd+len(features)*2)+len(strengthFeatures), strengthFeatures[featureInd], 'gain')
 					
 				translocation = 0
 				deletion = 0
@@ -159,15 +162,19 @@ class GeneRanking:
 				inversion = 0
 				#Add some features for SV type
 				splitSV = sv.split("_")
-				svType = "_".join(splitSV[12:])
+				svType = splitSV[12]
 				if re.search("ITX", svType, re.IGNORECASE):
 					translocation = 1
+					itxCount += 1
 				elif re.search("DEL", svType, re.IGNORECASE):
 					deletion = 1
+					delCount += 1
 				elif re.search("DUP", svType, re.IGNORECASE):
 					duplication = 1
+					dupCount += 1
 				elif re.search("INV", svType, re.IGNORECASE):
 					inversion = 1
+					invCount += 1
 				
 				pairScores[ind,70] = deletion
 				pairScores[ind,71] = duplication
@@ -187,6 +194,11 @@ class GeneRanking:
 				pairScores[ind,77] = splitSV[10]
 				pairScores[ind,78] = splitSV[11]
 				
+			
+			print('del pairs: ', delCount)
+			print('inv pairs: ', invCount)
+			print('dup pairs: ', dupCount)
+			print('itx pairs: ', itxCount)
 			
 			pairIds = np.array(pairIds)
 			
@@ -649,14 +661,15 @@ class GeneRanking:
 					else:
 						svInd = svGeneMap[pairId]
 				
-					loss = False #Make sure that we only focus on lost elements of the provided type. 
+					gain = False #Make sure that we only focus on lost elements of the provided type. 
 					for element in gene.gainedElementsSVs[sv]:
 						if element == elementType:
-							loss = True
-					if loss == True:
+							gain = True
+					if gain == True:
 						pairScores[pairId] = 1 #assume that each SV can disrupt a gene only once
 						#pairScores[pairId] = gene.gainedElementsSVs[sv][element]
-						
+					
+					
 		
 		return pairScores, svGeneMap, svGeneIndices	
 

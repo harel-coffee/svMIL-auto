@@ -62,7 +62,6 @@ for feature in range(0, featuresWithLabel.shape[1]):
 	#print(feature, np.var(featuresWithLabel[:,feature]))
 	print(feature, np.max(featuresWithLabel[:,feature]))
 
-exit()
 
 # 
 # maxPlots = 10

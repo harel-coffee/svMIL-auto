@@ -81,7 +81,24 @@ if mode == "SV":
 		print("Reading SV data")
 		svDir = settings.files['svDir']
 		svData = InputParser().getSVsFromFile_hmf(svDir)
+
+delCount = 0
+dupCount = 0
+invCount = 0
+itxCount = 0
+for sv in svData:
+	
+	if sv[8].svType == 'DEL':
+		delCount += 1
+	elif sv[8].svType == 'DUP':
+		dupCount += 1
+	elif sv[8].svType == 'INV':
+		invCount += 1
+	elif sv[8].svType == 'ITX':
+		itxCount += 1
 		
+print(delCount, dupCount, invCount, itxCount)
+
 	
 #3. If this is a permutation run, we wish to shuffle these SVs or SNVs.
 if permutationYN == "True":

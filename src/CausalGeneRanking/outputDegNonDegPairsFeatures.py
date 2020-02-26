@@ -15,6 +15,15 @@ negativePairsFeatures = []
 for pair in svGenePairs:
 	features = list(pair)
 	
+	#check for enhancer gain or loss. Otherwise, ignore.
+	#f2 is enhancer loss.
+	#f28 is enhancer gain
+	#+1 because the first entry is the pair name. 
+	
+		
+	if str(features[2]) != '1.0' and str(features[28]) != '1.0':
+		continue 
+	
 	splitPair = pair[0].split('_')
 	shortPair = splitPair[7] + '_' + splitPair[0]
 	

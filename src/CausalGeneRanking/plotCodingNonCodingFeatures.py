@@ -33,7 +33,7 @@ germlineData = nonDegData
 shuffledData = nonDegData
 
 #Filter by SV type if required.  
-svType = 'DEL'
+svType = 'ITX'
 typeLabel = 'all SV types'
 nonDEGs = []
 
@@ -87,6 +87,8 @@ for degPair in degData:
 		if typeMatch is None:
 			continue
 
+	
+
 	degs.append(degPair)
 
 degs = np.array(degs)
@@ -106,7 +108,7 @@ print(nonDEGs.shape)
 print(codingPairs.shape)
 print(germlinePairs.shape)
 print(shuffledPairs.shape)
-exit()
+
 pathwayDEGs = []
 unAnnotatedDEGs = []
 for degPair in degs:
@@ -337,7 +339,24 @@ negative = nonDEGs[rnd_indices][:,1:]
 
 allFeatures = np.concatenate((positive, negative), axis=0).astype(float)
 
+#normalize
+normalized = np.zeros(allFeatures.shape)
+for col in range(0, allFeatures.shape[1]):
+	
+	if np.min(allFeatures[:,col]) == np.max(allFeatures[:,col]):
+		continue
+	
+	print(col)
+	print(np.min(allFeatures[:,col]))
+	print(np.max(allFeatures[:,col]))
+
+	normalized[:,col] = (allFeatures[:,col] - np.min(allFeatures[:,col])) / (np.max(allFeatures[:,col] - np.min(allFeatures[:,col])))
+	
+#normalized = (allFeatures-np.min(allFeatures))/(np.max(allFeatures)-np.min(allFeatures))
+allFeatures = normalized
 print(allFeatures)
+
+
 
 #remove some features
 # allFeaturesFiltered = []
@@ -467,7 +486,7 @@ from sklearn.metrics import roc_curve, auc
 from sklearn.metrics import auc, precision_recall_curve
 from sklearn import model_selection
 from sklearn.metrics import average_precision_score
-from sklearn.metrics import make_scorer, accuracy_score, precision_score, recall_score, f1_score
+from sklearn.metrics import make_scorer, accuracy_score, precision_score, recall_score, f1_score, roc_auc_score
 
 from random import shuffle
 
@@ -478,7 +497,8 @@ def cvClassification(similarityMatrix, bagLabels, clf):
 			   'precision' : make_scorer(precision_score),
 			   'recall' : make_scorer(recall_score), 
 			   'f1_score' : make_scorer(f1_score),
-			   'average_precision' : make_scorer(average_precision_score)}
+			   'average_precision' : make_scorer(average_precision_score),
+			   'auc' : make_scorer(roc_auc_score)}
 	
 	kfold = model_selection.StratifiedKFold(n_splits=10, random_state=42)
 	
@@ -487,44 +507,72 @@ def cvClassification(similarityMatrix, bagLabels, clf):
 											  y=bagLabels,
 											  cv=kfold,
 											  scoring=scoring)
-
+	
 	#print('accuracy: ', np.mean(results['test_accuracy']), np.std(results['test_accuracy']))
 	#print('precision: ', np.mean(results['test_precision']), np.std(results['test_precision']))
 	#print('recall: ', np.mean(results['test_recall']), np.std(results['test_recall']))
-	#print('F1 score: ', np.mean(results['test_f1_score']), np.std(results['test_f1_score']))
-	#print('AP: ', np.mean(results['test_average_precision']), np.std(results['test_average_precision']))
+	print('F1 score: ', np.mean(results['test_f1_score']), np.std(results['test_f1_score']))
+	print('AP: ', np.mean(results['test_average_precision']), np.std(results['test_average_precision']))
+	print('AUC: ', np.mean(results['test_auc']), np.std(results['test_auc']))
 	
 	return np.mean(results['test_f1_score']), np.mean(results['test_average_precision'])
 	
 from sklearn.ensemble import RandomForestClassifier
 
-featureCount = allFeatures.shape[1]-1
-featureCount = 1
-f1s = []
-aps = []
-for featureInd in range(featureCount, allFeatures.shape[1]):
-	print(featureInd)
-	rfClassifier = RandomForestClassifier(max_depth=100, n_estimators=2)
-	
-	f1, ap = cvClassification(allFeatures[:,0:featureInd], labels, rfClassifier)
-	f1s.append(f1)
-	aps.append(ap)
-	
-f1Shuffled = []
-apShuffled = []
-for featureInd in range(featureCount, allFeatures.shape[1]):
-	print(featureInd)	
-		
-	shuffle(labels)
-	f1, ap = cvClassification(allFeatures[:,0:featureInd], labels, rfClassifier)
-	f1Shuffled.append(f1)
-	apShuffled.append(ap)
+rfClassifier = RandomForestClassifier(max_depth=100, n_estimators=2)
 
+from sklearn.neural_network import MLPClassifier
+from sklearn.neighbors import KNeighborsClassifier
+from sklearn.svm import SVC
+from sklearn.gaussian_process import GaussianProcessClassifier
+from sklearn.gaussian_process.kernels import RBF
+from sklearn.tree import DecisionTreeClassifier
+from sklearn.ensemble import RandomForestClassifier, AdaBoostClassifier
+from sklearn.naive_bayes import GaussianNB
+from sklearn.discriminant_analysis import QuadraticDiscriminantAnalysis
 
-print('F1 score: ', f1s)
-print('AP: ', aps)
+names = ["Decision Tree", "Random Forest",]
+
+classifiers = [
+    #KNeighborsClassifier(3),
+    #SVC(kernel="linear", C=0.025),
+    #SVC(gamma=2, C=1),
+    #GaussianProcessClassifier(1.0 * RBF(1.0)),
+    DecisionTreeClassifier(max_depth=100),
+    RandomForestClassifier(max_depth=100, n_estimators=10)]
+    #MLPClassifier(alpha=1, max_iter=1000),
+    #AdaBoostClassifier(),
+    #GaussianNB(),
+    #QuadraticDiscriminantAnalysis()]
+
+for classifierInd in range(0, len(classifiers)):
+	print(names[classifierInd])
+	rfClassifier = classifiers[classifierInd]
 	
-print("Shuffled:")	
+	featureCount = allFeatures.shape[1]-1
+	#featureCount = 1
+	f1s = []
+	aps = []
+	for featureInd in range(featureCount, allFeatures.shape[1]):
 
-print('F1 score: ', f1Shuffled)
-print('AP: ', apShuffled)	
+		f1, ap = cvClassification(allFeatures[:,0:featureInd], labels, rfClassifier)
+		f1s.append(f1)
+		aps.append(ap)
+
+print('shuffled: ')
+
+for classifierInd in range(0, len(classifiers)):
+	print(names[classifierInd])
+	rfClassifier = classifiers[classifierInd]
+	f1Shuffled = []
+	apShuffled = []
+	for featureInd in range(featureCount, allFeatures.shape[1]):
+
+			
+		shuffle(labels)
+		f1, ap = cvClassification(allFeatures[:,0:featureInd], labels, rfClassifier)
+		f1Shuffled.append(f1)
+		apShuffled.append(ap)
+	
+	
+	

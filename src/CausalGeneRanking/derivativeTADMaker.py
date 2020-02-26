@@ -134,11 +134,16 @@ class DerivativeTADMaker:
 		
 		filteredSVs = dict()
 		for tad in svsPerTad:
-			if len(svsPerTad[tad]) == 1:
-				sv = svsPerTad[tad][0]
+			sv = svsPerTad[tad][0]
+			filteredSVs[sv] = tadsPerSV[sv]
+			
+			### for 1 SV per tad
+			#if len(svsPerTad[tad]) == 1:
+			#	sv = svsPerTad[tad][0]
 				
-				filteredSVs[sv] = tadsPerSV[sv]
+			#	filteredSVs[sv] = tadsPerSV[sv]
 		
+		#exit()
 		sampleGroups = dict()
 		svGroups = dict()
 		samples = []
@@ -226,7 +231,7 @@ class DerivativeTADMaker:
 					continue
 			
 				tadsPerSV[sv[8]] = [matchingTadStart, matchingTadEnd]
-	
+			
 		return tadsPerSV
 		
 		
@@ -532,7 +537,7 @@ class DerivativeTADMaker:
 			#1.2 For the next translocation, update that list again. If there are elements that are now lost, remove them from the list
 			
 			updatedTadPos = dict() #keep the TADs and the new start/ends after 
-			
+			seenSVs = 0
 			for group in svGroups:
 				print(group[0].sampleName)
 				
@@ -567,7 +572,7 @@ class DerivativeTADMaker:
 						remainingElementsRight = rightTad.getElementsByRange(rightTad.start, sv.e2)
 						remainingGenesRight = rightTad.getGenesByRange(rightTad.start, sv.e2)
 						
-					if sv.o1 == "-" and sv.o2 == "+":
+					elif sv.o1 == "-" and sv.o2 == "+":
 				
 						#2. Get the elements on the left of the breakpoint and the right of the breakpoint
 						#Left side is the first chromosome, right side the second chromosome. 
@@ -585,7 +590,7 @@ class DerivativeTADMaker:
 						remainingGenesRight = rightTad.getGenesByRange(sv.e2, rightTad.end)
 						
 						
-					if sv.o1 == "+" and sv.o2 == "+":
+					elif sv.o1 == "+" and sv.o2 == "+":
 					
 						leftSideElements = leftTad.getElementsByRange(leftTad.start, sv.s1)
 						leftSideGenes = leftTad.getGenesByRange(leftTad.start, sv.s1)
@@ -602,7 +607,7 @@ class DerivativeTADMaker:
 						remainingElementsRight = rightTad.getElementsByRange(rightTad.start, sv.e2)
 						remainingGenesRight = rightTad.getGenesByRange(rightTad.start, sv.e2)
 	
-					if sv.o1 == "-" and sv.o2 == "-":
+					elif sv.o1 == "-" and sv.o2 == "-":
 						
 
 						#This is the left part of chr1
@@ -622,6 +627,11 @@ class DerivativeTADMaker:
 						remainingElementsRight = rightTad.getElementsByRange(rightTad.start, sv.e2)
 						remainingGenesRight = rightTad.getGenesByRange(rightTad.start, sv.e2)
 					
+					else:
+						
+						print('sv without correct orientation: ')
+						print(sv, sv.o1, sv.o2)
+					
 					svStr = sv.chr1 + "_" + str(sv.s1) + "_" + str(sv.e1) + "_" + sv.chr2 + "_" + str(sv.s2) + "_" + str(sv.e2) + "_" + sv.sampleName + "_" + str(leftTad.startStrength) + '_' + str(leftTad.endStrength) + '_' + str(rightTad.startStrength) + '_' + str(rightTad.endStrength) + '_' + sv.svType
 			
 						
@@ -638,8 +648,9 @@ class DerivativeTADMaker:
 					
 						gene.addGainedElements(leftSideElements, sv.sampleName)
 						gene.addGainedElementsSVs(leftSideElements, svStr)
-					
-						
+					seenSVs += 1
+			print(seenSVs)
+			
 		### DELETIONS ###
 		if svType == "del":
 			
@@ -811,6 +822,7 @@ class DerivativeTADMaker:
 			#All genes that were originally in the left TAD (outisde of the inversion) will gain elements of the right side of the inversion
 			#All unaffected genes on the left will lose the eQTLs that are in the left side of the inversion
 			svStr = svData[0] + "_" + str(svData[1]) + "_" + str(svData[2]) + "_" + svData[3] + "_" + str(svData[4]) + "_" + str(svData[5]) + "_" + svData[8].sampleName + "_" + str(leftMostTad[3].startStrength) + '_' + str(leftMostTad[3].endStrength) + '_' + str(rightMostTad[3].startStrength) + '_' + str(rightMostTad[3].endStrength) + '_' + svData[8].svType
+			
 			for gene in unaffectedGenesLeft:
 				
 				gene.addGainedElements(rightSideElements, svData[7])
