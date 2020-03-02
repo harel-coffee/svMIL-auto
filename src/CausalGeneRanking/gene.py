@@ -213,7 +213,7 @@ class Gene:
 		
 		allowedElements = ['enhancer']
 		#allowedElements = ['superEnhancer']
-		allowedElements = ['enhancer', 'promoter']
+		allowedElements = ['enhancer', 'promoter', 'eQTL', 'superEnhancer']
 
 		if len(elements) > 0:
 			if sv not in self.alteredElements:

@@ -25,17 +25,26 @@ import pickle as pkl
 
 #1. Process the data
 
+svType = 'DEL'
+
 #Get the bags
 with open(sys.argv[1], 'rb') as handle:
 	bagDict = pkl.load(handle)
+
+degPairs = np.loadtxt(sys.argv[2], dtype='object')
+
 
 #normalize
 currentMax = [0]*30
 currentMin = [float('inf')]*30
 normalizedBagDict = dict()
+unnormalizedInstances = []
 for pair in bagDict:
 	
 	for instance in bagDict[pair]:
+		
+		if instance[0] == '0' and instance[1] == '0':
+			continue
 		
 		for featureInd in range(0, len(instance)):
 			feature = instance[featureInd]
@@ -44,6 +53,7 @@ for pair in bagDict:
 			if feature < currentMin[featureInd]:
 				currentMin[featureInd] = feature
 
+typeValues = []
 for pair in bagDict:
 	
 	normalizedBagDict[pair] = []
@@ -52,22 +62,27 @@ for pair in bagDict:
 		
 		normInstance = []
 		for featureInd in range(0, len(instance)):
+			
 			feature = instance[featureInd]
 			
 			if currentMin[featureInd] == 0 and currentMax[featureInd] == 0:
+				normInstance.append(0)
 				continue 
 			
 			normFeature = (feature-currentMin[featureInd])/(currentMax[featureInd]-currentMin[featureInd])
 			normInstance.append(normFeature)
 			
+			if featureInd == 28:
+				if feature not in typeValues:
+					typeValues.append(feature)
+		
 			
 		normalizedBagDict[pair].append(normInstance)
-
+print(typeValues)
 bagDict = normalizedBagDict
 
 #determine the bag labels given a file of DEG pairs
 #degPairs = np.load(sys.argv[2], allow_pickle=True, encoding='latin1')
-degPairs = np.loadtxt(sys.argv[2], dtype='object')
 
 #pathwayAnnotation = np.loadtxt(sys.argv[3], dtype='object')
 
@@ -83,12 +98,13 @@ for featureInd in range(featureStart, featureCount+1):
 	
 	bags = []
 	bagLabels = []
+	instanceLabels = []
 	posCount = 0
 	negCount = 0
 	positiveBags = []
 	negativeBags = []
 	removedPathwayPairs = 0
-	svType = 'DUP'
+	
 	for pair in bagDict:
 		
 		splitPair = pair.split("_")
@@ -114,10 +130,14 @@ for featureInd in range(featureStart, featureCount+1):
 				#get the right number of features per instance
 				instances = []
 				for instance in bagDict[pair]:
+					
 					#instances.append(instance[0:featureInd+1])
 					if instance[0] == 0 and instance[1] == 0:
 						continue
-					instances.append(instance[0:featureInd-1])
+					
+					instances.append(instance[0:featureInd])
+					
+					instanceLabels.append(pair)
 					
 				if len(instances) < 1:
 					continue
@@ -135,7 +155,8 @@ for featureInd in range(featureStart, featureCount+1):
 					if instance[0] == 0 and instance[1] == 0:
 						continue
 					#instances.append(instance[0:featureInd+1])
-					instances.append(instance[0:featureInd-1])
+					instances.append(instance[0:featureInd])
+					instanceLabels.append(pair)
 					
 				#print(instances)
 				if len(instances) < 1:
@@ -167,7 +188,6 @@ for featureInd in range(featureStart, featureCount+1):
 	
 	instances = np.vstack(bags)
 	
-	print(instances.shape)
 	print(bagLabels.shape)
 
 	#Make similarity matrix
@@ -348,10 +368,13 @@ from sklearn.model_selection import StratifiedKFold
 from inspect import signature
 from sklearn import model_selection
 from sklearn.metrics import average_precision_score
-from sklearn.metrics import make_scorer, accuracy_score, precision_score, recall_score, f1_score, roc_auc_score
+from sklearn.metrics import plot_roc_curve
+from sklearn.metrics import make_scorer, accuracy_score, precision_score, recall_score, f1_score, roc_auc_score, roc_curve
 
 #f, axes = plt.subplots()	
 def cvClassification(similarityMatrix, bagLabels, clf, color, plot):
+	
+	shuffle(bagLabels)
 	
 	scoring = {'accuracy' : make_scorer(accuracy_score), 
 			   'precision' : make_scorer(precision_score),
@@ -360,13 +383,15 @@ def cvClassification(similarityMatrix, bagLabels, clf, color, plot):
 			   'average_precision' : make_scorer(average_precision_score),
 			   'auc' : make_scorer(roc_auc_score)}
 	
-	kfold = model_selection.StratifiedKFold(n_splits=10, random_state=42)
+	kfold = model_selection.StratifiedKFold(n_splits=10, shuffle=True, random_state=10)
 	
 	results = model_selection.cross_validate(estimator=clf,
 											  X=similarityMatrix,
 											  y=bagLabels,
 											  cv=kfold,
-											  scoring=scoring)
+											  scoring=scoring,
+											  return_estimator=True)
+
 	
 	print('accuracy: ', np.mean(results['test_accuracy']), np.std(results['test_accuracy']))
 	#print('precision: ', np.mean(results['test_precision']), np.std(results['test_precision']))
@@ -375,85 +400,87 @@ def cvClassification(similarityMatrix, bagLabels, clf, color, plot):
 	#print('AP: ', np.mean(results['test_average_precision']), np.std(results['test_average_precision']))
 	print('AUC: ', np.mean(results['test_auc']), np.std(results['test_auc']))
 	
-	#print('APs: ', results['test_average_precision'])
-	#print('Precisions: ', results['test_precision'])
-	#print('Recalls: ', results['test_recall'])
-	return np.mean(results['test_average_precision']), np.mean(results['test_f1_score'])
-	#plot PR curves
-	
-	#f, axes = plt.subplots()	
-	cv = StratifiedKFold(n_splits=10)
-	
-	accs = []
+	print(results['test_auc'])
+		
+	tprs = []
 	aucs = []
-	coeffs = []
-	predDiffs = []
-	thresholds = []
-	precisions = []
-	recalls = []
-	i = -1
-	for train, test in cv.split(similarityMatrix, bagLabels):
-		#f, axes = plt.subplots()
-		i+=1
-		clf.fit(similarityMatrix[train], bagLabels[train]) #Use the bag labels, not the instance labels
+	mean_fpr = np.linspace(0, 1, 100)
 	
-		predictions = clf.predict_proba(similarityMatrix[test])
-		precision, recall, thresholds = precision_recall_curve(bagLabels[test], predictions[:,1])
-		preds = clf.predict(similarityMatrix[test])
+	fig, ax = plt.subplots()
+	for i, (train, test) in enumerate(kfold.split(similarityMatrix, bagLabels)):
+		clf.fit(similarityMatrix[train], bagLabels[train])
+		viz = plot_roc_curve(clf, similarityMatrix[test], bagLabels[test],
+							 name='ROC fold {}'.format(i),
+							 alpha=0.3, lw=1, ax=ax)
+		interp_tpr = interp(mean_fpr, viz.fpr, viz.tpr)
+		interp_tpr[0] = 0.0
+		tprs.append(interp_tpr)
+		aucs.append(viz.roc_auc)
+	print(aucs)
+	print(np.mean(aucs))
+	print(np.std(aucs))
 
-		print(i)
-		print(thresholds)
-		print(len(precision))
-		print(len(recall))
-		recalls.append(recall)
-		precisions.append(precision)
-		
-		
-		#lab = 'Fold %d AP=%.4f' % (i+1, average_precision_score(bagLabels[test], predictions[:,1]))
-		# print('fold: ', i, ':', average_precision_score(bagLabels[test], predictions[:,1]))
-		# print(precision)
-		# print(recall)
-		#plt.plot(recall, precision)
-		#axes.step(recall, precision, label=lab)
-		#axes.set_xlabel('Recall')
-		#axes.set_ylabel('Precision')
-		#axes.legend(loc='lower right', fontsize='small')
-		#y_real.append(bagLabels[test])
-		#y_proba.append(predictions[:,1])
-		#y_pred.append(preds)
-
-		# step_kwargs = ({'step': 'post'} if 'step' in signature(plt.fill_between).parameters else {})
-		# plt.step(recall, precision, color='b', alpha=0.2, where='post')
-		# plt.fill_between(recall, precision, alpha=0.2, color='b', **step_kwargs)
-		#  
-		# plt.xlabel('Recall')
-		# plt.ylabel('Precision')
-		# plt.ylim([0.0, 1.05])
-		# plt.xlim([0.0, 1.0])
-		# plt.title('2-class Precision-Recall curve: AP={0:0.2f}'.format(average_precision_score(bagLabels[test], predictions[:,1])))
-		# plt.show()
-		
+	ax.plot([0, 1], [0, 1], linestyle='--', lw=2, color='r',
+			label='Chance', alpha=.8)
 	
+	mean_tpr = np.mean(tprs, axis=0)
+	mean_tpr[-1] = 1.0
+	mean_auc = auc(mean_fpr, mean_tpr)
+	std_auc = np.std(aucs)
+	# ax.plot(mean_fpr, mean_tpr, color='b',
+	# 		label=r'Mean ROC (AUC = %0.2f $\pm$ %0.2f)' % (mean_auc, std_auc),
+	# 		lw=2, alpha=.8)
+	ax.plot(mean_fpr, mean_tpr, color='b',
+			label=r'Mean ROC (AUC = %0.2f $\pm$ %0.2f)' % (np.mean(aucs), np.std(aucs)),
+			lw=2, alpha=.8)
 	
-	# y_real = np.concatenate(y_real)
-	# y_proba = np.concatenate(y_proba)
-	# y_pred = np.concatenate(y_pred)
-	# print("overall CV AP: ", average_precision_score(y_real, y_proba))
-	# print("overall CV F1: ", f1_score(y_real, y_pred))
-	# aps.append(average_precision_score(y_real, y_proba))
-	# f1s.append( f1_score(y_real, y_pred))
-
-	# if plot == True:
-	# 	precision, recall, thresholds = precision_recall_curve(y_real, y_proba)
-	# 	lab = 'Overall AP=%.4f' % average_precision_score(y_real, y_proba)
-	# 	axes.step(recall, precision, label=lab, lw=2, color=color)
-	# 	axes.set_xlabel('Recall')
-	# 	axes.set_ylabel('Precision')
-	# 	axes.legend(loc='lower right', fontsize='small')
+	std_tpr = np.std(tprs, axis=0)
+	tprs_upper = np.minimum(mean_tpr + std_tpr, 1)
+	tprs_lower = np.maximum(mean_tpr - std_tpr, 0)
+	ax.fill_between(mean_fpr, tprs_lower, tprs_upper, color='grey', alpha=.2,
+					label=r'$\pm$ 1 std. dev.')
 	
-	return aps, f1s
+	ax.set(xlim=[-0.05, 1.05], ylim=[-0.05, 1.05],
+		   title="Receiver operating characteristic: deletions")
+	ax.legend(loc="lower right")
+	plt.show()
 
-
+	
+	# instanceImportances = dict()
+	# for idx,estimator in enumerate(results['estimator']):
+	# 	print("Features sorted by their score for estimator {}:".format(idx))
+	# 	feature_importances = estimator.feature_importances_
+	# 	print(feature_importances)
+	# 	
+	# 	for i in range(0, len(feature_importances)):
+	# 		if i not in instanceImportances:
+	# 			instanceImportances[i] = []
+	# 		instanceImportances[i].append(feature_importances[i])
+	# 
+	# scores = []	
+	# for instance in instanceImportances:
+	# 	scores.append([instance, np.mean(instanceImportances[instance]), np.std(instanceImportances[instance])])
+	# 
+	# scores = np.array(scores)
+	# scores = scores[scores[:,1].argsort()][::-1]
+	# 
+	# print(scores)
+	# 
+	# #plt.bar(np.arange(scores.shape[0]), scores[:,1])
+	# #plt.show()
+	# 
+	# for i in range(0,10):
+	# 	score = scores[i]
+	# 	
+	# 	print(i)
+	# 	
+	# 	print(instanceLabels[int(score[0])])
+	# 	print(instances[int(score[0])])
+	# 	
+	exit()
+	
+	return np.mean(results['test_average_precision']), np.mean(results['test_f1_score'])
+	
 rfClassifier = RandomForestClassifier(max_depth=100, n_estimators=2)
 
 from sklearn.model_selection import RandomizedSearchCV
@@ -504,16 +531,16 @@ from sklearn.ensemble import RandomForestClassifier, AdaBoostClassifier
 from sklearn.naive_bayes import GaussianNB
 from sklearn.discriminant_analysis import QuadraticDiscriminantAnalysis
 
-names = ["Decision Tree", "simple RF", "Random Forest"]
+names = [ "Random Forest"]
 
 classifiers = [
 	#KNeighborsClassifier(3),
 	#SVC(kernel="linear", C=0.025),
 	#SVC(gamma=2, C=1),
 	#GaussianProcessClassifier(1.0 * RBF(1.0)),
-	DecisionTreeClassifier(max_depth=100),
-	RandomForestClassifier(n_estimators=200),
-	RandomForestClassifier(n_estimators= 1200, min_samples_split=2, min_samples_leaf=4, max_features='sqrt', max_depth=70, bootstrap=False)]
+	#DecisionTreeClassifier(max_depth=100),
+	#RandomForestClassifier(n_estimators=200),
+	RandomForestClassifier(n_estimators= 600, min_samples_split=5, min_samples_leaf=1, max_features='auto', max_depth=80, bootstrap=True)]
 	#MLPClassifier(alpha=1, max_iter=1000),
 	#AdaBoostClassifier(),
 	#GaussianNB(),

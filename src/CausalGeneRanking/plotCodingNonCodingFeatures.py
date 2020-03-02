@@ -15,6 +15,7 @@ from sklearn.metrics import auc, precision_recall_curve
 from sklearn.model_selection import StratifiedKFold
 from sklearn.model_selection import cross_val_score
 from scipy import interp
+from scipy.stats import chi2_contingency
 import random
 
 #The truth data, DEG pairs
@@ -25,16 +26,14 @@ degData = np.loadtxt(sys.argv[1], dtype='object')
 #Other comparisons: non-DEG pairs, coding SV-gene pairs, germline pairs, shuffled pairs.
 nonDegData = np.loadtxt(sys.argv[2], dtype='object')
 #codingData = np.loadtxt(sys.argv[3], dtype='object')
-#germlineData = np.loadtxt(sys.argv[4], dtype='object')
-#shuffledData = np.loadtxt(sys.argv[5], dtype='object')
+germlineData = np.loadtxt(sys.argv[3], dtype='object')
+shuffledData = np.loadtxt(sys.argv[4], dtype='object')
 
 codingData = nonDegData
-germlineData = nonDegData
-shuffledData = nonDegData
 
 #Filter by SV type if required.  
-svType = 'ITX'
-typeLabel = 'all SV types'
+svType = 'INV'
+typeLabel = 'inversions'
 nonDEGs = []
 
 for degPair in nonDegData:
@@ -136,7 +135,7 @@ def getLossData(features, totalFeatures): #provide the features for the set of p
 		return np.array([])
 		
 	leftLosses = []
-	for i in range(0, 25): #+1 because this goes until 22
+	for i in range(0, 26): #+1 because this goes until 22
 		leftLosses.append(features[:,i].astype(float))
 	
 	#for i in range(46, 51):
@@ -176,8 +175,48 @@ if len(shuffledPairs) > 0:
 	shuffledLosses = getLossData(shuffledPairs[:,1:], shuffledPairs)
 	unAnnotatedLossesNormS = unAnnotatedLosses / shuffledLosses
 
+#test chi2
 
+def getLossSignificance(features, shuffledFeatures):
+	
+	#for each loss feature, check if more/less than by random chance.
+	lossSignificances = []
+	for i in range(0, 26):
 
+		degLosses = len(np.where(features[:,i] == '1.0')[0])
+		degNoLosses = len(np.where(features[:,i] == '0.0')[0])
+		
+		shuffledLosses = len(np.where(shuffledFeatures[:,i] == '1.0')[0])
+		shuffledNoLosses = len(np.where(shuffledFeatures[:,i] == '0.0')[0])
+		
+		
+		if degLosses == 0 or degNoLosses == 0 or shuffledLosses == 0 or shuffledNoLosses == 0:
+			lossSignificances.append(1)
+			continue
+		
+		obs = np.array([[degLosses, degNoLosses], [shuffledLosses, shuffledNoLosses]])
+		
+		result = chi2_contingency(obs)
+		p = result[1]
+
+		lossSignificances.append(p)
+
+	return lossSignificances
+
+lossSignificancesTmp = [0]*26
+
+if svType == 'INV':
+	lossSignificances = getLossSignificance(unAnnotatedDEGs, nonDEGs[:,1:])
+	lossSignificancesGL = getLossSignificance(unAnnotatedDEGs, germlinePairs[:,1:])
+	lossSignificancesS = getLossSignificance(unAnnotatedDEGs, shuffledPairs[:,1:])
+elif svType == 'ITX':
+	lossSignificances = getLossSignificance(unAnnotatedDEGs, nonDEGs[:,1:])
+	lossSignificancesGL = lossSignificancesTmp
+	lossSignificancesS = getLossSignificance(unAnnotatedDEGs, shuffledPairs[:,1:])
+else:
+	lossSignificances = lossSignificancesTmp
+	lossSignificancesGL = lossSignificancesTmp
+	lossSignificancesS = lossSignificancesTmp
 
 
 #Stack the bars for the DEG data
@@ -219,9 +258,9 @@ def getGainData(features, totalFeatures): #provide the features for the set of p
 			
 		
 	leftGains = []
-	for i in range(25, 51): #+1 because this goes until 45
+	for i in range(26, 51): #+1 because this goes until 45
 		leftGains.append(features[:,i].astype(float))
-	
+		
 	#for i in range(46, 51):
 	#	leftGains.append(features[:,i].astype(float))
 	
@@ -256,6 +295,49 @@ if len(germlinePairs) > 0:
 	germlineGains = getGainData(germlinePairs[:,1:], germlinePairs)
 	unAnnotatedGainsNormGL = unAnnotatedGains / germlineGains #np.log
 
+def getGainSignificance(features, shuffledFeatures):
+	
+	#for each gain feature, check if more/less than by random chance.
+	gainSignificances = []
+	for i in range(26, 52):
+
+		degLosses = len(np.where(features[:,i] == '1.0')[0])
+		degNoLosses = len(np.where(features[:,i] == '0.0')[0])
+		
+		shuffledLosses = len(np.where(shuffledFeatures[:,i] == '1.0')[0])
+		shuffledNoLosses = len(np.where(shuffledFeatures[:,i] == '0.0')[0])
+		
+		if degLosses == 0 or degNoLosses == 0 or shuffledLosses == 0 or shuffledNoLosses == 0:
+			gainSignificances.append(1)
+			continue
+			
+		obs = np.array([[degLosses, degNoLosses], [shuffledLosses, shuffledNoLosses]])
+		
+		result = chi2_contingency(obs)
+		p = result[1]
+
+		gainSignificances.append(p)
+
+	return gainSignificances
+
+gainSignificancesTmp = [0]*26
+
+if svType == 'ITX':
+	gainSignificances = getGainSignificance(unAnnotatedDEGs, nonDEGs[:,1:])
+	gainSignificancesGL = gainSignificancesTmp
+	gainSignificancesS = getGainSignificance(unAnnotatedDEGs, shuffledPairs[:,1:])
+elif svType == 'DUP':
+	gainSignificances = getGainSignificance(unAnnotatedDEGs, nonDEGs[:,1:])
+	gainSignificancesGL = gainSignificancesTmp
+	gainSignificancesS = getGainSignificance(unAnnotatedDEGs, shuffledPairs[:,1:])
+else:
+	
+	gainSignificances = getGainSignificance(unAnnotatedDEGs, nonDEGs[:,1:])
+	#gainSignificancesGL = getGainSignificance(unAnnotatedDEGs, germlinePairs[:,1:])
+	#gainSignificancesS = getGainSignificance(unAnnotatedDEGs, shuffledPairs[:,1:])
+exit()
+
+
 #Stack the bars for the DEG data
 
 # width = 0.25
@@ -286,11 +368,23 @@ if len(germlinePairs) > 0:
 ### 4 separate plots, but gains and losses in one
 
 #DEG vs non-DEG
-fig = plt.figure()
-
-def plotGainsLossesSamePlot(losses,gains, label, typeLabel, xlabel,  figInd):
+def plotGainsLossesSamePlot(losses,gains, lossSignificances, gainSignificances, label, typeLabel, xlabel,  figInd):
+	
+	significances = []
+	for sign in range(0, len(lossSignificances)):
+	
+		if lossSignificances[sign] < 0.05:
+			significances.append('*')
+		else:
+			significances.append('')
+			
+		if gainSignificances[sign] < 0.05:
+			significances.append('*')
+		else:
+			significances.append('')
 	
 	#plt.subplot(2, 2, figInd)
+	fig, ax = plt.subplots()
 	
 	width = 0.25
 	
@@ -305,8 +399,45 @@ def plotGainsLossesSamePlot(losses,gains, label, typeLabel, xlabel,  figInd):
 	if len(gains) > 0:
 		plt.barh(np.arange(len(gains))+width, gains, width, label='Gains', color='red')
 	
+	if len(significances) > 0:
+		rects = ax.patches
+		
+		# For each bar: Place a label
+		ind = 0
+		for rect in rects:
+			# Get X and Y placement of label from rect.
+			x_value = rect.get_width()
+			y_value = rect.get_y() + rect.get_height() / 2
+		
+			# Number of points between bar and label. Change to your liking.
+			space = 5
+			# Vertical alignment for positive values
+			ha = 'left'
+		
+			# If value of bar is negative: Place label left of bar
+			if x_value < 0:
+				# Invert space to place label to the left
+				space *= -1
+				# Horizontally align label at right
+				ha = 'right'
+		
+			# Use X value as label and format number with one decimal place
+			
+			# Create annotation
+			plt.annotate(
+				significances[ind],                      # Use `label` as label
+				(x_value, y_value),         # Place label at end of the bar
+				xytext=(space, 0),          # Horizontally shift label by `space`
+				textcoords="offset points", # Interpret `xytext` as offset in points
+				va='center',                # Vertically center label
+				ha=ha,
+				fontsize=5)                      # Horizontally align label differently for
+											# positive and negative values.
+			ind += 1
+		
+	
 	plt.yticks(([p + 1.0 * width for p in np.arange(len(losses))]), ['eQTLs', 'enhancers', 'promoters', 'CpG', 'TF', 'HiC', 'h3k9me3', 'h3k4me3',
-													  'h3k27ac', 'h3k27me3', 'h3k4me1', 'h3k36me3','DNAseI', 'CTCF', 'CTCF+enhancer',
+													  'h3k27ac', 'h3k27me3', 'h3k4me1', 'h3k36me3','DNAseI', 'RNA pol II', 'CTCF', 'CTCF+enhancer',
 													  'CTCF+promoter', 'chromHMM enhancer', 'heterochromatin', 'poised promoter',
 													  'chromHMM promoter', 'repeat', 'repressed', 'transcribed', 'super enhancer', 'ctcf'])
 	
@@ -318,17 +449,18 @@ def plotGainsLossesSamePlot(losses,gains, label, typeLabel, xlabel,  figInd):
 	#plt.savefig('gains_losses_' + label + '_' + svType + '.svg')
 	plt.show()
 	plt.clf()
+
 	
 	
 
-plotGainsLossesSamePlot(unAnnotatedLossesNormND, unAnnotatedGainsNormND, 'DEG pairs vs. non-DEG pairs', typeLabel, 'log(% of DEG pairs / % of non-DEG pairs)', 1)
-#plotGainsLossesSamePlot(unAnnotatedLossesNormGL, unAnnotatedGainsNormGL, 'DEG pairs vs. germline pairs', typeLabel, 'log(% of DEG pairs / % of germline pairs)', 2)
+plotGainsLossesSamePlot(unAnnotatedLossesNormND, unAnnotatedGainsNormND, lossSignificances, gainSignificances, 'Positive pairs vs. negative pairs', typeLabel, 'log(% of positive pairs / % of negative pairs)', 1)
+plotGainsLossesSamePlot(unAnnotatedLossesNormGL, unAnnotatedGainsNormGL, lossSignificancesGL, gainSignificancesGL, 'Positive pairs vs. germline pairs', typeLabel, 'log(% of positive pairs / % of germline pairs)', 2)
 #plotGainsLossesSamePlot(unAnnotatedLossesNormC, unAnnotatedGainsNormC, 'DEG pairs vs. coding pairs', typeLabel, 'log(% of DEG pairs / % of coding pairs)', 3)
-#plotGainsLossesSamePlot(unAnnotatedLossesNormS, unAnnotatedGainsNormS, 'DEG pairs vs. shuffled pairs', typeLabel, 'log(% of DEG pairs / % of shuffled pairs)', 4)
+plotGainsLossesSamePlot(unAnnotatedLossesNormS, unAnnotatedGainsNormS, lossSignificancesS, gainSignificancesS, 'Positive pairs vs. shuffled pairs', typeLabel, 'log(% of positive pairs / % of shuffled pairs)', 3)
 #plt.tight_layout()
 #plt.savefig('gains_losses_' + svType + '.svg')
 #plt.show()
-
+exit()
 np.random.seed(0)
 positive = degs[:,1:]
 
@@ -485,7 +617,7 @@ from sklearn import metrics
 from sklearn.metrics import roc_curve, auc
 from sklearn.metrics import auc, precision_recall_curve
 from sklearn import model_selection
-from sklearn.metrics import average_precision_score
+from sklearn.metrics import average_precision_score, plot_roc_curve
 from sklearn.metrics import make_scorer, accuracy_score, precision_score, recall_score, f1_score, roc_auc_score
 
 from random import shuffle
@@ -515,6 +647,51 @@ def cvClassification(similarityMatrix, bagLabels, clf):
 	print('AP: ', np.mean(results['test_average_precision']), np.std(results['test_average_precision']))
 	print('AUC: ', np.mean(results['test_auc']), np.std(results['test_auc']))
 	
+	bagLabels = np.array(bagLabels)
+	tprs = []
+	aucs = []
+	mean_fpr = np.linspace(0, 1, 100)
+	
+	fig, ax = plt.subplots()
+	for i, (train, test) in enumerate(kfold.split(similarityMatrix, bagLabels)):
+		clf.fit(similarityMatrix[train], bagLabels[train])
+		viz = plot_roc_curve(clf, similarityMatrix[test], bagLabels[test],
+							 name='ROC fold {}'.format(i),
+							 alpha=0.3, lw=1, ax=ax)
+		interp_tpr = interp(mean_fpr, viz.fpr, viz.tpr)
+		interp_tpr[0] = 0.0
+		tprs.append(interp_tpr)
+		aucs.append(viz.roc_auc)
+	print(aucs)
+	print(np.mean(aucs))
+	print(np.std(aucs))
+
+	ax.plot([0, 1], [0, 1], linestyle='--', lw=2, color='r',
+			label='Chance', alpha=.8)
+	
+	mean_tpr = np.mean(tprs, axis=0)
+	mean_tpr[-1] = 1.0
+	mean_auc = auc(mean_fpr, mean_tpr)
+	std_auc = np.std(aucs)
+	# ax.plot(mean_fpr, mean_tpr, color='b',
+	# 		label=r'Mean ROC (AUC = %0.2f $\pm$ %0.2f)' % (mean_auc, std_auc),
+	# 		lw=2, alpha=.8)
+	ax.plot(mean_fpr, mean_tpr, color='b',
+			label=r'Mean ROC (AUC = %0.2f $\pm$ %0.2f)' % (np.mean(aucs), np.std(aucs)),
+			lw=2, alpha=.8)
+	
+	std_tpr = np.std(tprs, axis=0)
+	tprs_upper = np.minimum(mean_tpr + std_tpr, 1)
+	tprs_lower = np.maximum(mean_tpr - std_tpr, 0)
+	ax.fill_between(mean_fpr, tprs_lower, tprs_upper, color='grey', alpha=.2,
+					label=r'$\pm$ 1 std. dev.')
+	
+	ax.set(xlim=[-0.05, 1.05], ylim=[-0.05, 1.05],
+		   title="Receiver operating characteristic: deletions")
+	ax.legend(loc="lower right")
+	plt.show()
+	exit()
+	
 	return np.mean(results['test_f1_score']), np.mean(results['test_average_precision'])
 	
 from sklearn.ensemble import RandomForestClassifier
@@ -531,15 +708,15 @@ from sklearn.ensemble import RandomForestClassifier, AdaBoostClassifier
 from sklearn.naive_bayes import GaussianNB
 from sklearn.discriminant_analysis import QuadraticDiscriminantAnalysis
 
-names = ["Decision Tree", "Random Forest",]
+names = ["Random Forest",]
 
 classifiers = [
     #KNeighborsClassifier(3),
     #SVC(kernel="linear", C=0.025),
     #SVC(gamma=2, C=1),
     #GaussianProcessClassifier(1.0 * RBF(1.0)),
-    DecisionTreeClassifier(max_depth=100),
-    RandomForestClassifier(max_depth=100, n_estimators=10)]
+    #DecisionTreeClassifier(max_depth=100),
+    RandomForestClassifier(max_depth=100, n_estimators=2)]
     #MLPClassifier(alpha=1, max_iter=1000),
     #AdaBoostClassifier(),
     #GaussianNB(),

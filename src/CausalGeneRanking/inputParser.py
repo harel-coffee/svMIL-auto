@@ -71,44 +71,10 @@ class InputParser:
 				sampleName = splitLine[sampleNameIndex]
 				
 				
-					
-				
-				# #Dirty workaround to make sure that the cancer type names are the same, we only focus on 1 type for this intial run
-				if cancerType == "breast/gastric":
-					cancerType = "breast"
-					
-				#Skip anything that is not breast cancer for now. From here is the easiest way, saves time in processing as well
-				if cancerType != settings.general['cancerType']:
-					continue
 				
 				svTypeIndex = header.index("sv_type")
 				svType = splitLine[svTypeIndex]
 				
-				
-			
-				
-				if settings.general['cancerType'] == "germline":
-					
-					if svType != "deletion" and svType != "inversion" and svType != "duplication":
-						continue
-			
-				if settings.general['cancerType'] == "BRCA":
-					
-					if svType != "del" and svType != "invers" and svType != "tandem_dup" and svType != "DEL" and svType != "INV" and svType != "DUP":
-						
-						interChrTypeMatch = re.search("chr", svType, re.IGNORECASE)
-						transTypeMatch = re.search("trans", svType, re.IGNORECASE)
-						rangeTypeMatch = re.search("range", svType, re.IGNORECASE)
-						itxTypeMatch = re.search("ITX", svType, re.IGNORECASE)
-						ctxTypeMatch = re.search("CTX", svType, re.IGNORECASE)
-						if interChrTypeMatch is None and transTypeMatch is None and rangeTypeMatch is None and itxTypeMatch is None and ctxTypeMatch is None:
-							continue
-					#if svType != 'del':
-					# 	continue
-					
-				
-			
-		
 				#If the coordinates are missing on the second chromosome, we use the coordinates of the first chromosome unless chr 1 and chr 2 are different.
 				if splitLine[chr1Index] == splitLine[chr2Index]:
 					if splitLine[s2Index] == 'NaN':

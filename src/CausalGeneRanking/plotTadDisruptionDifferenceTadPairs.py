@@ -350,38 +350,38 @@ def getBinScores(zScores, randomPValuesDir):
 	nonCausalGenes = InputParser().readNonCausalGeneFile(settings.files['nonCausalGenesFile'], causalGenes) #In the same format as the causal genes.
 	
 	#Combine the genes into one set. 
-	#allGenes = np.concatenate((causalGenes, nonCausalGenes), axis=0)
-	allGenes = causalGenes
+	allGenes = np.concatenate((causalGenes, nonCausalGenes), axis=0)
+	#allGenes = causalGenes
 	#then go through the TADs that are disrupted by a non-coding SV. 
 	
 	#Get all SVs
-	# svDir = settings.files['svDir']
-	# svData = InputParser().getSVsFromFile_hmf(svDir)
-	# 
-	# #Filter out the coding effect SVs, we want to focus on non-coding SVs. 
-	# excludedSVs = np.loadtxt(settings.files['excludedSVs'], dtype='object')
-	# 
-	# svType = sys.argv[1]
-	# 
-	# filteredSVs = []
-	# types = []
-	# for sv in svData:
-	# 
-	# 	if svType != 'ALL':
-	# 		if sv[8].svType != svType:
-	# 			continue
-	# 		
-	# 	svEntry = sv[0] + "_" + str(sv[1]) + "_" + str(sv[2]) + "_" + sv[3] + "_" + str(sv[4]) + "_" + str(sv[5]) + "_" + sv[8].sampleName
-	# 	#if svEntry not in excludedSVs:
-	# 	#	filteredSVs.append(sv)
-	# 	filteredSVs.append(sv)	
-	# 	if sv[8].svType not in types:
-	# 		types.append(sv[8].svType)
-	# 
-	# print(types)
-	# filteredSVs = np.array(filteredSVs, dtype='object')
-	# 
-	# np.save('filteredSVs_tadPairs_' + svType + '.npy', filteredSVs)
+	svDir = settings.files['svDir']
+	svData = InputParser().getSVsFromFile_hmf(svDir)
+	
+	#Filter out the coding effect SVs, we want to focus on non-coding SVs. 
+	excludedSVs = np.loadtxt(settings.files['excludedSVs'], dtype='object')
+	
+	svType = sys.argv[1]
+	
+	filteredSVs = []
+	types = []
+	for sv in svData:
+	
+		if svType != 'ALL':
+			if sv[8].svType != svType:
+				continue
+			
+		svEntry = sv[0] + "_" + str(sv[1]) + "_" + str(sv[2]) + "_" + sv[3] + "_" + str(sv[4]) + "_" + str(sv[5]) + "_" + sv[8].sampleName
+		#if svEntry not in excludedSVs:
+		#	filteredSVs.append(sv)
+		filteredSVs.append(sv)	
+		if sv[8].svType not in types:
+			types.append(sv[8].svType)
+	
+	print(types)
+	filteredSVs = np.array(filteredSVs, dtype='object')
+	
+	np.save('filteredSVs_tadPairs_' + svType + '.npy', filteredSVs)
 	filteredSVs = np.load('filteredSVs_tadPairs_' + svType + '.npy', allow_pickle=True, encoding='latin1')
 	
 	#For each SV, determine which TAD it starts and ends in.
@@ -562,7 +562,7 @@ def getBinScores(zScores, randomPValuesDir):
 	
 	
 	
-	ruleBasedCombinations = np.loadtxt('Output/RankedGenes/02022020/BRCA/nonCoding_geneSVPairs.txt_', dtype='object')
+	ruleBasedCombinations = np.loadtxt('Output/RankedGenes/fullItx/BRCA/nonCoding_geneSVPairs.txt_', dtype='object')
 	ruleBasedPairs = []
 	for combination in ruleBasedCombinations:
 		
@@ -673,8 +673,8 @@ def getBinScores(zScores, randomPValuesDir):
 						
 						sample = geneZScores[patient,0]
 						
-						if geneName + '_' + sample not in ruleBasedPairs:
-							continue
+						#if geneName + '_' + sample not in ruleBasedPairs:
+						#	continue
 						
 						if svType == 'DEL':
 							#only for a deletion, we do not need to print the deleted genes.
@@ -756,8 +756,8 @@ def getBinScores(zScores, randomPValuesDir):
 					
 						sample = geneZScores[patient,0]
 						
-						if geneName + '_' + sample not in ruleBasedPairs:
-							continue
+						#if geneName + '_' + sample not in ruleBasedPairs:
+						#	continue
 						
 						
 						#do the check per SV type, depending on which SV we are looking at.
@@ -1171,59 +1171,60 @@ def getBinScores(zScores, randomPValuesDir):
 # #Get the DEGs and their p-values
 svType = sys.argv[1]
 #plot the z-scores.
-# 
-# pValues = np.loadtxt('pValues_allGenes_smallTads_dupFilter.txt', dtype='object')
-# 
-# randomPValuesDir = 'tadDisr/'
-# binScores, randomBinScores, binZScoresPerPatientOffset = getBinScores(pValues, randomPValuesDir)
-# 
-# print('plotting')
-# 
-# allData = []
-# totalLen = 0
-# lat = []
-# lt = []
-# rt = []
-# rat = []
-# for binInd in range(0, len(binScores)):
-# 	#print('bin:', binInd)
-# 	#print(len(binScores[binInd]))
-# 	#totalLen += len(binScores[binInd])
-# 	#plt.plot(binInd+1, len(binScores[binInd]), marker='*')
-# 	#plt.plot(binInd, len(randomBinScores[binInd]), marker='o') #this can later be a boxplot of 100 iterations
-# 	allData.append(binScores[binInd])
-# 	#allData.append(randomBinScores[binInd])
-# 	
-# 	if binInd < 10:
-# 		lat += binScores[binInd]
-# 	if binInd >= 10 and binInd < 20:
-# 		lt += binScores[binInd]
-# 	if binInd >= 20 and binInd < 30:
-# 		rt += binScores[binInd]
-# 	if binInd >= 30:
-# 		rat += binScores[binInd]
-# 
-# print(lat, lt, rt, rat)		
-# 
-# #plt.boxplot([lat, lt, rt, rat])
-# #plt.show()
-# 
-# 	
-# 
-# print(allData)
-# print(totalLen)
-# 
-# np.save('plotData_' + svType + '_oncogenes_rules.npy', allData)
-# # 
-# plt.xticks(range(1,len(binScores)+1))
-# plt.boxplot(allData)
-# plt.show()
-# 
-# exit()
 
-allData = np.load('plotData_' + svType + '_oncogenes_rules.npy', allow_pickle=True, encoding='latin1')
+pValues = np.loadtxt('pValues_allGenes_smallTads.txt', dtype='object')
+
+randomPValuesDir = 'tadDisr/'
+binScores, randomBinScores, binZScoresPerPatientOffset = getBinScores(pValues, randomPValuesDir)
+
+print('plotting')
+
+allData = []
+totalLen = 0
+lat = []
+lt = []
+rt = []
+rat = []
+for binInd in range(0, len(binScores)):
+	#print('bin:', binInd)
+	#print(len(binScores[binInd]))
+	#totalLen += len(binScores[binInd])
+	#plt.plot(binInd+1, len(binScores[binInd]), marker='*')
+	#plt.plot(binInd, len(randomBinScores[binInd]), marker='o') #this can later be a boxplot of 100 iterations
+	allData.append(binScores[binInd])
+	#allData.append(randomBinScores[binInd])
+	
+	if binInd < 10:
+		lat += binScores[binInd]
+	if binInd >= 10 and binInd < 20:
+		lt += binScores[binInd]
+	if binInd >= 20 and binInd < 30:
+		rt += binScores[binInd]
+	if binInd >= 30:
+		rat += binScores[binInd]
+
+print(lat, lt, rt, rat)		
+
+#plt.boxplot([lat, lt, rt, rat])
+#plt.show()
+
+	
+
+print(allData)
+print(totalLen)
+
+np.save('plotData_' + svType + '_allGenes.npy', allData)
+# 
+plt.xticks(range(1,len(binScores)+1))
+plt.boxplot(allData)
+plt.show()
+
+exit()
+
+allData = np.load('plotData_' + svType + '_allGenes.npy', allow_pickle=True, encoding='latin1')
 
 plt.boxplot(allData)
+plt.ylim()
 plt.show()
 
 filteredData = []
@@ -1235,12 +1236,14 @@ for binData in allData:
 	
 	binData = np.array(binData)
 	#filteredBinData = binData[binData < np.percentile(binData, 99)]
-	filteredBinData = binData[binData < 6]
+	filteredBinData = binData[binData < 10]
+	filteredBinData = filteredBinData[filteredBinData > -10]
 	filteredData.append(filteredBinData)
 
 plt.boxplot(filteredData)
 #plt.ylim(-2,5)
-#plt.ylim(-3,11)
+plt.ylim(-5,11)
+plt.savefig(svType + '_allGenes.svg')
 plt.show()
 #plt.savefig('distanceBased_ruleBased_' + sys.argv[1] + '_shuffled.svg')
 #plt.savefig('zScoresOfZScores_distanceBased_2.svg')

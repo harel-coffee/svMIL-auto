@@ -4,7 +4,7 @@ files = dict(
 	#svFile = '../../data/svs/brca_tcga_parsed_05022019.txt', #TCGA BRCA SVs
 	#svFile = 'codingEffectSVs.txt',
 	#svFile = '/Users/mnieboer/Documents/Projects/BoundaryMutations/data/ucec_svs_parsed_12082019.txt',
-	#svFile = '../../data/svs/germline_dgv.txt', #germline SV test
+	svFile = '../../data/svs/GRCh37_hg19_variants_2020-02-25_filtered.txt', #germline SV test
 	svDir = '../../../../somatics', #for running with HMF data
 	snvFile = '../../data/snvs/cosmicNCV.txt', #all SNVs
 	causalGenesFile = '../../data/genes/CCGC.tsv', #file with all causal genes from cosmic. 
@@ -59,9 +59,9 @@ files = dict(
 
 general = dict(
 	
-	source = 'HMF',
+	source = 'TCGA',
 	mode = 'SV', #Options are: SV, SNV or SV+SNV
-	cancerType = 'BRCA', #Use to specify which cancer type the data should be filtered by
+	cancerType = 'BRCA',
 	nonCoding = True, #Should we count gains/losses for genes that are affected by non-coding SVS?
 	coding = False, #Should we include gains and losses of non-coding elements, or only genes that are directly affected by SVs? 
 	snvs = False, #Should we include or exclude genes that have SNVs?  
