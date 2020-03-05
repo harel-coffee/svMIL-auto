@@ -68,19 +68,23 @@ def plotSignificances(significances, label, title):
 	
 	data = pd.DataFrame(significanceMatrix)
 	#plot heat map
-	fig =plt.figure(figsize=(10,5))
-	g=sns.heatmap(data,annot=False,cmap=ListedColormap(['blue', 'white', 'red']))
-
+	fig =plt.figure(figsize=(15,10))
+	g=sns.heatmap(data,annot=False,square=True, linewidths=0.5,
+				  cmap=ListedColormap(['blue', 'grey', 'red']),
+				  xticklabels=['Deletions', 'Duplications', 'Inversions', 'Translocations'])
+	g.set_xticklabels(g.get_xticklabels(), rotation=45, horizontalalignment='right',fontsize='small')
 	
 	plt.yticks(plotInd, ['eQTLs', 'enhancers', 'promoters', 'CpG', 'TF', 'HiC', 'h3k9me3', 'h3k4me3',
 													  'h3k27ac', 'h3k27me3', 'h3k4me1', 'h3k36me3','DNAseI', 'RNA pol II', 'CTCF', 'CTCF+enhancer',
 													  'CTCF+promoter', 'chromHMM enhancer', 'heterochromatin', 'poised promoter',
 													  'chromHMM promoter', 'repeat', 'repressed', 'transcribed', 'super enhancer', 'ctcf'])
-	plt.xticks([0.5,1.5,2.5,3.5], ['Deletions', 'Duplications', 'Inversions', 'Translocations'])
+	#plt.xticks([0.5,1.5,2.5,3.5], ['Deletions', 'Duplications', 'Inversions', 'Translocations'], rotation=45)
+	
 	plt.tight_layout()
 	
 	plt.savefig(title + '.svg')
 	plt.show()
+
 	
 def getSignificance(features, shuffledFeatures, rangeA, rangeB):
 		
