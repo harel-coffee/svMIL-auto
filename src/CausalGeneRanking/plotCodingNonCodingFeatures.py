@@ -17,171 +17,76 @@ from sklearn.model_selection import cross_val_score
 from scipy import interp
 from scipy.stats import chi2_contingency
 import random
+import pandas as pd
+import seaborn as sns
+from matplotlib.colors import ListedColormap
+from statsmodels.sandbox.stats.multicomp import multipletests
 
-#The truth data, DEG pairs
-degData = np.loadtxt(sys.argv[1], dtype='object')
+#re-write for having all SVs in the same plot
+### 4 separate plots, but gains and losses in one
 
-#pathwayAnnotation = np.loadtxt(sys.argv[1] + '_pathwayAnnotation.txt', dtype='object')
-
-#Other comparisons: non-DEG pairs, coding SV-gene pairs, germline pairs, shuffled pairs.
-nonDegData = np.loadtxt(sys.argv[2], dtype='object')
-#codingData = np.loadtxt(sys.argv[3], dtype='object')
-germlineData = np.loadtxt(sys.argv[3], dtype='object')
-shuffledData = np.loadtxt(sys.argv[4], dtype='object')
-
-codingData = nonDegData
-
-#Filter by SV type if required.  
-svType = 'INV'
-typeLabel = 'inversions'
-nonDEGs = []
-
-for degPair in nonDegData:
+def plotSignificances(significances, label, title):
 	
-	sv = degPair[0].split("_")
-	if svType != '':
-		typeMatch = re.search(svType, sv[12], re.IGNORECASE)
-		if typeMatch is None:
-			continue
-	nonDEGs.append(degPair)
-
-codingPairs = []
-for pair in codingData:
 	
-	sv = pair[0].split("_")
-	if svType != '':
-		typeMatch = re.match(svType, sv[12], re.IGNORECASE)
-		if typeMatch is None:
-			continue
-	codingPairs.append(pair)
+	#plot heatmap instead.
+	#make a matrix of features by SV types. First test with gains only
+	significanceMatrix = np.zeros([len(significances['DEL'][1])*2, len(significances)])
+	plotInd = [0]*len(significances['DEL'][1])
+	for svTypeInd in range(0, len(significances)):
+		svType = list(significances.keys())[svTypeInd]
 
-germlinePairs = []
-for pair in germlineData:
-	
-	sv = pair[0].split("_")
-
-	if svType != '':
-		typeMatch = re.match(svType, sv[12], re.IGNORECASE)
-		if typeMatch is None:
-			continue
-	germlinePairs.append(pair)
-
-shuffledPairs = []
-for pair in shuffledData:
-	
-	sv = pair[0].split("_")
-	if svType != '':
-		typeMatch = re.match(svType, sv[12], re.IGNORECASE)
-		if typeMatch is None:
-			continue
-	shuffledPairs.append(pair)
-
-degs = []
-for degPair in degData:
-	
-	sv = degPair[0].split("_")
-
-	if svType != '':
-		typeMatch = re.match(svType, sv[12], re.IGNORECASE)
-		if typeMatch is None:
-			continue
-
-	
-
-	degs.append(degPair)
-
-degs = np.array(degs)
-nonDEGs = np.array(nonDEGs)
-codingPairs = np.array(codingPairs)
-germlinePairs = np.array(germlinePairs)
-shuffledPairs = np.array(shuffledPairs)
-
-print(degs)
-print(nonDEGs)
-print(codingPairs)
-print(germlinePairs)
-print(shuffledPairs)
-
-print(degs.shape)
-print(nonDEGs.shape)
-print(codingPairs.shape)
-print(germlinePairs.shape)
-print(shuffledPairs.shape)
-
-pathwayDEGs = []
-unAnnotatedDEGs = []
-for degPair in degs:
-
-	features = degPair[1:]
-	
-	#if degPair[0] in pathwayAnnotation[:,0]:
-	#	pathwayDEGs.append(features)
-	#else:
-	unAnnotatedDEGs.append(features)
-	
-#pathwayDEGs = np.array(pathwayDEGs)
-unAnnotatedDEGs = np.array(unAnnotatedDEGs)
-
-print(unAnnotatedDEGs.shape[0])
-print(nonDEGs.shape[0])
-
-
-#To make the bar plots, add SNV/pathway annotation as stacked bars.
-#First add the SNVs, then the pathwyas, a set with both pathways and SNVs, and the remaining are the pairs that are in neither. 
-
-def getLossData(features, totalFeatures): #provide the features for the set of pairs that we are interested in. E.g. for SNVs only, or for pathways only
-	
-	if len(features) < 1:
-		return np.array([])
+		lossSignificances = significances[svType][0]
+		gainSignificances = significances[svType][1]
 		
-	leftLosses = []
-	for i in range(0, 26): #+1 because this goes until 22
-		leftLosses.append(features[:,i].astype(float))
+		lossInd = 0
+		gainInd = 1
+		for sign in range(0, len(lossSignificances)):
+			
+			if lossSignificances[sign] < 0.05:
+				significanceMatrix[lossInd, svTypeInd] = -1
+			else:
+				significanceMatrix[lossInd, svTypeInd] = 0
+			
+			plotInd[sign] = lossInd+1
+			lossInd += 2
+			
+				
+			if gainSignificances[sign] < 0.05:
+				significanceMatrix[gainInd, svTypeInd] = 1
+			else:
+				significanceMatrix[gainInd, svTypeInd] = 0	
 	
-	#for i in range(46, 51):
-	#	leftLosses.append(features[:,i].astype(float))
+			gainInd += 2
+			
+	print(significanceMatrix)
 	
-	leftLosses = np.array(leftLosses)
+	print(plotInd)	
 	
-	lossData = []
-	for loss in leftLosses:
-		lossData.append(np.sum(loss))
 	
-	lossData = np.array(lossData)
-	lossData = (lossData / float(totalFeatures.shape[0]))
 	
-	return np.array(lossData)
+	#get correlations of each features in dataset
+	
+	data = pd.DataFrame(significanceMatrix)
+	#plot heat map
+	fig =plt.figure(figsize=(10,5))
+	g=sns.heatmap(data,annot=False,cmap=ListedColormap(['blue', 'white', 'red']))
 
-#pathwayLosses = getLossData(pathwayDEGs, degData)
-unAnnotatedLosses = getLossData(unAnnotatedDEGs, unAnnotatedDEGs)
-
-#non-DEGs
-nonDegLosses = getLossData(nonDEGs[:,1:], nonDEGs) ####mind here when looking at SV-types individually, the normalization is then off
-#normalize
-unAnnotatedLossesNormND = unAnnotatedLosses / nonDegLosses
-unAnnotatedLossesNormGL = []
-unAnnotatedLossesNormC = []
-unAnnotatedLossesNormS = []
-
-if len(germlinePairs) > 0:
-	germlineLosses = getLossData(germlinePairs[:,1:], germlinePairs)
-	unAnnotatedLossesNormGL = unAnnotatedLosses / germlineLosses
-
-if len(codingPairs) > 0:	
-	codingLosses = getLossData(codingPairs[:,1:], codingPairs)
-	unAnnotatedLossesNormC = unAnnotatedLosses / codingLosses
 	
-if len(shuffledPairs) > 0:
-	shuffledLosses = getLossData(shuffledPairs[:,1:], shuffledPairs)
-	unAnnotatedLossesNormS = unAnnotatedLosses / shuffledLosses
-
-#test chi2
-
-def getLossSignificance(features, shuffledFeatures):
+	plt.yticks(plotInd, ['eQTLs', 'enhancers', 'promoters', 'CpG', 'TF', 'HiC', 'h3k9me3', 'h3k4me3',
+													  'h3k27ac', 'h3k27me3', 'h3k4me1', 'h3k36me3','DNAseI', 'RNA pol II', 'CTCF', 'CTCF+enhancer',
+													  'CTCF+promoter', 'chromHMM enhancer', 'heterochromatin', 'poised promoter',
+													  'chromHMM promoter', 'repeat', 'repressed', 'transcribed', 'super enhancer', 'ctcf'])
+	plt.xticks([0.5,1.5,2.5,3.5], ['Deletions', 'Duplications', 'Inversions', 'Translocations'])
+	plt.tight_layout()
 	
+	plt.savefig(title + '.svg')
+	plt.show()
+	
+def getSignificance(features, shuffledFeatures, rangeA, rangeB):
+		
 	#for each loss feature, check if more/less than by random chance.
 	lossSignificances = []
-	for i in range(0, 26):
+	for i in range(rangeA, rangeB):
 
 		degLosses = len(np.where(features[:,i] == '1.0')[0])
 		degNoLosses = len(np.where(features[:,i] == '0.0')[0])
@@ -201,307 +106,143 @@ def getLossSignificance(features, shuffledFeatures):
 		
 		lossSignificances.append(p)
 
-	return lossSignificances
-
-lossSignificancesTmp = [0]*26
-
-if svType == 'INV':
-	lossSignificances = getLossSignificance(unAnnotatedDEGs, nonDEGs[:,1:])
-	lossSignificancesGL = getLossSignificance(unAnnotatedDEGs, germlinePairs[:,1:])
-	lossSignificancesS = getLossSignificance(unAnnotatedDEGs, shuffledPairs[:,1:])
-elif svType == 'ITX':
-	lossSignificances = getLossSignificance(unAnnotatedDEGs, nonDEGs[:,1:])
-	lossSignificancesGL = lossSignificancesTmp
-	lossSignificancesS = getLossSignificance(unAnnotatedDEGs, shuffledPairs[:,1:])
-else:
-	lossSignificances = lossSignificancesTmp
-	lossSignificancesGL = lossSignificancesTmp
-	lossSignificancesS = lossSignificancesTmp
+	#do MTC
+	reject, pAdjusted, _, _ = multipletests(lossSignificances, method='bonferroni')
 
 
-#Stack the bars for the DEG data
+	return pAdjusted
 
-#Everything in the same plot
+#The truth data, DEG pairs
+degData = np.loadtxt(sys.argv[1], dtype='object')
 
-# width = 0.25
-# 
-# if len(unAnnotatedLossesNormND) > 0:
-# 	plt.barh(np.arange(len(unAnnotatedLossesNormND)), unAnnotatedLossesNormND, width, label='DEG pairs / non-DEG pairs', color='red')
-# 
-# if len(unAnnotatedLossesNormGL) > 0:
-# 	plt.barh(np.arange(len(unAnnotatedLossesNormGL))+width, unAnnotatedLossesNormGL, width, label='DEG pairs / germline pairs', color='blue')
-# 	
-# if len(unAnnotatedLossesNormS) > 0:
-# 	plt.barh(np.arange(len(unAnnotatedLossesNormS))+width*2, unAnnotatedLossesNormS, width, label='DEG pairs / shuffled pairs', color='green')
-# 	
-# if len(unAnnotatedLossesNormC) > 0:
-# 	plt.barh(np.arange(len(unAnnotatedLossesNormC))+width*3, unAnnotatedLossesNormC, width, label='DEG pairs / coding pairs', color='purple')
-# 	
-# plt.yticks(([p + 2.5 * width for p in np.arange(len(unAnnotatedLossesNormND))]), ['eQTLs', 'enhancers', 'promoters', 'CpG', 'TF', 'HiC', 'h3k9me3', 'h3k4me3',
-# 												  'h3k27ac', 'h3k27me3', 'h3k4me1', 'h3k36me3','DNAseI', 'CTCF', 'CTCF+Enhancer',
-# 												  'CTCF+Promoter', 'chromHMM Enhancer', 'heterochromatin', 'poised promoter',
-# 												  'chromHMM Promoter', 'repeat', 'repressed', 'transcribed'])
-# #plt.xlim([-2,2])
-# plt.legend(loc='best')
-# plt.tight_layout()
-# plt.show()
-# #plt.savefig('Output/degNonDeg_losses.svg')
-# plt.clf()
+#pathwayAnnotation = np.loadtxt(sys.argv[1] + '_pathwayAnnotation.txt', dtype='object')
 
+#Other comparisons: non-DEG pairs, coding SV-gene pairs, germline pairs, shuffled pairs.
+nonDegData = np.loadtxt(sys.argv[2], dtype='object')
+#codingData = np.loadtxt(sys.argv[3], dtype='object')
+germlineData = np.loadtxt(sys.argv[3], dtype='object')
+shuffledData = np.loadtxt(sys.argv[4], dtype='object')
 
-#Gains
+svTypes = ['DEL', 'DUP', 'INV', 'ITX']
+perTypeResults = dict()
+perTypeResultsGL = dict()
+perTypeResultsS = dict()
+for svType in svTypes:
 
-def getGainData(features, totalFeatures): #provide the features for the set of pairs that we are interested in. E.g. for SNVs only, or for pathways only
+	nonDEGs = []
 	
-	if len(features) < 1:
-		return np.array([])
-			
+	for degPair in nonDegData:
 		
-	leftGains = []
-	for i in range(26, 51): #+1 because this goes until 45
-		leftGains.append(features[:,i].astype(float))
+		sv = degPair[0].split("_")
+		if svType != '':
+			typeMatch = re.search(svType, sv[12], re.IGNORECASE)
+			if typeMatch is None:
+				continue
+		nonDEGs.append(degPair)
+	
+	germlinePairs = []
+	for pair in germlineData:
 		
-	#for i in range(46, 51):
-	#	leftGains.append(features[:,i].astype(float))
+		sv = pair[0].split("_")
 	
-	leftGains = np.array(leftGains)
+		if svType != '':
+			typeMatch = re.match(svType, sv[12], re.IGNORECASE)
+			if typeMatch is None:
+				continue
+		germlinePairs.append(pair)
 	
-	gainData = []
-	for loss in leftGains:
-		gainData.append(np.sum(loss))
-	
-	gainData = np.array(gainData)
-	gainData = (gainData / float(totalFeatures.shape[0]))
-
-	return np.array(gainData)
-
-#pathwayGains = getGainData(pathwayDEGs, degData)
-unAnnotatedGains = getGainData(unAnnotatedDEGs, unAnnotatedDEGs)
-
-nonDegGains = getGainData(nonDEGs[:,1:], nonDEGs)
-#normalize
-unAnnotatedGainsNormND = unAnnotatedGains / nonDegGains #np.log
-unAnnotatedGainsNormC = []
-unAnnotatedGainsNormS = []
-unAnnotatedGainsNormGL = []
-
-if len(codingPairs) > 0:	
-	codingGains = getGainData(codingPairs[:,1:], codingPairs)
-	unAnnotatedGainsNormC = unAnnotatedGains / codingGains #np.log
-if len(shuffledPairs) > 0:	
-	shuffledGains = getGainData(shuffledPairs[:,1:], shuffledPairs)
-	unAnnotatedGainsNormS = unAnnotatedGains / shuffledGains #np.log
-if len(germlinePairs) > 0:	
-	germlineGains = getGainData(germlinePairs[:,1:], germlinePairs)
-	unAnnotatedGainsNormGL = unAnnotatedGains / germlineGains #np.log
-
-def getGainSignificance(features, shuffledFeatures):
-	
-	#for each gain feature, check if more/less than by random chance.
-	gainSignificances = []
-	for i in range(26, 52):
-
-		degLosses = len(np.where(features[:,i] == '1.0')[0])
-		degNoLosses = len(np.where(features[:,i] == '0.0')[0])
+	shuffledPairs = []
+	for pair in shuffledData:
 		
-		shuffledLosses = len(np.where(shuffledFeatures[:,i] == '1.0')[0])
-		shuffledNoLosses = len(np.where(shuffledFeatures[:,i] == '0.0')[0])
+		sv = pair[0].split("_")
+		if svType != '':
+			typeMatch = re.match(svType, sv[12], re.IGNORECASE)
+			if typeMatch is None:
+				continue
+		shuffledPairs.append(pair)
+	
+	degs = []
+	for degPair in degData:
 		
-		if degLosses == 0 or degNoLosses == 0 or shuffledLosses == 0 or shuffledNoLosses == 0:
-			gainSignificances.append(1)
-			continue
-			
-		obs = np.array([[degLosses, degNoLosses], [shuffledLosses, shuffledNoLosses]])
-		
-		result = chi2_contingency(obs)
-		p = result[1]
-
-		gainSignificances.append(p)
-
-	return gainSignificances
-
-gainSignificancesTmp = [0]*26
-
-if svType == 'ITX':
-	gainSignificances = getGainSignificance(unAnnotatedDEGs, nonDEGs[:,1:])
-	gainSignificancesGL = gainSignificancesTmp
-	gainSignificancesS = getGainSignificance(unAnnotatedDEGs, shuffledPairs[:,1:])
-elif svType == 'DUP':
-	gainSignificances = getGainSignificance(unAnnotatedDEGs, nonDEGs[:,1:])
-	gainSignificancesGL = gainSignificancesTmp
-	gainSignificancesS = getGainSignificance(unAnnotatedDEGs, shuffledPairs[:,1:])
-else:
+		sv = degPair[0].split("_")
 	
-	gainSignificances = getGainSignificance(unAnnotatedDEGs, nonDEGs[:,1:])
-	gainSignificancesGL = getGainSignificance(unAnnotatedDEGs, germlinePairs[:,1:])
-	gainSignificancesS = getGainSignificance(unAnnotatedDEGs, shuffledPairs[:,1:])
-
-#MTC on results
-
-
-#Stack the bars for the DEG data
-
-# width = 0.25
-# 
-# if len(unAnnotatedGainsNormND) > 0:
-# 	plt.barh(np.arange(len(unAnnotatedGainsNormND)), unAnnotatedGainsNormND, width, label='DEG pairs / non-DEG pairs', color='red')
-# 
-# if len(unAnnotatedGainsNormGL) > 0:
-# 	plt.barh(np.arange(len(unAnnotatedGainsNormGL))+width, unAnnotatedGainsNormGL, width, label='DEG pairs / germline pairs', color='blue')
-# 	
-# if len(unAnnotatedGainsNormS) > 0:
-# 	plt.barh(np.arange(len(unAnnotatedGainsNormS))+width*2, unAnnotatedGainsNormS, width, label='DEG pairs / shuffled pairs', color='green')
-# 	
-# if len(unAnnotatedGainsNormC) > 0:
-# 	plt.barh(np.arange(len(unAnnotatedGainsNormC))+width*3, unAnnotatedGainsNormC, width, label='DEG pairs / coding pairs', color='purple')
-# 
-# plt.yticks(([p + 2.5 * width for p in np.arange(len(unAnnotatedGainsNormND))]), ['eQTLs', 'enhancers', 'promoters', 'CpG', 'TF', 'HiC', 'h3k9me3', 'h3k4me3',
-# 												  'h3k27ac', 'h3k27me3', 'h3k4me1', 'h3k36me3','DNAseI', 'CTCF', 'CTCF+Enhancer',
-# 												  'CTCF+Promoter', 'chromHMM Enhancer', 'heterochromatin', 'poised promoter',
-# 												  'chromHMM Promoter', 'repeat', 'repressed', 'transcribed'])
-# #plt.xlim([-2,2])
-# plt.legend(loc='best')
-# plt.tight_layout()
-# plt.show()
-# #plt.savefig('Output/degNonDeg_losses.svg')
-# plt.clf()
-
-### 4 separate plots, but gains and losses in one
-
-#DEG vs non-DEG
-def plotGainsLossesSamePlot(losses,gains, lossSignificances, gainSignificances, label, typeLabel, xlabel,  figInd):
+		if svType != '':
+			typeMatch = re.match(svType, sv[12], re.IGNORECASE)
+			if typeMatch is None:
+				continue
 	
-	significances = []
-	for sign in range(0, len(lossSignificances)):
-	
-		if lossSignificances[sign] < 0.05:
-			significances.append('*')
-		else:
-			significances.append('')
-			
-		if gainSignificances[sign] < 0.05:
-			significances.append('*')
-		else:
-			significances.append('')
-	
-	#plt.subplot(2, 2, figInd)
-	fig, ax = plt.subplots()
-	
-	width = 0.25
-	
-	losses = np.log(losses)
-	gains = np.log(gains)
-	
-	print(losses)
-	
-	if len(losses) > 0:
-		plt.barh(np.arange(len(losses)), losses, width, label='Losses', color='blue')
-	
-	if len(gains) > 0:
-		plt.barh(np.arange(len(gains))+width, gains, width, label='Gains', color='red')
-	
-	if len(significances) > 0:
-		rects = ax.patches
-		
-		# For each bar: Place a label
-		ind = 0
-		for rect in rects:
-			# Get X and Y placement of label from rect.
-			x_value = rect.get_width()
-			y_value = rect.get_y() + rect.get_height() / 2
-		
-			# Number of points between bar and label. Change to your liking.
-			space = 5
-			# Vertical alignment for positive values
-			ha = 'left'
-		
-			# If value of bar is negative: Place label left of bar
-			if x_value < 0:
-				# Invert space to place label to the left
-				space *= -1
-				# Horizontally align label at right
-				ha = 'right'
-		
-			# Use X value as label and format number with one decimal place
-			
-			# Create annotation
-			plt.annotate(
-				significances[ind],                      # Use `label` as label
-				(x_value, y_value),         # Place label at end of the bar
-				xytext=(space, 0),          # Horizontally shift label by `space`
-				textcoords="offset points", # Interpret `xytext` as offset in points
-				va='center',                # Vertically center label
-				ha=ha,
-				fontsize=5)                      # Horizontally align label differently for
-											# positive and negative values.
-			ind += 1
 		
 	
-	plt.yticks(([p + 1.0 * width for p in np.arange(len(losses))]), ['eQTLs', 'enhancers', 'promoters', 'CpG', 'TF', 'HiC', 'h3k9me3', 'h3k4me3',
-													  'h3k27ac', 'h3k27me3', 'h3k4me1', 'h3k36me3','DNAseI', 'RNA pol II', 'CTCF', 'CTCF+enhancer',
-													  'CTCF+promoter', 'chromHMM enhancer', 'heterochromatin', 'poised promoter',
-													  'chromHMM promoter', 'repeat', 'repressed', 'transcribed', 'super enhancer', 'ctcf'])
+		degs.append(degPair)
 	
-	plt.xlim([-2,3.5])
-	plt.xlabel(xlabel)
-	plt.title(label + ': ' + typeLabel)
-	plt.legend(loc='best')
-	plt.tight_layout()
-	#plt.savefig('gains_losses_' + label + '_' + svType + '.svg')
-	plt.show()
-	plt.clf()
-
-#plot significances instead of relatvie differences
-
-def plotSignificances(lossSignificances, gainSignificances, label, typeLabel, xlabel,  figInd):
+	degs = np.array(degs)
+	nonDEGs = np.array(nonDEGs)
+	germlinePairs = np.array(germlinePairs)
+	shuffledPairs = np.array(shuffledPairs)
 	
-	losses = []
-	gains = []
-	for sign in range(0, len(lossSignificances)):
+	print(degs)
+	print(nonDEGs)
+	print(germlinePairs)
+	print(shuffledPairs)
+	
+	print(degs.shape)
+	print(nonDEGs.shape)
+	print(germlinePairs.shape)
+	print(shuffledPairs.shape)
+	
+	unAnnotatedDEGs = []
+	for degPair in degs:
+	
+		features = degPair[1:]
 		
-		if lossSignificances[sign] < 0.05:
-			losses.append(1)
-		else:
-			losses.append(-1)
+		unAnnotatedDEGs.append(features)
 		
-	for sign in range(0, len(gainSignificances)):
+	unAnnotatedDEGs = np.array(unAnnotatedDEGs)
+	
+	lossSignificancesTmp = [2]*26
+	
+	if svType == 'INV':
+		lossSignificances = getSignificance(unAnnotatedDEGs, nonDEGs[:,1:], 0, 26)
+		lossSignificancesGL = getSignificance(unAnnotatedDEGs, germlinePairs[:,1:], 0, 26)
+		lossSignificancesS = getSignificance(unAnnotatedDEGs, shuffledPairs[:,1:], 0, 26)
+	elif svType == 'ITX':
+		lossSignificances = getSignificance(unAnnotatedDEGs, nonDEGs[:,1:], 0, 26)
+		lossSignificancesGL = lossSignificancesTmp
+		lossSignificancesS = getSignificance(unAnnotatedDEGs, shuffledPairs[:,1:], 0, 26)
+	else:
+		lossSignificances = lossSignificancesTmp
+		lossSignificancesGL = lossSignificancesTmp
+		lossSignificancesS = lossSignificancesTmp
+	
+	
+	gainSignificancesTmp = [2]*26
+	
+	if svType == 'ITX':
+		gainSignificances = getSignificance(unAnnotatedDEGs, nonDEGs[:,1:], 26, 52)
+		gainSignificancesGL = gainSignificancesTmp
+		gainSignificancesS = getSignificance(unAnnotatedDEGs, shuffledPairs[:,1:], 26, 52)
+	elif svType == 'DUP':
+		gainSignificances = getSignificance(unAnnotatedDEGs, nonDEGs[:,1:], 26, 52)
+		gainSignificancesGL = gainSignificancesTmp
+		gainSignificancesS = getSignificance(unAnnotatedDEGs, shuffledPairs[:,1:], 26, 52)
+	else:
 		
-		if gainSignificances[sign] < 0.05:
-			gains.append(1)
-		else:
-			gains.append(-1)
+		gainSignificances = getSignificance(unAnnotatedDEGs, nonDEGs[:,1:], 26, 52)
+		gainSignificancesGL = getSignificance(unAnnotatedDEGs, germlinePairs[:,1:], 26, 52)
+		gainSignificancesS = getSignificance(unAnnotatedDEGs, shuffledPairs[:,1:], 26, 52)
 	
-	#plot the significances, log thereof instead of loss/gains
-	fig, ax = plt.subplots()
-	
-	width = 0.25
-	
-	#losses = np.log(losses)
-	#gains = np.log(gains)
-	
-	if len(lossSignificances) > 0:
-		plt.barh(np.arange(len(lossSignificances)), losses, width, label='Losses', color='blue')
-	
-	if len(gainSignificances) > 0:
-		plt.barh(np.arange(len(gainSignificances))+width, gains, width, label='Gains', color='red')
-	
-	
-	plt.yticks(([p + 1.0 * width for p in np.arange(len(lossSignificances))]), ['eQTLs', 'enhancers', 'promoters', 'CpG', 'TF', 'HiC', 'h3k9me3', 'h3k4me3',
-													  'h3k27ac', 'h3k27me3', 'h3k4me1', 'h3k36me3','DNAseI', 'RNA pol II', 'CTCF', 'CTCF+enhancer',
-													  'CTCF+promoter', 'chromHMM enhancer', 'heterochromatin', 'poised promoter',
-													  'chromHMM promoter', 'repeat', 'repressed', 'transcribed', 'super enhancer', 'ctcf'])
-	
-	plt.xlim([-2,2])
-	plt.xlabel(xlabel)
-	plt.title(label + ': ' + typeLabel)
-	plt.legend(loc='best')
-	plt.tight_layout()
-	#plt.savefig('gains_losses_' + label + '_' + svType + '.svg')
-	plt.show()
-	plt.clf()
-	
+	#MTC on results
 
-plotSignificances(lossSignificancesS, gainSignificancesS, 'Positive pairs vs. negative pairs', typeLabel, 'log(% of positive pairs / % of negative pairs)', 1)
+
+	#collect results per SV type
+	perTypeResults[svType] = [lossSignificances, gainSignificances]
+	perTypeResultsGL[svType] = [lossSignificancesGL, gainSignificancesGL]
+	perTypeResultsS[svType] = [lossSignificancesS, gainSignificancesS]
+
+#plot for each SV type
+plotSignificances(perTypeResults, 'Positive pairs vs. negative pairs', 'gains_losses_pos_neg')
+plotSignificances(perTypeResultsGL, 'Positive pairs vs. negative pairs', 'gains_losses_pos_gl')
+plotSignificances(perTypeResultsS, 'Positive pairs vs. negative pairs', 'gains_losses_pos_s')
 exit()
 #plotGainsLossesSamePlot(unAnnotatedLossesNormND, unAnnotatedGainsNormND, lossSignificances, gainSignificances, 'Positive pairs vs. negative pairs', typeLabel, 'log(% of positive pairs / % of negative pairs)', 1)
 #plotGainsLossesSamePlot(unAnnotatedLossesNormGL, unAnnotatedGainsNormGL, lossSignificancesGL, gainSignificancesGL, 'Positive pairs vs. germline pairs', typeLabel, 'log(% of positive pairs / % of germline pairs)', 2)
