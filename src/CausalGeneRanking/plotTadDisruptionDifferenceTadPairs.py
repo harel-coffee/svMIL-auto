@@ -17,258 +17,6 @@ from genomicShuffler import GenomicShuffler
 
 bins = 10
 
-def plotExpressionComparison(zScores, allShuffledZScores, tadData, allGenes, filteredSVs):
-	
-	genes = []
-	for gene in allGenes:
-		
-		genes.append([gene[0], gene[1], gene[2], gene[3].name])
-	
-	genes = np.array(genes, dtype='object')
-	
-	#svType = 'DEL'
-	svType = sys.argv[1]
-	
-	
-	disruptedZScores = []
-	shuffledZScores = []
-	
-	if svType in ['DEL', 'DUP', 'INV']:
-		
-		#First find which TAD the gene of the z-score is in.
-		
-		for pair in zScores:
-			
-			#get the position of the gene
-			
-			geneInfo = genes[genes[:,3] == pair[1]][0]
-	
-			#which TAD is the gene in?
-			
-			tadChrSubset = tadData[tadData[:,0] == geneInfo[0]]
-
-			matchingTads = tadChrSubset[(geneInfo[1] <= tadChrSubset[:,2]) * (geneInfo[2] >= tadChrSubset[:,1])]
-			
-			if len(matchingTads) < 1:
-					continue
-	
-			matchingTad = matchingTads[0]
-
-			#Then see which SV disrupts this TAD. 
-			
-			#first check intrachromosomal SVs
-			
-			svChr1Subset = filteredSVs[(filteredSVs[:,0] == geneInfo[0]) * (filteredSVs[:,7] == pair[0])]
-			
-			
-			overlappingSVs = svChr1Subset[(svChr1Subset[:,1] <= matchingTad[2]) * (svChr1Subset[:,2] >= matchingTad[1])]
-			
-			foundSV = False #make sure that this is added only once if there are multiple SVs
-			
-			#if there is AN SV overlapping the TAD, add the current z-score.
-			for sv in overlappingSVs:
-				if sv[8].svType == svType:
-					foundSV = True
-			if foundSV == True:
-				disruptedZScores.append(float(pair[2]))
-				
-			
-	
-		
-		#repeat but then for the shuffled case.
-		for shuffledCase in allShuffledZScores:
-			
-			for pair in shuffledCase:
-				
-				#get the position of the gene
-				
-				geneInfo = genes[genes[:,3] == pair[1]][0]
-		
-				#which TAD is the gene in?
-				
-				tadChrSubset = tadData[tadData[:,0] == geneInfo[0]]
-				
-				if len(tadChrSubset) < 1:
-					continue
-				
-				matchingTads = tadChrSubset[(geneInfo[1] <= tadChrSubset[:,2]) * (geneInfo[2] >= tadChrSubset[:,1])]
-	
-				if len(matchingTads) < 1:
-					continue
-	
-				matchingTad = matchingTads[0]
-	
-				#Then see which SV disrupts this TAD. 
-				
-				#first check intrachromosomal SVs
-				
-				svChr1Subset = filteredSVs[(filteredSVs[:,0] == geneInfo[0]) * (filteredSVs[:,7] == pair[0])]
-				
-				overlappingSVs = svChr1Subset[(svChr1Subset[:,1] <= matchingTad[2]) * (svChr1Subset[:,2] >= matchingTad[1])]
-				
-				foundSV = False
-				
-				#if there is AN SV overlapping the TAD, add the current z-score.
-				for sv in overlappingSVs:
-					
-					if sv[8].svType == svType:
-						foundSV = True
-				if foundSV == True:		
-					shuffledZScores.append(float(pair[2]))
-		
-	elif svType == 'ITX':
-		
-		#find which SV is in the TAD
-		for pair in zScores:
-			
-			#get the position of the gene
-			
-			geneInfo = genes[genes[:,3] == pair[1]][0]
-	
-			#which TAD is the gene in?
-			
-			tadChrSubset = tadData[tadData[:,0] == geneInfo[0]]
-
-			matchingTads = tadChrSubset[(geneInfo[1] <= tadChrSubset[:,2]) * (geneInfo[2] >= tadChrSubset[:,1])]
-			
-			if len(matchingTads) < 1:
-					continue
-	
-			matchingTad = matchingTads[0]
-
-			#Then see which SV disrupts this TAD. 
-			
-			#first check which SVs have chr1 matches			
-			svChr1Subset = filteredSVs[(filteredSVs[:,0] == geneInfo[0]) * (filteredSVs[:,7] == pair[0])]
-			
-			overlappingSVs = svChr1Subset[(svChr1Subset[:,1] >= matchingTad[1]) * (svChr1Subset[:,1] <= matchingTad[2])]
-			
-			foundSV = False #make sure that each pair is added only once, even if there are more SVs
-			
-			for sv in overlappingSVs:
-				if sv[8].svType == svType:
-					foundSV = True
-		
-			#repeat for chr2
-			svChr2Subset = filteredSVs[(filteredSVs[:,3] == geneInfo[0]) * (filteredSVs[:,7] == pair[0])]
-			
-			overlappingSVs = svChr2Subset[(svChr2Subset[:,5] >= matchingTad[1]) * (svChr2Subset[:,5] <= matchingTad[2])]
-			
-			for sv in overlappingSVs:
-				if sv[8].svType == svType:
-					foundSV = True
-			if foundSV == True:
-				disruptedZScores.append(float(pair[2]))
-
-
-		#repeat for the shuffled case
-		for shuffledCase in allShuffledZScores:
-			
-			for pair in shuffledCase:
-				
-				geneInfo = genes[genes[:,3] == pair[1]][0]
-	
-				#which TAD is the gene in?
-				
-				tadChrSubset = tadData[tadData[:,0] == geneInfo[0]]
-	
-				matchingTads = tadChrSubset[(geneInfo[1] <= tadChrSubset[:,2]) * (geneInfo[2] >= tadChrSubset[:,1])]
-	
-				if len(matchingTads) < 1:
-						continue
-		
-				matchingTad = matchingTads[0]
-				#Then see which SV disrupts this TAD. 
-				
-				#first check which SVs have chr1 matches			
-				svChr1Subset = filteredSVs[(filteredSVs[:,0] == geneInfo[0]) * (filteredSVs[:,7] == pair[0])]
-				
-				overlappingSVs = svChr1Subset[(svChr1Subset[:,1] >= matchingTad[1]) * (svChr1Subset[:,1] <= matchingTad[2])]
-				
-				foundSV = False #make sure that each pair is added only once, even if there are more SVs
-				
-				for sv in overlappingSVs:
-					if sv[8].svType == svType:
-						foundSV = True
-			
-				#repeat for chr2
-				svChr2Subset = filteredSVs[(filteredSVs[:,3] == geneInfo[0]) * (filteredSVs[:,7] == pair[0])]
-				
-				overlappingSVs = svChr2Subset[(svChr2Subset[:,5] >= matchingTad[1]) * (svChr2Subset[:,5] <= matchingTad[2])]
-				
-				for sv in overlappingSVs:
-					if sv[8].svType == svType:
-						foundSV = True
-				if foundSV == True:
-					shuffledZScores.append(float(pair[2]))
-	
-	else:
-		
-		#if we do not check for SVs, just plot the z-scores normally. 
-		
-		#make a boxplot of the normal z-scores compared to the shuffled z-scores.
-		
-		for zScore in zScores:
-			disruptedZScores.append(float(zScore[2]))
-
-		for shuffledCase in allShuffledZScores:
-			for zScore in shuffledCase:
-	
-				shuffledZScores.append(float(zScore[2]))
-
-	
-	#to do the log transform, add a constant to remove negative values.
-	#this is the smallest value in the shuffled and non-shuffled set.
-	
-	# minValue = 0
-	# if np.min(disruptedZScores) < np.min(shuffledZScores):
-	# 	minValue = np.abs(np.min(disruptedZScores))
-	# else:
-	# 	minValue = np.abs(np.min(shuffledZScores))
-	# 	
-	# constant = minValue + 0.0001
-	# disruptedZScores = np.array(disruptedZScores)
-	# shuffledZScores = np.array(shuffledZScores)
-	# 
-	# 
-	# 
-	# disruptedZScores += constant
-	# shuffledZScores += constant
-	# 
-	# disruptedZScores = np.log(disruptedZScores)
-	# shuffledZScores = np.log(shuffledZScores)
-	
-	disruptedZScores = np.array(disruptedZScores)
-	shuffledZScores = np.array(shuffledZScores)
-	
-	
-	filteredDisruptedZScores = disruptedZScores[disruptedZScores < np.percentile(disruptedZScores,95)]
-	filteredShuffledZScores = shuffledZScores[shuffledZScores < np.percentile(shuffledZScores,95)]
-	
-	print('plotting')
-	
-	allData = [filteredDisruptedZScores, filteredShuffledZScores]
-	
-	plt.boxplot(allData)
-	plt.ylim([-10,30])
-	plt.savefig('zScores_' + svType + '.svg')
-	#plt.show()
-	plt.clf()
-	allData = [disruptedZScores, shuffledZScores]
-	
-	plt.boxplot(allData)
-	plt.savefig('zScores_' + svType + '_unfiltered.svg')
-	#plt.show()
-
-	#do a quick t-test
-	z = (np.mean(filteredDisruptedZScores) - np.mean(filteredShuffledZScores)) / float(np.std(filteredShuffledZScores))
-	pValue = stats.norm.sf(abs(z))*2
-	
-	print(pValue)
-
-	return 0
-	
-
 def getBinScores(zScores, randomPValuesDir):
 	
 	splitZScores = []
@@ -350,8 +98,8 @@ def getBinScores(zScores, randomPValuesDir):
 	nonCausalGenes = InputParser().readNonCausalGeneFile(settings.files['nonCausalGenesFile'], causalGenes) #In the same format as the causal genes.
 	
 	#Combine the genes into one set. 
-	allGenes = np.concatenate((causalGenes, nonCausalGenes), axis=0)
-	#allGenes = causalGenes
+	#allGenes = np.concatenate((causalGenes, nonCausalGenes), axis=0)
+	allGenes = causalGenes
 	#then go through the TADs that are disrupted by a non-coding SV. 
 	
 	#Get all SVs
@@ -673,8 +421,8 @@ def getBinScores(zScores, randomPValuesDir):
 						
 						sample = geneZScores[patient,0]
 						
-						#if geneName + '_' + sample not in ruleBasedPairs:
-						#	continue
+						if geneName + '_' + sample not in ruleBasedPairs:
+							continue
 						
 						if svType == 'DEL':
 							#only for a deletion, we do not need to print the deleted genes.
@@ -756,8 +504,8 @@ def getBinScores(zScores, randomPValuesDir):
 					
 						sample = geneZScores[patient,0]
 						
-						#if geneName + '_' + sample not in ruleBasedPairs:
-						#	continue
+						if geneName + '_' + sample not in ruleBasedPairs:
+							continue
 						
 						
 						#do the check per SV type, depending on which SV we are looking at.
@@ -1171,57 +919,121 @@ def getBinScores(zScores, randomPValuesDir):
 # #Get the DEGs and their p-values
 svType = sys.argv[1]
 #plot the z-scores.
-
-pValues = np.loadtxt('pValues_allGenes_smallTads.txt', dtype='object')
-
-randomPValuesDir = 'tadDisr/'
-binScores, randomBinScores, binZScoresPerPatientOffset = getBinScores(pValues, randomPValuesDir)
-
-print('plotting')
-
-allData = []
-totalLen = 0
-lat = []
-lt = []
-rt = []
-rat = []
-for binInd in range(0, len(binScores)):
-	#print('bin:', binInd)
-	#print(len(binScores[binInd]))
-	#totalLen += len(binScores[binInd])
-	#plt.plot(binInd+1, len(binScores[binInd]), marker='*')
-	#plt.plot(binInd, len(randomBinScores[binInd]), marker='o') #this can later be a boxplot of 100 iterations
-	allData.append(binScores[binInd])
-	#allData.append(randomBinScores[binInd])
-	
-	if binInd < 10:
-		lat += binScores[binInd]
-	if binInd >= 10 and binInd < 20:
-		lt += binScores[binInd]
-	if binInd >= 20 and binInd < 30:
-		rt += binScores[binInd]
-	if binInd >= 30:
-		rat += binScores[binInd]
-
-print(lat, lt, rt, rat)		
-
-#plt.boxplot([lat, lt, rt, rat])
-#plt.show()
-
-	
-
-print(allData)
-print(totalLen)
-
-np.save('plotData_' + svType + '_allGenes.npy', allData)
 # 
-plt.xticks(range(1,len(binScores)+1))
-plt.boxplot(allData)
+# pValues = np.loadtxt('pValues_allGenes_smallTads.txt', dtype='object')
+# 
+# randomPValuesDir = 'tadDisr/'
+# binScores, randomBinScores, binZScoresPerPatientOffset = getBinScores(pValues, randomPValuesDir)
+# 
+# print('plotting')
+# 
+# allData = []
+# totalLen = 0
+# lat = []
+# lt = []
+# rt = []
+# rat = []
+# for binInd in range(0, len(binScores)):
+# 	#print('bin:', binInd)
+# 	#print(len(binScores[binInd]))
+# 	#totalLen += len(binScores[binInd])
+# 	#plt.plot(binInd+1, len(binScores[binInd]), marker='*')
+# 	#plt.plot(binInd, len(randomBinScores[binInd]), marker='o') #this can later be a boxplot of 100 iterations
+# 	allData.append(binScores[binInd])
+# 	#allData.append(randomBinScores[binInd])
+# 	
+# 	if binInd < 10:
+# 		lat += binScores[binInd]
+# 	if binInd >= 10 and binInd < 20:
+# 		lt += binScores[binInd]
+# 	if binInd >= 20 and binInd < 30:
+# 		rt += binScores[binInd]
+# 	if binInd >= 30:
+# 		rat += binScores[binInd]
+# 
+# print(lat, lt, rt, rat)		
+# 
+# #plt.boxplot([lat, lt, rt, rat])
+# #plt.show()
+# 
+# 	
+# 
+# print(allData)
+# print(totalLen)
+# 
+# np.save('plotData_' + svType + '_oncogenes_rules.npy', allData)
+# # 
+# plt.xticks(range(1,len(binScores)+1))
+# plt.boxplot(allData)
+# plt.show()
+# 
+# exit()
+
+###combined figures
+
+svTypes = ['DEL', 'DUP', 'INV', 'ITX']
+colors = ['blue', 'red', 'magenta', 'black']
+offsets = [-0.25, -0.1, 0.1, 0.25]
+#colors = plt.cm.RdYlBu(np.linspace(0,1,4))
+typeInd = -1
+for svType in svTypes:
+	typeInd += 1
+	
+	allData = np.load('plotData_' + svType + '_oncogenes_rules.npy', allow_pickle=True, encoding='latin1')
+	
+	#first combine bins
+	
+	combinedBins = [0]*20
+	for binInd in range(0, len(allData)):
+		
+		if binInd < 20:
+			combinedBins[binInd] = allData[binInd]
+		elif binInd > 19 and binInd < 30:
+			combinedBins[binInd-10] += allData[binInd]
+		else:
+			combinedBins[binInd-30] += allData[binInd]
+	
+	
+			
+	medianData = []
+	upperQuantiles = []
+	lowerQuantiles = []
+	for binInd in range(0, len(combinedBins)):
+		
+		if len(combinedBins[binInd]) > 0:
+			median = np.median(combinedBins[binInd])
+			upperQuantile = np.quantile(combinedBins[binInd], 0.75)
+			lowerQuantile = np.quantile(combinedBins[binInd], 0.25)
+		else:
+			median = 0
+			upperQuantile = 0
+			lowerQuantile = 0
+		
+		medianData.append(median)
+		
+		upperQuantiles.append(upperQuantile-median)
+		lowerQuantiles.append(median-lowerQuantile)
+
+	plt.plot(np.arange(0, len(medianData)), medianData, color=colors[typeInd], alpha=0.5)
+	#plt.plot(np.arange(0, len(upperQuantile)), upperQuantile, color=colors[typeInd], alpha=0.5)
+	
+	medianData = np.array(medianData)
+	lowerQuantiles = np.array(lowerQuantiles)
+	upperQuantiles = np.array(upperQuantiles)
+	
+	#plt.fill_between(np.arange(0, len(medianData)), medianData-lowerQuantile, medianData+upperQuantile, facecolor=colors[typeInd], edgecolor='black', linestyle='dashdot', antialiased=True, alpha=0.2)
+	#maybe add interpolation, same for quantiles as for median
+	
+	
+	plt.errorbar(np.arange(0, len(medianData)), medianData, yerr=[lowerQuantiles, upperQuantiles], color=colors[typeInd], capsize=5, alpha=0.3)
+plt.ylim([-2,5])
+plt.xticks([])
+plt.savefig('oncogenes_rules_trend.svg')
 plt.show()
-
 exit()
-
-allData = np.load('plotData_' + svType + '_allGenes.npy', allow_pickle=True, encoding='latin1')
+### the old 1-by-1 figures with boxplots
+svType = 'DEL'
+allData = np.load('plotData_' + svType + '_allGenes_rules.npy', allow_pickle=True, encoding='latin1')
 
 plt.boxplot(allData)
 plt.ylim()

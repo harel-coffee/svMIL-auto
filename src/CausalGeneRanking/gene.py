@@ -223,8 +223,8 @@ class Gene:
 		#For methylation marks, gather all relevant marks here for easy lookup.
 		#For now, just focus on what is relevant for enhancers
 		methylationMarks = []
-		annotationElements = ['ctcf', 'dnaseI', 'h3k9me3', 'h3k4me3', 'h3k27ac', 'h3k27me3', 'h3k4me1', 'h3k36me3', 'CTCF', 'CTCF+Enhancer', 'Enhancer',
-							  'Heterochromatin', 'Repeat', 'Repressed', 'Transcribed', 'rnaPol', 'superEnhancer']
+		annotationElements = ['cpg', 'tf', 'hic', 'ctcf', 'dnaseI', 'h3k9me3', 'h3k4me3', 'h3k27ac', 'h3k27me3', 'h3k4me1', 'h3k36me3',
+							  'CTCF', 'CTCF+Enhancer', 'CTCF+Promoter', 'Enhancer', 'Heterochromatin', 'Poised_Promoter', 'Promoter', 'Repeat', 'Repressed', 'Transcribed', 'rnaPol']
 		
 		strengthElements = ['enhancer', 'ctcf', 'rnaPol', 'h3k9me3', 'h3k4me3', 'h3k27ac', 'h3k27me3', 'h3k4me1', 'h3k36me3']
 		for element in elements:
@@ -238,14 +238,12 @@ class Gene:
 
 		for element in elements:
 			
-			
-			
 			#print(element[3])
 			if element[3] not in allowedElements:
 				continue
 			
 			elementStr = element[0] + "_" + str(element[1]) + "_" + str(element[2]) + "_" + element[3]
-			#print(elementStr, alterationType)
+			
 			#Check if the element is methylated or not
 			#first, just set the things for enhancers only, this should later be element un-specific
 			#For all the other elements, determine if the enhancer has a specific mark or not (at the same position)
@@ -304,6 +302,7 @@ class Gene:
 			#if we get here, we passed all checks and there is a valid gain OR loss
 			if elementStr not in self.alteredElements[sv]:
 				#self.alteredElements[sv][elementStr] = lossGains + elementMethylation + enhScore
+				
 				self.alteredElements[sv][elementStr] = lossGains + elementMethylation + elementStrength + [allowedElements.index(element[3])] + [self.cosmic]
 				
 				

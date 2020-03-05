@@ -198,7 +198,7 @@ def getLossSignificance(features, shuffledFeatures):
 		
 		result = chi2_contingency(obs)
 		p = result[1]
-
+		
 		lossSignificances.append(p)
 
 	return lossSignificances
@@ -333,9 +333,10 @@ elif svType == 'DUP':
 else:
 	
 	gainSignificances = getGainSignificance(unAnnotatedDEGs, nonDEGs[:,1:])
-	#gainSignificancesGL = getGainSignificance(unAnnotatedDEGs, germlinePairs[:,1:])
-	#gainSignificancesS = getGainSignificance(unAnnotatedDEGs, shuffledPairs[:,1:])
-exit()
+	gainSignificancesGL = getGainSignificance(unAnnotatedDEGs, germlinePairs[:,1:])
+	gainSignificancesS = getGainSignificance(unAnnotatedDEGs, shuffledPairs[:,1:])
+
+#MTC on results
 
 
 #Stack the bars for the DEG data
@@ -450,17 +451,66 @@ def plotGainsLossesSamePlot(losses,gains, lossSignificances, gainSignificances, 
 	plt.show()
 	plt.clf()
 
+#plot significances instead of relatvie differences
+
+def plotSignificances(lossSignificances, gainSignificances, label, typeLabel, xlabel,  figInd):
 	
+	losses = []
+	gains = []
+	for sign in range(0, len(lossSignificances)):
+		
+		if lossSignificances[sign] < 0.05:
+			losses.append(1)
+		else:
+			losses.append(-1)
+		
+	for sign in range(0, len(gainSignificances)):
+		
+		if gainSignificances[sign] < 0.05:
+			gains.append(1)
+		else:
+			gains.append(-1)
+	
+	#plot the significances, log thereof instead of loss/gains
+	fig, ax = plt.subplots()
+	
+	width = 0.25
+	
+	#losses = np.log(losses)
+	#gains = np.log(gains)
+	
+	if len(lossSignificances) > 0:
+		plt.barh(np.arange(len(lossSignificances)), losses, width, label='Losses', color='blue')
+	
+	if len(gainSignificances) > 0:
+		plt.barh(np.arange(len(gainSignificances))+width, gains, width, label='Gains', color='red')
+	
+	
+	plt.yticks(([p + 1.0 * width for p in np.arange(len(lossSignificances))]), ['eQTLs', 'enhancers', 'promoters', 'CpG', 'TF', 'HiC', 'h3k9me3', 'h3k4me3',
+													  'h3k27ac', 'h3k27me3', 'h3k4me1', 'h3k36me3','DNAseI', 'RNA pol II', 'CTCF', 'CTCF+enhancer',
+													  'CTCF+promoter', 'chromHMM enhancer', 'heterochromatin', 'poised promoter',
+													  'chromHMM promoter', 'repeat', 'repressed', 'transcribed', 'super enhancer', 'ctcf'])
+	
+	plt.xlim([-2,2])
+	plt.xlabel(xlabel)
+	plt.title(label + ': ' + typeLabel)
+	plt.legend(loc='best')
+	plt.tight_layout()
+	#plt.savefig('gains_losses_' + label + '_' + svType + '.svg')
+	plt.show()
+	plt.clf()
 	
 
-plotGainsLossesSamePlot(unAnnotatedLossesNormND, unAnnotatedGainsNormND, lossSignificances, gainSignificances, 'Positive pairs vs. negative pairs', typeLabel, 'log(% of positive pairs / % of negative pairs)', 1)
-plotGainsLossesSamePlot(unAnnotatedLossesNormGL, unAnnotatedGainsNormGL, lossSignificancesGL, gainSignificancesGL, 'Positive pairs vs. germline pairs', typeLabel, 'log(% of positive pairs / % of germline pairs)', 2)
+plotSignificances(lossSignificancesS, gainSignificancesS, 'Positive pairs vs. negative pairs', typeLabel, 'log(% of positive pairs / % of negative pairs)', 1)
+exit()
+#plotGainsLossesSamePlot(unAnnotatedLossesNormND, unAnnotatedGainsNormND, lossSignificances, gainSignificances, 'Positive pairs vs. negative pairs', typeLabel, 'log(% of positive pairs / % of negative pairs)', 1)
+#plotGainsLossesSamePlot(unAnnotatedLossesNormGL, unAnnotatedGainsNormGL, lossSignificancesGL, gainSignificancesGL, 'Positive pairs vs. germline pairs', typeLabel, 'log(% of positive pairs / % of germline pairs)', 2)
 #plotGainsLossesSamePlot(unAnnotatedLossesNormC, unAnnotatedGainsNormC, 'DEG pairs vs. coding pairs', typeLabel, 'log(% of DEG pairs / % of coding pairs)', 3)
-plotGainsLossesSamePlot(unAnnotatedLossesNormS, unAnnotatedGainsNormS, lossSignificancesS, gainSignificancesS, 'Positive pairs vs. shuffled pairs', typeLabel, 'log(% of positive pairs / % of shuffled pairs)', 3)
+#plotGainsLossesSamePlot(unAnnotatedLossesNormS, unAnnotatedGainsNormS, lossSignificancesS, gainSignificancesS, 'Positive pairs vs. shuffled pairs', typeLabel, 'log(% of positive pairs / % of shuffled pairs)', 3)
 #plt.tight_layout()
 #plt.savefig('gains_losses_' + svType + '.svg')
 #plt.show()
-exit()
+
 np.random.seed(0)
 positive = degs[:,1:]
 
@@ -632,7 +682,7 @@ def cvClassification(similarityMatrix, bagLabels, clf):
 			   'average_precision' : make_scorer(average_precision_score),
 			   'auc' : make_scorer(roc_auc_score)}
 	
-	kfold = model_selection.StratifiedKFold(n_splits=10, random_state=42)
+	kfold = model_selection.StratifiedKFold(n_splits=10, random_state=10, shuffle=True)
 	
 	results = model_selection.cross_validate(estimator=clf,
 											  X=similarityMatrix,
@@ -716,7 +766,7 @@ classifiers = [
     #SVC(gamma=2, C=1),
     #GaussianProcessClassifier(1.0 * RBF(1.0)),
     #DecisionTreeClassifier(max_depth=100),
-    RandomForestClassifier(max_depth=100, n_estimators=2)]
+    RandomForestClassifier(n_estimators= 600, min_samples_split=5, min_samples_leaf=1, max_features='auto', max_depth=80, bootstrap=True)]
     #MLPClassifier(alpha=1, max_iter=1000),
     #AdaBoostClassifier(),
     #GaussianNB(),

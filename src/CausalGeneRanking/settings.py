@@ -59,7 +59,7 @@ files = dict(
 
 general = dict(
 	
-	source = 'TCGA',
+	source = 'HMF',
 	mode = 'SV', #Options are: SV, SNV or SV+SNV
 	cancerType = 'BRCA',
 	nonCoding = True, #Should we count gains/losses for genes that are affected by non-coding SVS?

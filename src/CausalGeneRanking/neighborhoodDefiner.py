@@ -588,7 +588,7 @@ class NeighborhoodDefiner:
 					line = interactionsByTad[tadStr][lineInd]
 					# el = Element(splitTadStr[0], int(line), int(line)+binSize)
 					# el.type = "hic"
-					element = [splitTadStr[0], int(line), int(line)+binSize, "hic", None] #None because it is not associated with any gene
+					element = [splitTadStr[0], int(line), int(line)+binSize, "hic", None, None] #None because it is not associated with any gene
 					interactionLines.append(element)
 					outF.write(splitTadStr[0] + "\t" + str(line) + "\t" + str(int(line)+binSize) + "\n")
 											
