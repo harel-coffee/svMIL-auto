@@ -98,8 +98,8 @@ def getBinScores(zScores, randomPValuesDir):
 	nonCausalGenes = InputParser().readNonCausalGeneFile(settings.files['nonCausalGenesFile'], causalGenes) #In the same format as the causal genes.
 	
 	#Combine the genes into one set. 
-	#allGenes = np.concatenate((causalGenes, nonCausalGenes), axis=0)
-	allGenes = causalGenes
+	allGenes = np.concatenate((causalGenes, nonCausalGenes), axis=0)
+	#allGenes = causalGenes
 	#then go through the TADs that are disrupted by a non-coding SV. 
 	
 	#Get all SVs
@@ -645,7 +645,7 @@ def getBinScores(zScores, randomPValuesDir):
 	
 		randomizedExpressionMatrices.append(shuffledExpressionData)
 	
-	#expressionData = randomizedExpressionMatrices[0]
+	expressionData = randomizedExpressionMatrices[0]
 	
 	#pre-filter expression data, for the positive and negative set in the adjacent TADs. 
 	filteredExpressionData = dict()
@@ -920,7 +920,7 @@ def getBinScores(zScores, randomPValuesDir):
 svType = sys.argv[1]
 #plot the z-scores.
 # 
-# pValues = np.loadtxt('pValues_allGenes_smallTads.txt', dtype='object')
+# pValues = np.loadtxt('pValues_allGenes_smallTads_random.txt', dtype='object')
 # 
 # randomPValuesDir = 'tadDisr/'
 # binScores, randomBinScores, binZScoresPerPatientOffset = getBinScores(pValues, randomPValuesDir)
@@ -961,17 +961,18 @@ svType = sys.argv[1]
 # print(allData)
 # print(totalLen)
 # 
-# np.save('plotData_' + svType + '_oncogenes_rules.npy', allData)
+# np.save('plotData_' + svType + '_allGenes_rules_random.npy', allData)
 # # 
-# plt.xticks(range(1,len(binScores)+1))
-# plt.boxplot(allData)
-# plt.show()
+# #plt.xticks(range(1,len(binScores)+1))
+# #plt.boxplot(allData)
+# #plt.show()
 # 
 # exit()
 
 ###combined figures
 
 svTypes = ['DEL', 'DUP', 'INV', 'ITX']
+#svTypes = ['ITX']
 colors = ['blue', 'red', 'magenta', 'black']
 offsets = [-0.25, -0.1, 0.1, 0.25]
 #colors = plt.cm.RdYlBu(np.linspace(0,1,4))
@@ -979,7 +980,7 @@ typeInd = -1
 for svType in svTypes:
 	typeInd += 1
 	
-	allData = np.load('plotData_' + svType + '_oncogenes_rules.npy', allow_pickle=True, encoding='latin1')
+	allData = np.load('plotData_' + svType + '_allGenes_rules_random.npy', allow_pickle=True, encoding='latin1')
 	
 	#first combine bins
 	
@@ -1028,12 +1029,12 @@ for svType in svTypes:
 	plt.errorbar(np.arange(0, len(medianData)), medianData, yerr=[lowerQuantiles, upperQuantiles], color=colors[typeInd], capsize=5, alpha=0.3)
 plt.ylim([-2,5])
 plt.xticks([])
-plt.savefig('oncogenes_rules_trend.svg')
+plt.savefig('allGenes_rules_trend_random.svg')
 plt.show()
 exit()
 ### the old 1-by-1 figures with boxplots
-svType = 'DEL'
-allData = np.load('plotData_' + svType + '_allGenes_rules.npy', allow_pickle=True, encoding='latin1')
+svType = 'ITX'
+allData = np.load('plotData_' + svType + '_allGenes_rules_random.npy', allow_pickle=True, encoding='latin1')
 
 plt.boxplot(allData)
 plt.ylim()

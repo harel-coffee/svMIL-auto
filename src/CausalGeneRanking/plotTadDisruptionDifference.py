@@ -216,36 +216,27 @@ print('non-disrupted tads: ', nonDisrCount)
 
 
 #to shuffle across patients, first transpose, the shuffle, then transpose back.
-# 
-# genes = expressionData[:,0]
-# expression = expressionData[:,1:]
-# expressionT = expression.T
-# print(expressionT)
-# print(expressionT.shape)
-# np.random.shuffle(expressionT)
-# print(expressionT)
-# print(expressionT.shape)
-# shuffledExpression = expressionT.T
-# print(shuffledExpression)
-# print(shuffledExpression.shape)
-# 
-# shuffledExpressionData = np.empty(expressionData.shape, dtype='object')
-# shuffledExpressionData[:,0] = genes
-# shuffledExpressionData[:,1:] = shuffledExpression
-# 
-# #shuffledExpressionData = np.concatenate((genes, shuffledExpression), axis=1)
-# 
-# print(samples)
-# print(shuffledExpressionData)
-# 
-# expressionData = shuffledExpressionData
-# expressionDataRavel = expressionData[:,1:].ravel()
-# np.random.shuffle(expressionDataRavel)
-# expression = expressionDataRavel.reshape(expressionData[:,1:].shape)
-# shuffledExpressionData = np.empty(expressionData.shape, dtype='object')
-# shuffledExpressionData[:,0] = expressionData[:,0]
-# shuffledExpressionData[:,1:] = expression
-# expressionData = shuffledExpressionData
+
+genes = expressionData[:,0]
+expression = expressionData[:,1:]
+expressionT = expression.T
+print(expressionT)
+print(expressionT.shape)
+np.random.shuffle(expressionT)
+print(expressionT)
+print(expressionT.shape)
+shuffledExpression = expressionT.T
+print(shuffledExpression)
+print(shuffledExpression.shape)
+
+shuffledExpressionData = np.empty(expressionData.shape, dtype='object')
+shuffledExpressionData[:,0] = genes
+shuffledExpressionData[:,1:] = shuffledExpression
+
+print(samples)
+print(shuffledExpressionData)
+
+expressionData = shuffledExpressionData
 
 #Get a list of all genes * patients that have mutations.
 # 
@@ -565,10 +556,6 @@ tadInd = 0
 #We define the positive/negative TADs based on ALL SVs. the negative set is only truly negative if there is also no other SV type disrupting it. 
 for tad in tadDisruptions:
 
-	if tad != 'chr8_113800000_115100000' and tad != 'chr8_118325000_119725000':
-		continue
-	print(tad)	
-	
 	patientCount = dict()
 		
 	for sv in tadDisruptions[tad]:
@@ -577,16 +564,6 @@ for tad in tadDisruptions:
 		if patient not in patientCount:
 			patientCount[patient] = []
 		patientCount[patient].append(sv[1][8].svType)
-	
-	# for patient in patientCount:
-	# 	
-	# 	if len(patientCount[patient]) > 1:
-	# 		print(tad)
-	# 		print(patient)
-	# 		print(patientCount[patient])
-	# 		exit()
-	# continue
-	
 	
 	#get the patient names that have disrupted TADs
 	patientsWithDisruptions = []
@@ -613,8 +590,6 @@ for tad in tadDisruptions:
 	svTypes = []
 	for gene in allMatches:
 		
-		print(gene[3].name)
-		print(gene)
 		#extract the row for this gene
 		if gene[3].name not in expressionData[:,0]:
 			continue
@@ -637,10 +612,6 @@ for tad in tadDisruptions:
 				positivePatients.append(patient)
 				svTypes.append(sv[1][8].svType)
 			
-			if patient != 'CPCT02050146T':
-				continue
-			
-			print(sv)
 			#if this patient has multiple SVs disrupting this TAD, we do not know which one is causing an effect.
 			#so we skip that TAD for this patient
 			# if len(patientCount[patient]) > 1 and 'DUP' in patientCount[patient]:
@@ -683,7 +654,6 @@ for tad in tadDisruptions:
 				gene[3].name in svPatientsDup[patient]:
 					continue
 			
-			print('adding')
 			disruptedPairs[patient][gene[3].name] = float(geneExpr[patientInd])
 			
 
@@ -718,7 +688,7 @@ for tad in tadDisruptions:
 	#	continue #so for this TAD, if it is not affected by e.g. a deletion, but it is by another SV type, then it should not be listed as specific for DEL. 
 	tadPositiveAndNegativeSet.append([tad, positivePatients, negativePatients, svTypes])
 	tadInd += 1
-exit()
+
 tadPositiveAndNegativeSet = np.array(tadPositiveAndNegativeSet, dtype='object')
 np.savetxt('tadPositiveAndNegativeSet.txt', tadPositiveAndNegativeSet, fmt='%s', delimiter='\t')
 
@@ -818,95 +788,10 @@ print(signPatients.shape)
 
 #np.savetxt('tadDisr/zScores_random_degs_' + str(permutationRound) + '.txt', zScores, fmt='%s', delimiter='\t')
 #np.savetxt('tadDisr/pValues_shuffled_' + str(permutationRound) + '.txt', signPatients, fmt='%s', delimiter='\t')
-np.savetxt('pValues_allGenes_smallTads_dupFilter.txt', signPatients, fmt='%s', delimiter='\t')
+np.savetxt('pValues_allGenes_smallTads_random.txt', signPatients, fmt='%s', delimiter='\t')
 #np.savetxt('pValues_shuffled.txt', signPatients, fmt='%s', delimiter='\t')
 #np.savetxt('pValues.txt', signPatients, fmt='%s', delimiter='\t')
 exit()
-# import matplotlib.pyplot as plt
-# 
-# zScores = np.loadtxt('zScores.txt', dtype='object')
-# 
-# z = zScores[(zScores[:,1] != 'nan') * (zScores[:,1] != 'inf')]
-# z = [float(i) for i in z[:,1]]
-# 
-# 
-# plt.hist(np.log(z))
-# plt.show()
-
-
-			
-#print(len(disruptedTadExpression))
-#print(len(nonDisruptedTadExpression))
-
-#disruptedTadExpression = np.array(disruptedTadExpression, dtype='float')
-#nonDisruptedTadExpression = np.array(nonDisruptedTadExpression, dtype='float')
-
-#np.savetxt('disruptedTadExpression_del.txt', disruptedTadExpression, fmt='%s', delimiter='\t')
-#np.savetxt('nonDisruptedTadExpression_del.txt', nonDisruptedTadExpression, fmt='%s', delimiter='\t')
-
-import matplotlib.pyplot as plt
-
-zScores = np.loadtxt('zScores.txt', dtype='object')
-zScoresRandom = np.loadtxt('zScores_random_degs.txt', dtype='object')
-
-zScores = zScores[zScores[:,1] != 'inf']
-zScoresRandom = zScoresRandom[zScoresRandom[:,1] != 'inf']
-
-zScores = zScores[:,1].astype(float)
-zScoresRandom = zScoresRandom[:,1].astype(float)
-plt.hist(np.log(zScores))
-plt.show()
-plt.clf()
-plt.hist(np.log(zScoresRandom))
-plt.show()
-plt.clf()
-
-exit()
-
-disruptedTadExpression = np.loadtxt('disruptedTadExpression_itx.txt', dtype='float')
-nonDisruptedTadExpression = np.loadtxt('nonDisruptedTadExpression_itx.txt', dtype='float')
-
-
-# 		
-# plt.boxplot(disruptedTadExpression)
-# plt.show()
-# plt.clf()
-# plt.boxplot(nonDisruptedTadExpression)
-# plt.show()
-# 		
-# plt.boxplot(np.log(disruptedTadExpression))
-# plt.show()
-# plt.clf()
-# plt.boxplot(np.log(nonDisruptedTadExpression))
-# plt.show()
-
-filteredDisruptedExpression = disruptedTadExpression[disruptedTadExpression != 0]
-filteredNonDisruptedExpression = nonDisruptedTadExpression[nonDisruptedTadExpression != 0]
-
-# plt.hist(np.log(filteredDisruptedExpression))
-# plt.show()
-# plt.clf()
-# plt.hist(np.log(filteredNonDisruptedExpression))
-# plt.show()
-# plt.clf()
-
-plt.boxplot(np.log(filteredDisruptedExpression))
-plt.show()
-plt.clf()
-plt.boxplot(np.log(filteredNonDisruptedExpression))
-plt.show()
-
-def tTest(data1,data2):
-	
-	z = (np.mean(data1) - np.mean(data2)) / float(np.std(data2))
-	pValue = stats.norm.sf(abs(z))
-	
-	return z, pValue
-
-
-print('P-value of all genes compared to non-disrupted: ', tTest(disruptedTadExpression, nonDisruptedTadExpression))
-print('P-value of all genes compared to non-disrupted without 0: ', tTest(filteredDisruptedExpression, filteredNonDisruptedExpression))
-
 
 
 

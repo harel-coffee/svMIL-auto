@@ -244,10 +244,10 @@ for svType in svTypes:
 	perTypeResultsS[svType] = [lossSignificancesS, gainSignificancesS]
 
 #plot for each SV type
-plotSignificances(perTypeResults, 'Positive pairs vs. negative pairs', 'gains_losses_pos_neg')
-plotSignificances(perTypeResultsGL, 'Positive pairs vs. negative pairs', 'gains_losses_pos_gl')
-plotSignificances(perTypeResultsS, 'Positive pairs vs. negative pairs', 'gains_losses_pos_s')
-exit()
+#plotSignificances(perTypeResults, 'Positive pairs vs. negative pairs', 'gains_losses_pos_neg')
+#plotSignificances(perTypeResultsGL, 'Positive pairs vs. negative pairs', 'gains_losses_pos_gl')
+#plotSignificances(perTypeResultsS, 'Positive pairs vs. negative pairs', 'gains_losses_pos_s')
+
 #plotGainsLossesSamePlot(unAnnotatedLossesNormND, unAnnotatedGainsNormND, lossSignificances, gainSignificances, 'Positive pairs vs. negative pairs', typeLabel, 'log(% of positive pairs / % of negative pairs)', 1)
 #plotGainsLossesSamePlot(unAnnotatedLossesNormGL, unAnnotatedGainsNormGL, lossSignificancesGL, gainSignificancesGL, 'Positive pairs vs. germline pairs', typeLabel, 'log(% of positive pairs / % of germline pairs)', 2)
 #plotGainsLossesSamePlot(unAnnotatedLossesNormC, unAnnotatedGainsNormC, 'DEG pairs vs. coding pairs', typeLabel, 'log(% of DEG pairs / % of coding pairs)', 3)
@@ -257,12 +257,12 @@ exit()
 #plt.show()
 
 np.random.seed(0)
-positive = degs[:,1:]
+positive = degs[:,1:52]
 
 indices = np.arange(nonDEGs.shape[0])
 rnd_indices = np.random.choice(indices, size=positive.shape[0])
 
-negative = nonDEGs[rnd_indices][:,1:]
+negative = nonDEGs[rnd_indices][:,1:52]
 
 allFeatures = np.concatenate((positive, negative), axis=0).astype(float)
 
@@ -490,18 +490,6 @@ def cvClassification(similarityMatrix, bagLabels, clf):
 	return np.mean(results['test_f1_score']), np.mean(results['test_average_precision'])
 	
 from sklearn.ensemble import RandomForestClassifier
-
-rfClassifier = RandomForestClassifier(max_depth=100, n_estimators=2)
-
-from sklearn.neural_network import MLPClassifier
-from sklearn.neighbors import KNeighborsClassifier
-from sklearn.svm import SVC
-from sklearn.gaussian_process import GaussianProcessClassifier
-from sklearn.gaussian_process.kernels import RBF
-from sklearn.tree import DecisionTreeClassifier
-from sklearn.ensemble import RandomForestClassifier, AdaBoostClassifier
-from sklearn.naive_bayes import GaussianNB
-from sklearn.discriminant_analysis import QuadraticDiscriminantAnalysis
 
 names = ["Random Forest",]
 
