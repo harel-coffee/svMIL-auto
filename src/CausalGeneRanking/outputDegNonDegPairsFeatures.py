@@ -38,7 +38,7 @@ for pair in svGenePairs:
 		# else:
 		# 	negativePairsFeatures.append(features)
 
-		if float(degPairInfo[5]) > 2 or float(degPairInfo[5]) < -2:
+		if float(degPairInfo[5]) > 1.5 or float(degPairInfo[5]) < -1.5:
 			positivePairsFeatures.append(features)
 		else:
 			negativePairsFeatures.append(features)

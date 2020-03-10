@@ -25,7 +25,7 @@ from statsmodels.sandbox.stats.multicomp import multipletests
 #re-write for having all SVs in the same plot
 ### 4 separate plots, but gains and losses in one
 
-def plotSignificances(significances, label, title):
+def plotSignificances(significances, label, title, dataType):
 	
 	
 	#plot heatmap instead.
@@ -48,6 +48,7 @@ def plotSignificances(significances, label, title):
 				significanceMatrix[lossInd, svTypeInd] = 0
 			
 			plotInd[sign] = lossInd+1
+			#plotInd[sign] = lossInd+1
 			lossInd += 2
 			
 				
@@ -62,22 +63,26 @@ def plotSignificances(significances, label, title):
 	
 	print(plotInd)	
 	
-	
-	
-	#get correlations of each features in dataset
-	
-	data = pd.DataFrame(significanceMatrix)
-	#plot heat map
 	fig =plt.figure(figsize=(15,10))
-	g=sns.heatmap(data,annot=False,square=True, linewidths=0.5,
-				  cmap=ListedColormap(['blue', 'grey', 'red']),
-				  xticklabels=['Deletions', 'Duplications', 'Inversions', 'Translocations'])
-	g.set_xticklabels(g.get_xticklabels(), rotation=45, horizontalalignment='right',fontsize='small')
+	if dataType != 'germline':
+		data = pd.DataFrame(significanceMatrix)
+		#plot heat map
+		g=sns.heatmap(data.T,annot=False,square=True, linewidths=0.5,
+					  cmap=ListedColormap(['#0055d4ff', '#b3b3b3ff', '#c83737ff']),
+					  yticklabels=['Deletions', 'Duplications', 'Inversions', 'Translocations'])
+		
 	
-	plt.yticks(plotInd, ['eQTLs', 'enhancers', 'promoters', 'CpG', 'TF', 'HiC', 'h3k9me3', 'h3k4me3',
+	else:
+		data = pd.DataFrame(significanceMatrix[:,0:3]) #exclude translocations, these are not there for germline.
+		g=sns.heatmap(data.T,annot=False,square=True, linewidths=0.5,
+					  cmap=ListedColormap(['#0055d4ff', '#b3b3b3ff', '#c83737ff']),
+					  yticklabels=['Deletions', 'Duplications', 'Inversions'])
+	
+	g.set_yticklabels(g.get_yticklabels(), horizontalalignment='right',fontsize='small')	
+	plt.xticks(plotInd, ['eQTLs', 'enhancers', 'promoters', 'CpG', 'TF', 'HiC', 'h3k9me3', 'h3k4me3',
 													  'h3k27ac', 'h3k27me3', 'h3k4me1', 'h3k36me3','DNAseI', 'RNA pol II', 'CTCF', 'CTCF+enhancer',
 													  'CTCF+promoter', 'chromHMM enhancer', 'heterochromatin', 'poised promoter',
-													  'chromHMM promoter', 'repeat', 'repressed', 'transcribed', 'super enhancer', 'ctcf'])
+													  'chromHMM promoter', 'repeat', 'repressed', 'transcribed', 'super enhancer', 'ctcf'], rotation=45, horizontalalignment='right')
 	#plt.xticks([0.5,1.5,2.5,3.5], ['Deletions', 'Duplications', 'Inversions', 'Translocations'], rotation=45)
 	
 	plt.tight_layout()
@@ -244,10 +249,10 @@ for svType in svTypes:
 	perTypeResultsS[svType] = [lossSignificancesS, gainSignificancesS]
 
 #plot for each SV type
-#plotSignificances(perTypeResults, 'Positive pairs vs. negative pairs', 'gains_losses_pos_neg')
-#plotSignificances(perTypeResultsGL, 'Positive pairs vs. negative pairs', 'gains_losses_pos_gl')
-#plotSignificances(perTypeResultsS, 'Positive pairs vs. negative pairs', 'gains_losses_pos_s')
-
+plotSignificances(perTypeResults, 'Positive pairs vs. negative pairs', 'gains_losses_pos_neg', 'somatic')
+plotSignificances(perTypeResultsGL, 'Positive pairs vs. negative pairs', 'gains_losses_pos_gl', 'germline')
+plotSignificances(perTypeResultsS, 'Positive pairs vs. negative pairs', 'gains_losses_pos_s', 'random')
+exit()
 #plotGainsLossesSamePlot(unAnnotatedLossesNormND, unAnnotatedGainsNormND, lossSignificances, gainSignificances, 'Positive pairs vs. negative pairs', typeLabel, 'log(% of positive pairs / % of negative pairs)', 1)
 #plotGainsLossesSamePlot(unAnnotatedLossesNormGL, unAnnotatedGainsNormGL, lossSignificancesGL, gainSignificancesGL, 'Positive pairs vs. germline pairs', typeLabel, 'log(% of positive pairs / % of germline pairs)', 2)
 #plotGainsLossesSamePlot(unAnnotatedLossesNormC, unAnnotatedGainsNormC, 'DEG pairs vs. coding pairs', typeLabel, 'log(% of DEG pairs / % of coding pairs)', 3)

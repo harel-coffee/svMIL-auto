@@ -89,12 +89,12 @@ print(expressionData)
 
 # 
 # #Get all SVs
-# svDir = settings.files['svDir']
-# svData = InputParser().getSVsFromFile_hmf(svDir)
-# 
-# #Filter out the coding effect SVs, we want to focus on non-coding SVs. 
-# excludedSVs = np.loadtxt(settings.files['excludedSVs'], dtype='object')
-# 
+#svDir = settings.files['svDir']
+#svData = InputParser().getSVsFromFile_hmf(svDir)
+
+#Filter out the coding effect SVs, we want to focus on non-coding SVs. 
+#excludedSVs = np.loadtxt(settings.files['excludedSVs'], dtype='object')
+
 # 
 # filteredSVs = []
 # types = []
@@ -103,15 +103,13 @@ print(expressionData)
 # 	svEntry = sv[0] + "_" + str(sv[1]) + "_" + str(sv[2]) + "_" + sv[3] + "_" + str(sv[4]) + "_" + str(sv[5]) + "_" + sv[8].sampleName
 # 	#if svEntry not in excludedSVs:
 # 	#	filteredSVs.append(sv)
-# 		
-# 	#	if sv[8].svType not in types:
-# 	#		types.append(sv[8].svType)
+# 	
 # 	filteredSVs.append(sv)
 # 
 # print(types)	
 # 
 # filteredSVs = np.array(filteredSVs, dtype='object')
-# 
+
 # np.save('filteredSVs_' + svType + '.npy', filteredSVs)
 
 filteredSVs = np.load('filteredSVs.npy', allow_pickle=True, encoding='latin1')
@@ -214,6 +212,31 @@ for tad in tadData:
 print('disrupted tads: ', disrCount)
 print('non-disrupted tads: ', nonDisrCount)
 
+#check how many unique SVs disrupt a TAD pair
+disruptingSVs = dict()
+typeDistribution = dict()
+for tad in tadDisruptions:
+	
+	for matchList in tadDisruptions[tad]:
+		
+		match = matchList[1]
+		svStr = match[0] + '_' + str(match[1]) + '_' + str(match[2]) + '_' + match[3] + '_' + str(match[4]) + '_' + str(match[5]) + '_' + match[7]
+		svType = match[8].svType
+		
+		
+		if svType not in typeDistribution:
+			typeDistribution[svType] = 0
+		
+		if svStr not in disruptingSVs: 
+			typeDistribution[svType] += 1
+
+			disruptingSVs[svStr] = 0
+
+
+print('disrupting SVs: ', len(disruptingSVs))
+print('per type: ', typeDistribution)
+
+exit()
 
 #to shuffle across patients, first transpose, the shuffle, then transpose back.
 
