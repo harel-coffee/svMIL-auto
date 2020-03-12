@@ -79,10 +79,10 @@ def plotSignificances(significances, label, title, dataType):
 					  yticklabels=['Deletions', 'Duplications', 'Inversions'])
 	
 	g.set_yticklabels(g.get_yticklabels(), horizontalalignment='right',fontsize='small')	
-	plt.xticks(plotInd, ['eQTLs', 'enhancers', 'promoters', 'CpG', 'TF', 'HiC', 'h3k9me3', 'h3k4me3',
-													  'h3k27ac', 'h3k27me3', 'h3k4me1', 'h3k36me3','DNAseI', 'RNA pol II', 'CTCF', 'CTCF+enhancer',
-													  'CTCF+promoter', 'chromHMM enhancer', 'heterochromatin', 'poised promoter',
-													  'chromHMM promoter', 'repeat', 'repressed', 'transcribed', 'super enhancer', 'ctcf'], rotation=45, horizontalalignment='right')
+	plt.xticks(plotInd, ['eQTLs', 'Enhancers', 'Promoters', 'CpG', 'TF', 'HiC', 'h3k9me3', 'h3k4me3',
+													  'h3k27ac', 'h3k27me3', 'h3k4me1', 'h3k36me3','DNAseI', 'RNA pol II', 'chromHMM CTCF', 'chromHMM CTCF+enhancer',
+													  'chromHMM CTCF+promoter', 'chromHMM enhancer', 'chromHMM heterochromatin', 'chromHMM poised promoter',
+													  'chromHMM promoter', 'chromHMM repeat', 'chromHMM repressed', 'chromHMM transcribed', 'Super enhancer', 'CTCF'], rotation=45, horizontalalignment='right')
 	#plt.xticks([0.5,1.5,2.5,3.5], ['Deletions', 'Duplications', 'Inversions', 'Translocations'], rotation=45)
 	
 	plt.tight_layout()

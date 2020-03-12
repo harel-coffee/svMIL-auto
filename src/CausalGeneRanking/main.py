@@ -98,7 +98,6 @@ for sv in svData:
 		itxCount += 1
 		
 print(delCount, dupCount, invCount, itxCount)
-
 	
 #3. If this is a permutation run, we wish to shuffle these SVs or SNVs.
 if permutationYN == "True":

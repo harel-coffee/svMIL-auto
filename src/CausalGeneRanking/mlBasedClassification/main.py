@@ -43,15 +43,17 @@ from sklearn.model_selection import train_test_split
 svType = sys.argv[3]
 normalize = False #re-normalize, or use the saved file for speed? 
 optimize = False #optimize classifier? 
-test = True #test classifier performance with CV? 
-
-#Get the bags
-with open(sys.argv[1], 'rb') as handle:
-	bagDict = pkl.load(handle)
+test = False #test classifier performance with CV? 
+featureImportance = True
 
 degPairs = np.loadtxt(sys.argv[2], dtype='object') #labels
 
 if normalize == True:
+	
+	#Get the bags
+	with open(sys.argv[1], 'rb') as handle:
+		bagDict = pkl.load(handle)
+	
 	#first check what the minimum and maximum feature values are in order to normalize
 	currentMax = [0]*35 #would be better if we read this from the input file, this is how many features we have for each instance
 	currentMin = [float('inf')]*35
@@ -103,7 +105,6 @@ else:
 	with open('normalizedBags.pkl', 'rb') as handle:
 		bagDict = pkl.load(handle)
 
-
 print("initial number of bags: ", len(bagDict))
 print('initial deg pairs: ', degPairs.shape[0])
 
@@ -112,6 +113,8 @@ featureCount = len(bagDict[list(bagDict.keys())[0]][0])
 featureStart = featureCount #set this to featureCount to run with all features. (make setting later)
 similarityMatrices = dict() #store the similarity matrices for each feature selection run
 bagLabels = []
+positiveBagPairNames = []
+negativeBagPairNames = []
 for featureInd in range(featureStart, featureCount+1):
 	
 	positiveBags = []
@@ -145,10 +148,12 @@ for featureInd in range(featureStart, featureCount+1):
 						continue
 					
 					instances.append(instance[0:featureInd])
+
 					
 				if len(instances) < 1:
 					continue
 				
+				positiveBagPairNames.append(pair)
 				positiveBags.append(instances)
 				
 			else: #if the z-score is anything else, this bag will be labeled negative. 
@@ -161,15 +166,19 @@ for featureInd in range(featureStart, featureCount+1):
 						continue
 
 					instances.append(instance[0:featureInd])
-					
+					instanceLabel = pair + '_' + '_'.join([str(i) for i in instance])
+
 				if len(instances) < 1:
 					continue
-			
+
 				negativeBags.append(instances)
+				negativeBagPairNames.append(pair)
 				
 	
 	positiveBags = np.array(positiveBags)
 	negativeBags = np.array(negativeBags)
+	positiveBagPairNames = np.array(positiveBagPairNames)
+	negativeBagPairNames = np.array(negativeBagPairNames)
 	
 	print('Number of positive bags: ', positiveBags.shape)
 	print('Number of negative bags: ', negativeBags.shape)
@@ -179,6 +188,12 @@ for featureInd in range(featureStart, featureCount+1):
 	#subsample the negative set to the same number of positives. 
 	negativeBagsSubsampled = np.random.choice(negativeBags, positiveBags.shape[0])
 	
+	negativeBagsSubsampleInd = np.random.choice(np.arange(negativeBags.shape[0]), positiveBags.shape[0])
+	negativeBagsSubsampled = negativeBags[negativeBagsSubsampleInd]
+	
+	negativeBagPairNamesSubsampled = negativeBagPairNames[negativeBagsSubsampleInd]
+	bagPairLabels = np.concatenate((positiveBagPairNames, negativeBagPairNamesSubsampled))
+
 	#merge the bags so that we can easily get to 1 similarity matrix and do all-to-all computations
 	bags = np.concatenate((positiveBags, negativeBagsSubsampled))
 	#assign bag labels
@@ -186,19 +201,22 @@ for featureInd in range(featureStart, featureCount+1):
 	
 	#stack the instances in the bags so that we can easily compute bag-instance distances
 	instances = np.vstack(bags)
-	
+
 	#Make similarity matrix	
 	print("generating similarity matrix")
 	
 	#Make an index where we can lookup at which position the instances are in the concatenated bag array. 
-	reverseBagMap = dict()
+	reverseBagMap = dict() #lookup instance by bag index
+	bagMap = dict() #lookup bag by instance index
 	instanceInd = 0
 	for bagInd in range(0, bags.shape[0]):
 		reverseBagMap[bagInd] = []
 		for instance in bags[bagInd]:
 			reverseBagMap[bagInd].append(instanceInd)
+			bagMap[instanceInd] = bagInd
 			
 			instanceInd += 1
+			
 	
 	bagIndices = np.arange(bags.shape[0])
 	similarityMatrix = np.zeros([bags.shape[0], instances.shape[0]])
@@ -235,7 +253,8 @@ def cvClassification(similarityMatrix, bagLabels, clf, svType, title):
 	aucs = []
 	mean_fpr = np.linspace(0, 1, 100)
 	
-	#fig, ax = plt.subplots()
+	fig, ax = plt.subplots()
+	importances = []
 	for i, (train, test) in enumerate(kfold.split(similarityMatrix, bagLabels)):
 		clf.fit(similarityMatrix[train], bagLabels[train])
 		viz = plot_roc_curve(clf, similarityMatrix[test], bagLabels[test],
@@ -245,35 +264,36 @@ def cvClassification(similarityMatrix, bagLabels, clf, svType, title):
 		interp_tpr[0] = 0.0
 		tprs.append(interp_tpr)
 		aucs.append(viz.roc_auc)
+		importances.append(clf.feature_importances_)
 	print('aucs: ')
 	print(aucs)
 	print('mean auc: ', np.mean(aucs))
 	print('std of auc: ', np.std(aucs))
 
-	# ax.plot([0, 1], [0, 1], linestyle='--', lw=2, color='r',
-	# 		label='Chance', alpha=.8)
-	# 
-	# mean_tpr = np.mean(tprs, axis=0)
-	# mean_tpr[-1] = 1.0
-	# mean_auc = auc(mean_fpr, mean_tpr)
-	# std_auc = np.std(aucs)
-	# 
-	# ax.plot(mean_fpr, mean_tpr, color='b',
-	# 		label=r'Mean ROC (AUC = %0.2f $\pm$ %0.2f)' % (np.mean(aucs), np.std(aucs)),
-	# 		lw=2, alpha=.8)
-	# 
-	# std_tpr = np.std(tprs, axis=0)
-	# tprs_upper = np.minimum(mean_tpr + std_tpr, 1)
-	# tprs_lower = np.maximum(mean_tpr - std_tpr, 0)
-	# ax.fill_between(mean_fpr, tprs_lower, tprs_upper, color='grey', alpha=.2,
-	# 				label=r'$\pm$ 1 std. dev.')
-	# 
-	# ax.set(xlim=[-0.05, 1.05], ylim=[-0.05, 1.05],
-	# 	   title="Receiver operating characteristic: " + title)
-	# ax.legend(loc="lower right")
-	# plt.tight_layout()
-	# plt.savefig('miles_' + svType + '_oldDupOpt.svg')
-	#plt.show()
+	ax.plot([0, 1], [0, 1], linestyle='--', lw=2, color='r',
+			label='Chance', alpha=.8)
+	
+	mean_tpr = np.mean(tprs, axis=0)
+	mean_tpr[-1] = 1.0
+	mean_auc = auc(mean_fpr, mean_tpr)
+	std_auc = np.std(aucs)
+	
+	ax.plot(mean_fpr, mean_tpr, color='b',
+			label=r'Mean ROC (AUC = %0.2f $\pm$ %0.2f)' % (np.mean(aucs), np.std(aucs)),
+			lw=2, alpha=.8)
+	
+	std_tpr = np.std(tprs, axis=0)
+	tprs_upper = np.minimum(mean_tpr + std_tpr, 1)
+	tprs_lower = np.maximum(mean_tpr - std_tpr, 0)
+	ax.fill_between(mean_fpr, tprs_lower, tprs_upper, color='grey', alpha=.2,
+					label=r'$\pm$ 1 std. dev.')
+	
+	ax.set(xlim=[-0.05, 1.05], ylim=[-0.05, 1.05],
+		   title="Receiver operating characteristic: " + title)
+	ax.legend(loc="lower right")
+	plt.tight_layout()
+	plt.savefig('miles_' + svType + '.svg')
+	plt.show()
 
 
 #do RF optimization with random parameter search
@@ -331,8 +351,6 @@ if optimize == True:
 #test classifier performance
 if test == True:
 	
-	names = [ "Random Forest"]
-	
 	if svType == 'DEL':
 		classifier = RandomForestClassifier(n_estimators= 600, min_samples_split=5, min_samples_leaf=1, max_features='auto', max_depth=80, bootstrap=True)
 		title = 'deletions'
@@ -347,6 +365,9 @@ if test == True:
 	elif svType == 'ITX':
 		classifier = RandomForestClassifier(n_estimators= 1000, min_samples_split=5, min_samples_leaf=1, max_features='auto', max_depth=80, bootstrap=True)
 		title = 'translocations'
+	else:
+		classifier = RandomForestClassifier(n_estimators= 600, min_samples_split=5, min_samples_leaf=1, max_features='auto', max_depth=80, bootstrap=True)
+		title = 'All SV types'
 
 	#for each feature selection round, show the performance
 	for featureInd in range(featureStart, featureCount+1):
@@ -357,4 +378,130 @@ if test == True:
 	shuffle(bagLabels)
 	for featureInd in range(featureStart, featureCount+1):
 		cvClassification(similarityMatrices[featureInd], bagLabels, classifier, svType, title)
+
+if featureImportance == True:
+	
+	if svType == 'DEL':
+		clf = RandomForestClassifier(n_estimators= 600, min_samples_split=5, min_samples_leaf=1, max_features='auto', max_depth=80, bootstrap=True)
+		title = 'deletions'
+	elif svType == 'DUP':
+		#classifier = RandomForestClassifier(n_estimators= 600, min_samples_split=2, min_samples_leaf=2, max_features='sqrt', max_depth=110, bootstrap=False)
+		clf = RandomForestClassifier(n_estimators= 600, min_samples_split=5, min_samples_leaf=1, max_features='auto', max_depth=80, bootstrap=True)
+		#classifier = RandomForestClassifier(n_estimators= 1200, min_samples_split=2, min_samples_leaf=4, max_features='sqrt', max_depth=70, bootstrap=False)
+		title = 'duplications'
+	elif svType == 'INV':
+		clf = RandomForestClassifier(n_estimators= 200, min_samples_split=5, min_samples_leaf=4, max_features='auto', max_depth=10, bootstrap=True)
+		title = 'inversions'
+	elif svType == 'ITX':
+		clf = RandomForestClassifier(n_estimators= 1000, min_samples_split=5, min_samples_leaf=1, max_features='auto', max_depth=80, bootstrap=True)
+		title = 'translocations'
+	else:
+		clf = RandomForestClassifier(n_estimators= 600, min_samples_split=5, min_samples_leaf=1, max_features='auto', max_depth=80, bootstrap=True)
+		title = 'All SV types'
+	
+	
+	clf.fit(similarityMatrix, bagLabels)
+	print(clf.score(similarityMatrix, bagLabels))
+	importances = clf.feature_importances_
+	std = np.std([tree.feature_importances_ for tree in clf.estimators_],axis=0)
+	
+	#rank these importances, get the first 100, see which instances these are. 
+	indices = np.argsort(importances)[::-1]
+	
+	# plt.figure()
+	# plt.title("Feature importances")
+	# plt.bar(range(similarityMatrix.shape[1]), importances[indices],
+	# 	   color="r", align="center")
+	# plt.xticks(range(similarityMatrix.shape[1]), indices)
+	# plt.xlim([-1, similarityMatrix.shape[1]])
+	# plt.show()
+	
+	#get the features of the top 100 ranked instances.
+	#for each feature, how many % of the top 100 has this feature?
+	#topInstances = instances[indices[0:100]]
+	#topInstances = instances[indices]
+	
+	#split the type back into 4 features
+	enhancerTypes = []
+	eQTLTypes = []
+	promoterTypes = []
+	superEnhancerTypes = []
+	for instance in instances:
+		
+		if instance[33] == 0:
+			enhancerTypes.append(1)
+			eQTLTypes.append(0)
+			promoterTypes.append(0)
+			superEnhancerTypes.append(0)
+		elif instance[33] > 0 and instance[33] < 0.34:
+			enhancerTypes.append(0)
+			eQTLTypes.append(0)
+			promoterTypes.append(1)
+			superEnhancerTypes.append(0)
+		elif instance[33] > 0.33 and instance[33] < 0.68:
+			enhancerTypes.append(0)
+			eQTLTypes.append(1)
+			promoterTypes.append(0)
+			superEnhancerTypes.append(0)
+		else:
+			enhancerTypes.append(0)
+			eQTLTypes.append(0)
+			promoterTypes.append(0)
+			superEnhancerTypes.append(1)
+	
+	newInstances = np.zeros([instances.shape[0], instances.shape[1]+4])
+	
+	newInstances[:,0:instances.shape[1]] = instances
+	
+	newInstances[:,instances.shape[1]] = enhancerTypes
+	newInstances[:,instances.shape[1]+1] = promoterTypes
+	newInstances[:,instances.shape[1]+2] = eQTLTypes
+	newInstances[:,instances.shape[1]+3] = superEnhancerTypes
+	
+	###only here do the subsetting
+	
+	
+	avgInstances = np.sum(newInstances, axis=0)
+
+	totalInstances = avgInstances / newInstances.shape[0]
+	
+	print(totalInstances)
+	
+	xlabels = ['loss', 'gain', 'cpg', 'tf', 'hic', 'ctcf', 'dnaseI', 'h3k9me3', 'h3k4me3', 'h3k27ac', 'h3k27me3', 'h3k4me1', 'h3k36me3',
+			   'CTCF', 'CTCF+Enhancer', 'CTCF+Promoter', 'Enhancer', 'Heterochromatin', 'Poised_Promoter', 'Promoter', 'Repeat', 'Repressed', 'Transcribed', 'rnaPol',
+			   'enhancer_s', 'ctcf_s', 'rnaPol_s', 'h3k9me3_s', 'h3k4me3_s', 'h3k27ac_s', 'h3k27me3_s', 'h3k4me1_s', 'h3k36me3_s', 'type', 'cosmic', 'enhancerType', 'promoterType', 'eQTLType', 'superEnhancerType']
+	
+	plt.bar(range(len(totalInstances)), totalInstances)
+	plt.xticks(range(len(totalInstances)), xlabels, rotation=90)
+	plt.tight_layout()
+	plt.show()
+	
+	#output:
+	#1. file with genesets, which are all the positive instances
+	
+	#2. file with the ranked values, .rnk file
+	
+	#get the names of the instances
+	
+	#first, we need to know in which bag the instance is to get the label of the 
+	#so based on the index of the instance, get the bag label. 
+	#use the bag map for this.
+	
+	#e.g. get the bag index of the second instance
+	
+	#merge this with the features of this instance to get a label for the instance.
+	for instanceInd in range(0, newInstances.shape[0]):
+		instance = newInstances[instanceInd] ### !!! this is sorted, so the order is different. 
+		
+		#label ths instance
+		bagLabel = bagPairLabels[bagMap[instanceInd]]
+		instanceLabel = bagLabel + '_' + '_'.join([str(i) for i in instance])
+		
+		#get the feature importance
+		
+		print(instanceLabel)
+		exit()
+	
+	
+	
 	
