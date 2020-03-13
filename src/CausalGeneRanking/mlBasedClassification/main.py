@@ -115,6 +115,7 @@ similarityMatrices = dict() #store the similarity matrices for each feature sele
 bagLabels = []
 positiveBagPairNames = []
 negativeBagPairNames = []
+positiveInstanceLabels = []
 for featureInd in range(featureStart, featureCount+1):
 	
 	positiveBags = []
@@ -146,7 +147,7 @@ for featureInd in range(featureStart, featureCount+1):
 					
 					if instance[0] == 0 and instance[1] == 0:
 						continue
-					
+					positiveInstanceLabels.append(pair + '_' + '_'.join([str(i) for i in instance]))
 					instances.append(instance[0:featureInd])
 
 					
@@ -166,8 +167,7 @@ for featureInd in range(featureStart, featureCount+1):
 						continue
 
 					instances.append(instance[0:featureInd])
-					instanceLabel = pair + '_' + '_'.join([str(i) for i in instance])
-
+				
 				if len(instances) < 1:
 					continue
 
@@ -460,7 +460,6 @@ if featureImportance == True:
 	
 	###only here do the subsetting
 	
-	
 	avgInstances = np.sum(newInstances, axis=0)
 
 	totalInstances = avgInstances / newInstances.shape[0]
@@ -490,18 +489,26 @@ if featureImportance == True:
 	#e.g. get the bag index of the second instance
 	
 	#merge this with the features of this instance to get a label for the instance.
+	instancesWithValues = []
+	
 	for instanceInd in range(0, newInstances.shape[0]):
-		instance = newInstances[instanceInd] ### !!! this is sorted, so the order is different. 
+		instance = newInstances[instanceInd]
 		
 		#label ths instance
 		bagLabel = bagPairLabels[bagMap[instanceInd]]
 		instanceLabel = bagLabel + '_' + '_'.join([str(i) for i in instance])
 		
-		#get the feature importance
+		#get the feature importance for this instance
+		#first test with 1 feature only, say gains
+		instancesWithValues.append([instanceLabel, instance[1]])
 		
-		print(instanceLabel)
-		exit()
+	#rank the labeled instances by feature importances
+	instancesWithValues = np.array(instancesWithValues, dtype='object')
 	
+	rankedLabeledInstances = instancesWithValues[indices]
 	
+	print(rankedLabeledInstances)
 	
+	np.savetxt('rankedInstances_gains.rnk', rankedLabeledInstances, fmt='%s', delimiter='\t')
+	np.savetxt('positiveInstances.grp', positiveInstanceLabels, fmt='%s')
 	
