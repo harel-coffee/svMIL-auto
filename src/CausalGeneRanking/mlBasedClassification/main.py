@@ -39,6 +39,9 @@ from sklearn.metrics import make_scorer, accuracy_score, precision_score, recall
 from sklearn.model_selection import RandomizedSearchCV
 from sklearn.model_selection import train_test_split
 
+import gseapy
+import pandas as pd
+
 #settings for running in different scenarios
 svType = sys.argv[3]
 normalize = False #re-normalize, or use the saved file for speed? 
@@ -473,7 +476,7 @@ if featureImportance == True:
 	plt.bar(range(len(totalInstances)), totalInstances)
 	plt.xticks(range(len(totalInstances)), xlabels, rotation=90)
 	plt.tight_layout()
-	plt.show()
+	#plt.show()
 	
 	#output:
 	#1. file with genesets, which are all the positive instances
@@ -490,13 +493,19 @@ if featureImportance == True:
 	
 	#merge this with the features of this instance to get a label for the instance.
 	instancesWithValues = []
-	
+	positiveInstanceLabels = []
 	for instanceInd in range(0, newInstances.shape[0]):
 		instance = newInstances[instanceInd]
 		
 		#label ths instance
 		bagLabel = bagPairLabels[bagMap[instanceInd]]
-		instanceLabel = bagLabel + '_' + '_'.join([str(i) for i in instance])
+		bagInd = bagMap[instanceInd]
+		
+		#instanceLabel = bagLabel + '_' + '_'.join([str(i) for i in instance])
+		instanceLabel = bagLabel + '_' + str(instanceInd)
+		
+		if bagInd < positiveBags.shape[0]:
+			positiveInstanceLabels.append(instanceLabel)
 		
 		#get the feature importance for this instance
 		#first test with 1 feature only, say gains
@@ -507,8 +516,22 @@ if featureImportance == True:
 	
 	rankedLabeledInstances = instancesWithValues[indices]
 	
-	print(rankedLabeledInstances)
+	np.savetxt('geneRanks.rnk', rankedLabeledInstances, fmt='%s', delimiter='\t')
+	np.savetxt('geneSet.grp', positiveInstanceLabels, fmt='%s')
 	
-	np.savetxt('rankedInstances_gains.rnk', rankedLabeledInstances, fmt='%s', delimiter='\t')
-	np.savetxt('positiveInstances.grp', positiveInstanceLabels, fmt='%s')
+	rankedLabeledInstances = pd.DataFrame(rankedLabeledInstances)
 	
+	geneSets = {'positiveInstances': positiveInstanceLabels}
+	
+	preRes = gseapy.prerank(rnk=rankedLabeledInstances, gene_sets=geneSets, outdir='test',
+				    min_size=15, max_size=20000, format='png')
+	
+	print(preRes.res2d['pval'])
+	
+	from gseapy.plot import gseaplot
+	
+	terms = preRes.res2d.index
+	# to save your figure, make sure that ofname is not None
+	gseaplot(rank_metric=preRes.ranking, term=terms[0], **preRes.results[terms[0]])
+	plt.show()
+		
