@@ -516,9 +516,16 @@ if featureImportance == True:
 	
 	rankedLabeledInstances = instancesWithValues[indices]
 	
+	#instead, try using the top 100 instances as the gene set.
+	#then, use the feature value as the ranking for the genes.
+	#we would then test if the top 100 instances are the ones with the
+	#highest feature values
+	
+	positiveInstanceLabels = rankedLabeledInstances[indices[0:100],0]
+
 	np.savetxt('geneRanks.rnk', rankedLabeledInstances, fmt='%s', delimiter='\t')
 	np.savetxt('geneSet.grp', positiveInstanceLabels, fmt='%s')
-	
+	exit()
 	rankedLabeledInstances = pd.DataFrame(rankedLabeledInstances)
 	
 	geneSets = {'positiveInstances': positiveInstanceLabels}
