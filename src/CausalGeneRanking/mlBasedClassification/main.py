@@ -189,6 +189,8 @@ for featureInd in range(featureStart, featureCount+1):
 	print('Number of positive bags: ', positiveBags.shape)
 	print('Number of negative bags: ', negativeBags.shape)
 	
+	print('Number of positive instances: ', len(positiveInstanceLabels))
+	
 	#set a random seed to always subsample the same set
 	np.random.seed(0)
 	#subsample the negative set to the same number of positives. 
@@ -416,11 +418,14 @@ if featureImportance == True:
 	
 	# plt.figure()
 	# plt.title("Feature importances")
-	# plt.bar(range(similarityMatrix.shape[1]), importances[indices],
+	# plt.bar(range(similarityMatrix.shape[1])[0:1000], importances[indices[0:1000]],
 	# 	   color="r", align="center")
-	# plt.xticks(range(similarityMatrix.shape[1]), indices)
-	# plt.xlim([-1, similarityMatrix.shape[1]])
+	# plt.xticks(range(similarityMatrix.shape[1])[0:1000][::25], range(0,1000, 25), rotation=90)
+	# plt.tight_layout()
+	# plt.savefig('feature_importances_top1000_' + svType + '.svg')
 	# plt.show()
+	# 
+	# exit()
 	
 	#get the features of the top 100 ranked instances.
 	#for each feature, how many % of the top 100 has this feature?
@@ -485,7 +490,7 @@ if featureImportance == True:
 	#then, repeat this 100 times, randomly sampling 100 instances.
 	
 	#do a t-test, and compute a p-value.
-	instanceCount = 100 #top X to check
+	instanceCount = 500 #top X to check
 	
 	#get the original top X features
 	topInstances = newInstances[indices[0:instanceCount]]
@@ -505,7 +510,7 @@ if featureImportance == True:
 		degPairInfo = degPairs[degPairs[:,0] == shortPair][0]
 
 		#if the z-score matches this criterion, the SV-gene pair is positive
-		if float(degPairInfo[5]) < -1.5:
+		if float(degPairInfo[5]) > 1.5:
 			filteredInstances.append(topInstances[instanceInd])
 	
 	filteredInstances = np.array(filteredInstances)
