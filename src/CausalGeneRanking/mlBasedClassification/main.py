@@ -27,6 +27,9 @@ from sklearn.model_selection import StratifiedKFold
 from scipy import interp
 import pickle as pkl
 from random import shuffle
+import random
+from scipy import stats
+from statsmodels.sandbox.stats.multicomp import multipletests
 
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import auc, precision_recall_curve
@@ -460,9 +463,7 @@ if featureImportance == True:
 	newInstances[:,instances.shape[1]+1] = promoterTypes
 	newInstances[:,instances.shape[1]+2] = eQTLTypes
 	newInstances[:,instances.shape[1]+3] = superEnhancerTypes
-	
-	###only here do the subsetting
-	
+
 	avgInstances = np.sum(newInstances, axis=0)
 
 	totalInstances = avgInstances / newInstances.shape[0]
@@ -477,6 +478,125 @@ if featureImportance == True:
 	plt.xticks(range(len(totalInstances)), xlabels, rotation=90)
 	plt.tight_layout()
 	#plt.show()
+	plt.clf()
+	
+	
+	#get the percentage in the top 100.
+	#then, repeat this 100 times, randomly sampling 100 instances.
+	
+	#do a t-test, and compute a p-value.
+	instanceCount = 100 #top X to check
+	
+	#get the original top X features
+	topInstances = newInstances[indices[0:instanceCount]]
+	
+	#split into up/down regulation
+	#filter the instances by up/downregulation if needed.
+	#first get the bag pair name for the instance
+	filteredInstances = []
+	for instanceInd in range(0, topInstances.shape[0]):
+		
+		bagLabel = bagPairLabels[bagMap[instanceInd]]
+		splitPair = bagLabel.split('_')
+		
+		shortPair = splitPair[7] + '_' + splitPair[0]
+		
+		#get z-score
+		degPairInfo = degPairs[degPairs[:,0] == shortPair][0]
+
+		#if the z-score matches this criterion, the SV-gene pair is positive
+		if float(degPairInfo[5]) < -1.5:
+			filteredInstances.append(topInstances[instanceInd])
+	
+	filteredInstances = np.array(filteredInstances)
+	print(filteredInstances)
+	#compute the percentages in these top X instances
+	avgInstances = np.sum(filteredInstances, axis=0)
+
+	totalInstances = avgInstances / filteredInstances.shape[0]
+	
+	print(totalInstances)
+	
+	#100 times, randomly sample
+	#per feature, have a distribution
+	nullDistributions = dict()
+	for i in range(0,100):
+		
+		if i == 0:
+			for featureInd in range(0, len(totalInstances)):
+				nullDistributions[featureInd] = []
+		
+		#sample as much random instances as in our filtered instances
+		randomIndices = random.sample(range(0,newInstances.shape[0]), filteredInstances.shape[0])
+	
+		randomTopInstances = newInstances[randomIndices]
+		
+		#compute the percentages in these top X instances
+		avgRandomInstances = np.sum(randomTopInstances, axis=0)
+	
+		totalRandomInstances = avgRandomInstances / randomTopInstances.shape[0]
+		
+		for featureInd in range(0, len(totalRandomInstances)):
+			nullDistributions[featureInd].append(totalRandomInstances[featureInd])
+	
+
+	#for each feature, compute a z-score
+	featurePValues = []
+	featureZScores = []
+	for featureInd in range(0, len(nullDistributions)):
+		
+		if np.mean(nullDistributions[featureInd]) == 0 or np.std(nullDistributions[featureInd]) == 0:
+			z = 0
+			pValue = 1
+			featureZScores.append(z)
+			featurePValues.append(pValue)
+			continue
+		
+		z = (totalInstances[featureInd] - np.mean(nullDistributions[featureInd])) / float(np.std(nullDistributions[featureInd]))
+		pValue = stats.norm.sf(abs(z))*2
+		
+		featureZScores.append(z)
+		featurePValues.append(pValue)
+	
+	#then get a p-value
+	print(featureZScores)
+	print(featurePValues)
+	#do MTC on the p-values
+	
+	reject, pAdjusted, _, _ = multipletests(featurePValues, method='bonferroni')
+
+	print(reject)
+	print(pAdjusted)
+	
+	xlabels = ['loss', 'gain', 'cpg', 'tf', 'hic', 'ctcf', 'dnaseI', 'h3k9me3', 'h3k4me3', 'h3k27ac', 'h3k27me3', 'h3k4me1', 'h3k36me3',
+			   'CTCF', 'CTCF+Enhancer', 'CTCF+Promoter', 'Enhancer', 'Heterochromatin', 'Poised_Promoter', 'Promoter', 'Repeat', 'Repressed', 'Transcribed', 'rnaPol',
+			   'enhancer_s', 'ctcf_s', 'rnaPol_s', 'h3k9me3_s', 'h3k4me3_s', 'h3k27ac_s', 'h3k27me3_s', 'h3k4me1_s', 'h3k36me3_s', 'type', 'cosmic', 'enhancerType', 'promoterType', 'eQTLType', 'superEnhancerType']
+	
+	#to plot, show the p-values, direction based on the z-score.
+	directionalAdjustedP = -np.log(pAdjusted) * np.sign(featureZScores)
+	
+	plt.bar(range(len(directionalAdjustedP)), directionalAdjustedP)
+	plt.xticks(range(len(directionalAdjustedP)), xlabels, rotation=90)
+	plt.axhline(np.log(0.05), linestyle='--', linewidth=0.5, color='red')
+	plt.axhline(-np.log(0.05), linestyle='--', linewidth=0.5, color='red')
+	plt.axhline(0, linestyle='-', linewidth=0.5, color='k')
+	plt.tight_layout()
+	plt.show()
+	
+	exit()
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	###GSEA testing
 	
 	#output:
 	#1. file with genesets, which are all the positive instances
@@ -509,7 +629,8 @@ if featureImportance == True:
 		
 		#get the feature importance for this instance
 		#first test with 1 feature only, say gains
-		instancesWithValues.append([instanceLabel, instance[1]])
+		instancesWithValues.append([instanceLabel, instance[len(instance)-1]])
+		#instancesWithValues.append([instanceLabel, instance[0]])
 		
 	#rank the labeled instances by feature importances
 	instancesWithValues = np.array(instancesWithValues, dtype='object')
