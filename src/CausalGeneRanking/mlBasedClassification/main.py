@@ -45,6 +45,72 @@ from sklearn.model_selection import train_test_split
 import gseapy
 import pandas as pd
 
+#testing with polar plots
+
+# #e.g. we have our bar charts
+# barData = np.array([10, 2, 5, 6, 8, -20, 30, 15, 14, 20, 1,2, 3,4, 5,6, 4,1, 10, 2, 5, 6, 8, -20, 30, 15, 14, 20, 1,2, 3,4, 5,6, 4,1])
+# blockSize = 360 / len(barData)
+# print(blockSize)
+# xRange = np.arange(0, 360, blockSize)
+# print(xRange)
+# #normal plot
+# #plt.bar(xRange, barData)
+# #plt.show()
+# 
+# degrees = np.random.randint(0, 360, size=200)
+# 
+# bin_size = 20
+# 
+# a , b=np.histogram(degrees, bins=np.arange(0, 360+bin_size, bin_size))
+# centers = np.deg2rad(np.ediff1d(b)//2 + b[:-1])
+# 
+# print(a.shape)
+# print(b.shape)
+# print(centers.shape)
+# 
+# a = barData
+# b = xRange
+# #centers = np.deg2rad(np.ediff1d(b)//2 + b[:-1])
+# 
+# b = np.append(xRange, xRange[xRange.shape[0]-1]+blockSize)
+# centers = np.deg2rad(np.ediff1d(b)//2 + b[:-1])
+# print(np.ediff1d(b)//2 + b[:-1])
+# 
+# print('features: ', a.shape)
+# print('range: ', b.shape)
+# print('centers: ', centers.shape)
+# print(centers)
+# 
+# 
+# # # fig = plt.figure(figsize=(10,8))
+# # # ax = fig.add_subplot(111, projection='polar')
+# # # ax.bar(centers, a, width=np.deg2rad(bin_size), bottom=0.0, color='.8', edgecolor='k')
+# # # ax.set_xticks(centers)
+# # # ax.set_xticklabels(barData)
+# # # ax.set_yticklabels([])
+# # # ax.set_theta_zero_location("N")
+# # # ax.set_theta_direction(-1)
+# # # plt.show()
+# # 
+# #instead of bars, plot a line
+# #the y position is now the bar data
+# fig = plt.figure(figsize=(10,8))
+# ax = fig.add_subplot(111, projection='polar')
+# #ax.bar(centers, a, width=np.deg2rad(bin_size), bottom=0.0, color='.8', edgecolor='k')
+# area = 0.25 * barData**2
+# #area2 = 0.25 * barData2**2
+# ax.scatter(centers-0.05, barData, color='blue', alpha=0.3, s=area)
+# #ax.scatter(centers, barData2, color='red', alpha=0.3, s=area2)
+# ax.set_xticks(centers)
+# ax.set_xticklabels(barData)
+# ax.set_yticks([-40,0,40])
+# ax.set_yticklabels([])
+# ax.set_theta_zero_location("N")
+# ax.set_theta_direction(-1)
+# plt.show()
+
+
+
 #settings for running in different scenarios
 svType = sys.argv[3]
 normalize = False #re-normalize, or use the saved file for speed? 
@@ -469,6 +535,9 @@ if featureImportance == True:
 	newInstances[:,instances.shape[1]+2] = eQTLTypes
 	newInstances[:,instances.shape[1]+3] = superEnhancerTypes
 
+	#reomove the old type column
+	newInstances = np.delete(newInstances, 33, 1)
+
 	avgInstances = np.sum(newInstances, axis=0)
 
 	totalInstances = avgInstances / newInstances.shape[0]
@@ -477,13 +546,13 @@ if featureImportance == True:
 	
 	xlabels = ['loss', 'gain', 'cpg', 'tf', 'hic', 'ctcf', 'dnaseI', 'h3k9me3', 'h3k4me3', 'h3k27ac', 'h3k27me3', 'h3k4me1', 'h3k36me3',
 			   'CTCF', 'CTCF+Enhancer', 'CTCF+Promoter', 'Enhancer', 'Heterochromatin', 'Poised_Promoter', 'Promoter', 'Repeat', 'Repressed', 'Transcribed', 'rnaPol',
-			   'enhancer_s', 'ctcf_s', 'rnaPol_s', 'h3k9me3_s', 'h3k4me3_s', 'h3k27ac_s', 'h3k27me3_s', 'h3k4me1_s', 'h3k36me3_s', 'type', 'cosmic', 'enhancerType', 'promoterType', 'eQTLType', 'superEnhancerType']
+			   'enhancer_s', 'ctcf_s', 'rnaPol_s', 'h3k9me3_s', 'h3k4me3_s', 'h3k27ac_s', 'h3k27me3_s', 'h3k4me1_s', 'h3k36me3_s', 'cosmic', 'enhancerType', 'promoterType', 'eQTLType', 'superEnhancerType']
 	
-	plt.bar(range(len(totalInstances)), totalInstances)
-	plt.xticks(range(len(totalInstances)), xlabels, rotation=90)
-	plt.tight_layout()
-	#plt.show()
-	plt.clf()
+	# plt.bar(range(len(totalInstances)), totalInstances)
+	# plt.xticks(range(len(totalInstances)), xlabels, rotation=90)
+	# plt.tight_layout()
+	# #plt.show()
+	# plt.clf()
 	
 	
 	#get the percentage in the top 100.
@@ -575,17 +644,69 @@ if featureImportance == True:
 	
 	xlabels = ['loss', 'gain', 'cpg', 'tf', 'hic', 'ctcf', 'dnaseI', 'h3k9me3', 'h3k4me3', 'h3k27ac', 'h3k27me3', 'h3k4me1', 'h3k36me3',
 			   'CTCF', 'CTCF+Enhancer', 'CTCF+Promoter', 'Enhancer', 'Heterochromatin', 'Poised_Promoter', 'Promoter', 'Repeat', 'Repressed', 'Transcribed', 'rnaPol',
-			   'enhancer_s', 'ctcf_s', 'rnaPol_s', 'h3k9me3_s', 'h3k4me3_s', 'h3k27ac_s', 'h3k27me3_s', 'h3k4me1_s', 'h3k36me3_s', 'type', 'cosmic', 'enhancerType', 'promoterType', 'eQTLType', 'superEnhancerType']
+			   'enhancer_s', 'ctcf_s', 'rnaPol_s', 'h3k9me3_s', 'h3k4me3_s', 'h3k27ac_s', 'h3k27me3_s', 'h3k4me1_s', 'h3k36me3_s', 'cosmic', 'enhancerType', 'promoterType', 'eQTLType', 'superEnhancerType']
 	
 	#to plot, show the p-values, direction based on the z-score.
 	directionalAdjustedP = -np.log(pAdjusted) * np.sign(featureZScores)
 	
-	plt.bar(range(len(directionalAdjustedP)), directionalAdjustedP)
-	plt.xticks(range(len(directionalAdjustedP)), xlabels, rotation=90)
-	plt.axhline(np.log(0.05), linestyle='--', linewidth=0.5, color='red')
-	plt.axhline(-np.log(0.05), linestyle='--', linewidth=0.5, color='red')
-	plt.axhline(0, linestyle='-', linewidth=0.5, color='k')
-	plt.tight_layout()
+	# plt.bar(range(len(directionalAdjustedP)), directionalAdjustedP)
+	# plt.xticks(range(len(directionalAdjustedP)), xlabels, rotation=90)
+	# plt.axhline(np.log(0.05), linestyle='--', linewidth=0.5, color='red')
+	# plt.axhline(-np.log(0.05), linestyle='--', linewidth=0.5, color='red')
+	# plt.axhline(0, linestyle='-', linewidth=0.5, color='k')
+	# plt.tight_layout()
+	# plt.show()
+		
+	###try making polar scatter plots for the features
+	blockSize = 360 / len(directionalAdjustedP)
+	xRange = np.arange(0, 360, blockSize)
+	
+	#add the last value, which is missed in the range
+	xRange = np.append(xRange, xRange[xRange.shape[0]-1]+blockSize)
+	centers = np.deg2rad(np.ediff1d(xRange)//2 + xRange[:-1])
+	
+	print(directionalAdjustedP)
+	print(blockSize)
+	print(xRange)
+	print(centers)
+	
+	print(len(directionalAdjustedP))
+	print(len(xRange))
+	print(centers.shape)
+	
+	
+	#instead of bars, plot a line
+	#the y position is now the bar data
+	fig = plt.figure(figsize=(15,13))
+	ax = fig.add_subplot(111, projection='polar')
+	#ax.bar(centers, a, width=np.deg2rad(bin_size), bottom=0.0, color='.8', edgecolor='k')
+	area = 0.0025 * directionalAdjustedP**2
+	print(area)
+	ax.scatter(centers, directionalAdjustedP, color='blue', alpha=0.3, s=area)
+	
+	ax.set_xticks(centers)
+	ax.set_xticklabels(xlabels, fontsize=5)
+	ax.set_yticks([-500,np.log(0.05),0,-np.log(0.05), 500])
+	print([-500,-np.log(0.05),0,np.log(0.05), 500])
+	ax.set_yticklabels(['', 'P < 0.05', '', 'P < 0.05', ''])
+	
+	# plt.gcf().canvas.draw()
+	# angles = np.linspace(0,2*np.pi,len(ax.get_xticklabels())+1)
+	# angles[np.cos(angles) < 0] = angles[np.cos(angles) < 0] + np.pi
+	# angles = np.rad2deg(angles)
+	# labels = []
+	# for label, angle in zip(ax.get_xticklabels(), angles):
+	# 	x,y = label.get_position()
+	# 	lab = ax.text(x,y, label.get_text(), transform=label.get_transform(),
+	# 				  ha=label.get_ha(), va=label.get_va())
+	# 	#lab.set_rotation(90)
+	# 	labels.append(lab)
+	# ax.set_xticklabels([])
+	
+	
+	
+	ax.set_theta_zero_location("N")
+	ax.set_theta_direction(-1)
 	plt.show()
 	
 	exit()
