@@ -649,6 +649,18 @@ if featureImportance == True:
 	#to plot, show the p-values, direction based on the z-score.
 	directionalAdjustedP = -np.log(pAdjusted) * np.sign(featureZScores)
 	
+	#where is the 0.5 after normalization?
+	signBorder = 2 * ((-np.log(0.05) - np.min(directionalAdjustedP)) /(np.max(directionalAdjustedP) - np.min(directionalAdjustedP))) - 1
+
+	#normalize back to -1,1
+	directionalAdjustedP = 2 * ((directionalAdjustedP - np.min(directionalAdjustedP)) /(np.max(directionalAdjustedP) - np.min(directionalAdjustedP))) - 1
+	print('p-values')
+	print(directionalAdjustedP)
+	print(np.min(directionalAdjustedP))
+	print(np.max(directionalAdjustedP))
+	
+	
+	#directionalAdjustedP = pAdjusted * np.sign(featureZScores)
 	# plt.bar(range(len(directionalAdjustedP)), directionalAdjustedP)
 	# plt.xticks(range(len(directionalAdjustedP)), xlabels, rotation=90)
 	# plt.axhline(np.log(0.05), linestyle='--', linewidth=0.5, color='red')
@@ -665,29 +677,20 @@ if featureImportance == True:
 	xRange = np.append(xRange, xRange[xRange.shape[0]-1]+blockSize)
 	centers = np.deg2rad(np.ediff1d(xRange)//2 + xRange[:-1])
 	
-	print(directionalAdjustedP)
-	print(blockSize)
-	print(xRange)
-	print(centers)
-	
-	print(len(directionalAdjustedP))
-	print(len(xRange))
-	print(centers.shape)
-	
-	
 	#instead of bars, plot a line
 	#the y position is now the bar data
 	fig = plt.figure(figsize=(15,13))
 	ax = fig.add_subplot(111, projection='polar')
 	#ax.bar(centers, a, width=np.deg2rad(bin_size), bottom=0.0, color='.8', edgecolor='k')
-	area = 0.0025 * directionalAdjustedP**2
+	#area = 0.0025 * directionalAdjustedP**2
+	area = 1000 * directionalAdjustedP**2
 	print(area)
 	ax.scatter(centers, directionalAdjustedP, color='blue', alpha=0.3, s=area)
-	
+
 	ax.set_xticks(centers)
 	ax.set_xticklabels(xlabels, fontsize=5)
-	ax.set_yticks([-500,np.log(0.05),0,-np.log(0.05), 500])
-	print([-500,-np.log(0.05),0,np.log(0.05), 500])
+	#ax.set_yticks([-1,np.log(0.05),0,-np.log(0.05), 1])
+	ax.set_yticks([-1.5,-signBorder,0,signBorder, 1.5])
 	ax.set_yticklabels(['', 'P < 0.05', '', 'P < 0.05', ''])
 	
 	# plt.gcf().canvas.draw()
