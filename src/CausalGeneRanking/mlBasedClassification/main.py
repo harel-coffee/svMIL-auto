@@ -648,19 +648,49 @@ if featureImportance == True:
 	
 	#to plot, show the p-values, direction based on the z-score.
 	directionalAdjustedP = -np.log(pAdjusted) * np.sign(featureZScores)
-	
-	#where is the 0.5 after normalization?
-	signBorder = 2 * ((-np.log(0.05) - np.min(directionalAdjustedP)) /(np.max(directionalAdjustedP) - np.min(directionalAdjustedP))) - 1
-
-	#normalize back to -1,1
-	directionalAdjustedP = 2 * ((directionalAdjustedP - np.min(directionalAdjustedP)) /(np.max(directionalAdjustedP) - np.min(directionalAdjustedP))) - 1
-	print('p-values')
+	#directionalAdjustedP = -np.log(pAdjusted)
 	print(directionalAdjustedP)
-	print(np.min(directionalAdjustedP))
-	print(np.max(directionalAdjustedP))
+	
+	#normalize between -1 and 1
+	# directionalAdjustedP = 2 * (directionalAdjustedP - np.min(directionalAdjustedP)) / (np.max(directionalAdjustedP) - np.min(directionalAdjustedP)) -1
+	# 
+	# print(directionalAdjustedP)
+	# 
+	# print(np.max(directionalAdjustedP))
+	# print(np.min(directionalAdjustedP))
+	# 
+	# #add X until these are around a positive line, center around 1
+	# directionalAdjustedP += 1
+	# print(directionalAdjustedP)
+	# exit()
+	
+	#add small offset to have space around the edges
+
 	
 	
-	#directionalAdjustedP = pAdjusted * np.sign(featureZScores)
+	directionalAdjustedP += np.abs(np.min(directionalAdjustedP)) + 50
+	print(directionalAdjustedP)
+
+	#which value that was 0 is now what? 	
+	zeroOffsetInd = np.where(pAdjusted == 1)[0][0]
+	print(zeroOffsetInd)
+	zeroOffset = directionalAdjustedP[zeroOffsetInd]
+	print(zeroOffset)
+	
+	border = zeroOffset + np.min(directionalAdjustedP) + 50
+
+	signBorderTop = -np.log(0.05) + np.min(directionalAdjustedP) + 50 + zeroOffset
+	signBorderBottom = border - (signBorderTop - border)
+	
+	print(border)
+	print(signBorderTop)
+	print(signBorderBottom)
+
+	#border = (-np.log(0) - np.min(directionalAdjustedP)) / (np.max(directionalAdjustedP) - np.min(directionalAdjustedP))
+	#print(border)
+
+	
+	# directionalAdjustedP = -np.log(pAdjusted) * np.sign(featureZScores)
 	# plt.bar(range(len(directionalAdjustedP)), directionalAdjustedP)
 	# plt.xticks(range(len(directionalAdjustedP)), xlabels, rotation=90)
 	# plt.axhline(np.log(0.05), linestyle='--', linewidth=0.5, color='red')
@@ -668,6 +698,7 @@ if featureImportance == True:
 	# plt.axhline(0, linestyle='-', linewidth=0.5, color='k')
 	# plt.tight_layout()
 	# plt.show()
+	# exit()
 		
 	###try making polar scatter plots for the features
 	blockSize = 360 / len(directionalAdjustedP)
@@ -677,21 +708,42 @@ if featureImportance == True:
 	xRange = np.append(xRange, xRange[xRange.shape[0]-1]+blockSize)
 	centers = np.deg2rad(np.ediff1d(xRange)//2 + xRange[:-1])
 	
+	#determine the colors based on the direction
+	colors = []
+	for feature in featureZScores:
+		if np.sign(feature) > 0:
+			colors.append('red')
+		else:
+			colors.append('blue')
+	
 	#instead of bars, plot a line
 	#the y position is now the bar data
 	fig = plt.figure(figsize=(15,13))
 	ax = fig.add_subplot(111, projection='polar')
 	#ax.bar(centers, a, width=np.deg2rad(bin_size), bottom=0.0, color='.8', edgecolor='k')
-	#area = 0.0025 * directionalAdjustedP**2
-	area = 1000 * directionalAdjustedP**2
+	#area = 0.005 * directionalAdjustedP**2
+	print('area')
+	area = 0.25 * (1 + (-np.log(pAdjusted)))
 	print(area)
+	#exit()
 	ax.scatter(centers, directionalAdjustedP, color='blue', alpha=0.3, s=area)
 
 	ax.set_xticks(centers)
 	ax.set_xticklabels(xlabels, fontsize=5)
-	#ax.set_yticks([-1,np.log(0.05),0,-np.log(0.05), 1])
-	ax.set_yticks([-1.5,-signBorder,0,signBorder, 1.5])
-	ax.set_yticklabels(['', 'P < 0.05', '', 'P < 0.05', ''])
+	#ax.set_yticks([-1.5,np.log(0.05),0,-np.log(0.05), 1.5])
+	#ax.set_yticks([-1.5,-0.05,0,0.05, 1.5])
+	#ax.set_yticklabels(['', 'P < 0.05', '', 'P < 0.05', ''])
+	
+	ax.set_yticklabels(['p < 0.05'])
+	ax.set_yticks([signBorderBottom, border, signBorderTop])
+	gridlines = ax.yaxis.get_gridlines()
+	gridlines[0].set_color("red")
+	gridlines[0].set_linewidth(0.5)
+	gridlines[0].set_linestyle('--')
+	
+	gridlines[2].set_color("red")
+	gridlines[2].set_linewidth(0.5)
+	gridlines[2].set_linestyle('--')
 	
 	# plt.gcf().canvas.draw()
 	# angles = np.linspace(0,2*np.pi,len(ax.get_xticklabels())+1)
@@ -708,87 +760,13 @@ if featureImportance == True:
 	
 	
 	
-	ax.set_theta_zero_location("N")
-	ax.set_theta_direction(-1)
+	#ax.set_theta_zero_location("N")
+	#ax.set_theta_direction(-1)
+	ax.set_rorigin(-400)
+	ax.set_theta_zero_location('N', offset=10)
 	plt.show()
 	
 	exit()
 	
 	
 	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	###GSEA testing
-	
-	#output:
-	#1. file with genesets, which are all the positive instances
-	
-	#2. file with the ranked values, .rnk file
-	
-	#get the names of the instances
-	
-	#first, we need to know in which bag the instance is to get the label of the 
-	#so based on the index of the instance, get the bag label. 
-	#use the bag map for this.
-	
-	#e.g. get the bag index of the second instance
-	
-	#merge this with the features of this instance to get a label for the instance.
-	instancesWithValues = []
-	positiveInstanceLabels = []
-	for instanceInd in range(0, newInstances.shape[0]):
-		instance = newInstances[instanceInd]
-		
-		#label ths instance
-		bagLabel = bagPairLabels[bagMap[instanceInd]]
-		bagInd = bagMap[instanceInd]
-		
-		#instanceLabel = bagLabel + '_' + '_'.join([str(i) for i in instance])
-		instanceLabel = bagLabel + '_' + str(instanceInd)
-		
-		if bagInd < positiveBags.shape[0]:
-			positiveInstanceLabels.append(instanceLabel)
-		
-		#get the feature importance for this instance
-		#first test with 1 feature only, say gains
-		instancesWithValues.append([instanceLabel, instance[len(instance)-1]])
-		#instancesWithValues.append([instanceLabel, instance[0]])
-		
-	#rank the labeled instances by feature importances
-	instancesWithValues = np.array(instancesWithValues, dtype='object')
-	
-	rankedLabeledInstances = instancesWithValues[indices]
-	
-	#instead, try using the top 100 instances as the gene set.
-	#then, use the feature value as the ranking for the genes.
-	#we would then test if the top 100 instances are the ones with the
-	#highest feature values
-	
-	positiveInstanceLabels = rankedLabeledInstances[indices[0:100],0]
-
-	np.savetxt('geneRanks.rnk', rankedLabeledInstances, fmt='%s', delimiter='\t')
-	np.savetxt('geneSet.grp', positiveInstanceLabels, fmt='%s')
-	exit()
-	rankedLabeledInstances = pd.DataFrame(rankedLabeledInstances)
-	
-	geneSets = {'positiveInstances': positiveInstanceLabels}
-	
-	preRes = gseapy.prerank(rnk=rankedLabeledInstances, gene_sets=geneSets, outdir='test',
-				    min_size=15, max_size=20000, format='png')
-	
-	print(preRes.res2d['pval'])
-	
-	from gseapy.plot import gseaplot
-	
-	terms = preRes.res2d.index
-	# to save your figure, make sure that ofname is not None
-	gseaplot(rank_metric=preRes.ranking, term=terms[0], **preRes.results[terms[0]])
-	plt.show()
-		
