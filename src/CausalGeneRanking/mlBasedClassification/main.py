@@ -45,80 +45,15 @@ from sklearn.model_selection import train_test_split
 import gseapy
 import pandas as pd
 
-#testing with polar plots
-
-# #e.g. we have our bar charts
-# barData = np.array([10, 2, 5, 6, 8, -20, 30, 15, 14, 20, 1,2, 3,4, 5,6, 4,1, 10, 2, 5, 6, 8, -20, 30, 15, 14, 20, 1,2, 3,4, 5,6, 4,1])
-# blockSize = 360 / len(barData)
-# print(blockSize)
-# xRange = np.arange(0, 360, blockSize)
-# print(xRange)
-# #normal plot
-# #plt.bar(xRange, barData)
-# #plt.show()
-# 
-# degrees = np.random.randint(0, 360, size=200)
-# 
-# bin_size = 20
-# 
-# a , b=np.histogram(degrees, bins=np.arange(0, 360+bin_size, bin_size))
-# centers = np.deg2rad(np.ediff1d(b)//2 + b[:-1])
-# 
-# print(a.shape)
-# print(b.shape)
-# print(centers.shape)
-# 
-# a = barData
-# b = xRange
-# #centers = np.deg2rad(np.ediff1d(b)//2 + b[:-1])
-# 
-# b = np.append(xRange, xRange[xRange.shape[0]-1]+blockSize)
-# centers = np.deg2rad(np.ediff1d(b)//2 + b[:-1])
-# print(np.ediff1d(b)//2 + b[:-1])
-# 
-# print('features: ', a.shape)
-# print('range: ', b.shape)
-# print('centers: ', centers.shape)
-# print(centers)
-# 
-# 
-# # # fig = plt.figure(figsize=(10,8))
-# # # ax = fig.add_subplot(111, projection='polar')
-# # # ax.bar(centers, a, width=np.deg2rad(bin_size), bottom=0.0, color='.8', edgecolor='k')
-# # # ax.set_xticks(centers)
-# # # ax.set_xticklabels(barData)
-# # # ax.set_yticklabels([])
-# # # ax.set_theta_zero_location("N")
-# # # ax.set_theta_direction(-1)
-# # # plt.show()
-# # 
-# #instead of bars, plot a line
-# #the y position is now the bar data
-# fig = plt.figure(figsize=(10,8))
-# ax = fig.add_subplot(111, projection='polar')
-# #ax.bar(centers, a, width=np.deg2rad(bin_size), bottom=0.0, color='.8', edgecolor='k')
-# area = 0.25 * barData**2
-# #area2 = 0.25 * barData2**2
-# ax.scatter(centers-0.05, barData, color='blue', alpha=0.3, s=area)
-# #ax.scatter(centers, barData2, color='red', alpha=0.3, s=area2)
-# ax.set_xticks(centers)
-# ax.set_xticklabels(barData)
-# ax.set_yticks([-40,0,40])
-# ax.set_yticklabels([])
-# ax.set_theta_zero_location("N")
-# ax.set_theta_direction(-1)
-# plt.show()
-
-
-
 #settings for running in different scenarios
 svTypes = [sys.argv[3]]
 svTypes = ['DEL', 'DUP', 'INV', 'ITX']
+#svTypes = ['ITX']
 normalize = False #re-normalize, or use the saved file for speed? 
 optimize = False #optimize classifier? 
 test = False #test classifier performance with CV? 
 featureImportance = True
-featureLoad = True #re-create feature importances or just load from file? 
+featureLoad = False #re-create feature importances or just load from file? 
 
 adjustedPValues = dict()
 allFeatureZScores = dict()
@@ -551,7 +486,6 @@ if featureLoad == False:
 			avgInstances = np.sum(newInstances, axis=0)
 		
 			totalInstances = avgInstances / newInstances.shape[0]
-			
 			print(totalInstances)
 			
 			xlabels = ['loss', 'gain', 'cpg', 'tf', 'hic', 'ctcf', 'dnaseI', 'h3k9me3', 'h3k4me3', 'h3k27ac', 'h3k27me3', 'h3k4me1', 'h3k36me3',
@@ -561,9 +495,9 @@ if featureLoad == False:
 			# plt.bar(range(len(totalInstances)), totalInstances)
 			# plt.xticks(range(len(totalInstances)), xlabels, rotation=90)
 			# plt.tight_layout()
-			# #plt.show()
+			# plt.show()
 			# plt.clf()
-			
+		
 			
 			#get the percentage in the top 100.
 			#then, repeat this 100 times, randomly sampling 100 instances.
@@ -574,32 +508,54 @@ if featureLoad == False:
 			#get the original top X features
 			topInstances = newInstances[indices[0:instanceCount]]
 			
+			avgInstances = np.sum(topInstances, axis=0)
+			
 			#split into up/down regulation
 			#filter the instances by up/downregulation if needed.
 			#first get the bag pair name for the instance
 			filteredInstances = []
+			uniqueGenes = []
+			uniqueCosmicGenes = []
 			for instanceInd in range(0, topInstances.shape[0]):
+				#get the ranked index of this instance
+				rankedInstanceInd = indices[instanceInd]
 				
-				bagLabel = bagPairLabels[bagMap[instanceInd]]
+				#get the label of the sv-gene pair this instance comes from
+				bagLabel = bagPairLabels[bagMap[rankedInstanceInd]]
 				splitPair = bagLabel.split('_')
 				
 				shortPair = splitPair[7] + '_' + splitPair[0]
+				
+				if splitPair[0] not in uniqueGenes:
+					uniqueGenes.append(splitPair[0])
+					
+				if topInstances[instanceInd][33] > 0:
+					if splitPair[0] not in uniqueCosmicGenes:
+						uniqueCosmicGenes.append(splitPair[0])
+					
 				
 				#get z-score
 				degPairInfo = degPairs[degPairs[:,0] == shortPair][0]
 		
 				#if the z-score matches this criterion, the SV-gene pair is positive
-				if float(degPairInfo[5]) > 1.5:
-					filteredInstances.append(topInstances[instanceInd])
+				#if float(degPairInfo[5]) > 1.5:
+				#	filteredInstances.append(topInstances[instanceInd])
+				filteredInstances.append(topInstances[instanceInd])
 			
 			filteredInstances = np.array(filteredInstances)
-			print(filteredInstances)
+			
+			np.savetxt('allGenesTop100_' + svType + '.txt', uniqueGenes, fmt='%s')
+			
 			#compute the percentages in these top X instances
 			avgInstances = np.sum(filteredInstances, axis=0)
 		
 			totalInstances = avgInstances / filteredInstances.shape[0]
 			
-			print(totalInstances)
+			print(svType, ':')
+			print('percentage of cosmic: ', totalInstances[33])
+			
+			print('percentage of unique cosmic: ', len(uniqueCosmicGenes) / float(len(uniqueGenes)))
+			
 			
 			#100 times, randomly sample
 			#per feature, have a distribution
@@ -642,18 +598,16 @@ if featureLoad == False:
 				featureZScores.append(z)
 				featurePValues.append(pValue)
 			
-			#then get a p-value
-			print(featureZScores)
-			print(featurePValues)
 			#do MTC on the p-values
 			
 			reject, pAdjusted, _, _ = multipletests(featurePValues, method='bonferroni')
 		
-			print(reject)
-			print(pAdjusted)
-			
 			allFeatureZScores[svType] = featureZScores
 			adjustedPValues[svType] = pAdjusted
+			
+			#output the top 100 instances to a file as well.
+			#obtain the instance of the bag 
+			
 	
 		np.save('featureZScores.npy', allFeatureZScores)
 		np.save('adjustedPValues.npy', adjustedPValues)
