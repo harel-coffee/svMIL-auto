@@ -48,6 +48,7 @@ import pandas as pd
 #settings for running in different scenarios
 svTypes = [sys.argv[3]]
 svTypes = ['DEL', 'DUP', 'INV', 'ITX']
+#svTypes = ['DEL', 'INV', 'ITX']
 #svTypes = ['ITX']
 normalize = False #re-normalize, or use the saved file for speed? 
 optimize = False #optimize classifier? 
@@ -448,6 +449,9 @@ if featureLoad == False:
 			eQTLTypes = []
 			promoterTypes = []
 			superEnhancerTypes = []
+			uniqueGenes = []
+			uniqueCosmicGenes = []
+			instanceInd = 0
 			for instance in instances:
 				
 				if instance[33] == 0:
@@ -488,6 +492,7 @@ if featureLoad == False:
 			totalInstances = avgInstances / newInstances.shape[0]
 			print(totalInstances)
 			
+			
 			xlabels = ['loss', 'gain', 'cpg', 'tf', 'hic', 'ctcf', 'dnaseI', 'h3k9me3', 'h3k4me3', 'h3k27ac', 'h3k27me3', 'h3k4me1', 'h3k36me3',
 					   'CTCF', 'CTCF+Enhancer', 'CTCF+Promoter', 'Enhancer', 'Heterochromatin', 'Poised_Promoter', 'Promoter', 'Repeat', 'Repressed', 'Transcribed', 'rnaPol',
 					   'enhancer_s', 'ctcf_s', 'rnaPol_s', 'h3k9me3_s', 'h3k4me3_s', 'h3k27ac_s', 'h3k27me3_s', 'h3k4me1_s', 'h3k36me3_s', 'cosmic', 'enhancerType', 'promoterType', 'eQTLType', 'superEnhancerType']
@@ -516,6 +521,7 @@ if featureLoad == False:
 			filteredInstances = []
 			uniqueGenes = []
 			uniqueCosmicGenes = []
+			topPairLabels = []
 			for instanceInd in range(0, topInstances.shape[0]):
 				#get the ranked index of this instance
 				rankedInstanceInd = indices[instanceInd]
@@ -523,6 +529,8 @@ if featureLoad == False:
 				#get the label of the sv-gene pair this instance comes from
 				bagLabel = bagPairLabels[bagMap[rankedInstanceInd]]
 				splitPair = bagLabel.split('_')
+				
+				topPairLabels.append(bagLabel)
 				
 				shortPair = splitPair[7] + '_' + splitPair[0]
 				
@@ -538,13 +546,18 @@ if featureLoad == False:
 				degPairInfo = degPairs[degPairs[:,0] == shortPair][0]
 		
 				#if the z-score matches this criterion, the SV-gene pair is positive
-				#if float(degPairInfo[5]) > 1.5:
-				#	filteredInstances.append(topInstances[instanceInd])
-				filteredInstances.append(topInstances[instanceInd])
+				#if float(degPairInfo[5]) < -1.5:
+				
+				#cosmic yes/no
+				if topInstances[instanceInd,33] > 0:
+					filteredInstances.append(topInstances[instanceInd])
+				#filteredInstances.append(topInstances[instanceInd])
 			
 			filteredInstances = np.array(filteredInstances)
 			
-			np.savetxt('allGenesTop100_' + svType + '.txt', uniqueGenes, fmt='%s')
+			np.savetxt('pairLabels_top100_' + svType + '.txt', topPairLabels, fmt='%s')
+			
+			#np.savetxt('allGenesTop100_' + svType + '.txt', uniqueGenes, fmt='%s')
 			
 			#compute the percentages in these top X instances
 			avgInstances = np.sum(filteredInstances, axis=0)
@@ -609,16 +622,13 @@ if featureLoad == False:
 			#obtain the instance of the bag 
 			
 	
-		np.save('featureZScores.npy', allFeatureZScores)
-		np.save('adjustedPValues.npy', adjustedPValues)
+		np.save('featureZScores_cosmic_all.npy', allFeatureZScores)
+		np.save('adjustedPValues_cosmic_all.npy', adjustedPValues)
 			
 if featureImportance == True:
 	
-	allFeatureZScores = np.load('featureZScores.npy', allow_pickle=True, encoding='latin1').item()
-	adjustedPValues = np.load('adjustedPValues.npy', allow_pickle=True, encoding='latin1').item()
-	
-	print(allFeatureZScores)
-	print(adjustedPValues)
+	allFeatureZScores = np.load('featureZScores_cosmic_all.npy', allow_pickle=True, encoding='latin1').item()
+	adjustedPValues = np.load('adjustedPValues_cosmic_all.npy', allow_pickle=True, encoding='latin1').item()
 	
 	xlabels = ['loss', 'gain', 'cpg', 'tf', 'hic', 'ctcf', 'dnaseI', 'h3k9me3', 'h3k4me3', 'h3k27ac', 'h3k27me3', 'h3k4me1', 'h3k36me3',
 			   'CTCF', 'CTCF+Enhancer', 'CTCF+Promoter', 'Enhancer', 'Heterochromatin', 'Poised_Promoter', 'Promoter', 'Repeat', 'Repressed', 'Transcribed', 'rnaPol',
@@ -639,40 +649,30 @@ if featureImportance == True:
 		if np.max(directionalAdjustedP) > overallMax:
 			overallMax = np.max(directionalAdjustedP)
 
-	print(overallMin)
-	print(overallMax)
-
+	
+	allFeatureZScores = np.load('featureZScores_cosmic_all.npy', allow_pickle=True, encoding='latin1').item()
+	adjustedPValues = np.load('adjustedPValues_cosmic_all.npy', allow_pickle=True, encoding='latin1').item()
+	
 	scaledP = dict()
 	for svType in svTypes:
 		
 		pAdjusted = adjustedPValues[svType]
 		
 		directionalAdjustedP = -np.log(pAdjusted) * np.sign(allFeatureZScores[svType])
-		print(directionalAdjustedP)
+
 		directionalAdjustedP += np.abs(overallMin) + 50
-		
-		print(directionalAdjustedP)
 		
 		if len(np.where(pAdjusted == 1)) > 0:
 			zeroOffsetInd = np.where(pAdjusted == 1)[0][0]
-			print(zeroOffsetInd)
+			
 			zeroOffset = directionalAdjustedP[zeroOffsetInd]
-			print(zeroOffset)
-		
+
 		scaledP[svType] = directionalAdjustedP
-	
-	print(zeroOffset)
 	
 	border = zeroOffset
 
 	signBorderTop = -np.log(0.05) + zeroOffset
 	signBorderBottom = border - (signBorderTop - border)
-	
-	print(border)
-	print(signBorderTop)
-	print(signBorderBottom)
-	
-	print(scaledP)
 	
 
 	###try making polar scatter plots for the features
@@ -736,9 +736,9 @@ if featureImportance == True:
 	
 	#ax.set_theta_zero_location("N")
 	#ax.set_theta_direction(-1)
-	ax.set_rorigin(-300)
+	ax.set_rorigin(-200)
 	ax.set_theta_zero_location('N', offset=10)
-	plt.savefig('featureImportances_allTypes.svg')
+	plt.savefig('featureImportances_allTypes_cosmic_all.svg')
 	plt.show()
 
 		
