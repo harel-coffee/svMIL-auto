@@ -21,16 +21,22 @@ for pair in svGenePairs:
 	#+1 because the first entry is the pair name. 
 	
 		
-	if str(features[2]) != '1.0' and str(features[28]) != '1.0':
-		continue 
+	#if str(features[2]) != '1.0' and str(features[28]) != '1.0':
+	#	continue 
 	
 	splitPair = pair[0].split('_')
 	shortPair = splitPair[7] + '_' + splitPair[0]
+	
+	if pair[0] == 'BRSK1_chr17_74160042_74160042_chr19_55473991_55473991_CPCT02010419T_0_0_0_0_ITX':
+		print(pair)
+		print(shortPair)
 	
 	if shortPair in degPairs[:,0]:
 		
 		#check if this is true or not.
 		degPairInfo = degPairs[degPairs[:,0] == shortPair][0]
+		if pair[0] == 'BRSK1_chr17_74160042_74160042_chr19_55473991_55473991_CPCT02010419T_0_0_0_0_ITX':
+			print(degPairInfo)
 		#features.append(np.abs(float(degPairInfo[5])))
 			
 		#if degPairInfo[3] == 'True':

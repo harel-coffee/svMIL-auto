@@ -20,14 +20,31 @@ import matplotlib.pyplot as plt
 positivePairs = np.loadtxt(sys.argv[1], dtype='object')
 print(positivePairs.shape)
 
+topPairs = dict()
+topPairGenes = dict() #all unique genes
+svTypes = ['DEL', 'DUP', 'INV', 'ITX']
+for svType in svTypes:
+	#path should not be fixed
+	svPairs = np.loadtxt('mlBasedClassification/pairLabels_top100_' + svType + '.txt', dtype='object')
+	
+	rankedPairs = []
+	ind = len(svPairs)
+	for pair in svPairs:
+		splitPair = pair.split('_')
+		topPairGenes[splitPair[0]] = 0
+		rankedPairs.append([pair, ind])
+		ind -= 1
+	topPairs[svType] = rankedPairs
+
 degPairs = np.loadtxt(sys.argv[2], dtype='object')
 
 #format: gene as key, as values, the first is the number of times we found the gene,
 #the second how many were dels, then dups, invs, itx.
 splitPairs = dict()
 genes = dict()
-for pair in positivePairs:
+for pair in positivePairs: #get stats for all pairs
 	splitPair = pair[0].split('_')
+
 
 	if splitPair[0] + '_' + splitPair[7] not in splitPairs:
 		splitPairs[splitPair[0] + '_' + splitPair[7]] = []
@@ -52,8 +69,7 @@ for pair in positivePairs:
 
 	patient = splitPair[7]
 	genes[splitPair[0]][13].append(patient)
-	
-	
+
 #convert to numpy array for easy ranking
 recurrentGenes = []
 for gene in genes:
@@ -66,6 +82,23 @@ for gene in genes:
 	recurrentGenes.append(data)
 
 recurrentGenes = np.array(recurrentGenes, dtype='object')
+# 
+# from scipy.stats.stats import pearsonr
+# #check recurrence correlation with original ranking
+# for svType in svTypes:
+# 	
+# 	rankedPairs = np.array(topPairs[svType], dtype='object')
+# 	rankedRecurrence = []
+# 	for pair in rankedPairs:
+# 		splitPair = pair[0].split('_')
+# 
+# 		#for each of these pairs, check the recurrence
+# 		recurrence = recurrentGenes[recurrentGenes[:,0] == splitPair[0],1][0]
+# 		rankedRecurrence.append(recurrence)
+# 		
+# 	print(rankedPairs[:,1])
+# 	print(rankedRecurrence)
+# 	print(pearsonr(rankedPairs[:,1], rankedRecurrence))
 
 #sort
 sortedGenes = recurrentGenes[np.argsort(recurrentGenes[:,1])[::-1]]
@@ -87,10 +120,19 @@ for ind in range(0, 100):
 	recurrenceCount = sortedGenes[np.where(sortedGenes[:,0] == gene)[0],1][0]
 	
 	negativeCounts.append(recurrenceCount)
+
+sortedGenesTop = []
+for gene in sortedGenes:
+	
+	if gene[0] not in topPairGenes:
+		continue
+	sortedGenesTop.append(gene)
+	
+sortedGenesTop = np.array(sortedGenesTop, dtype='object')	
 	
 #do t-test for each gene against this random set
 pValues = []
-for gene in sortedGenes:
+for gene in sortedGenesTop:
 	
 	z = gene[1] - np.mean(negativeCounts) / float(np.std(negativeCounts))
 
@@ -104,7 +146,7 @@ ind = 0
 for rejectVal in reject:
 	
 	if rejectVal == True:
-		print(sortedGenes[ind])
+		print(sortedGenesTop[ind,0:2])
 
 	ind += 1
 
@@ -113,7 +155,7 @@ for rejectVal in reject:
 uniquePatients = dict()
 top = 15 #making the matrix only for the top X genes
 ind = 0
-for gene in sortedGenes:
+for gene in sortedGenesTop:
 	
 	if ind >= top:
 		continue
@@ -137,7 +179,7 @@ for patientInd in range(0, len(uniquePatients)):
 	
 	patientOrder[patient] = patientInd
 	
-for gene in sortedGenes:
+for gene in sortedGenesTop:
 	
 	if ind >= top:
 		continue
@@ -168,7 +210,7 @@ for row in range(0, recurrenceMatrix.shape[0]):
 		if recurrenceMatrix[row,col] > 0:
 			
 			#get the sv type to see which symbol to assign
-			gene = sortedGenes[row, 0]
+			gene = sortedGenesTop[row, 0]
 			patient = list(uniquePatients.keys())[col]
 			
 			pairs = splitPairs[gene + '_' + patient]
@@ -208,18 +250,18 @@ for row in range(0, recurrenceMatrix.shape[0]):
 					elif float(degPairInfo[5]) < -1.5:
 						color = 'blue'
 					else:
-						print('this should never happen')
-				
+						color = 'grey'
+				else:
+					continue #this is a pair with likely coding mutations, skip it
 				plt.scatter(col + offsetsY[ind], offsetsX[ind] + (recurrenceMatrix.shape[0] - row -1), marker=markerType, edgecolor=color,
 							facecolor='none', s=35)
 				ind += 1
 #the genes are swapped around to show the most recurrent on top, so reverse thelabels as well
-plt.yticks(range(0, recurrenceMatrix.shape[0]), sortedGenes[0:top,0][::-1])
+plt.yticks(range(0, recurrenceMatrix.shape[0]), sortedGenesTop[0:top,0][::-1])
 plt.xticks(range(0, recurrenceMatrix.shape[1]), list(uniquePatients.keys()), rotation=90)
 #plt.grid()
 plt.tight_layout()
 plt.show()
-exit()
 plt.clf()
 
 		
