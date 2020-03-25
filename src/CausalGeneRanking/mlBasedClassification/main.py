@@ -42,14 +42,13 @@ from sklearn.metrics import make_scorer, accuracy_score, precision_score, recall
 from sklearn.model_selection import RandomizedSearchCV
 from sklearn.model_selection import train_test_split
 
-import gseapy
 import pandas as pd
 
 #settings for running in different scenarios
 svTypes = [sys.argv[3]]
-svTypes = ['DEL', 'DUP', 'INV', 'ITX']
+svTypes = ['DEL', 'DUP', 'INV']
 #svTypes = ['DEL', 'INV', 'ITX']
-#svTypes = ['ITX']
+#svTypes = ['INV', 'ITX']
 normalize = False #re-normalize, or use the saved file for speed? 
 optimize = False #optimize classifier? 
 test = False #test classifier performance with CV? 
@@ -499,23 +498,6 @@ if featureLoad == False:
 		
 			#reomove the old type column
 			newInstances = np.delete(newInstances, 33, 1)
-		
-			avgInstances = np.sum(newInstances, axis=0)
-		
-			totalInstances = avgInstances / newInstances.shape[0]
-			print(totalInstances)
-			
-			
-			xlabels = ['loss', 'gain', 'cpg', 'tf', 'hic', 'ctcf', 'dnaseI', 'h3k9me3', 'h3k4me3', 'h3k27ac', 'h3k27me3', 'h3k4me1', 'h3k36me3',
-					   'CTCF', 'CTCF+Enhancer', 'CTCF+Promoter', 'Enhancer', 'Heterochromatin', 'Poised_Promoter', 'Promoter', 'Repeat', 'Repressed', 'Transcribed', 'rnaPol',
-					   'enhancer_s', 'ctcf_s', 'rnaPol_s', 'h3k9me3_s', 'h3k4me3_s', 'h3k27ac_s', 'h3k27me3_s', 'h3k4me1_s', 'h3k36me3_s', 'cosmic', 'enhancerType', 'promoterType', 'eQTLType', 'superEnhancerType']
-			
-			# plt.bar(range(len(totalInstances)), totalInstances)
-			# plt.xticks(range(len(totalInstances)), xlabels, rotation=90)
-			# plt.tight_layout()
-			# plt.show()
-			# plt.clf()
-		
 			
 			#get the percentage in the top 100.
 			#then, repeat this 100 times, randomly sampling 100 instances.
@@ -534,6 +516,7 @@ if featureLoad == False:
 			filteredInstances = []
 			uniqueGenes = []
 			uniqueCosmicGenes = []
+			cosmicGenes = []
 			topPairLabels = []
 			hallmarkCount = 0
 			for instanceInd in range(0, topInstances.shape[0]):
@@ -552,25 +535,38 @@ if featureLoad == False:
 					uniqueGenes.append(splitPair[0])
 					
 				if topInstances[instanceInd][33] > 0:
+					cosmicGenes.append(splitPair[0])
 					if splitPair[0] not in uniqueCosmicGenes:
 						uniqueCosmicGenes.append(splitPair[0])
 				
 				#get z-score
 				degPairInfo = degPairs[degPairs[:,0] == shortPair][0]
 		
-				#if the z-score matches this criterion, the SV-gene pair is positive
-				if float(degPairInfo[5]) < -1.5 or float(degPairInfo[5]) > 1.5:
 				
-				#cosmic yes/no
-				#if topInstances[instanceInd,33] > 0:
+				#if the z-score matches this criterion, the SV-gene pair is positive
+				#if float(degPairInfo[5]) < -1.5 or float(degPairInfo[5]) > 1.5:
+				#if float(degPairInfo[5]) > 1.5:
+				#if float(degPairInfo[5]) < -1.5:
+					#cosmic yes/no
+				if topInstances[instanceInd,33] > 0:
+					#if topInstances[instanceInd,1] > 0:
 					filteredInstances.append(topInstances[instanceInd])
 					
 					#check for hallmark yes/no
-					if splitPair[0] in hallmarkGenes:
-						hallmarkCount += 1
+					#if splitPair[0] in hallmarkGenes:
+					#	hallmarkCount += 1
 				
 			
 			filteredInstances = np.array(filteredInstances)
+			print('number of instances used: ', filteredInstances.shape)
+			
+			#remove the gains and losses features, we do not need those anymore.
+			filteredInstances = np.delete(filteredInstances, 1, 1)
+			filteredInstances = np.delete(filteredInstances, 0, 1)
+			
+			print(svType, ':')
+			print('number of cosmic genes (unique): ', len(uniqueCosmicGenes))
+			print('number of cosmic genes per instance: ', len(cosmicGenes))
 			
 			np.savetxt('pairLabels_top100_' + svType + '.txt', topPairLabels, fmt='%s')
 			
@@ -580,11 +576,7 @@ if featureLoad == False:
 			avgInstances = np.sum(filteredInstances, axis=0)
 		
 			totalInstances = avgInstances / filteredInstances.shape[0]
-			
-			print(svType, ':')
-			print('percentage of cosmic: ', totalInstances[33])
-			
-			print('percentage of unique cosmic: ', len(uniqueCosmicGenes) / float(len(uniqueGenes)))
+			print(totalInstances)
 			
 			#100 times, randomly sample
 			#per feature, have a distribution
@@ -602,6 +594,10 @@ if featureLoad == False:
 				randomIndices = random.sample(range(0,newInstances.shape[0]), filteredInstances.shape[0])
 			
 				randomTopInstances = newInstances[randomIndices]
+
+				#here also skip gains/losses
+				randomTopInstances = np.delete(randomTopInstances, 1, 1)
+				randomTopInstances = np.delete(randomTopInstances, 0, 1)
 
 				#compute the percentages in these top X instances
 				avgRandomInstances = np.sum(randomTopInstances, axis=0)
@@ -628,7 +624,7 @@ if featureLoad == False:
 			featureZScores = []
 			for featureInd in range(0, len(nullDistributions)):
 				
-				if np.mean(nullDistributions[featureInd]) == 0 or np.std(nullDistributions[featureInd]) == 0:
+				if np.std(nullDistributions[featureInd]) == 0:
 					z = 0
 					pValue = 1
 					featureZScores.append(z)
@@ -648,6 +644,11 @@ if featureLoad == False:
 			allFeatureZScores[svType] = featureZScores
 			adjustedPValues[svType] = pAdjusted
 			
+			#for cosmic, remove the cosmic feature
+			allFeatureZScores = np.delete(allFeatureZScores, 31, 1)
+			adjustedPValues = np.delete(adjustedPValues, 31, 1)
+	
+			
 			#output the top 100 instances to a file as well.
 			#obtain the instance of the bag 
 			
@@ -659,17 +660,22 @@ if featureLoad == False:
 			print('hallmark stats: ', hallmarkCount, np.mean(randomHallmarkCounts), np.std(randomHallmarkCounts), z, pValue)
 			
 	
-		np.save('featureZScores_all.npy', allFeatureZScores)
-		np.save('adjustedPValues_all.npy', adjustedPValues)
-exit()			
+		np.save('featureZScores_cosmic_all.npy', allFeatureZScores)
+		np.save('adjustedPValues_cosmic_all.npy', adjustedPValues)
+			
 if featureImportance == True:
-	
+	#load the full set so that we normalize properly
 	allFeatureZScores = np.load('featureZScores_cosmic_all.npy', allow_pickle=True, encoding='latin1').item()
 	adjustedPValues = np.load('adjustedPValues_cosmic_all.npy', allow_pickle=True, encoding='latin1').item()
-	
-	xlabels = ['loss', 'gain', 'cpg', 'tf', 'hic', 'ctcf', 'dnaseI', 'h3k9me3', 'h3k4me3', 'h3k27ac', 'h3k27me3', 'h3k4me1', 'h3k36me3',
+
+	# xlabels = ['cpg', 'tf', 'hic', 'ctcf', 'dnaseI', 'h3k9me3', 'h3k4me3', 'h3k27ac', 'h3k27me3', 'h3k4me1', 'h3k36me3',
+	# 		   'CTCF', 'CTCF+Enhancer', 'CTCF+Promoter', 'Enhancer', 'Heterochromatin', 'Poised_Promoter', 'Promoter', 'Repeat', 'Repressed', 'Transcribed', 'rnaPol',
+	# 		   'enhancer_s', 'ctcf_s', 'rnaPol_s', 'h3k9me3_s', 'h3k4me3_s', 'h3k27ac_s', 'h3k27me3_s', 'h3k4me1_s', 'h3k36me3_s', 'cosmic', 'enhancerType', 'promoterType', 'eQTLType', 'superEnhancerType']
+	# 
+	xlabels = ['cpg', 'tf', 'hic', 'ctcf', 'dnaseI', 'h3k9me3', 'h3k4me3', 'h3k27ac', 'h3k27me3', 'h3k4me1', 'h3k36me3',
 			   'CTCF', 'CTCF+Enhancer', 'CTCF+Promoter', 'Enhancer', 'Heterochromatin', 'Poised_Promoter', 'Promoter', 'Repeat', 'Repressed', 'Transcribed', 'rnaPol',
-			   'enhancer_s', 'ctcf_s', 'rnaPol_s', 'h3k9me3_s', 'h3k4me3_s', 'h3k27ac_s', 'h3k27me3_s', 'h3k4me1_s', 'h3k36me3_s', 'cosmic', 'enhancerType', 'promoterType', 'eQTLType', 'superEnhancerType']
+			   'enhancer_s', 'ctcf_s', 'rnaPol_s', 'h3k9me3_s', 'h3k4me3_s', 'h3k27ac_s', 'h3k27me3_s', 'h3k4me1_s', 'h3k36me3_s', 'enhancerType', 'promoterType', 'eQTLType', 'superEnhancerType']
+	
 	
 	#to plot, show the p-values, direction based on the z-score.
 	overallMin = float('inf')
@@ -730,7 +736,9 @@ if featureImportance == True:
 	
 	#exit()
 	colors = ['blue', 'red', 'magenta', 'black']
+	#colors = ['magenta', 'black']
 	offset = [-0.02, -0.01, 0.01, 0.02]
+	#offset = [0.01, 0.02]
 	ind = 0
 	for svType in svTypes:
 		print('area')
@@ -775,7 +783,7 @@ if featureImportance == True:
 	#ax.set_theta_direction(-1)
 	ax.set_rorigin(-200)
 	ax.set_theta_zero_location('N', offset=10)
-	plt.savefig('featureImportances_allTypes_cosmic_all.svg')
+	plt.savefig('featureImportances_allTypes_cosmic_gain.svg')
 	plt.show()
 
 		
