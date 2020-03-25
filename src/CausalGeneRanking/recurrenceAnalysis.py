@@ -55,6 +55,10 @@ for pair in positivePairs: #get stats for all pairs
 		#count, cross-patient count, nc: del, dup, inv, itx, snv, cnv amp, cnv del, sv del, sv dup, sv inv, sv itx
 		genes[splitPair[0]] = [0]*13
 		genes[splitPair[0]].append([]) #add the patient names here
+		genes[splitPair[0]].append(0) #negative dels
+		genes[splitPair[0]].append(0) #negative dups
+		genes[splitPair[0]].append(0) #negative invs
+		genes[splitPair[0]].append(0) #negative itx
 
 	genes[splitPair[0]][0] += 1
 	
@@ -285,7 +289,10 @@ svPatientsItx = np.load('svPatientsItx.npy', allow_pickle=True, encoding='latin1
 cnvPatientsDel = np.load('cnvPatientsDel.npy', allow_pickle=True, encoding='latin1').item()
 cnvPatientsAmp = np.load('cnvPatientsAmp.npy', allow_pickle=True, encoding='latin1').item()
 
-for pair in positivePairs:
+#also show the non-coding SVs that do not lead to expression changes
+allPairs = np.loadtxt(sys.argv[3], dtype='object')
+
+for pair in allPairs:
 	
 	splitPair = pair[0].split('_')
 	
@@ -309,6 +316,20 @@ for pair in positivePairs:
 	if gene in svPatientsItx[patient]:
 		sortedGenes[sortedGeneInd, 11] += 1	
 	
+	#for the current pair, only add it if it is not in the positive set.
+	if pair[0] not in positivePairs[:,0]:
+		#then check the type of SV, and add it to the right gene.
+		
+		svType = splitPair[12]
+		if svType == 'DEL':
+			sortedGenes[sortedGeneInd, 16] += 1
+		elif svType == 'DUP':
+			sortedGenes[sortedGeneInd, 17] += 1
+		elif svType == 'INV':
+			sortedGenes[sortedGeneInd, 18] += 1
+		elif svType == 'ITX':
+			sortedGenes[sortedGeneInd, 19] += 1	
+	
 print(sortedGenes[0:15,:])
 
 #show these data in a bar plot.
@@ -321,13 +342,22 @@ for gene in sortedGenes[0:15]:
 	plt.bar(geneInd, gene[5], color='yellow')
 	plt.bar(geneInd, gene[6], bottom=gene[5], color='cyan')
 	plt.bar(geneInd, gene[7], bottom=gene[5]+gene[6], color='green')
-	plt.bar(geneInd, gene[8], bottom=gene[5]+gene[6]+gene[7], color='red')
+	plt.bar(geneInd, gene[8], bottom=gene[5]+gene[6]+gene[7], color='purple')
 	plt.bar(geneInd, gene[9], bottom=gene[5]+gene[6]+gene[7]+gene[8], color='orange')
-	plt.bar(geneInd, gene[10], bottom=gene[5]+gene[6]+gene[7]+gene[8]+gene[9], color='magenta')
-	plt.bar(geneInd, gene[11], bottom=gene[5]+gene[6]+gene[7]+gene[8]+gene[9]+gene[10], color='black')
+	plt.bar(geneInd, gene[10], bottom=gene[5]+gene[6]+gene[7]+gene[8]+gene[9], color='brown')
+	plt.bar(geneInd, gene[11], bottom=gene[5]+gene[6]+gene[7]+gene[8]+gene[9]+gene[10], color='grey')
 	
-	if gene[5]+gene[6]+gene[7]+gene[8]+gene[9]+gene[10]+gene[11] > ymax:
-		ymax = gene[5]+gene[6]+gene[7]+gene[8]+gene[9]+gene[10]+gene[11]
+	#add non-coding negative SVs as well
+	plt.bar(geneInd, gene[16], bottom=gene[5]+gene[6]+gene[7]+gene[8]+gene[9]+gene[10]+gene[11], color='blue')
+	plt.bar(geneInd, gene[17], bottom=gene[5]+gene[6]+gene[7]+gene[8]+gene[9]+gene[10]+gene[11]+gene[16], color='red')
+	plt.bar(geneInd, gene[18], bottom=gene[5]+gene[6]+gene[7]+gene[8]+gene[9]+gene[10]+gene[11]+gene[16]+gene[17], color='magenta')
+	plt.bar(geneInd, gene[19], bottom=gene[5]+gene[6]+gene[7]+gene[8]+gene[9]+gene[10]+gene[11]+gene[16]+gene[17]+gene[18], color='black')
+	
+	
+	
+	
+	if gene[5]+gene[6]+gene[7]+gene[8]+gene[9]+gene[10]+gene[11]+gene[16]+gene[17]+gene[18]+gene[19] > ymax:
+		ymax = gene[5]+gene[6]+gene[7]+gene[8]+gene[9]+gene[10]+gene[11]+gene[16]+gene[17]+gene[18]+gene[19] + 1
 	
 	geneInd += 1
 

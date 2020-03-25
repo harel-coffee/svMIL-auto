@@ -444,6 +444,19 @@ if featureLoad == False:
 			#topInstances = instances[indices[0:100]]
 			#topInstances = instances[indices]
 			
+			#read the hallmarks file
+			hallmarksFile = 'h.all.v7.0.symbols.gmt'
+			hallmarkGenes = []
+			with open(hallmarksFile, 'r') as inF:
+				
+				for line in inF:
+					line = line.strip()
+					splitLine = line.split('\t')
+					
+					for gene in splitLine[2:len(splitLine)]:
+						
+						hallmarkGenes.append(gene)
+			
 			#split the type back into 4 features
 			enhancerTypes = []
 			eQTLTypes = []
@@ -522,6 +535,7 @@ if featureLoad == False:
 			uniqueGenes = []
 			uniqueCosmicGenes = []
 			topPairLabels = []
+			hallmarkCount = 0
 			for instanceInd in range(0, topInstances.shape[0]):
 				#get the ranked index of this instance
 				rankedInstanceInd = indices[instanceInd]
@@ -540,18 +554,21 @@ if featureLoad == False:
 				if topInstances[instanceInd][33] > 0:
 					if splitPair[0] not in uniqueCosmicGenes:
 						uniqueCosmicGenes.append(splitPair[0])
-					
 				
 				#get z-score
 				degPairInfo = degPairs[degPairs[:,0] == shortPair][0]
 		
 				#if the z-score matches this criterion, the SV-gene pair is positive
-				#if float(degPairInfo[5]) < -1.5:
+				if float(degPairInfo[5]) < -1.5 or float(degPairInfo[5]) > 1.5:
 				
 				#cosmic yes/no
-				if topInstances[instanceInd,33] > 0:
+				#if topInstances[instanceInd,33] > 0:
 					filteredInstances.append(topInstances[instanceInd])
-				#filteredInstances.append(topInstances[instanceInd])
+					
+					#check for hallmark yes/no
+					if splitPair[0] in hallmarkGenes:
+						hallmarkCount += 1
+				
 			
 			filteredInstances = np.array(filteredInstances)
 			
@@ -569,11 +586,13 @@ if featureLoad == False:
 			
 			print('percentage of unique cosmic: ', len(uniqueCosmicGenes) / float(len(uniqueGenes)))
 			
-			
 			#100 times, randomly sample
 			#per feature, have a distribution
 			nullDistributions = dict()
+			randomHallmarkCounts = []
 			for i in range(0,100):
+				
+				randomHallmarkCount = 0
 				
 				if i == 0:
 					for featureInd in range(0, len(totalInstances)):
@@ -583,7 +602,7 @@ if featureLoad == False:
 				randomIndices = random.sample(range(0,newInstances.shape[0]), filteredInstances.shape[0])
 			
 				randomTopInstances = newInstances[randomIndices]
-				
+
 				#compute the percentages in these top X instances
 				avgRandomInstances = np.sum(randomTopInstances, axis=0)
 			
@@ -592,6 +611,17 @@ if featureLoad == False:
 				for featureInd in range(0, len(totalRandomInstances)):
 					nullDistributions[featureInd].append(totalRandomInstances[featureInd])
 			
+				#check for hallmark yes/no
+				for instanceInd in randomIndices:
+					bagLabel = bagPairLabels[bagMap[instanceInd]]
+					splitPair = bagLabel.split('_')
+					
+					shortPair = splitPair[7] + '_' + splitPair[0]
+					
+					if splitPair[0] in hallmarkGenes:
+						randomHallmarkCount += 1
+		
+				randomHallmarkCounts.append(randomHallmarkCount)
 		
 			#for each feature, compute a z-score
 			featurePValues = []
@@ -621,10 +651,17 @@ if featureLoad == False:
 			#output the top 100 instances to a file as well.
 			#obtain the instance of the bag 
 			
-	
-		np.save('featureZScores_cosmic_all.npy', allFeatureZScores)
-		np.save('adjustedPValues_cosmic_all.npy', adjustedPValues)
+			#check hallmark enrichment in true set vs randomly sampled
+			z = (hallmarkCount - np.mean(randomHallmarkCounts) / float(np.std(randomHallmarkCounts)))
+			pValue = stats.norm.sf(abs(z))*2
 			
+			print(svType, ':')
+			print('hallmark stats: ', hallmarkCount, np.mean(randomHallmarkCounts), np.std(randomHallmarkCounts), z, pValue)
+			
+	
+		np.save('featureZScores_all.npy', allFeatureZScores)
+		np.save('adjustedPValues_all.npy', adjustedPValues)
+exit()			
 if featureImportance == True:
 	
 	allFeatureZScores = np.load('featureZScores_cosmic_all.npy', allow_pickle=True, encoding='latin1').item()
