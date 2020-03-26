@@ -46,9 +46,9 @@ import pandas as pd
 
 #settings for running in different scenarios
 svTypes = [sys.argv[3]]
-svTypes = ['DEL', 'DUP', 'INV']
+#svTypes = ['DEL', 'DUP', 'INV', 'ITX']
 #svTypes = ['DEL', 'INV', 'ITX']
-#svTypes = ['INV', 'ITX']
+svTypes = ['INV', 'ITX']
 normalize = False #re-normalize, or use the saved file for speed? 
 optimize = False #optimize classifier? 
 test = False #test classifier performance with CV? 
@@ -542,15 +542,10 @@ if featureLoad == False:
 				#get z-score
 				degPairInfo = degPairs[degPairs[:,0] == shortPair][0]
 		
-				
-				#if the z-score matches this criterion, the SV-gene pair is positive
-				#if float(degPairInfo[5]) < -1.5 or float(degPairInfo[5]) > 1.5:
-				#if float(degPairInfo[5]) > 1.5:
-				#if float(degPairInfo[5]) < -1.5:
-					#cosmic yes/no
-				if topInstances[instanceInd,33] > 0:
-					#if topInstances[instanceInd,1] > 0:
-					filteredInstances.append(topInstances[instanceInd])
+				#cosmic yes/no
+				if topInstances[instanceInd,33] < 1:
+					if topInstances[instanceInd,0] > 0:
+						filteredInstances.append(topInstances[instanceInd])
 					
 					#check for hallmark yes/no
 					#if splitPair[0] in hallmarkGenes:
@@ -594,11 +589,11 @@ if featureLoad == False:
 				randomIndices = random.sample(range(0,newInstances.shape[0]), filteredInstances.shape[0])
 			
 				randomTopInstances = newInstances[randomIndices]
-
+				
 				#here also skip gains/losses
 				randomTopInstances = np.delete(randomTopInstances, 1, 1)
 				randomTopInstances = np.delete(randomTopInstances, 0, 1)
-
+				
 				#compute the percentages in these top X instances
 				avgRandomInstances = np.sum(randomTopInstances, axis=0)
 			
@@ -641,14 +636,13 @@ if featureLoad == False:
 			
 			reject, pAdjusted, _, _ = multipletests(featurePValues, method='bonferroni')
 		
+			#for cosmic, remove the cosmic feature
+			del featureZScores[31]
+			pAdjusted = np.delete(pAdjusted, 31)
+			
 			allFeatureZScores[svType] = featureZScores
 			adjustedPValues[svType] = pAdjusted
-			
-			#for cosmic, remove the cosmic feature
-			allFeatureZScores = np.delete(allFeatureZScores, 31, 1)
-			adjustedPValues = np.delete(adjustedPValues, 31, 1)
-	
-			
+
 			#output the top 100 instances to a file as well.
 			#obtain the instance of the bag 
 			
@@ -660,13 +654,13 @@ if featureLoad == False:
 			print('hallmark stats: ', hallmarkCount, np.mean(randomHallmarkCounts), np.std(randomHallmarkCounts), z, pValue)
 			
 	
-		np.save('featureZScores_cosmic_all.npy', allFeatureZScores)
-		np.save('adjustedPValues_cosmic_all.npy', adjustedPValues)
+		np.save('featureZScores_noncosmic_loss.npy', allFeatureZScores)
+		np.save('adjustedPValues_noncosmic_loss.npy', adjustedPValues)
 			
 if featureImportance == True:
 	#load the full set so that we normalize properly
-	allFeatureZScores = np.load('featureZScores_cosmic_all.npy', allow_pickle=True, encoding='latin1').item()
-	adjustedPValues = np.load('adjustedPValues_cosmic_all.npy', allow_pickle=True, encoding='latin1').item()
+	allFeatureZScores = np.load('featureZScores_noncosmic_all.npy', allow_pickle=True, encoding='latin1').item()
+	adjustedPValues = np.load('adjustedPValues_noncosmic_all.npy', allow_pickle=True, encoding='latin1').item()
 
 	# xlabels = ['cpg', 'tf', 'hic', 'ctcf', 'dnaseI', 'h3k9me3', 'h3k4me3', 'h3k27ac', 'h3k27me3', 'h3k4me1', 'h3k36me3',
 	# 		   'CTCF', 'CTCF+Enhancer', 'CTCF+Promoter', 'Enhancer', 'Heterochromatin', 'Poised_Promoter', 'Promoter', 'Repeat', 'Repressed', 'Transcribed', 'rnaPol',
@@ -693,8 +687,8 @@ if featureImportance == True:
 			overallMax = np.max(directionalAdjustedP)
 
 	
-	allFeatureZScores = np.load('featureZScores_cosmic_all.npy', allow_pickle=True, encoding='latin1').item()
-	adjustedPValues = np.load('adjustedPValues_cosmic_all.npy', allow_pickle=True, encoding='latin1').item()
+	allFeatureZScores = np.load('featureZScores_noncosmic_loss.npy', allow_pickle=True, encoding='latin1').item()
+	adjustedPValues = np.load('adjustedPValues_noncosmic_loss.npy', allow_pickle=True, encoding='latin1').item()
 	
 	scaledP = dict()
 	for svType in svTypes:
@@ -735,10 +729,10 @@ if featureImportance == True:
 	#area = 0.005 * directionalAdjustedP**2
 	
 	#exit()
-	colors = ['blue', 'red', 'magenta', 'black']
-	#colors = ['magenta', 'black']
-	offset = [-0.02, -0.01, 0.01, 0.02]
-	#offset = [0.01, 0.02]
+	#colors = ['blue', 'red', 'magenta', 'black']
+	colors = ['magenta', 'black']
+	#offset = [-0.02, -0.01, 0.01, 0.02]
+	offset = [0.01, 0.02]
 	ind = 0
 	for svType in svTypes:
 		print('area')
@@ -783,7 +777,7 @@ if featureImportance == True:
 	#ax.set_theta_direction(-1)
 	ax.set_rorigin(-200)
 	ax.set_theta_zero_location('N', offset=10)
-	plt.savefig('featureImportances_allTypes_cosmic_gain.svg')
+	plt.savefig('featureImportances_allTypes_noncosmic_loss.svg')
 	plt.show()
 
 		
