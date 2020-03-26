@@ -108,23 +108,29 @@ recurrentGenes = np.array(recurrentGenes, dtype='object')
 sortedGenes = recurrentGenes[np.argsort(recurrentGenes[:,1])[::-1]]
 
 #make random distribution
+
+#load random distribution
+randomPairs = np.loadtxt(sys.argv[4], dtype='object')
+
 negativeCounts = []
 for ind in range(0, 100):
 	
 	#randomly sample any gene from the positive set.
 	#then count how often we find that gene.
-	randInd = random.sample(range(0, positivePairs.shape[0]), 1)
+	randInd = random.sample(range(0, randomPairs.shape[0]), 1)
 	
-	randomPair = positivePairs[randInd][0]
+	randomPair = randomPairs[randInd][0]
 	
 	splitPair = randomPair[0].split('_')
 	
 	gene = splitPair[0]
+	if gene not in sortedGenes[:,0]:
+		continue
 	#check how often we find this gene
 	recurrenceCount = sortedGenes[np.where(sortedGenes[:,0] == gene)[0],1][0]
 	
 	negativeCounts.append(recurrenceCount)
-
+print(negativeCounts)
 sortedGenesTop = []
 for gene in sortedGenes:
 	
@@ -265,6 +271,7 @@ plt.yticks(range(0, recurrenceMatrix.shape[0]), sortedGenesTop[0:top,0][::-1])
 plt.xticks(range(0, recurrenceMatrix.shape[1]), list(uniquePatients.keys()), rotation=90)
 #plt.grid()
 plt.tight_layout()
+plt.savefig('recurrence_allTypes.svg')
 plt.show()
 plt.clf()
 
@@ -341,29 +348,30 @@ for gene in sortedGenes[0:15]:
 	
 	plt.bar(geneInd, gene[5], color='yellow')
 	plt.bar(geneInd, gene[6], bottom=gene[5], color='cyan')
-	plt.bar(geneInd, gene[7], bottom=gene[5]+gene[6], color='green')
-	plt.bar(geneInd, gene[8], bottom=gene[5]+gene[6]+gene[7], color='purple')
-	plt.bar(geneInd, gene[9], bottom=gene[5]+gene[6]+gene[7]+gene[8], color='orange')
-	plt.bar(geneInd, gene[10], bottom=gene[5]+gene[6]+gene[7]+gene[8]+gene[9], color='brown')
-	plt.bar(geneInd, gene[11], bottom=gene[5]+gene[6]+gene[7]+gene[8]+gene[9]+gene[10], color='grey')
+	plt.bar(geneInd, gene[7], bottom=gene[5]+gene[6], color='grey')
+	plt.bar(geneInd, gene[8], bottom=gene[5]+gene[6]+gene[7], color='blue')
+	plt.bar(geneInd, gene[9], bottom=gene[5]+gene[6]+gene[7]+gene[8], color='red')
+	plt.bar(geneInd, gene[10], bottom=gene[5]+gene[6]+gene[7]+gene[8]+gene[9], color='magenta')
+	plt.bar(geneInd, gene[11], bottom=gene[5]+gene[6]+gene[7]+gene[8]+gene[9]+gene[10], color='black')
 	
 	#add non-coding negative SVs as well
-	plt.bar(geneInd, gene[16], bottom=gene[5]+gene[6]+gene[7]+gene[8]+gene[9]+gene[10]+gene[11], color='blue')
-	plt.bar(geneInd, gene[17], bottom=gene[5]+gene[6]+gene[7]+gene[8]+gene[9]+gene[10]+gene[11]+gene[16], color='red')
-	plt.bar(geneInd, gene[18], bottom=gene[5]+gene[6]+gene[7]+gene[8]+gene[9]+gene[10]+gene[11]+gene[16]+gene[17], color='magenta')
-	plt.bar(geneInd, gene[19], bottom=gene[5]+gene[6]+gene[7]+gene[8]+gene[9]+gene[10]+gene[11]+gene[16]+gene[17]+gene[18], color='black')
+	#plt.bar(geneInd, gene[16], bottom=gene[5]+gene[6]+gene[7]+gene[8]+gene[9]+gene[10]+gene[11], color='blue')
+	#plt.bar(geneInd, gene[17], bottom=gene[5]+gene[6]+gene[7]+gene[8]+gene[9]+gene[10]+gene[11]+gene[16], color='red')
+	#plt.bar(geneInd, gene[18], bottom=gene[5]+gene[6]+gene[7]+gene[8]+gene[9]+gene[10]+gene[11]+gene[16]+gene[17], color='magenta')
+	#plt.bar(geneInd, gene[19], bottom=gene[5]+gene[6]+gene[7]+gene[8]+gene[9]+gene[10]+gene[11]+gene[16]+gene[17]+gene[18], color='black')
 	
 	
 	
 	
-	if gene[5]+gene[6]+gene[7]+gene[8]+gene[9]+gene[10]+gene[11]+gene[16]+gene[17]+gene[18]+gene[19] > ymax:
-		ymax = gene[5]+gene[6]+gene[7]+gene[8]+gene[9]+gene[10]+gene[11]+gene[16]+gene[17]+gene[18]+gene[19] + 1
+	if gene[5]+gene[6]+gene[7]+gene[8]+gene[9]+gene[10]+gene[11] > ymax:
+		ymax = gene[5]+gene[6]+gene[7]+gene[8]+gene[9]+gene[10]+gene[11] + 1
 	
 	geneInd += 1
 
 #this doesn't fit for some reason
 plt.ylim(0,ymax+1)
-plt.tight_layout()	
+plt.tight_layout()
+plt.savefig('recurrence_bars.svg')
 plt.show()
 
 
