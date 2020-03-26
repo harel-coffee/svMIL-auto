@@ -543,9 +543,9 @@ if featureLoad == False:
 				degPairInfo = degPairs[degPairs[:,0] == shortPair][0]
 		
 				#cosmic yes/no
-				if topInstances[instanceInd,33] < 1:
-					if topInstances[instanceInd,0] > 0:
-						filteredInstances.append(topInstances[instanceInd])
+				#if topInstances[instanceInd,33] < 1:
+				if topInstances[instanceInd,0] > 0:
+					filteredInstances.append(topInstances[instanceInd])
 					
 					#check for hallmark yes/no
 					#if splitPair[0] in hallmarkGenes:
@@ -637,8 +637,8 @@ if featureLoad == False:
 			reject, pAdjusted, _, _ = multipletests(featurePValues, method='bonferroni')
 		
 			#for cosmic, remove the cosmic feature
-			del featureZScores[31]
-			pAdjusted = np.delete(pAdjusted, 31)
+			#del featureZScores[31]
+			#pAdjusted = np.delete(pAdjusted, 31)
 			
 			allFeatureZScores[svType] = featureZScores
 			adjustedPValues[svType] = pAdjusted
@@ -654,21 +654,21 @@ if featureLoad == False:
 			print('hallmark stats: ', hallmarkCount, np.mean(randomHallmarkCounts), np.std(randomHallmarkCounts), z, pValue)
 			
 	
-		np.save('featureZScores_noncosmic_loss.npy', allFeatureZScores)
-		np.save('adjustedPValues_noncosmic_loss.npy', adjustedPValues)
+		np.save('featureZScores_loss.npy', allFeatureZScores)
+		np.save('adjustedPValues_loss.npy', adjustedPValues)
 			
 if featureImportance == True:
 	#load the full set so that we normalize properly
-	allFeatureZScores = np.load('featureZScores_noncosmic_all.npy', allow_pickle=True, encoding='latin1').item()
-	adjustedPValues = np.load('adjustedPValues_noncosmic_all.npy', allow_pickle=True, encoding='latin1').item()
+	allFeatureZScores = np.load('featureZScores_all.npy', allow_pickle=True, encoding='latin1').item()
+	adjustedPValues = np.load('adjustedPValues_all.npy', allow_pickle=True, encoding='latin1').item()
 
-	# xlabels = ['cpg', 'tf', 'hic', 'ctcf', 'dnaseI', 'h3k9me3', 'h3k4me3', 'h3k27ac', 'h3k27me3', 'h3k4me1', 'h3k36me3',
-	# 		   'CTCF', 'CTCF+Enhancer', 'CTCF+Promoter', 'Enhancer', 'Heterochromatin', 'Poised_Promoter', 'Promoter', 'Repeat', 'Repressed', 'Transcribed', 'rnaPol',
-	# 		   'enhancer_s', 'ctcf_s', 'rnaPol_s', 'h3k9me3_s', 'h3k4me3_s', 'h3k27ac_s', 'h3k27me3_s', 'h3k4me1_s', 'h3k36me3_s', 'cosmic', 'enhancerType', 'promoterType', 'eQTLType', 'superEnhancerType']
-	# 
 	xlabels = ['cpg', 'tf', 'hic', 'ctcf', 'dnaseI', 'h3k9me3', 'h3k4me3', 'h3k27ac', 'h3k27me3', 'h3k4me1', 'h3k36me3',
-			   'CTCF', 'CTCF+Enhancer', 'CTCF+Promoter', 'Enhancer', 'Heterochromatin', 'Poised_Promoter', 'Promoter', 'Repeat', 'Repressed', 'Transcribed', 'rnaPol',
-			   'enhancer_s', 'ctcf_s', 'rnaPol_s', 'h3k9me3_s', 'h3k4me3_s', 'h3k27ac_s', 'h3k27me3_s', 'h3k4me1_s', 'h3k36me3_s', 'enhancerType', 'promoterType', 'eQTLType', 'superEnhancerType']
+	 		   'CTCF', 'CTCF+Enhancer', 'CTCF+Promoter', 'Enhancer', 'Heterochromatin', 'Poised_Promoter', 'Promoter', 'Repeat', 'Repressed', 'Transcribed', 'rnaPol',
+	 		   'enhancer_s', 'ctcf_s', 'rnaPol_s', 'h3k9me3_s', 'h3k4me3_s', 'h3k27ac_s', 'h3k27me3_s', 'h3k4me1_s', 'h3k36me3_s', 'cosmic', 'enhancerType', 'promoterType', 'eQTLType', 'superEnhancerType']
+	 
+	#xlabels = ['cpg', 'tf', 'hic', 'ctcf', 'dnaseI', 'h3k9me3', 'h3k4me3', 'h3k27ac', 'h3k27me3', 'h3k4me1', 'h3k36me3',
+	#		   'CTCF', 'CTCF+Enhancer', 'CTCF+Promoter', 'Enhancer', 'Heterochromatin', 'Poised_Promoter', 'Promoter', 'Repeat', 'Repressed', 'Transcribed', 'rnaPol',
+	#		   'enhancer_s', 'ctcf_s', 'rnaPol_s', 'h3k9me3_s', 'h3k4me3_s', 'h3k27ac_s', 'h3k27me3_s', 'h3k4me1_s', 'h3k36me3_s', 'enhancerType', 'promoterType', 'eQTLType', 'superEnhancerType']
 	
 	
 	#to plot, show the p-values, direction based on the z-score.
@@ -687,8 +687,8 @@ if featureImportance == True:
 			overallMax = np.max(directionalAdjustedP)
 
 	
-	allFeatureZScores = np.load('featureZScores_noncosmic_loss.npy', allow_pickle=True, encoding='latin1').item()
-	adjustedPValues = np.load('adjustedPValues_noncosmic_loss.npy', allow_pickle=True, encoding='latin1').item()
+	allFeatureZScores = np.load('featureZScores_loss.npy', allow_pickle=True, encoding='latin1').item()
+	adjustedPValues = np.load('adjustedPValues_loss.npy', allow_pickle=True, encoding='latin1').item()
 	
 	scaledP = dict()
 	for svType in svTypes:
@@ -777,7 +777,7 @@ if featureImportance == True:
 	#ax.set_theta_direction(-1)
 	ax.set_rorigin(-200)
 	ax.set_theta_zero_location('N', offset=10)
-	plt.savefig('featureImportances_allTypes_noncosmic_loss.svg')
+	plt.savefig('featureImportances_allTypes_loss.svg')
 	plt.show()
 
 		
