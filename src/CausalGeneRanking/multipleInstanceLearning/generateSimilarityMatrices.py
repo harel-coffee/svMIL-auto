@@ -156,6 +156,9 @@ for svType in svTypes:
 	#assign bag labels
 	bagLabels = np.array([1]*positiveBags.shape[0] + [0]*negativeBagsSubsampled.shape[0])
 
+	#output the bag labels which we can later read with the matrices
+	np.save(finalOutDir + '/bagLabels_' + svType + '.npy', bagLabels)
+
 	#stack the instances in the bags so that we can easily compute bag-instance distances
 	instances = np.vstack(bags)
 	print(instances[:,2])
@@ -210,7 +213,7 @@ for svType in svTypes:
 			#output this similarity matrix to a file.
 			#output to a folder specific for the feature selection data
 			np.save(featureEliminationOutDir + '/similarityMatrix_' + svType + '_' + featureInd + '.npy', similarityMatrix)
-
+			
 		else:
 			#Make similarity matrix
 			print("generating similarity matrix")
