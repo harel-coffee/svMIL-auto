@@ -11,7 +11,7 @@ import os
 import numpy as np
 import pickle as pkl
 
-featureElimination = False
+featureElimination = sys.argv[2]
 svTypes = ['DEL', 'DUP', 'INV', 'ITX']
 svTypes = ['ITX']
 
@@ -21,7 +21,7 @@ finalOutDir = outDir + '/multipleInstanceLearning/similarityMatrices/'
 if not os.path.exists(finalOutDir):
 	os.makedirs(finalOutDir)
 
-if featureElimination == True:
+if featureElimination == "True":
 	featureEliminationOutDir = finalOutDir + '/featureSelection'
 	if not os.path.exists(featureEliminationOutDir):
 		os.makedirs(featureEliminationOutDir)
@@ -151,6 +151,9 @@ for svType in svTypes:
 	negativeBagPairNamesSubsampled = negativeBagPairNames[negativeBagsSubsampleInd]
 	bagPairLabels = np.concatenate((positiveBagPairNames, negativeBagPairNamesSubsampled))
 
+	#save the bag pair labels for later
+	np.save(finalOutDir + '/bagPairLabels_' + svType + '.npy', bagPairLabels)
+
 	#merge the bags so that we can easily get to 1 similarity matrix and do all-to-all computations
 	bags = np.concatenate((positiveBags, negativeBagsSubsampled))
 	#assign bag labels
@@ -161,6 +164,10 @@ for svType in svTypes:
 
 	#stack the instances in the bags so that we can easily compute bag-instance distances
 	instances = np.vstack(bags)
+
+	#also output the instances for later
+	np.save(finalOutDir + '/instances_' + svType + '.npy', instances)
+
 	print(instances[:,2])
 
 	#Make an index where we can lookup at which position the instances are in the concatenated bag array.
@@ -175,19 +182,22 @@ for svType in svTypes:
 
 			instanceInd += 1
 
+	#save bagmap for later
+	np.save(finalOutDir + '/bagMap_' + svType + '.npy', bagMap)
+
 	#if we do feature selection, randomize the features here
 	featureCount = instances.shape[1]
 
-	featureStart = featureCount
-	if featureElimination == True:
+	featureStart = featureCount-1
+	if featureElimination == "True":
 		featureStart = 0 #set this to featureCount to run with all features. (make setting later)
 
 	#if featureStart is not updated, this will run once
 	#otherwise it will randomize a new feature each time
-	for featureInd in range(featureStart, featureCount+1):
+	for featureInd in range(featureStart, featureCount):
 		print('current feature: ', featureInd+1)
 
-		if featureElimination == True:
+		if featureElimination == "True":
 
 			#randomize one feature across the bags
 			#get all values of this instance
@@ -212,7 +222,7 @@ for svType in svTypes:
 			similarityMatrix = getSimilarityMatrix(bags, shuffledInstances, reverseBagMap)
 			#output this similarity matrix to a file.
 			#output to a folder specific for the feature selection data
-			np.save(featureEliminationOutDir + '/similarityMatrix_' + svType + '_' + featureInd + '.npy', similarityMatrix)
+			np.save(featureEliminationOutDir + '/similarityMatrix_' + svType + '_' + str(featureInd) + '.npy', similarityMatrix)
 			
 		else:
 			#Make similarity matrix

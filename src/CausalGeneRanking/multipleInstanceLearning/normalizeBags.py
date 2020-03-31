@@ -6,6 +6,7 @@
 import sys
 import os
 import numpy as np
+import pickle as pkl
 
 outDir = sys.argv[1]
 finalOutDir = outDir + '/multipleInstanceLearning/'
@@ -14,12 +15,14 @@ if not os.path.exists(finalOutDir):
 	os.makedirs(finalOutDir)
 
 #Get the bags
-with open(outDir + 'bags.pkl', 'rb') as handle:
+with open(outDir + '/linkedSVGenePairs/bags.pkl', 'rb') as handle:
 	bagDict = pkl.load(handle)
 
+instanceNum = len(bagDict[list(bagDict.keys())[0]][0])
+
 #first check what the minimum and maximum feature values are in order to normalize
-currentMax = [0]*35 #would be better if we read this from the input file, this is how many features we have for each instance
-currentMin = [float('inf')]*35
+currentMax = [0]*instanceNum
+currentMin = [float('inf')]*instanceNum
 for pair in bagDict:
 	
 	for instance in bagDict[pair]:

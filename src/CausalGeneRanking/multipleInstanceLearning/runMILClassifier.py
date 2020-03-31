@@ -9,11 +9,24 @@
 import sys
 import numpy as np
 
-featureElimination = False
-svTypes = ['ITX']
-outDir = sys.argv[3]
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.model_selection import StratifiedKFold
+from sklearn import model_selection
+from sklearn.metrics import plot_roc_curve, auc
+import matplotlib.pyplot as plt
+from scipy import interp
+from random import shuffle
+import os
+import glob
 
-def cvClassification(similarityMatrix, bagLabels, clf, svType, title, plot):
+import matplotlib
+matplotlib.use('Agg')
+
+featureElimination = sys.argv[2]
+svTypes = ['ITX']
+outDir = sys.argv[1]
+
+def cvClassification(similarityMatrix, bagLabels, clf, svType, title, plot, plotOutputFile, outputFile):
 
 	#get the kfold model
 	kfold = model_selection.StratifiedKFold(n_splits=10, shuffle=True, random_state=10)
@@ -35,10 +48,12 @@ def cvClassification(similarityMatrix, bagLabels, clf, svType, title, plot):
 		tprs.append(interp_tpr)
 		aucs.append(viz.roc_auc)
 		importances.append(clf.feature_importances_)
-	print('aucs: ')
-	print(aucs)
-	print('mean auc: ', np.mean(aucs))
-	print('std of auc: ', np.std(aucs))
+
+	#write this to a file rather than to screen
+	score = str(np.mean(aucs)) + '\t' + str(np.std(aucs)) + '\n'
+
+	with open(outputFile, 'a') as outF:
+		outF.write(score)
 
 	if plot == True:
 
@@ -64,7 +79,7 @@ def cvClassification(similarityMatrix, bagLabels, clf, svType, title, plot):
 			   title="Receiver operating characteristic: " + title)
 		ax.legend(loc="lower right")
 		plt.tight_layout()
-		plt.savefig('miles_' + svType + '.svg')
+		plt.savefig(plotOutputFile)
 		plt.show()
 
 for svType in svTypes:
@@ -87,22 +102,48 @@ for svType in svTypes:
 		classifier = RandomForestClassifier(n_estimators= 600, min_samples_split=5, min_samples_leaf=1, max_features='auto', max_depth=80, bootstrap=True)
 		title = 'All SV types'
 
-	#obtain the right similarity matrix and bag labels
-	
+	#obtain the right similarity matrix and bag labels for this SV type
 	dataPath = outDir + '/multipleInstanceLearning/similarityMatrices/'
 	similarityMatrix = np.load(dataPath + '/similarityMatrix_' + svType + '.npy', encoding='latin1', allow_pickle=True)
-	bagLabels = np.load(dataPath + '/bagLabels' + svType + '.npy', encoding='latin1', allow_pickle=True)
+	bagLabels = np.load(dataPath + '/bagLabels_' + svType + '.npy', encoding='latin1', allow_pickle=True)
+
+	plot = False
+	#don't make the plots for each feature to eliminate
+	if featureElimination == "False":
+		plot = True
 	
-	plot = True
-	if featureSelection == True:
-		plot = False
+		plotOutputPath = outDir + '/multipleInstanceLearning/rocCurves/'
+		if not os.path.exists(plotOutputPath):
+			os.makedirs(plotOutputPath)
 
-	cvClassification(similarityMatrix, bagLabels, classifier, svType, title, plot)
+		plotOutputFile = plotOutputPath + '/rocCurve_' + svType + '.svg'
+		outputFile = outDir + '/multipleInstanceLearning/performance_' + svType + '.txt'
+		cvClassification(similarityMatrix, bagLabels, classifier, svType, title, plot, plotOutputFile, outputFile)
 
-	#repeat, but then with random labels.
-	#mind here, if multiple iterations, the baglabels are permanently shuffled!
-	if featureSelection == False:
+		#repeat, but then with random labels.
+		#mind here, if multiple iterations, the baglabels are permanently shuffled!
+
 		shuffle(bagLabels)
 
-		cvClassification(similarityMatrix, bagLabels, classifier, svType, title, plot)
+		plotOutputFile = plotOutputPath + '/rocCurve_' + svType + '_randomLabels.svg'
+		outputFile = outDir + '/multipleInstanceLearning/performance_' + svType + '_randomBagLabels.txt'
+		cvClassification(similarityMatrix, bagLabels, classifier, svType, title, plot, plotOutputFile, outputFile)
+	else:
+		
+		#do the feature elimination here. Go through each similarity matrix with eliminated feature,
+		#and obtain the classification scores.
+		#the plot should not be made, and the AUCs should be written to a file
+		
+		#get each similarity matrix
+		
+		featureEliminationDataFolder = outDir + '/multipleInstanceLearning/similarityMatrices/featureSelection/'
+		featureEliminationFiles = glob.glob(featureEliminationDataFolder + '*_' + svType + '_*')
+
+		#file to write to aucs to	
+		outputFile = outDir + '/multipleInstanceLearning/featureEliminationResults_' + svType + '.txt'
+		for fileInd in range(0, len(featureEliminationFiles)):
+
+			#get the right similarity matrix for this shuffled feature
+			similarityMatrix = np.load(featureEliminationDataFolder + '/similarityMatrix_' + svType + '_' + str(fileInd) + '.npy')
+			cvClassification(similarityMatrix, bagLabels, classifier, svType, title, plot, '', outputFile)
 

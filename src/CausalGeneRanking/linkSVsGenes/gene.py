@@ -316,9 +316,8 @@ class Gene:
 			if elementStr not in self.alteredElements[sv]:
 				#self.alteredElements[sv][elementStr] = lossGains + elementMethylation + enhScore
 				
-				self.alteredElements[sv][elementStr] = lossGains + elementMethylation + elementStrength + [enhancerType, promoterType, eQTLType, superEnhancerType] + [self.cosmic]
-				
-				
+				self.alteredElements[sv][elementStr] = lossGains + elementMethylation + elementStrength + [enhancerType, promoterType, eQTLType, superEnhancerType]
+
 				#self.alteredElements[sv][elementStr] = lossGains
 		#something with methylation for the affected genes only
 		#first make sure that all elements are gathered, then afterwards, add the methylation specifically for each of them. 

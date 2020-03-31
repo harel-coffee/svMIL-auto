@@ -1,3 +1,14 @@
+#!/bin/bash
+#$ -V
+#$ -S /bin/bash
+#$ -cwd
+#$ -m as
+#$ -M m.m.nieboer@umcutrecht.nl
+#$ -l h_vmem=16G
+#$ -l h_rt=06:00:00
+#$ -e workflow_err
+#$ -o workflow_out
+
 ### INSTRUCTIONS ###
 
 #	This script intends to show the workflow used to generate all figures in the paper.
@@ -50,16 +61,16 @@ if $run; then
 fi
 
 ### PART 4 - SETTING UP FOR MULTIPLE INSTANCE LEARNING ###
-run=true #these steps only need to be done when outputting anything related to multiple instance learning
+run=false #these steps only need to be done when outputting anything related to multiple instance learning
 
 if $run; then
 	runFolder='./multipleInstanceLearning/'
 
 	#first normalize the bags
-	#python "$runFolder/normalizeBags.py" "$outputFolder"
+	python "$runFolder/normalizeBags.py" "$outputFolder"
 
 	#then generate the similarity matrices for all SVs
-	python "$runFolder/generateSimilarityMatrices.py" "$outputFolder"
+	python "$runFolder/generateSimilarityMatrices.py" "$outputFolder" "False"
 
 fi
 
@@ -74,12 +85,30 @@ run=false
 if $run; then
 	runFolder='./multipleInstanceLearning/'
 
-	#test the classifier and output
+	#test the classifier and output the MIL curves
+	python "$runFolder/runMILClassifier.py" "$outputFolder" "False"
 
 fi
 
 
-### FIGURE 4 ###
+### FIGURE 4 - FEATURE IMPORTANCE AND RECURRENCE ###
+run=false
+
+if $run; then
+	runFolder='./multipleInstanceLearning/'
+
+	#Generate the plotting data, and plot the feature importances for ALL instances,
+	#don't split into cosmic/non-cosmic and gains/losses
+	python "$runFolder/plotFeatureImportances.py" "$outputFolder" "True" "ALL" "ALL"
+
+	#plot for GAINS only
+	#python "$runFolder/plotFeatureImportances.py" "$outputFolder" "True" "GAIN" "ALL"
+
+	#plot for LOSSES only
+	#python "$runFolder/plotFeatureImportances.py" "$outputFolder" "True" "LOSS" "ALL"
+fi
+
+
 
 ### SUPPLEMENTARY FIGURE 1 ###
 
@@ -91,10 +120,20 @@ fi
 
 ### SUPPLEMENTARY FIGURE 5 ###
 
-### SUPPLEMENTARY TABLE 1 ###
+### SUPPLEMENTARY TABLE 1 - FEATURE ELIMINATION ###
+run=true
 
-#generate the feature elimination similarity matrices
-#then run the classifiers on these
+if $run; then
+	runFolder='./multipleInstanceLearning/'
+
+	#First generate the similarity matrices based on the bags in which 1 feature is shuffled each time
+	#python "$runFolder/generateSimilarityMatrices.py" "$outputFolder" "True"
+	#Then get the performance on all of these similarity matrices
+	python "$runFolder/runMILClassifier.py" "$outputFolder" "True"
+fi
+
+
+
 
 ### ADDITIONAL, NON-FIGURE ###
 
