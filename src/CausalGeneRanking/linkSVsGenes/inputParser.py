@@ -35,7 +35,6 @@ class InputParser:
 			regions: (numpy array) array with the SVs and their information. chr1, s1, e1, chr2, s2, e2, cancerType, sampleName, svObject.
 		"""
 		
-			
 		variantsList = []
 		
 		with open(svFile, 'r') as f:
@@ -45,10 +44,10 @@ class InputParser:
 			for line in f:
 				line = line.strip()
 				splitLine = line.split("\t")
-				
+
 				#First extract the header and store it in the dictionary to remove dependency on the order of columns in the file
 				if lineCount < 1:
-		
+
 					header = splitLine
 					lineCount += 1
 					continue
@@ -116,9 +115,17 @@ class InputParser:
 					tmpS1 = s1
 					s1 = e1
 					e1 = tmpS1
-				
-				#remove the underscore from SV type
-				svType = svType.replace("_", ".")
+
+				if svType == 'del':
+					svType = 'DEL'
+				elif svType == 'tandem_dup':
+					svType = 'DUP'
+				elif svType == 'invers':
+					svType = 'INV'
+				elif svType == 'transl_inter':
+					svType = 'ITX'
+				else:
+					continue
 	
 				if list(chr1)[0] == "c": #add the chr notation only when it is not already there
 					svObject = SV(chr1, s1, e1, o1, chr2, s2, e2, o2, sampleName, cancerType, svType)

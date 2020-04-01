@@ -1,6 +1,14 @@
 import sys
 import numpy as np
 import os
+from os import listdir
+from os.path import isfile, join
+path = sys.argv[1]
+sys.path.insert(1, path)
+sys.path.insert(1, 'linkSVsGenes/')
+
+from inputParser import InputParser
+import settings
 
 outDir = sys.argv[2]
 
@@ -8,7 +16,7 @@ outDir = sys.argv[2]
 #Get a list of all genes * patients that have mutations.
 
 #Get the CNVs per gene
-def getPatientsWithCNVGeneBased(cnvDir):
+def getPatientsWithCNVGeneBased_hmf(cnvDir):
 
 	tsvs = glob.glob(cnvDir + '/**/*.gene.tsv', recursive=True)
 
@@ -52,11 +60,9 @@ def getPatientsWithCNVGeneBased(cnvDir):
 
 	return cnvPatientsAmp, cnvPatientsDel
 
-cnvPatientsAmp, cnvPatientsDel = getPatientsWithCNVGeneBased(sys.argv[1])
-
 #Get the SNVs per gene
 
-def getPatientsWithSNVs(snvDir):
+def getPatientsWithSNVs_hmf(snvDir):
 	import gzip
 	#search through the SNVs and link these to genes.
 	vcfs = glob.glob(snvDir + '/**/*.somatic.vcf.gz', recursive=True)
@@ -100,10 +106,8 @@ def getPatientsWithSNVs(snvDir):
 
 	return patientsWithSNVs
 
-snvPatients = getPatientsWithSNVs(sys.argv[1])
-
 # #Get the SV per gene
-def getPatientsWithSVs(svDir, allGenes):
+def getPatientsWithSVs_hmf(svDir, allGenes):
 
 	#Get all parsed and annotated SV type files from the main dir
 
@@ -252,7 +256,124 @@ def getPatientsWithSVs(svDir, allGenes):
 
 	return svPatientsDel, svPatientsDup, svPatientsInv, svPatientsItx
 
-svPatientsDel, svPatientsDup, svPatientsInv, svPatientsItx = getPatientsWithSVs(sys.argv[1], allGenes)
+#functions for TCGA mutations
+def getPatientsWithSVs_tcga(svFile, allGenes):
+	
+	#load the svs
+	svData = InputParser().getSVsFromFile(svFile, '')
+	
+	svPatientsDel = dict()
+	svPatientsDup = dict()
+	svPatientsInv = dict()
+	svPatientsItx = dict()
+
+	for sv in svData:
+		
+		sampleName = sv[7]
+		if sampleName not in svPatientsDel:
+			svPatientsDel[sampleName] = []
+		if sampleName not in svPatientsDup:
+			svPatientsDup[sampleName] = []
+		if sampleName not in svPatientsInv:
+			svPatientsInv[sampleName] = []
+		if sampleName not in svPatientsItx:
+			svPatientsItx[sampleName] = []
+
+		chr1 = sv[0]
+		s1 = sv[1]
+		e1 = sv[2]
+		chr2 = sv[3]
+		s2 = sv[4]
+		e2 = sv[5]
+		svType = sv[8].svType
+		#intrachromosomal SV
+		if chr1 == chr2:
+
+			geneChrSubset = allGenes[allGenes[:,0] == chr1]
+
+			geneMatches = geneChrSubset[(geneChrSubset[:,1] <= e2) * (geneChrSubset[:,2] >= s1)]
+
+			if svType == 'DEL':
+				for match in geneMatches:
+					svPatientsDel[sampleName].append(match[3].name)
+
+
+			elif svType == 'DUP':
+				for match in geneMatches:
+					svPatientsDup[sampleName].append(match[3].name)
+			elif svType == 'INV':
+				for match in geneMatches:
+					svPatientsInv[sampleName].append(match[3].name)
+
+		else:
+
+			#find breakpoints in the gene for each side of the SV
+			geneChr1Subset = allGenes[allGenes[:,0] == chr1]
+			geneChr2Subset = allGenes[allGenes[:,0] == chr2]
+
+			#check if the bp start is within the gene.
+			geneChr1Matches = geneChr1Subset[(s1 >= geneChr1Subset[:,1]) * (s1 <= geneChr1Subset[:,2])]
+			geneChr2Matches = geneChr2Subset[(s2 >= geneChr2Subset[:,1]) * (s2 <= geneChr2Subset[:,2])]
+
+			for match in geneChr1Matches:
+				svPatientsItx[sampleName].append(match[3].name)
+
+			for match in geneChr2Matches:
+				svPatientsItx[sampleName].append(match[3].name)
+
+	return svPatientsDel, svPatientsDup, svPatientsInv, svPatientsItx
+
+def getPatientsWithSNVs_tcga(snvDir):
+
+	allFiles = [f for f in listdir(snvDir) if isfile(join(snvDir, f))]
+
+	snvPatients = dict()
+
+	for currentFile in allFiles:
+
+		if currentFile == "MANIFEST.txt":
+			continue
+		splitFileName = currentFile.split(".")
+		patientID = splitFileName[0]
+		splitPatientID = patientID.split("-")
+		shortPatientID = 'brca' + splitPatientID[2]
+		
+		if shortPatientID not in snvPatients:
+			snvPatients[shortPatientID] = []
+
+		#Load the contents of the file
+		with open(snvDir + "/" + currentFile, 'r') as inF:
+			lineCount = 0
+			for line in inF:
+				line = line.strip() #remove newlines
+				if lineCount < 1: #only read the line if it is not a header line
+					lineCount += 1
+					continue
+
+				splitLine = line.split("\t")
+				geneName = splitLine[0]
+
+				if splitLine[8] == 'Silent':
+					continue
+
+				snvPatients[shortPatientID].append(geneName)
+
+	return snvPatients
+		
+causalGenes = InputParser().readCausalGeneFile(settings.files['causalGenesFile'])
+nonCausalGenes = InputParser().readNonCausalGeneFile(settings.files['nonCausalGenesFile'], causalGenes) #In the same format as the causal genes.
+
+#Combine the genes into one set.
+allGenes = np.concatenate((causalGenes, nonCausalGenes), axis=0)
+
+#cnvPatientsAmp, cnvPatientsDel = getPatientsWithCNVGeneBased_hmf(sys.argv[1])
+#snvPatients = getPatientsWithSNVs_hmf(sys.argv[1])
+#svPatientsDel, svPatientsDup, svPatientsInv, svPatientsItx = getPatientsWithSVs_hmf(sys.argv[1], allGenes)
+
+svPatientsDel, svPatientsDup, svPatientsInv, svPatientsItx = getPatientsWithSVs_tcga(settings.files['svFile'], allGenes)
+cnvPatientsAmp = dict()
+cnvPatientsDel = dict()
+snvPatients = getPatientsWithSNVs_tcga(settings.files['snvDir'])
 
 finalOutDir = outDir + '/patientGeneMutationPairs/'
 
@@ -264,5 +385,5 @@ np.save(finalOutDir + 'svPatientsDup.npy', svPatientsDup)
 np.save(finalOutDir + 'svPatientsInv.npy', svPatientsInv)
 np.save(finalOutDir + 'svPatientsItx.npy', svPatientsItx)
 np.save(finalOutDir + 'cnvPatientsDel.npy', cnvPatientsDel)
-np.save(finaOutDir + 'cnvPatientsAmp.npy', cnvPatientsAmp)
+np.save(finalOutDir + 'cnvPatientsAmp.npy', cnvPatientsAmp)
 np.save(finalOutDir + 'snvPatients.npy', snvPatients)

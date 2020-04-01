@@ -31,10 +31,12 @@
 #Load in a settings file with the paths to the data that all code will be run on.
 ## path here
 settingsFolder='./settings/settings_HMF_BRCA/'
+#settingsFolder='./settings/settings_TCGA_BRCA/'
 
 #Create a folder in which all output for this data will be stored
 #Different steps will create their own intermediate folders in here
 outputFolder='output/HMF_BRCA'
+#outputFolder='output/TCGA_BRCA'
 
 ### (REQUIRED) PART 2 - LINK SVS TO GENES ###
 run=false #Only skip this step if all output has already been generated!
@@ -53,11 +55,15 @@ if $run; then
 
 	#first link mutations to patients. These are required to quickly check which patients
 	#have which mutations in which genes
-	#python "$runFolder/determinePatientGeneMutationPairs.py" "$outputFolder"
+	python "$runFolder/determinePatientGeneMutationPairs.py" "$settingsFolder" "$outputFolder"
 
 	#identify which TADs are disrupted in these patients, and compute the
 	#z-scores of the genes in these TADs. Filter out genes with coding mutations.
-	python "$runFolder/computeZScoresDisruptedTads.py" '../../data/genes/allGenesAndIdsHg19.txt' '/hpc/compgen/users/mnieboer/data/pipeline/read_counts/brca_tmm.txt' '/hpc/compgen/users/mnieboer/data/somatics/' "$settingsFolder" "$outputFolder"
+
+	#### TO DO fix the parameters here
+
+	#python "$runFolder/computeZScoresDisruptedTads.py" '../../data/genes/allGenesAndIdsHg19.txt' '/hpc/compgen/users/mnieboer/data/pipeline/read_counts/brca_tmm.txt' '/hpc/compgen/users/mnieboer/data/somatics/' "$settingsFolder" "$outputFolder"
+	python "$runFolder/computeZScoresDisruptedTads.py" '../../data/genes/allGenesAndIdsHg19.txt' '../../data/expression/gdac.broadinstitute.org_BRCA.Merge_rnaseqv2__illuminahiseq_rnaseqv2__unc_edu__Level_3__RSEM_genes_normalized__data.Level_3.2016012800.0.0/BRCA.rnaseqv2__illuminahiseq_rnaseqv2__unc_edu__Level_3__RSEM_genes_normalized__data.data.txt' '/hpc/compgen/users/mnieboer/data/somatics/' "$settingsFolder" "$outputFolder"
 fi
 
 ### PART 4 - SETTING UP FOR MULTIPLE INSTANCE LEARNING ###
@@ -70,7 +76,7 @@ if $run; then
 	python "$runFolder/normalizeBags.py" "$outputFolder"
 
 	#then generate the similarity matrices for all SVs
-	python "$runFolder/generateSimilarityMatrices.py" "$outputFolder" "False"
+	python "$runFolder/generateSimilarityMatrices.py" "$outputFolder" "False" "False"
 
 fi
 
@@ -86,7 +92,7 @@ if $run; then
 	runFolder='./multipleInstanceLearning/'
 
 	#test the classifier and output the MIL curves
-	python "$runFolder/runMILClassifier.py" "$outputFolder" "False"
+	python "$runFolder/runMILClassifier.py" "$outputFolder" "False" "False"
 
 fi
 
@@ -121,13 +127,13 @@ fi
 ### SUPPLEMENTARY FIGURE 5 ###
 
 ### SUPPLEMENTARY TABLE 1 - FEATURE ELIMINATION ###
-run=true
+run=false
 
 if $run; then
 	runFolder='./multipleInstanceLearning/'
 
 	#First generate the similarity matrices based on the bags in which 1 feature is shuffled each time
-	#python "$runFolder/generateSimilarityMatrices.py" "$outputFolder" "True"
+	python "$runFolder/generateSimilarityMatrices.py" "$outputFolder" "True" "False"
 	#Then get the performance on all of these similarity matrices
 	python "$runFolder/runMILClassifier.py" "$outputFolder" "True"
 fi
@@ -139,3 +145,19 @@ fi
 
 #optimizing the MIL classifiers
 #simple ML
+
+## leave-one-patient-out
+run=true
+
+if $run; then
+	runFolder='./multipleInstanceLearning/'
+
+	python "$runFolder/generateSimilarityMatrices.py" "$outputFolder" "False" "True"
+
+	#python "$runFolder/runMILClassifier.py" "$outputFolder" "False" "True"
+
+fi
+
+
+
+

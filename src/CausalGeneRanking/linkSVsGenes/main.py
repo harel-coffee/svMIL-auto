@@ -73,7 +73,7 @@ if mode == "SV":
 	
 	if settings.general['source'] == 'TCGA':
 		
-		print("Reading SV data")
+		print("Reading SV data TCGA")
 		svFile = settings.files['svFile']
 		svData = InputParser().getSVsFromFile(svFile, "all")
 	if settings.general['source'] == 'HMF':

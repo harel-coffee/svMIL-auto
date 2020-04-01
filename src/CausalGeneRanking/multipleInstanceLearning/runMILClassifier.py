@@ -17,13 +17,17 @@ import matplotlib.pyplot as plt
 from scipy import interp
 from random import shuffle
 import os
+import os.path
 import glob
+import re
 
 import matplotlib
 matplotlib.use('Agg')
 
 featureElimination = sys.argv[2]
-svTypes = ['ITX']
+leaveOnePatientOut = sys.argv[3]
+svTypes = ['DEL', 'DUP', 'INV', 'ITX']
+svTypes = ['INV', 'ITX']
 outDir = sys.argv[1]
 
 def cvClassification(similarityMatrix, bagLabels, clf, svType, title, plot, plotOutputFile, outputFile):
@@ -80,7 +84,87 @@ def cvClassification(similarityMatrix, bagLabels, clf, svType, title, plot, plot
 		ax.legend(loc="lower right")
 		plt.tight_layout()
 		plt.savefig(plotOutputFile)
-		plt.show()
+
+#function to classify on a case where 1 patient is left out at a time
+#the similarity matrices are pre-made, with each time 1 patient being left out.
+#so we can just load these in, and then train our standard classifier on that.
+#report on the performance of each patient.
+def leaveOnePatientOutCV(leaveOneOutDataFolder, classifier):
+
+	#first get the names of all patients
+	allFiles = glob.glob(leaveOneOutDataFolder + '*_' + svType + '.npy')
+
+	patientFiles = dict()
+	for dataFile in allFiles:
+
+		#get the patient ID
+		splitFileId = dataFile.split('_')
+		patientId = splitFileId[len(splitFileId)-2]
+
+		if patientId not in patientFiles:
+			patientFiles[patientId] = []
+		patientFiles[patientId].append(dataFile)
+
+
+	#for each patient, get the train/test combination, and run the classifier
+	performances = []
+	aucs = []
+	for patient in patientFiles:
+		print(patient)
+
+		for dataFile in patientFiles[patient]:
+
+			if re.search('similarityMatrixTrain', dataFile):
+				similarityMatrixTrain = np.load(dataFile, encoding='latin1', allow_pickle=True)
+			if re.search('similarityMatrixTest', dataFile):
+				similarityMatrixTest = np.load(dataFile, encoding='latin1', allow_pickle=True)
+			if re.search('bagLabelsTrain', dataFile):
+				bagLabelsTrain = np.load(dataFile, encoding='latin1', allow_pickle=True)
+			if re.search('bagLabelsTest', dataFile):
+				bagLabelsTest = np.load(dataFile, encoding='latin1', allow_pickle=True)
+
+		print(bagLabelsTest)
+
+		#then train the classifier
+		classifier.fit(similarityMatrixTrain, bagLabelsTrain)
+		print('train: ', classifier.score(similarityMatrixTrain, bagLabelsTrain))
+		print('test: ', classifier.score(similarityMatrixTest, bagLabelsTest))
+		performances.append(classifier.score(similarityMatrixTest, bagLabelsTest))
+
+		fig, ax = plt.subplots()
+		viz = plot_roc_curve(classifier, similarityMatrixTest, bagLabelsTest,
+							 name='roc',
+							 alpha=0.3, lw=1, ax=ax)
+		aucs.append(np.mean(viz.roc_auc))
+		print('auc: ', np.mean(viz.roc_auc))
+		
+	print(aucs)
+	print(np.mean(aucs))
+	print(performances)
+	print(np.mean(performances))
+
+	#output these values to a file
+	finalOutDir = outDir + '/multipleInstanceLearning/leaveOnePatientOutCV/'
+	if not os.path.exists(finalOutDir):
+		os.makedirs(finalOutDir)
+
+	outFile = finalOutDir + '/leaveOnePatientOutCV_' + svType + '.txt'
+
+	strAucs = [str(i) for i in aucs]
+	strAuc = '\t'.join(strAucs)
+	strAccs = [str(i) for i in performances]
+	strAcc = '\t'.join(strAccs)
+	with open(outFile, 'a') as outF:
+		outF.write(strAuc)
+		outF.write('\n')
+		outF.write(str(np.mean(aucs)))
+		outF.write('\n')
+		outF.write(strAcc)
+		outF.write('\n')
+		outF.write(str(np.mean(performances)))
+		outF.write('\n')
+
+	return 0
 
 for svType in svTypes:
 
@@ -104,12 +188,16 @@ for svType in svTypes:
 
 	#obtain the right similarity matrix and bag labels for this SV type
 	dataPath = outDir + '/multipleInstanceLearning/similarityMatrices/'
+
+	if os.path.isfile(dataPath + '/similarityMatrix_' + svType + '.npy') == False:
+		continue
+
 	similarityMatrix = np.load(dataPath + '/similarityMatrix_' + svType + '.npy', encoding='latin1', allow_pickle=True)
 	bagLabels = np.load(dataPath + '/bagLabels_' + svType + '.npy', encoding='latin1', allow_pickle=True)
 
 	plot = False
 	#don't make the plots for each feature to eliminate
-	if featureElimination == "False":
+	if featureElimination == "False" and leaveOnePatientOut == 'False':
 		plot = True
 	
 		plotOutputPath = outDir + '/multipleInstanceLearning/rocCurves/'
@@ -128,7 +216,7 @@ for svType in svTypes:
 		plotOutputFile = plotOutputPath + '/rocCurve_' + svType + '_randomLabels.svg'
 		outputFile = outDir + '/multipleInstanceLearning/performance_' + svType + '_randomBagLabels.txt'
 		cvClassification(similarityMatrix, bagLabels, classifier, svType, title, plot, plotOutputFile, outputFile)
-	else:
+	elif featureElimination == 'True' and leaveOnePatientOut == 'False':
 		
 		#do the feature elimination here. Go through each similarity matrix with eliminated feature,
 		#and obtain the classification scores.
@@ -146,4 +234,16 @@ for svType in svTypes:
 			#get the right similarity matrix for this shuffled feature
 			similarityMatrix = np.load(featureEliminationDataFolder + '/similarityMatrix_' + svType + '_' + str(fileInd) + '.npy')
 			cvClassification(similarityMatrix, bagLabels, classifier, svType, title, plot, '', outputFile)
+	elif featureElimination == 'False' and leaveOnePatientOut == 'True':
+		
+		leaveOneOutDataFolder = outDir + '/multipleInstanceLearning/similarityMatrices/leaveOnePatientOut/'
+		
+		leaveOnePatientOutCV(leaveOneOutDataFolder, classifier)
 
+		
+	else:
+		
+		print('Combination of options not implemented')
+		exit(1)
+		
+		

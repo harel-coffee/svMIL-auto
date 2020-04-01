@@ -89,24 +89,35 @@ with open(expressionFile, 'r') as inF:
 			continue
 		splitLine = line.split("\t")
 		fullGeneName = splitLine[0]
-		if fullGeneName not in geneNameConversionMap:
-			continue
-		geneName = geneNameConversionMap[fullGeneName] #get the gene name rather than the ENSG ID
+		if settings.general['source'] == 'HMF':
+			if fullGeneName not in geneNameConversionMap:
+				continue
+			geneName = geneNameConversionMap[fullGeneName] #get the gene name rather than the ENSG ID
+		else:
+			geneName = fullGeneName.split("|")[0]
+			if geneName == 'gene_id':
+				continue #skip this line
 
 		data = splitLine[1:len(splitLine)]
-		
+
 		fixedData = [geneName]
 		fixedData += data
+
 		expressionData.append(fixedData)
 
 expressionData = np.array(expressionData, dtype="object")
 print(expressionData)
 
-
 #Get all SVs
-svDir = settings.files['svDir']
-svData = InputParser().getSVsFromFile_hmf(svDir)
+if settings.general['source'] == 'HMF':
+	svDir = settings.files['svDir']
+	svData = InputParser().getSVsFromFile_hmf(svDir)
+elif settings.general['source'] == 'TCGA':
+	svData = InputParser().getSVsFromFile(settings.files['svFile'], '')
 
+else:
+	print('Other data sources not supported')
+	exit(1)
 #fix this
 filteredSVs = svData
 
@@ -114,25 +125,25 @@ filteredSVs = svData
 #For each TAD, if there is an SV disrupting either of the boundaries, it goes into the disrupted class for that patient.
 #All other patients that do not have SVs disrupting this TAD go into the negative group.
 tadFile = settings.files['tadFile']
-			
+
 print("Getting TADs")
 tadData = InputParser().getTADsFromFile(tadFile)
 
-tadDisruptions = dict() #keep each TAD, and a list of which patients have an SV disrupting that TAD. 
+tadDisruptions = dict() #keep each TAD, and a list of which patients have an SV disrupting that TAD.
 for tad in tadData:
-	
+
 	tadStr = tad[0] + '_' + str(tad[1]) + '_' + str(tad[2])
 	tadDisruptions[tadStr] = []
-	
+
 	#Check if there is any SV overlapping the TAD on either side.
-	
+
 	#for intra-chromosomal SVs, we check if these overlap the boundary of the TAD.
 	#for inter-chromosomal SVs, we check if these are inside a TAD.
-	
+
 	#get a subset of SVs on the right chromosome
 	svChr1Subset = filteredSVs[filteredSVs[:,0] == tad[0]]
 	intraSVSubset = svChr1Subset[svChr1Subset[:,0] == svChr1Subset[:,3]]
-	
+
 	#In the intra set, check if there are SVs that start before the TAD, but end within the TAD.
 
 	#This TAD is disrupted if an SV starts or ends in it.
@@ -206,6 +217,11 @@ for tad in tadData:
 print('disrupted tads: ', disrCount)
 print('non-disrupted tads: ', nonDisrCount)
 
+allPatientsWithDisruptions = dict()
+for tad in tadDisruptions:
+	for match in tadDisruptions[tad]:
+		allPatientsWithDisruptions[match[0]] = 0
+
 #check how many unique SVs disrupt a TAD pair
 disruptingSVs = dict()
 typeDistribution = dict()
@@ -273,9 +289,48 @@ nonDisruptedTadExpression = []
 disruptedPairs = dict() #store for each patient a dict with genes, and in there, the expression of the gene. 
 nonDisruptedPairs = dict()
 
+
+#in case of tcga data, update the sample names that do not match the SVs.
+if settings.general['source'] == 'TCGA':
+	fixedSamples = []
+	for sample in samples:
+
+		if sample == '':
+			fixedSamples.append('')
+			continue
+		if sample == 'Hybridization REF':
+			continue
+
+		splitPatientID = sample.split("-")
+		shortPatientID = 'brca' + splitPatientID[2]
+		
+		if shortPatientID not in allPatientsWithDisruptions:
+			continue #some patients never have svs, so no need to look at those. 
+		
+		fixedSamples.append(shortPatientID)
+	samples = fixedSamples
+
+#tcga data is a mess and many patients are missing from the mutations. So add them back here..
+if settings.general['source'] == 'TCGA':
+	for sample in samples:
+		if sample not in snvPatients:
+			snvPatients[sample] = []
+		if sample not in svPatientsDel:
+			svPatientsDel[sample] = []
+		if sample not in svPatientsDup:
+			svPatientsDup[sample] = []
+		if sample not  in svPatientsInv:
+			svPatientsInv[sample] = []
+		if sample not in svPatientsItx:
+			svPatientsItx[sample] = []
+		if sample not in cnvPatientsAmp:
+			cnvPatientsAmp[sample] = []
+		if sample not in cnvPatientsDel:
+			cnvPatientsDel[sample] = []
+
 for patient in samples:
 	
-	if patient == '':
+	if patient == '' or patient == 'Hyridization REF':
 		continue
 	
 	if patient not in disruptedPairs:
@@ -531,7 +586,7 @@ for pValueInd in range(0, len(pValues[:,1])):
 signPatients = np.array(signPatients, dtype='object')
 
 print(signPatients.shape)
-np.savetxt(specificOutDir + '/pValues_allGenes.txt', signPatients, fmt='%s', delimiter='\t')
+np.savetxt(specificOutDir + '/zScores.txt', signPatients, fmt='%s', delimiter='\t')
 
 
 
