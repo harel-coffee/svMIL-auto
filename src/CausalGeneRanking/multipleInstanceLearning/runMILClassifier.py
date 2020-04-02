@@ -27,7 +27,7 @@ matplotlib.use('Agg')
 featureElimination = sys.argv[2]
 leaveOnePatientOut = sys.argv[3]
 svTypes = ['DEL', 'DUP', 'INV', 'ITX']
-svTypes = ['INV', 'ITX']
+svTypes = ['ITX']
 outDir = sys.argv[1]
 
 def cvClassification(similarityMatrix, bagLabels, clf, svType, title, plot, plotOutputFile, outputFile):
@@ -92,7 +92,7 @@ def cvClassification(similarityMatrix, bagLabels, clf, svType, title, plot, plot
 def leaveOnePatientOutCV(leaveOneOutDataFolder, classifier):
 
 	#first get the names of all patients
-	allFiles = glob.glob(leaveOneOutDataFolder + '*_' + svType + '.npy')
+	allFiles = glob.glob(leaveOneOutDataFolder + '*_[0-9]*' + svType + '.npy')
 
 	patientFiles = dict()
 	for dataFile in allFiles:
@@ -124,9 +124,19 @@ def leaveOnePatientOutCV(leaveOneOutDataFolder, classifier):
 				bagLabelsTest = np.load(dataFile, encoding='latin1', allow_pickle=True)
 
 		print(bagLabelsTest)
-
+		classifier = RandomForestClassifier(n_estimators= 100)
 		#then train the classifier
 		classifier.fit(similarityMatrixTrain, bagLabelsTrain)
+		print(classifier.predict(similarityMatrixTest))
+
+		preds = classifier.predict(similarityMatrixTrain)
+		diff = np.sum(np.abs(bagLabelsTrain - preds)) / len(bagLabelsTrain)
+		print('train diff: ', diff)
+
+		preds = classifier.predict(similarityMatrixTest)
+		diff = np.sum(np.abs(bagLabelsTest - preds)) / len(bagLabelsTest)
+		print('test diff: ', diff)
+
 		print('train: ', classifier.score(similarityMatrixTrain, bagLabelsTrain))
 		print('test: ', classifier.score(similarityMatrixTest, bagLabelsTest))
 		performances.append(classifier.score(similarityMatrixTest, bagLabelsTest))
@@ -137,6 +147,39 @@ def leaveOnePatientOutCV(leaveOneOutDataFolder, classifier):
 							 alpha=0.3, lw=1, ax=ax)
 		aucs.append(np.mean(viz.roc_auc))
 		print('auc: ', np.mean(viz.roc_auc))
+
+		#optimize on this fold
+		#Number of trees in random forest
+		from sklearn.model_selection import RandomizedSearchCV
+		n_estimators = [int(x) for x in np.linspace(start = 200, stop = 2000, num = 10)]
+		# Number of features to consider at every split
+		max_features = ['auto', 'sqrt']
+		# Maximum number of levels in tree
+		max_depth = [int(x) for x in np.linspace(10, 110, num = 11)]
+		max_depth.append(None)
+		# Minimum number of samples required to split a node
+		min_samples_split = [2, 5, 10]
+		# Minimum number of samples required at each leaf node
+		min_samples_leaf = [1, 2, 4]
+		# Method of selecting samples for training each tree
+		bootstrap = [True, False]# Create the random grid
+		random_grid = {'n_estimators': n_estimators,
+					   'max_features': max_features,
+					   'max_depth': max_depth,
+					   'min_samples_split': min_samples_split,
+					   'min_samples_leaf': min_samples_leaf,
+					   'bootstrap': bootstrap}
+
+		#initial classifier to optimize from
+		rfClassifier = RandomForestClassifier(n_estimators= 100)
+		rf_random = RandomizedSearchCV(estimator = rfClassifier, param_distributions = random_grid, n_iter = 10, cv = 2, verbose=2, random_state=42, n_jobs = -1)
+		rf_random.fit(similarityMatrixTrain, bagLabelsTrain)
+		print('best params; ')
+		print(rf_random.best_params_)
+		print('new score: ')
+		print(rf_random.score(similarityMatrixTest, bagLabelsTest))
+
+
 		
 	print(aucs)
 	print(np.mean(aucs))
@@ -148,7 +191,7 @@ def leaveOnePatientOutCV(leaveOneOutDataFolder, classifier):
 	if not os.path.exists(finalOutDir):
 		os.makedirs(finalOutDir)
 
-	outFile = finalOutDir + '/leaveOnePatientOutCV_' + svType + '.txt'
+	outFile = finalOutDir + '/leaveOnePatientOutCV_' + svType + '_10patients.txt'
 
 	strAucs = [str(i) for i in aucs]
 	strAuc = '\t'.join(strAucs)

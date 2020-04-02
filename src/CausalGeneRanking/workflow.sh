@@ -152,7 +152,7 @@ run=true
 if $run; then
 	runFolder='./multipleInstanceLearning/'
 
-	python "$runFolder/generateSimilarityMatrices.py" "$outputFolder" "False" "True"
+	python "$runFolder/generateSimilarityMatrices.py" "$outputFolder" "False" "False"
 
 	#python "$runFolder/runMILClassifier.py" "$outputFolder" "False" "True"
 
