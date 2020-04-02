@@ -73,7 +73,7 @@ if $run; then
 	runFolder='./multipleInstanceLearning/'
 
 	#first normalize the bags
-	python "$runFolder/normalizeBags.py" "$outputFolder"
+	#python "$runFolder/normalizeBags.py" "$outputFolder"
 
 	#then generate the similarity matrices for all SVs
 	python "$runFolder/generateSimilarityMatrices.py" "$outputFolder" "False" "False"
@@ -86,7 +86,7 @@ fi
 ### FIGURE 2 ###
 
 ### FIGURE 3 - MIL PERFORMANCE CURVES PER SV TYPE ###
-run=false
+run=true
 
 if $run; then
 	runFolder='./multipleInstanceLearning/'
@@ -147,12 +147,12 @@ fi
 #simple ML
 
 ## leave-one-patient-out
-run=true
+run=false
 
 if $run; then
 	runFolder='./multipleInstanceLearning/'
 
-	python "$runFolder/generateSimilarityMatrices.py" "$outputFolder" "False" "False"
+	python "$runFolder/generateSimilarityMatrices.py" "$outputFolder" "False" "True"
 
 	#python "$runFolder/runMILClassifier.py" "$outputFolder" "False" "True"
 
