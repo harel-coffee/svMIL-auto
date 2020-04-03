@@ -26,7 +26,7 @@ matplotlib.use('Agg')
 
 featureElimination = sys.argv[2]
 leaveOnePatientOut = sys.argv[3]
-svTypes = ['DEL', 'DUP', 'INV']
+svTypes = ['DEL', 'DUP', 'INV', 'ITX']
 #svTypes = ['ITX']
 outDir = sys.argv[1]
 

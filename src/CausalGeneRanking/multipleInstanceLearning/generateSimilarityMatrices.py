@@ -147,8 +147,8 @@ for svType in svTypes:
 			degPairInfo = degPairs[degPairs[:,0] == shortPair][0]
 
 			#if the z-score matches this criterion, the SV-gene pair is positive
-			if float(degPairInfo[5]) > 1.5 or float(degPairInfo[5]) < -1.5:
-			#if float(degPairInfo[5]) > 1 or float(degPairInfo[5]) < -1:
+			#if float(degPairInfo[5]) > 1.5 or float(degPairInfo[5]) < -1.5:
+			if float(degPairInfo[5]) > 1 or float(degPairInfo[5]) < -1:
 				#go through the instances of this SV-gene pair, and include only those that have gains and losses, and more than 1 instance. This should in principle not happen, but good to keep a check.
 				instances = []
 				for instance in bagDict[pair]:

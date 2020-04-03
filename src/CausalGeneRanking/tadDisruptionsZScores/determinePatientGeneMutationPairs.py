@@ -336,7 +336,7 @@ def getPatientsWithSNVs_tcga(snvDir):
 		splitFileName = currentFile.split(".")
 		patientID = splitFileName[0]
 		splitPatientID = patientID.split("-")
-		shortPatientID = 'brca' + splitPatientID[2]
+		shortPatientID = settings.general['cancerType'] + splitPatientID[2]
 		
 		if shortPatientID not in snvPatients:
 			snvPatients[shortPatientID] = []

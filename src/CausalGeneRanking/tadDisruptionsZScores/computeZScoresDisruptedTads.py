@@ -302,7 +302,7 @@ if settings.general['source'] == 'TCGA':
 			continue
 
 		splitPatientID = sample.split("-")
-		shortPatientID = 'brca' + splitPatientID[2]
+		shortPatientID = settings.general['cancerType'] + splitPatientID[2]
 		
 		if shortPatientID not in allPatientsWithDisruptions:
 			continue #some patients never have svs, so no need to look at those. 
