@@ -31,12 +31,12 @@
 #Load in a settings file with the paths to the data that all code will be run on.
 ## path here
 settingsFolder='./settings/settings_HMF_BRCA/'
-settingsFolder='./settings/settings_TCGA_BRCA/'
+#settingsFolder='./settings/settings_TCGA_OV/'
 
 #Create a folder in which all output for this data will be stored
 #Different steps will create their own intermediate folders in here
 outputFolder='output/HMF_BRCA'
-outputFolder='output/TCGA_BRCA'
+#outputFolder='output/TCGA_OV'
 
 #for TCGA data, some pre-processing is required.
 run=false
@@ -44,7 +44,10 @@ run=false
 if $run; then
 	runFolder='./DataProcessing/'
 	#python "$runFolder/parseTCGASVs.py" "$settingsFolder" "../../data/svs/brca_tcga_05022019.txt" "../../data/svs/brca_tcga_parsed.txt"
-	python "$runFolder/parseTCGASVs.py" "$settingsFolder" "../../data/svs/luad_tcga_02042020.txt" "../../data/svs/luad_tcga_parsed.txt"
+	#python "$runFolder/parseTCGASVs.py" "$settingsFolder" "../../data/svs/luad_tcga_02042020.txt" "../../data/svs/luad_tcga_parsed.txt"
+	python "$runFolder/parseTCGASVs.py" "$settingsFolder" "../../data/svs/ovca_tcga_03042020.txt" "../../data/svs/ovca_tcga_parsed.txt"
+
+	
 fi
 #the output needs to be fixed, to where settings can access it too.
 
@@ -62,6 +65,7 @@ run=false
 
 if $run; then
 	runFolder='./tadDisruptionsZScores/'
+	expressionFile='../../data/expression/gdac.broadinstitute.org_OV.Merge_rnaseqv2__illuminahiseq_rnaseqv2__unc_edu__Level_3__RSEM_genes_normalized__data.Level_3.2016012800.0.0/OV.rnaseqv2__illuminahiseq_rnaseqv2__unc_edu__Level_3__RSEM_genes_normalized__data.data.txt'
 
 	#first link mutations to patients. These are required to quickly check which patients
 	#have which mutations in which genes
@@ -75,6 +79,7 @@ if $run; then
 	#python "$runFolder/computeZScoresDisruptedTads.py" '../../data/genes/allGenesAndIdsHg19.txt' '/hpc/compgen/users/mnieboer/data/pipeline/read_counts/brca_tmm.txt' '/hpc/compgen/users/mnieboer/data/somatics/' "$settingsFolder" "$outputFolder"
 	#python "$runFolder/computeZScoresDisruptedTads.py" '../../data/genes/allGenesAndIdsHg19.txt' '../../data/expression/gdac.broadinstitute.org_BRCA.Merge_rnaseqv2__illuminahiseq_rnaseqv2__unc_edu__Level_3__RSEM_genes_normalized__data.Level_3.2016012800.0.0/BRCA.rnaseqv2__illuminahiseq_rnaseqv2__unc_edu__Level_3__RSEM_genes_normalized__data.data.txt' '/hpc/compgen/users/mnieboer/data/somatics/' "$settingsFolder" "$outputFolder"
 	#python "$runFolder/computeZScoresDisruptedTads.py" '../../data/genes/allGenesAndIdsHg19.txt' '../../data/expression/gdac.broadinstitute.org_LUAD.Merge_rnaseqv2__illuminahiseq_rnaseqv2__unc_edu__Level_3__RSEM_genes_normalized__data.Level_3.2016012800.0.0/LUAD.rnaseqv2__illuminahiseq_rnaseqv2__unc_edu__Level_3__RSEM_genes_normalized__data.data.txt' '/hpc/compgen/users/mnieboer/data/somatics/' "$settingsFolder" "$outputFolder"
+	python "$runFolder/computeZScoresDisruptedTads.py" '../../data/genes/allGenesAndIdsHg19.txt' "$expressionFile" '/hpc/compgen/users/mnieboer/data/somatics/' "$settingsFolder" "$outputFolder"
 fi
 
 ### PART 4 - SETTING UP FOR MULTIPLE INSTANCE LEARNING ###
@@ -84,7 +89,7 @@ if $run; then
 	runFolder='./multipleInstanceLearning/'
 
 	#first normalize the bags
-	python "$runFolder/normalizeBags.py" "$outputFolder"
+	#python "$runFolder/normalizeBags.py" "$outputFolder"
 
 	#then generate the similarity matrices for all SVs
 	python "$runFolder/generateSimilarityMatrices.py" "$outputFolder" "False" "False"
@@ -97,7 +102,7 @@ fi
 ### FIGURE 2 ###
 
 ### FIGURE 3 - MIL PERFORMANCE CURVES PER SV TYPE ###
-run=true
+run=false
 
 if $run; then
 	runFolder='./multipleInstanceLearning/'
@@ -169,6 +174,15 @@ if $run; then
 
 fi
 
+## checking cosmic in CV loop
+run=false
+
+if $run; then
+	runFolder='./multipleInstanceLearning/'
+
+	python "$runFolder/runMILClassifier.py" "$outputFolder" "False" "False"
+
+fi
 
 
 

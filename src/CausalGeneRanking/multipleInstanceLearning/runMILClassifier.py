@@ -54,6 +54,9 @@ def cvClassification(dataPath, clf, svType, title, plot, plotOutputFile, outputF
 			if re.search('bagLabelsTest', dataFile):
 				bagLabelsTest = np.load(dataFile, encoding='latin1', allow_pickle=True)
 
+		if len(bagLabelsTest) < 1 or len(bagLabelsTrain) < 1:
+			continue #for cases with not enough data to fill 10 folds.
+
 		if shuffleLabels == True:
 			shuffle(bagLabelsTrain)
 			shuffle(bagLabelsTest)
@@ -71,6 +74,9 @@ def cvClassification(dataPath, clf, svType, title, plot, plotOutputFile, outputF
 
 		print('train: ', clf.score(similarityMatrixTrain, bagLabelsTrain))
 		print('test: ', clf.score(similarityMatrixTest, bagLabelsTest))
+
+		#output to a file what our predictions were, we can use those later for anlyses
+		np.savetxt(outDir + '/multipleInstanceLearning/predictions_fold_' + str(fold) + '_' + svType + '.txt', preds, fmt='%s', delimiter= '\t')
 
 		viz = plot_roc_curve(clf, similarityMatrixTest, bagLabelsTest,
 							 name='ROC fold {}'.format(fold),
