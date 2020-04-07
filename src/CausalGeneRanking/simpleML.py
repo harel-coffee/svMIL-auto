@@ -29,7 +29,7 @@ for pair in positivePairs:
 	if splitPair[1] not in positivePairsPerChromosome:
 		positivePairsPerChromosome[splitPair[1]] = []
 
-	positivePairsPerChromosome[splitPair[1]].append(pair[1:])
+	positivePairsPerChromosome[splitPair[1]].append(pair[1:60])
 
 negativePairsPerChromosome = dict()
 for pair in negativePairs:
@@ -42,7 +42,7 @@ for pair in negativePairs:
 	if splitPair[1] not in negativePairsPerChromosome:
 		negativePairsPerChromosome[splitPair[1]] = []
 
-	negativePairsPerChromosome[splitPair[1]].append(pair[1:])
+	negativePairsPerChromosome[splitPair[1]].append(pair[1:60])
 
 chromosomes = ['chr1', 'chr2', 'chr3', 'chr4', 'chr5', 'chr6', 'chr7',
 			   'chr8', 'chr9', 'chr10', 'chr11', 'chr12', 'chr13',
@@ -71,7 +71,7 @@ classifiers = [
     SVC(gamma=2, C=1),
     GaussianProcessClassifier(1.0 * RBF(1.0)),
     DecisionTreeClassifier(max_depth=5),
-    RandomForestClassifier(max_depth=5, n_estimators=10, max_features=1),
+    RandomForestClassifier(max_depth=500, n_estimators=1000, max_features=1),
     MLPClassifier(alpha=1, max_iter=1000),
     AdaBoostClassifier(),
     GaussianNB(),

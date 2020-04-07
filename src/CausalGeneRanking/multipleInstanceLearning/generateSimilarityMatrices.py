@@ -38,7 +38,10 @@ if leaveOnePatientOut == 'True':
 		os.makedirs(leaveOnePatientOutDir)
 
 #input the normalized bags
-with open(outDir + '/multipleInstanceLearning/normalizedBags.pkl', 'rb') as handle:
+#with open(outDir + '/multipleInstanceLearning/normalizedBags.pkl', 'rb') as handle:
+#	bagDict = pkl.load(handle)
+
+with open('./output/RankedGenes/22022020/BRCA/normalizedBags.pkl', 'rb') as handle:
 	bagDict = pkl.load(handle)
 
 #get the information for the bag labels
@@ -142,23 +145,20 @@ for svType in svTypes:
 					if instance[0] == 0 and instance[1] == 0:
 						continue
 
-					if instance[35] == 1:
-						continue
-
 					#positiveInstanceLabels.append(pair + '_' + '_'.join([str(i) for i in instance]))
-					#instances.append(instance)
+					instances.append(instance)
 
 					#feature selection by hand
-					featureInd = 0
-					newInstance = []
-					for feature in instance:
-
-						if featureInd in allowedList:
-							newInstance.append(feature)
-
-
-						featureInd += 1
-					instances.append(newInstance)
+					# featureInd = 0
+					# newInstance = []
+					# for feature in instance:
+					#
+					# 	if featureInd in allowedList:
+					# 		newInstance.append(feature)
+					#
+					#
+					# 	featureInd += 1
+					# instances.append(newInstance)
 
 				if len(instances) < 1:
 					continue
@@ -176,21 +176,19 @@ for svType in svTypes:
 					if instance[0] == 0 and instance[1] == 0:
 						continue
 
-					if instance[35] == 1:
-						continue
 
-					#instances.append(instance)
-					#feature selection by hand
-					featureInd = 0
-					newInstance = []
-					for feature in instance:
-
-						if featureInd in allowedList:
-							newInstance.append(feature)
-
-
-						featureInd += 1
-					instances.append(newInstance)
+					instances.append(instance)
+					# #feature selection by hand
+					# featureInd = 0
+					# newInstance = []
+					# for feature in instance:
+					# 
+					# 	if featureInd in allowedList:
+					# 		newInstance.append(feature)
+					# 
+					# 
+					# 	featureInd += 1
+					# instances.append(newInstance)
 
 				if len(instances) < 1:
 					continue
@@ -235,12 +233,12 @@ for svType in svTypes:
 
 		#what are the differences?
 		goodInstancesSum = np.sum(posInstances, axis=0)
-		goodInstancesAvg = goodInstancesSum / posInstances.shape[1]
+		goodInstancesAvg = goodInstancesSum / posInstances.shape[0]
 		badInstancesSum = np.sum(negInstances, axis=0)
-		badInstancesAvg = badInstancesSum / negInstances.shape[1]
+		badInstancesAvg = badInstancesSum / negInstances.shape[0]
 
-		xlabels = np.array(xlabels)
-		xlabels = xlabels[allowedList]
+		#xlabels = np.array(xlabels)
+		#xlabels = xlabels[allowedList]
 
 		import matplotlib.pyplot as plt
 
@@ -251,9 +249,9 @@ for svType in svTypes:
 		pos = np.arange(len(goodInstancesAvg))
 		r2 = [i + barWidth for i in pos]
 		plt.bar(r2, badInstancesAvg, color='orange', width=barWidth)
-		plt.xticks(r2, xlabels, rotation=90)
+		#plt.xticks(r2, xlabels, rotation=90)
 		plt.show()
-
+		#exit()
 
 
 		bagPairLabels = np.concatenate((positiveBagPairNames, negativeBagPairNamesSubsampled))
@@ -355,7 +353,7 @@ for svType in svTypes:
 			chromosomes = ['chr1', 'chr2', 'chr3', 'chr4', 'chr5', 'chr6', 'chr7',
 						   'chr8', 'chr9', 'chr10', 'chr11', 'chr12', 'chr13',
 						   'chr14', 'chr15', 'chr16', 'chr17', 'chr18', 'chr19',
-						   'chr20', 'chr21', 'chr22']
+						   'chr20', 'chr21'] # 'chr22'
 
 
 			positiveBagsPerChromosome = dict()
