@@ -178,6 +178,10 @@ class InputParser:
 			
 			#get the samplename from the vcf
 			sampleName = re.search('.*\/([A-Z\d]+)\.', vcf).group(1)
+
+			# count += 1
+			# if count > 2:
+			# 	continue
 			
 			#open the .gz file
 			with open(vcf, 'r') as inF:

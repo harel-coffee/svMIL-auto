@@ -214,6 +214,7 @@ class Gene:
 		allowedElements = ['enhancer']
 		#allowedElements = ['superEnhancer']
 		allowedElements = ['enhancer', 'promoter', 'eQTL', 'superEnhancer']
+		#allowedElements = ['enhancer']
 
 		if len(elements) > 0:
 			if sv not in self.alteredElements:
@@ -278,7 +279,7 @@ class Gene:
 				else: #make sure that elements that belong to the gene are only lost. 
 					if element[4] == self.name:
 						lossGains[0] = 1
-					else: #if the loss is from an element that was not interacting with this gene, it is not a true loss. 
+					else: #if the loss is from an element that was not interacting with this gene, it is not a true loss.
 						lossGains[0] = 0
 
 			if alterationType == "gain":
@@ -297,6 +298,7 @@ class Gene:
 			endEndDist = np.abs(element[2] - self.end)
 			
 			minDist = np.min([startStartDist, startEndDist, endStartDist, endEndDist])
+			###this distance is a very bad feature, so it is not added. the performance drops a lot
 			
 			enhancerType = 0
 			promoterType = 0
@@ -311,12 +313,19 @@ class Gene:
 				eQTLType = 1
 			elif element[3] == 'superEnhancer':
 				superEnhancerType = 1
-			
+
+			#strength of the disrupted TAD by CTCF intensity
+			splitSV = sv.split('_')
+			tadStrengths = [splitSV[7], splitSV[8], splitSV[9], splitSV[10]]
+
+			tadStrentghsSignal = [splitSV[12], splitSV[13], splitSV[14], splitSV[15]]
+
+
 			#if we get here, we passed all checks and there is a valid gain OR loss
 			if elementStr not in self.alteredElements[sv]:
 				#self.alteredElements[sv][elementStr] = lossGains + elementMethylation + enhScore
 				
-				self.alteredElements[sv][elementStr] = lossGains + elementMethylation + elementStrength + [enhancerType, promoterType, eQTLType, superEnhancerType]
+				self.alteredElements[sv][elementStr] = lossGains + elementMethylation + elementStrength + [enhancerType, promoterType, eQTLType, superEnhancerType] + tadStrengths + tadStrentghsSignal
 
 				#self.alteredElements[sv][elementStr] = lossGains
 		#something with methylation for the affected genes only

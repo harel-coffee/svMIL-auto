@@ -552,6 +552,18 @@ for svType in svTypes:
 				print(similarityMatrixTrain.shape)
 				#now the curent patient bags need to be to the instances of the training set
 				similarityMatrixTest = getSimilarityMatrixTest(testBags[chromosome], trainInstances, testLabels)
+
+				#output these to a file
+				#write these data to disk so that we can access it later on
+				np.save(finalOutDir + '/' + 'similarityMatrixTrain_' + chromosome + '_' + svType + '.npy', similarityMatrixTrain)
+				np.save(finalOutDir + '/' + 'similarityMatrixTest_' + chromosome + '_' + svType + '.npy', similarityMatrixTest)
+
+				#also save the labels
+				np.save(finalOutDir + '/' + 'bagLabelsTrain_' + chromosome + '_' + svType + '.npy', trainLabels)
+				np.save(finalOutDir + '/' + 'bagLabelsTest_' + chromosome + '_' + svType + '.npy', testLabels)
+
+				continue
+
 				print(similarityMatrixTest.shape)
 				
 				
@@ -874,226 +886,7 @@ for svType in svTypes:
 
 
 		elif featureElimination == 'False' and leaveOnePatientOut == 'True':
-			#go through the bags, and get all bags of all but one patient.
-			#make a similarity matrix based on this.
-			#so the output should be 2 matrices, one for training, one for testing
-			#also make sure to output the labels separately.
 
-
-			#re-try
-
-			#first get all bags per patient.
-			perPatientPositiveBags = dict()
-			for bagInd in range(0, positiveBags.shape[0]):
-
-				#get the label of this bag
-				bagPairLabel = positiveBagPairNames[bagInd]
-				splitLabel = bagPairLabel.split('_')
-
-				patientId = splitLabel[7]
-				if patientId not in perPatientPositiveBags:
-					perPatientPositiveBags[patientId] = []
-
-				perPatientPositiveBags[patientId].append(positiveBags[bagInd])
-
-			perPatientNegativeBags = dict()
-			for bagInd in range(0, negativeBags.shape[0]):
-
-				#get the label of this bag
-				bagPairLabel = negativeBagPairNames[bagInd]
-				splitLabel = bagPairLabel.split('_')
-
-
-				patientId = splitLabel[7]
-				if patientId not in perPatientNegativeBags:
-					perPatientNegativeBags[patientId] = []
-
-				perPatientNegativeBags[patientId].append(negativeBags[bagInd])
-
-			#then, for each patient, use it as the test set.
-			aucs = []
-			performances = []
-			posPerformances = []
-			for patient in perPatientPositiveBags:
-				print(patient)
-
-				if patient not in perPatientNegativeBags:
-					continue
-
-				print(patient)
-				print(len(perPatientPositiveBags[patient]))
-				print(len(perPatientNegativeBags[patient]))
-				continue
-
-				#Get as many negative bags from this patient as there are positive bags.
-				if len(perPatientNegativeBags[patient]) > len(perPatientPositiveBags[patient]):
-					randInd = random.sample(range(0, len(perPatientNegativeBags[patient])), len(perPatientPositiveBags[patient]))
-
-					patientPositiveBags = []
-					for bag in perPatientPositiveBags[patient]:
-
-						patientPositiveBags.append(bag)
-					
-
-					#patientPositiveBags = perPatientPositiveBags[patient]
-					#patientPositiveBags = np.array(patientPositiveBags)
-					patientNegativeBags = perPatientNegativeBags[patient]
-					patientNegativeBags = np.array(patientNegativeBags)[randInd]
-					patientNegativeBags = list(patientNegativeBags)
-				else:
-					#get as any positives as there are negatives
-					randInd = random.sample(range(0, len(perPatientPositiveBags[patient])), len(perPatientNegativeBags[patient]))
-
-					patientNegativeBags = []
-					for bag in perPatientNegativeBags[patient]:
-
-						patientNegativeBags.append(bag)
-
-
-					#patientPositiveBags = perPatientPositiveBags[patient]
-					#patientPositiveBags = np.array(patientPositiveBags)
-					patientPositiveBags = perPatientPositiveBags[patient]
-					patientPositiveBags = np.array(patientPositiveBags)[randInd]
-					patientPositiveBags = list(patientPositiveBags)
-
-
-				#print(patientPositiveBags.shape)
-				#print(patientNegativeBags.shape)
-
-				patientBags = patientPositiveBags + patientNegativeBags
-				print(len(patientBags))
-				patientBags = np.array(patientBags)
-				print(patientBags.shape)
-
-				patientPositiveBags = np.array(patientPositiveBags)
-				patientNegativeBags = np.array(patientNegativeBags)
-				#then, get the bags of all other patients.
-				allPositiveBags = []
-				allPossibleNegativeBags = []
-				patientCount = 0
-				for patient2 in perPatientPositiveBags:
-
-					if patient2 == patient:
-						continue
-					for bag in perPatientPositiveBags[patient2]:
-						allPositiveBags.append(bag)
-
-					if patient2 not in perPatientNegativeBags:
-						continue
-					for bag in perPatientNegativeBags[patient2]:
-						allPossibleNegativeBags.append(bag)
-					
-
-					#print(len(perPatientPositiveBags[patient2]))
-					#print(patientNegativeBags.shape)
-						
-					patientCount += 1
-
-				allPositiveBags = np.array(allPositiveBags)
-				print(allPositiveBags.shape)
-				
-				allPossibleNegativeBags = np.array(allPossibleNegativeBags)
-				randInd = random.sample(range(0, allPossibleNegativeBags.shape[0]), allPositiveBags.shape[0])
-				allNegativeBags = allPossibleNegativeBags[randInd]
-				#get the same number of negative bags, sample randomly.
-				print(allNegativeBags.shape)
-
-
-
-				trainBags = np.concatenate((allPositiveBags, allNegativeBags))
-				trainInstances = np.vstack(trainBags)
-				#testBags = np.concatenate((patientPositiveBags, patientNegativeBags))
-				testBags = patientBags
-
-				trainLabels = [1]*allPositiveBags.shape[0] + [0]*allNegativeBags.shape[0]
-				testLabels = [1]*patientPositiveBags.shape[0] + [0]*patientNegativeBags.shape[0]
-
-				reverseBagMapOtherPatients = dict() #lookup instance by bag index
-				instanceInd = 0
-				for bagInd in range(0, trainBags.shape[0]):
-					reverseBagMapOtherPatients[bagInd] = []
-					for instance in trainBags[bagInd]:
-						reverseBagMapOtherPatients[bagInd].append(instanceInd)
-						instanceInd += 1
-
-				#make similarity matrices
-				similarityMatrixTrain = getSimilarityMatrix(trainBags, trainInstances, reverseBagMapOtherPatients)
-				print(similarityMatrixTrain.shape)
-				#now the curent patient bags need to be to the instances of the training set
-				similarityMatrixTest = getSimilarityMatrixTest(testBags, trainInstances, testLabels)
-				print(similarityMatrixTest.shape)
-				
-				from sklearn.ensemble import RandomForestClassifier
-				from sklearn.model_selection import StratifiedKFold
-				from sklearn import model_selection
-				from sklearn.metrics import plot_roc_curve, auc
-				import matplotlib.pyplot as plt
-				from scipy import interp
-
-				classifier = RandomForestClassifier(n_estimators= 100)
-				#then train the classifier
-				classifier.fit(similarityMatrixTrain, trainLabels)
-				print(testLabels)
-				print(classifier.predict(similarityMatrixTest))
-
-				preds = classifier.predict(similarityMatrixTrain)
-				diff = np.sum(np.abs(trainLabels - preds)) / len(trainLabels)
-				print('train diff: ', diff)
-
-				preds = classifier.predict(similarityMatrixTest)
-				diff = np.sum(np.abs(testLabels - preds)) / len(testLabels)
-				print('test diff: ', diff)
-				
-				#how many positives are correct?
-				correctPos = 0
-				allPos = 0
-				for label in range(0, len(testLabels)):
-					if testLabels[label] == 1 and preds[label] == 1:
-						correctPos += 1
-						
-					if testLabels[label] == 1:
-						allPos += 1
-						
-				print('correct positives: ', correctPos / allPos)
-				posPerformances.append(correctPos/allPos)
-
-				print('train: ', classifier.score(similarityMatrixTrain, trainLabels))
-				print('test: ', classifier.score(similarityMatrixTest, testLabels))
-				performances.append(classifier.score(similarityMatrixTest, testLabels))
-
-				fig, ax = plt.subplots()
-				viz = plot_roc_curve(classifier, similarityMatrixTest, testLabels,
-									 name='roc',
-									 alpha=0.3, lw=1, ax=ax)
-				aucs.append(np.mean(viz.roc_auc))
-				print('auc: ', np.mean(viz.roc_auc))
-
-
-
-			print(np.mean(aucs))
-			print(np.mean(performances))
-			print(np.mean(posPerformances))
-			exit()
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-			#### old code
 
 			#first, get the bags and labels per patient
 			perPatientPositiveBags = dict()

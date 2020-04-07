@@ -352,18 +352,36 @@ class NeighborhoodDefiner:
 			
 			ctcfChrSubset = ctcfData[ctcfData[:,0] == tad[0]]
 			
-			startMatches = (tad[1] >= ctcfChrSubset[:,1]) * (tad[1] <= ctcfChrSubset[:,2])
-			endMatches = (tad[2] >= ctcfChrSubset[:,1]) * (tad[2] <= ctcfChrSubset[:,2])
-			
-			if len(ctcfChrSubset[startMatches]) > 0:
-				
-				startSite = ctcfChrSubset[startMatches][0]
-				tad[3].startStrength = startSite[5]
-			
-			if len(ctcfChrSubset[endMatches]) > 0:	
-				endSite = ctcfChrSubset[endMatches][0]
-				tad[3].endStrength = endSite[5]
-			
+			# annotate by number of CTCF sites around boundary
+			#100kb according to nature paper should be enough
+			window = 100000
+
+			startMatches = ctcfChrSubset[(ctcfChrSubset[:,2] >= tad[1]-window) * (ctcfChrSubset[:,1] <= tad[1]+window)]
+			endMatches = ctcfChrSubset[(ctcfChrSubset[:,1] >= tad[2]-window) * (ctcfChrSubset[:,2] <= tad[2]+window)]
+
+			if len(startMatches) > 0:
+				tad[3].startStrength = startMatches.shape[0]
+			if len(endMatches) > 0:
+				tad[3].endStrength = endMatches.shape[0]
+
+			#also annotate the CTCF site with the strongest signal in this region
+			maxStart = 0
+			if len(startMatches) > 0:
+
+				for match in startMatches:
+					if match[5] > maxStart:
+						maxStart = match[5]
+
+			tad[3].startStrengthSignal = maxStart
+
+			maxEnd = 0
+			if len(endMatches) > 0:
+				for match in endMatches:
+
+					if match[5] > maxEnd:
+						maxEnd = match[5]
+
+			tad[3].endStrengthSignal = maxEnd
 		
 		return tadData
 		

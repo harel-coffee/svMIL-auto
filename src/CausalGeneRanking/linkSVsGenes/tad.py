@@ -19,6 +19,8 @@ class TAD:
 		self.genes = []
 		self.startStrength = '0'
 		self.endStrength = '0'
+		self.startStrengthSignal = '0'
+		self.endStrengthSignal = '0'
 		
 	def setSVs(self, SVs): #All SVs that overlap with this TAD boundary (left or right depending on the gene. Is that safe?)
 		
