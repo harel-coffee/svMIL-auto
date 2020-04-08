@@ -7,3 +7,5 @@ H3K9me3: https://www.encodeproject.org/files/ENCFF717WXC/@@download/ENCFF717WXC.
 H3K4me1: https://www.encodeproject.org/files/ENCFF917PWI/@@download/ENCFF917PWI.bed.gz
 H3K27ac: https://www.encodeproject.org/files/ENCFF657AUA/@@download/ENCFF657AUA.bed.gz
 H3K4me3: https://www.encodeproject.org/files/ENCFF320JHG/@@download/ENCFF320JHG.bed.gz
+rnapol: https://www.encodeproject.org/files/ENCFF570SMG/@@download/ENCFF570SMG.bed.gz
+se: http://asntech.org/dbsuper/data/bed/hg19/Ovary.bed
