@@ -32,11 +32,13 @@
 ## path here
 settingsFolder='./settings/settings_HMF_BRCA/'
 #settingsFolder='./settings/settings_TCGA_OV/'
+#settingsFolder='./settings/settings_PCAWG_OV/'
 
 #Create a folder in which all output for this data will be stored
 #Different steps will create their own intermediate folders in here
 outputFolder='output/HMF_BRCA'
 #outputFolder='output/TCGA_OV'
+#outputFolder='output/PCAWG_OV'
 
 #for TCGA data, some pre-processing is required.
 run=false
@@ -45,14 +47,14 @@ if $run; then
 	runFolder='./DataProcessing/'
 	#python "$runFolder/parseTCGASVs.py" "$settingsFolder" "../../data/svs/brca_tcga_05022019.txt" "../../data/svs/brca_tcga_parsed.txt"
 	#python "$runFolder/parseTCGASVs.py" "$settingsFolder" "../../data/svs/luad_tcga_02042020.txt" "../../data/svs/luad_tcga_parsed.txt"
-	python "$runFolder/parseTCGASVs.py" "$settingsFolder" "../../data/svs/ovca_tcga_03042020.txt" "../../data/svs/ovca_tcga_parsed.txt"
-
+	#python "$runFolder/parseTCGASVs.py" "$settingsFolder" "../../data/svs/ovca_tcga_03042020.txt" "../../data/svs/ovca_tcga_parsed.txt"
+	python "$runFolder/parsePCAWGSVs.py" "$settingsFolder" "../../data/svs/icgc/open/" "../../data/svs/icgc_metadata.tsv" "../../data/svs/ov_pcawg_parsed.txt"
 	
 fi
 #the output needs to be fixed, to where settings can access it too.
 
 ### (REQUIRED) PART 2 - LINK SVS TO GENES ###
-run=true #Only skip this step if all output has already been generated!
+run=false #Only skip this step if all output has already been generated!
 
 if $run; then
 	runFolder='./linkSVsGenes/'
@@ -143,15 +145,15 @@ fi
 ### SUPPLEMENTARY FIGURE 5 ###
 
 ### SUPPLEMENTARY TABLE 1 - FEATURE ELIMINATION ###
-run=false
+run=true
 
 if $run; then
 	runFolder='./multipleInstanceLearning/'
 
 	#First generate the similarity matrices based on the bags in which 1 feature is shuffled each time
-	python "$runFolder/generateSimilarityMatrices.py" "$outputFolder" "True" "False"
+	python "$runFolder/generateSimilarityMatrices.py" "$outputFolder" "True" "False" "False"
 	#Then get the performance on all of these similarity matrices
-	python "$runFolder/runMILClassifier.py" "$outputFolder" "True"
+	#python "$runFolder/runMILClassifier.py" "$outputFolder" "True"
 fi
 
 

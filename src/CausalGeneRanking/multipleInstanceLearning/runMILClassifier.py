@@ -27,10 +27,10 @@ matplotlib.use('Agg')
 featureElimination = sys.argv[2]
 leaveOnePatientOut = sys.argv[3]
 svTypes = ['DEL', 'DUP', 'INV', 'ITX']
-#svTypes = ['ITX']
+svTypes = ['DEL']
 outDir = sys.argv[1]
 
-def cvClassification(dataPath, clf, svType, title, plot, plotOutputFile, outputFile, shuffleLabels):
+def cvClassification(allFiles, clf, svType, title, plot, plotOutputFile, outputFile, shuffleLabels):
 
 	#load the similarity matrices of each fold
 	folds = 10
@@ -39,7 +39,6 @@ def cvClassification(dataPath, clf, svType, title, plot, plotOutputFile, outputF
 	mean_fpr = np.linspace(0, 1, 100)
 	fig, ax = plt.subplots()
 	for fold in range(0, folds):
-		allFiles = glob.glob(dataPath + '*_' + svType + '_' + str(fold) + '.npy')
 
 		print(allFiles)
 
@@ -340,14 +339,16 @@ for svType in svTypes:
 
 		plotOutputFile = plotOutputPath + '/rocCurve_' + svType + '.svg'
 		outputFile = outDir + '/multipleInstanceLearning/performance_' + svType + '.txt'
-		cvClassification(dataPath, classifier, svType, title, plot, plotOutputFile, outputFile, False)
+		allFiles = glob.glob(dataPath + '*_' + svType + '_' + str(fold) + '.npy')
+		cvClassification(allFiles, classifier, svType, title, plot, plotOutputFile, outputFile, False)
 		
 		#repeat, but then with random labels.
 		#mind here, if multiple iterations, the baglabels are permanently shuffled!
 
-		plotOutputFile = plotOutputPath + '/rocCurve_' + svType + '_randomLabels.svg'
-		outputFile = outDir + '/multipleInstanceLearning/performance_' + svType + '_randomBagLabels.txt'
-		cvClassification(dataPath, classifier, svType, title, plot, plotOutputFile, outputFile, True)
+		#ths is still broken
+		#plotOutputFile = plotOutputPath + '/rocCurve_' + svType + '_randomLabels.svg'
+		#outputFile = outDir + '/multipleInstanceLearning/performance_' + svType + '_randomBagLabels.txt'
+		#cvClassification(dataPath, classifier, svType, title, plot, plotOutputFile, outputFile, True)
 	elif featureElimination == 'True' and leaveOnePatientOut == 'False':
 		
 		#do the feature elimination here. Go through each similarity matrix with eliminated feature,
@@ -359,12 +360,16 @@ for svType in svTypes:
 		featureEliminationDataFolder = outDir + '/multipleInstanceLearning/similarityMatrices/featureSelection/'
 		featureEliminationFiles = glob.glob(featureEliminationDataFolder + '*_' + svType + '_*')
 
+		#
+
 		#file to write to aucs to	
 		outputFile = outDir + '/multipleInstanceLearning/featureEliminationResults_' + svType + '.txt'
 		for fileInd in range(0, len(featureEliminationFiles)):
 
+
+
 			#get the right similarity matrix for this shuffled feature
-			similarityMatrix = np.load(featureEliminationDataFolder + '/similarityMatrix_' + svType + '_' + str(fileInd) + '.npy')
+			#similarityMatrix = np.load(featureEliminationDataFolder + '/similarityMatrix_' + svType + '_' + str(fileInd) + '.npy')
 			cvClassification(similarityMatrix, bagLabels, classifier, svType, title, plot, '', outputFile)
 	elif featureElimination == 'False' and leaveOnePatientOut == 'True':
 		
