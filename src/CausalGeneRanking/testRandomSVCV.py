@@ -122,17 +122,17 @@ for svType in svTypes:
 						continue
 
 
-					#if instance[35] == 1:
-					#	continue
+					if instance[34] == 1:
+						continue
 
 					#feature selection by hand
 					featureInd = -1
 					newInstance = []
 					for feature in instance:
 						featureInd += 1
-						if featureInd > 36:
+						#if featureInd > 36:
 
-							continue
+						#	continue
 						newInstance.append(feature)
 
 
@@ -153,16 +153,16 @@ for svType in svTypes:
 					if instance[0] == 0 and instance[1] == 0:
 						continue
 
-					#if instance[35] == 1:
-					#	continue
+					if instance[34] == 1:
+						continue
 
 					#feature selection by hand
 					newInstance = []
 					featureInd = -1
 					for feature in instance:
 						featureInd += 1
-						if featureInd > 36:
-							continue
+						#if featureInd > 36:
+						#	continue
 						newInstance.append(feature)
 
 
@@ -204,16 +204,16 @@ for svType in svTypes:
 			
 			
 
-			#if instance[35] == 1:
-			#	continue
+			if instance[34] == 1:
+				continue
 
 			newInstance = []
 			featureInd = -1
 			for feature in instance:
 				
 				featureInd += 1
-				if featureInd > 36:
-					continue
+				#if featureInd > 36:
+				#	continue
 				newInstance.append(feature)
 				
 				
@@ -247,8 +247,27 @@ for svType in svTypes:
 			instPerBagPos[instCount] = 0
 		instPerBagPos[instCount] += 1
 
+		enhCount = 0
+		promCount = 0
+		eQTLCount = 0
+		seCount = 0
+		for instance in bag:
+			
+			if instance[36] == 1:
+				seCount += 1
+			if instance[35] == 1:
+				eQTLCount += 1
+			if instance[34] == 1:
+				promCount += 1
+			if instance[33] == 1:
+				enhCount += 1
+
 		for instance in bag:
 			instance.append(instCount / positiveBags.shape[0])
+			#instance.append(enhCount / positiveBags.shape[0])
+			#instance.append(promCount / positiveBags.shape[0])
+			#instance.append(eQTLCount / positiveBags.shape[0])
+			#instance.append(seCount / positiveBags.shape[0])
 
 	for bag in negativeBags:
 		instCount = len(bag)
@@ -258,6 +277,26 @@ for svType in svTypes:
 
 		for instance in bag:
 			instance.append(instCount / negativeBags.shape[0])
+		# enhCount = 0
+		# promCount = 0
+		# eQTLCount = 0
+		# seCount = 0
+		# for instance in bag:
+		# 	if instance[36] == 1:
+		# 		seCount += 1
+		# 	if instance[35] == 1:
+		# 		eQTLCount += 1
+		# 	if instance[34] == 1:
+		# 		promCount += 1
+		# 	if instance[33] == 1:
+		# 		enhCount += 1
+		#
+		# for instance in bag:
+
+			#instance.append(enhCount / negativeBags.shape[0])
+			#instance.append(promCount / negativeBags.shape[0])
+			#instance.append(eQTLCount / negativeBags.shape[0])
+			#instance.append(seCount / negativeBags.shape[0])
 
 	for bag in patientNegativeBags:
 		instCount = len(bag)
@@ -267,6 +306,26 @@ for svType in svTypes:
 
 		for instance in bag:
 			instance.append(instCount / patientNegativeBags.shape[0])
+		# enhCount = 0
+		# promCount = 0
+		# eQTLCount = 0
+		# seCount = 0
+		# for instance in bag:
+		# 	if instance[36] == 1:
+		# 		seCount += 1
+		# 	if instance[35] == 1:
+		# 		eQTLCount += 1
+		# 	if instance[34] == 1:
+		# 		promCount += 1
+		# 	if instance[33] == 1:
+		# 		enhCount += 1
+		#
+		# for instance in bag:
+		# 	#instance.append(instCount / positiveBags.shape[0])
+		# 	instance.append(enhCount / patientNegativeBags.shape[0])
+		# 	instance.append(promCount / patientNegativeBags.shape[0])
+		# 	instance.append(eQTLCount / patientNegativeBags.shape[0])
+		# 	instance.append(seCount / patientNegativeBags.shape[0])
 
 	print(instPerBagPos)
 	print(instPerBagNeg)
@@ -279,12 +338,57 @@ for svType in svTypes:
 	posInstances = np.vstack(positiveBags)
 	negInstances = np.vstack(negativeBags)
 
+	allInstances = np.concatenate((posInstances, negInstances))
+	#check variances within instances
+	from sklearn.feature_selection import VarianceThreshold
+	t = (.8 * (1 - .8))
+	t = 0
+	vt = VarianceThreshold(threshold=t)
+	vt.fit(allInstances)
+	idx = np.where(vt.variances_ > t)[0]
+
+	newPositiveBags = []
+	newNegativeBags = []
+	for bag in positiveBags:
+		instances = []
+		for instance in bag:
+			filteredInstance = []
+			featureInd = 0
+			for feature in instance:
+				if featureInd in idx:
+					filteredInstance.append(feature)
+				featureInd += 1
+			instances.append(filteredInstance)
+
+		newPositiveBags.append(instances)
+
+	for bag in negativeBags:
+		instances = []
+		for instance in bag:
+			filteredInstance = []
+			featureInd = 0
+			for feature in instance:
+				if featureInd in idx:
+					filteredInstance.append(feature)
+				featureInd += 1
+			instances.append(filteredInstance)
+
+		newNegativeBags.append(instances)
+
+	positiveBags = np.array(newPositiveBags)
+	negativeBags = np.array(newNegativeBags)
+	print(positiveBags.shape)
+	print(negativeBags.shape)
+
+	posInstances = np.vstack(positiveBags)
+	negInstances = np.vstack(negativeBags)
+
 	#what are the feature distributions of these sets?
 	goodInstancesSum = np.sum(posInstances, axis=0)
 	goodInstancesAvg = goodInstancesSum / posInstances.shape[0]
 	badInstancesSum = np.sum(negInstances, axis=0)
 	badInstancesAvg = badInstancesSum / negInstances.shape[0]
-	
+
 	print(goodInstancesAvg)
 	print(badInstancesAvg)
 
@@ -302,120 +406,8 @@ for svType in svTypes:
 	plt.bar(r2, badInstancesAvg, color='orange', width=barWidth)
 	#plt.xticks(r2, xlabels, rotation=90)
 	plt.show()
+
 	
-	#for each bag of the patients, compute a distance to the random SV distribution and positive
-	#then plot this by their label in a 2d space. Shows noise or groups?
-	
-	from scipy.stats import ks_2samp
-
-	distances = []
-	
-	labels = []
-
-	for bag in positiveBags:
-		
-		#make instance distribution
-		instances = np.vstack(bag)
-		#instanceMean = np.mean(instances)
-
-		#compute the distance to the random SV and positive distributions
-		#posDistance = np.sum(np.abs(instanceMean - goodInstancesAvg))
-		#randomDistance = np.sum(np.abs(instanceMean - badInstancesAvg))
-
-		for instance in instances:
-			posDistance = np.sum(np.abs(instance - goodInstancesAvg))
-			randomDistance = np.sum(np.abs(instance - badInstancesAvg))
-			labels.append('red')
-
-
-
-
-		distances.append([posDistance, randomDistance])
-
-	for bag in patientNegativeBags:
-		
-		#make instance distribution
-		instances = np.vstack(bag)
-		#instanceMean = np.mean(instances)
-		
-		#compute the distance to the random SV and positive distributions
-		#posDistance = np.sum(np.abs(instanceMean - goodInstancesAvg))
-		#randomDistance = np.sum(np.abs(instanceMean - badInstancesAvg))
-		for instance in instances:
-			posDistance = np.sum(np.abs(instance - goodInstancesAvg))
-			randomDistance = np.sum(np.abs(instance - badInstancesAvg))
-			labels.append('black')
-		
-		distances.append([posDistance, randomDistance])
-
-	#labels = ['red']*positiveBags.shape[0] + ['black']*patientNegativeBags.shape[0]
-	
-	#make plot
-	# distances = np.array(distances)
-	# plt.scatter(distances[:,0], distances[:,1], edgecolor=labels, facecolor='None')
-	# plt.xlim([0,11])
-	# plt.ylim([0,11])
-	# 
-	# plt.show()
-	# exit()
-	
-	posInstanceTypes = dict()
-	negInstanceTypes = dict()
-	for bag in positiveBags:
-		
-		for instance in bag:
-			instanceStr = '_'.join([str(i) for i in instance])
-			if instanceStr not in posInstanceTypes:
-				posInstanceTypes[instanceStr] = 0
-			posInstanceTypes[instanceStr] += 1
-	for bag in negativeBags:
-		
-		for instance in bag:
-			instanceStr = '_'.join([str(i) for i in instance])
-			if instanceStr not in negInstanceTypes:
-				negInstanceTypes[instanceStr] = 0
-			negInstanceTypes[instanceStr] += 1
-
-	distances = []
-	labels = []
-	for bag in positiveBags:
-
-		#count how often this instance is in each set
-		for instance in bag:
-			posDist = 100
-			negDist = 100
-			instanceStr = '_'.join([str(i) for i in instance])
-			if instanceStr in posInstanceTypes:
-				posDist = posInstanceTypes[instanceStr]
-			if instanceStr in negInstanceTypes:
-				negDist = negInstanceTypes[instanceStr]
-
-			distances.append([posDist, negDist])
-			labels.append('red')
-
-	for bag in patientNegativeBags:
-
-		#count how often this instance is in each set
-		for instance in bag:
-			posDist = 100
-			negDist = 100
-			instanceStr = '_'.join([str(i) for i in instance])
-			if instanceStr in posInstanceTypes:
-				posDist = posInstanceTypes[instanceStr]
-			if instanceStr in negInstanceTypes:
-				negDist = negInstanceTypes[instanceStr]
-
-			distances.append([posDist, negDist])
-			labels.append('black')
-
-	distances = np.array(distances)
-	plt.scatter(distances[:,0], distances[:,1], edgecolor=labels, facecolor='None')
-	#plt.xlim([0,11])
-	#plt.ylim([0,11])
-	
-	#plt.show()
-	#exit()
-
 
 #
 # ####lopocv tesing
@@ -616,7 +608,7 @@ for svType in svTypes:
 chromosomes = ['chr1', 'chr2', 'chr3', 'chr4', 'chr5', 'chr6', 'chr7',
 						   'chr8', 'chr9', 'chr10', 'chr11', 'chr12', 'chr13',
 						   'chr14', 'chr15', 'chr16', 'chr17', 'chr18', 'chr19',
-						   'chr20', 'chr21']
+						   'chr20', 'chr21', 'chr22']
 
 
 positiveBagsPerChromosome = dict()
@@ -665,6 +657,11 @@ trainLabels = dict()
 testLabels = dict()
 for chromosome in chromosomes:
 	print(chromosome)
+	
+	if chromosome not in positiveBagsPerChromosome:
+		continue
+	if chromosome not in negativeBagsPerChromosome:
+		continue
 
 	#if chromosome != 'chr16':
 	#	continue
@@ -719,6 +716,11 @@ for chromosome in chromosomes:
 	for chromosome2 in chromosomes:
 
 		if chromosome == chromosome2:
+			continue
+
+		if chromosome2 not in positiveBagsPerChromosome:
+			continue
+		if chromosome2 not in negativeBagsPerChromosome:
 			continue
 
 		#make stratified

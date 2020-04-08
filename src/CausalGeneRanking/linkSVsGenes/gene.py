@@ -211,10 +211,10 @@ class Gene:
 			The values for this element are the feature vector that we will use to describe that element. 
 		"""
 		
-		allowedElements = ['enhancer']
-		#allowedElements = ['superEnhancer']
-		allowedElements = ['enhancer', 'promoter', 'eQTL', 'superEnhancer']
 		#allowedElements = ['enhancer']
+		#allowedElements = ['superEnhancer']
+		#allowedElements = ['enhancer', 'promoter', 'eQTL', 'superEnhancer']
+		allowedElements = ['enhancer', 'eQTL', 'superEnhancer']
 
 		if len(elements) > 0:
 			if sv not in self.alteredElements:
@@ -229,7 +229,7 @@ class Gene:
 		
 		strengthElements = ['enhancer', 'ctcf', 'rnaPol', 'h3k9me3', 'h3k4me3', 'h3k27ac', 'h3k27me3', 'h3k4me1', 'h3k36me3']
 		for element in elements:
-			
+
 			#if element[3] in ['h3k27ac', 'h3k4me1']:
 			#if element[3] in ['h3k27ac', 'h3k4me1', 'CTCF', 'CTCF+Enhancer', 'Enhancer', 'Heterochromatin', 'Repeat', 'Repressed', 'Transcribed', 'dnaseI', 'rnaPol']:
 			if element[3] in annotationElements:
@@ -300,6 +300,7 @@ class Gene:
 			minDist = np.min([startStartDist, startEndDist, endStartDist, endEndDist])
 			###this distance is a very bad feature, so it is not added. the performance drops a lot
 			
+			#promoters are too noisy, are omitted from the model.
 			enhancerType = 0
 			promoterType = 0
 			eQTLType = 0
@@ -315,17 +316,21 @@ class Gene:
 				superEnhancerType = 1
 
 			#strength of the disrupted TAD by CTCF intensity
+			#these features are not added in the end because they do not add anything more. 
 			splitSV = sv.split('_')
 			tadStrengths = [splitSV[7], splitSV[8], splitSV[9], splitSV[10]]
 
 			tadStrentghsSignal = [splitSV[12], splitSV[13], splitSV[14], splitSV[15]]
 
 
+			print([enhancerType, promoterType, eQTLType, superEnhancerType])
+
 			#if we get here, we passed all checks and there is a valid gain OR loss
 			if elementStr not in self.alteredElements[sv]:
 				#self.alteredElements[sv][elementStr] = lossGains + elementMethylation + enhScore
 				
-				self.alteredElements[sv][elementStr] = lossGains + elementMethylation + elementStrength + [enhancerType, promoterType, eQTLType, superEnhancerType] + tadStrengths + tadStrentghsSignal
+				#self.alteredElements[sv][elementStr] = lossGains + elementMethylation + elementStrength + [enhancerType, promoterType, eQTLType, superEnhancerType]
+				self.alteredElements[sv][elementStr] = lossGains + elementMethylation + elementStrength + [enhancerType, eQTLType, superEnhancerType]
 
 				#self.alteredElements[sv][elementStr] = lossGains
 		#something with methylation for the affected genes only

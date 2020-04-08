@@ -18,7 +18,7 @@ if not os.path.exists(finalOutDir):
 #with open(outDir + '/linkedSVGenePairs/bags.pkl', 'rb') as handle:
 #	bagDict = pkl.load(handle)
 
-with open(outDir + '/linkedSVGenePairs/test/bags.pkl', 'rb') as handle:
+with open(outDir + '/linkedSVGenePairs/random/bags.pkl', 'rb') as handle:
 	bagDict = pkl.load(handle)
 
 
@@ -56,13 +56,14 @@ for pair in bagDict:
 			
 			
 			feature = float(instance[featureInd])
-			
-			if currentMin[featureInd] == 0 and currentMax[featureInd] == 0: #if the min/max are 0 for this feature, the normalized value should also be 0. 
+
+			if currentMin[featureInd] == 0 and currentMax[featureInd] == 0: #if the min/max are 0 for this feature, the normalized value should also be 0.
 				normInstance.append(0)
 				continue 
 			
 			#do the normalization
 			if currentMax[featureInd] - currentMin[featureInd] == 0:
+
 				normInstance.append(0) #min and max should be the same, so no norm necessary
 				continue
 
@@ -76,6 +77,6 @@ bagDict = normalizedBagDict
 #save to a file to prevent heavy computing load
 # with open(finalOutDir + '/normalizedBags.pkl', 'wb') as handle:
 # 		pkl.dump(bagDict, handle, protocol=pkl.HIGHEST_PROTOCOL)
-with open(outDir + '/linkedSVGenePairs/test/normalizedBags.pkl', 'wb') as handle:
+with open(outDir + '/linkedSVGenePairs/random/normalizedBags.pkl', 'wb') as handle:
 		pkl.dump(bagDict, handle, protocol=pkl.HIGHEST_PROTOCOL)		
 		

@@ -52,12 +52,12 @@ fi
 #the output needs to be fixed, to where settings can access it too.
 
 ### (REQUIRED) PART 2 - LINK SVS TO GENES ###
-run=false #Only skip this step if all output has already been generated!
+run=true #Only skip this step if all output has already been generated!
 
 if $run; then
 	runFolder='./linkSVsGenes/'
 	#Map the SVs to genes. This also outputs bags for MIL.
-	python "$runFolder/main.py" "" "0" "N" "$settingsFolder" "$outputFolder"
+	python "$runFolder/main.py" "" "False" "0" "$settingsFolder" "$outputFolder"
 fi
 
 ### (REQUIRED) PART 3 - IDENTIFY PATHOGENIC SV-GENE PAIRS ###
@@ -83,7 +83,7 @@ if $run; then
 fi
 
 ### PART 4 - SETTING UP FOR MULTIPLE INSTANCE LEARNING ###
-run=true #these steps only need to be done when outputting anything related to multiple instance learning
+run=false #these steps only need to be done when outputting anything related to multiple instance learning
 
 if $run; then
 	runFolder='./multipleInstanceLearning/'
