@@ -46,7 +46,7 @@ else:
 outFilePrefix = outDir + '/' + gainLossName + '_' + cosmicName + '_'
 
 svTypes = ['DEL', 'DUP', 'INV', 'ITX']
-svTypes = ['ITX']
+svTypes = ['DEL']
 
 if generatePlottingData == "True":
 	adjustedPValues = dict()
@@ -71,8 +71,8 @@ if generatePlottingData == "True":
 			clf = RandomForestClassifier(n_estimators= 1000, min_samples_split=5, min_samples_leaf=1, max_features='auto', max_depth=80, bootstrap=True)
 			title = 'translocations'
 		else:
-			clf = RandomForestClassifier(n_estimators= 600, min_samples_split=5, min_samples_leaf=1, max_features='auto', max_depth=80, bootstrap=True)
-			title = 'All SV types'
+			print('SV type not supported')
+			exit(1)
 
 		#load the similarity matrix of this SV type
 		dataPath = outDir + '/multipleInstanceLearning/similarityMatrices/'
@@ -105,54 +105,6 @@ if generatePlottingData == "True":
 		# exit()
 
 
-		#split the type back into 4 features
-		# enhancerTypes = []
-		# eQTLTypes = []
-		# promoterTypes = []
-		# superEnhancerTypes = []
-		# uniqueGenes = []
-		# uniqueCosmicGenes = []
-		# instanceInd = 0
-		# for instance in instances:
-		#
-		# 	if instance[33] == 0:
-		# 		enhancerTypes.append(1)
-		# 		eQTLTypes.append(0)
-		# 		promoterTypes.append(0)
-		# 		superEnhancerTypes.append(0)
-		# 	elif instance[33] > 0 and instance[33] < 0.34:
-		# 		enhancerTypes.append(0)
-		# 		eQTLTypes.append(0)
-		# 		promoterTypes.append(1)
-		# 		superEnhancerTypes.append(0)
-		# 	elif instance[33] > 0.33 and instance[33] < 0.68:
-		# 		enhancerTypes.append(0)
-		# 		eQTLTypes.append(1)
-		# 		promoterTypes.append(0)
-		# 		superEnhancerTypes.append(0)
-		# 	else:
-		# 		enhancerTypes.append(0)
-		# 		eQTLTypes.append(0)
-		# 		promoterTypes.append(0)
-		# 		superEnhancerTypes.append(1)
-		#
-		# newInstances = np.zeros([instances.shape[0], instances.shape[1]+4])
-		#
-		# newInstances[:,0:instances.shape[1]] = instances
-		#
-		# newInstances[:,instances.shape[1]] = enhancerTypes
-		# newInstances[:,instances.shape[1]+1] = promoterTypes
-		# newInstances[:,instances.shape[1]+2] = eQTLTypes
-		# newInstances[:,instances.shape[1]+3] = superEnhancerTypes
-		#
-		# #reomove the old type column
-		# newInstances = np.delete(newInstances, 33, 1)
-
-		#top X instances to look into
-		instanceCount = 100
-
-		#get the instances by their instance sorting
-		topInstances = instances[indices[0:instanceCount]]
 
 		#### here we determine if we look at gains/losses, cosmic/non-cosmic
 		# all these need to be parameters to automatically output the right plots
@@ -282,21 +234,10 @@ adjustedPValues = np.load(allSet + 'adjustedPValues.npy', allow_pickle=True, enc
 #if we are looking at cosmic/non-cosmic, do not show the cosmic feature.
 #these labels are never added to the correct place in the plot for some reason, so I
 #post-edit them and give them clearer names there. Too long names will make the plot unreadable.
-if cosmicName == 'all':
-	xlabels = ['cpg', 'tf', 'hic', 'ctcf', 'dnaseI', 'h3k9me3', 'h3k4me3', 'h3k27ac', 'h3k27me3', 'h3k4me1', 'h3k36me3',
-			   'CTCF', 'CTCF+Enhancer', 'CTCF+Promoter', 'Enhancer', 'Heterochromatin', 'Poised_Promoter', 'Promoter', 'Repeat', 'Repressed', 'Transcribed', 'rnaPol',
-			   'enhancer_s', 'ctcf_s', 'rnaPol_s', 'h3k9me3_s', 'h3k4me3_s', 'h3k27ac_s', 'h3k27me3_s', 'h3k4me1_s', 'h3k36me3_s', 'enhancerType', 'promoterType', 'eQTLType', 'superEnhancerType', 'cosmic']
-else:
-	xlabels = ['cpg', 'tf', 'hic', 'ctcf', 'dnaseI', 'h3k9me3', 'h3k4me3', 'h3k27ac', 'h3k27me3', 'h3k4me1', 'h3k36me3',
-			   'CTCF', 'CTCF+Enhancer', 'CTCF+Promoter', 'Enhancer', 'Heterochromatin', 'Poised_Promoter', 'Promoter', 'Repeat', 'Repressed', 'Transcribed', 'rnaPol',
-			   'enhancer_s', 'ctcf_s', 'rnaPol_s', 'h3k9me3_s', 'h3k4me3_s', 'h3k27ac_s', 'h3k27me3_s', 'h3k4me1_s', 'h3k36me3_s', 'enhancerType', 'promoterType', 'eQTLType', 'superEnhancerType']
 
-print(xlabels)
-print(len(xlabels))
-print(allFeatureZScores['ITX'])
-print(len(allFeatureZScores['ITX']))
-exit()
-
+xlabels = ['cpg', 'tf', 'hic', 'ctcf', 'dnaseI', 'h3k9me3', 'h3k4me3', 'h3k27ac', 'h3k27me3', 'h3k4me1', 'h3k36me3',
+			'CTCF', 'CTCF+Enhancer', 'CTCF+Promoter', 'Enhancer', 'Heterochromatin', 'Poised_Promoter', 'Promoter', 'Repeat', 'Repressed', 'Transcribed', 'rnaPol',
+			'enhancer_s', 'ctcf_s', 'rnaPol_s', 'h3k9me3_s', 'h3k4me3_s', 'h3k27ac_s', 'h3k27me3_s', 'h3k4me1_s', 'h3k36me3_s', 'enhancerType', 'eQTLType', 'superEnhancerType']
 
 #to plot, show the p-values, direction based on the z-score.
 overallMin = float('inf')
@@ -348,10 +289,10 @@ centers = np.deg2rad(np.ediff1d(xRange)//2 + xRange[:-1])
 fig = plt.figure(figsize=(15,13))
 ax = fig.add_subplot(111, projection='polar')
 
-#colors = ['blue', 'red', 'magenta', 'black']
-colors = ['magenta', 'black']
-#offset = [-0.02, -0.01, 0.01, 0.02]
-offset = [0.01, 0.02]
+colors = ['blue', 'red', 'magenta', 'black']
+#colors = ['magenta', 'black']
+offset = [-0.02, -0.01, 0.01, 0.02]
+#offset = [0.01, 0.02]
 ind = 0
 for svType in svTypes:
 	print('area')
@@ -376,5 +317,5 @@ gridlines[2].set_linestyle('--')
 
 ax.set_rorigin(-200)
 ax.set_theta_zero_location('N', offset=10)
-plt.savefig(outFilePrefix + 'featureImportances.svg')
+plt.savefig(outFilePrefix + svType + '_featureImportances.svg')
 plt.show()

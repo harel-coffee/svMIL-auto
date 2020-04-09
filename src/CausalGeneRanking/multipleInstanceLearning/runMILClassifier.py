@@ -25,12 +25,95 @@ import matplotlib
 matplotlib.use('Agg')
 
 featureElimination = sys.argv[2]
-leaveOnePatientOut = sys.argv[3]
+leaveOnePatientOut = sys.argv[3] #1 patient at a time in the test set
+leaveOneChromosomeOut = sys.argv[4] #1 chromosome at a time in the test set
+leaveBagsOut = sys.argv[5] #random bags in each CV fold
+
 svTypes = ['DEL', 'DUP', 'INV', 'ITX']
-svTypes = ['DEL']
+svTypes = ['DUP', 'INV', 'ITX']
 outDir = sys.argv[1]
 
-def cvClassification(allFiles, clf, svType, title, plot, plotOutputFile, outputFile, shuffleLabels):
+def leaveOneChromosomeOutCV(leaveChromosomeOutDataFolder, classifier, svType, plotOutputFile, title):
+
+	#first get the names of all patients
+	allFiles = glob.glob(leaveChromosomeOutDataFolder + '*_' + svType + '.npy')
+
+	chromosomeFiles = dict()
+	for dataFile in allFiles:
+
+		#get the chromosome name
+		splitFileId = dataFile.split('_')
+		chrId = splitFileId[len(splitFileId)-2]
+
+		if chrId not in chromosomeFiles:
+			chromosomeFiles[chrId] = []
+		chromosomeFiles[chrId].append(dataFile)
+
+
+	#for each patient, get the train/test combination, and run the classifier
+	tprs = []
+	aucs = []
+	mean_fpr = np.linspace(0, 1, 100)
+	fig, ax = plt.subplots()
+	ind = 0
+	for chromosome in chromosomeFiles:
+
+		for dataFile in chromosomeFiles[chromosome]:
+
+			if re.search('similarityMatrixTrain', dataFile):
+				similarityMatrixTrain = np.load(dataFile, encoding='latin1', allow_pickle=True)
+			if re.search('similarityMatrixTest', dataFile):
+				similarityMatrixTest = np.load(dataFile, encoding='latin1', allow_pickle=True)
+			if re.search('bagLabelsTrain', dataFile):
+				bagLabelsTrain = np.load(dataFile, encoding='latin1', allow_pickle=True)
+			if re.search('bagLabelsTest', dataFile):
+				bagLabelsTest = np.load(dataFile, encoding='latin1', allow_pickle=True)
+
+		#then train the classifier
+		classifier.fit(similarityMatrixTrain, bagLabelsTrain)
+
+		#output the predictions to a file for the COSMIC analysis
+		preds = classifier.predict(similarityMatrixTest)
+	
+		viz = plot_roc_curve(classifier, similarityMatrixTest, bagLabelsTest,
+							 name='roc',
+							 alpha=0.3, lw=1, ax=ax)
+		interp_tpr = interp(mean_fpr, viz.fpr, viz.tpr)
+		interp_tpr[0] = 0.0
+		tprs.append(interp_tpr)
+		aucs.append(np.mean(viz.roc_auc))
+		print('auc: ', np.mean(viz.roc_auc))
+
+	print(np.mean(aucs))
+	
+	#make the CV plot, just plot the mean
+	fig, ax = plt.subplots()
+	ax.plot([0, 1], [0, 1], linestyle='--', lw=2, color='r',
+				label='Chance', alpha=.8)
+
+	mean_tpr = np.mean(tprs, axis=0)
+	mean_tpr[-1] = 1.0
+	mean_auc = auc(mean_fpr, mean_tpr)
+	std_auc = np.std(aucs)
+
+	ax.plot(mean_fpr, mean_tpr, color='b',
+			label=r'Mean ROC (AUC = %0.2f $\pm$ %0.2f)' % (np.mean(aucs), np.std(aucs)),
+			lw=2, alpha=.8)
+
+	# std_tpr = np.std(tprs, axis=0)
+	# tprs_upper = np.minimum(mean_tpr + std_tpr, 1)
+	# tprs_lower = np.maximum(mean_tpr - std_tpr, 0)
+	# ax.fill_between(mean_fpr, tprs_lower, tprs_upper, color='grey', alpha=.2,
+	# 				label=r'$\pm$ 1 std. dev.')
+
+	ax.set(xlim=[-0.05, 1.05], ylim=[-0.05, 1.05],
+		   title="Leave-one-patient-out CV: " + title)
+	ax.legend(loc="lower right")
+	plt.tight_layout()
+	plt.savefig(plotOutputFile)
+
+
+def bagsCVClassification(dataPath, clf, svType, title, plot, plotOutputFile, outputFile, shuffleLabels):
 
 	#load the similarity matrices of each fold
 	folds = 10
@@ -40,7 +123,8 @@ def cvClassification(allFiles, clf, svType, title, plot, plotOutputFile, outputF
 	fig, ax = plt.subplots()
 	for fold in range(0, folds):
 
-		print(allFiles)
+		#match files on fold
+		allFiles = glob.glob(dataPath + '*_' + svType + '_' + str(fold) + '.npy')
 
 		for dataFile in allFiles:
 
@@ -61,21 +145,6 @@ def cvClassification(allFiles, clf, svType, title, plot, plotOutputFile, outputF
 			shuffle(bagLabelsTest)
 
 		clf.fit(similarityMatrixTrain, bagLabelsTrain)
-		print(clf.predict(similarityMatrixTest))
-
-		preds = clf.predict(similarityMatrixTrain)
-		diff = np.sum(np.abs(bagLabelsTrain - preds)) / len(bagLabelsTrain)
-		print('train diff: ', diff)
-
-		preds = clf.predict(similarityMatrixTest)
-		diff = np.sum(np.abs(bagLabelsTest - preds)) / len(bagLabelsTest)
-		print('test diff: ', diff)
-
-		print('train: ', clf.score(similarityMatrixTrain, bagLabelsTrain))
-		print('test: ', clf.score(similarityMatrixTest, bagLabelsTest))
-
-		#output to a file what our predictions were, we can use those later for anlyses
-		np.savetxt(outDir + '/multipleInstanceLearning/predictions_fold_' + str(fold) + '_' + svType + '.txt', preds, fmt='%s', delimiter= '\t')
 
 		viz = plot_roc_curve(clf, similarityMatrixTest, bagLabelsTest,
 							 name='ROC fold {}'.format(fold),
@@ -86,17 +155,11 @@ def cvClassification(allFiles, clf, svType, title, plot, plotOutputFile, outputF
 		tprs.append(interp_tpr)
 		aucs.append(viz.roc_auc)
 
-		print('auc: ', np.mean(viz.roc_auc))
 	print(np.mean(aucs))
-
-	#write this to a file rather than to screen
-	score = str(np.mean(aucs)) + '\t' + str(np.std(aucs)) + '\n'
-
-	with open(outputFile, 'a') as outF:
-		outF.write(score)
 
 	if plot == True:
 
+		fig, ax = plt.subplots()
 		ax.plot([0, 1], [0, 1], linestyle='--', lw=2, color='r',
 				label='Chance', alpha=.8)
 
@@ -109,77 +172,23 @@ def cvClassification(allFiles, clf, svType, title, plot, plotOutputFile, outputF
 				label=r'Mean ROC (AUC = %0.2f $\pm$ %0.2f)' % (np.mean(aucs), np.std(aucs)),
 				lw=2, alpha=.8)
 
-		std_tpr = np.std(tprs, axis=0)
-		tprs_upper = np.minimum(mean_tpr + std_tpr, 1)
-		tprs_lower = np.maximum(mean_tpr - std_tpr, 0)
-		ax.fill_between(mean_fpr, tprs_lower, tprs_upper, color='grey', alpha=.2,
-						label=r'$\pm$ 1 std. dev.')
+		# std_tpr = np.std(tprs, axis=0)
+		# tprs_upper = np.minimum(mean_tpr + std_tpr, 1)
+		# tprs_lower = np.maximum(mean_tpr - std_tpr, 0)
+		# ax.fill_between(mean_fpr, tprs_lower, tprs_upper, color='grey', alpha=.2,
+		# 				label=r'$\pm$ 1 std. dev.')
 
 		ax.set(xlim=[-0.05, 1.05], ylim=[-0.05, 1.05],
-			   title="Receiver operating characteristic: " + title)
+			   title="Leave-random-bags-out CV: " + title)
 		ax.legend(loc="lower right")
 		plt.tight_layout()
 		plt.savefig(plotOutputFile)
-
-
-	# #get the kfold model
-	# kfold = model_selection.StratifiedKFold(n_splits=10, shuffle=True, random_state=10)
-	#
-	# #make the ROC curve and compute the AUC
-	# tprs = []
-	# aucs = []
-	# mean_fpr = np.linspace(0, 1, 100)
-	#
-	# fig, ax = plt.subplots()
-	# importances = []
-	# for i, (train, test) in enumerate(kfold.split(similarityMatrix, bagLabels)):
-	# 	clf.fit(similarityMatrix[train], bagLabels[train])
-	# 	viz = plot_roc_curve(clf, similarityMatrix[test], bagLabels[test],
-	# 						 name='ROC fold {}'.format(i),
-	# 						 alpha=0.3, lw=1, ax=ax)
-	# 	interp_tpr = interp(mean_fpr, viz.fpr, viz.tpr)
-	# 	interp_tpr[0] = 0.0
-	# 	tprs.append(interp_tpr)
-	# 	aucs.append(viz.roc_auc)
-	# 	importances.append(clf.feature_importances_)
-	#
-	# #write this to a file rather than to screen
-	# score = str(np.mean(aucs)) + '\t' + str(np.std(aucs)) + '\n'
-	#
-	# with open(outputFile, 'a') as outF:
-	# 	outF.write(score)
-	#
-	# if plot == True:
-	# 
-	# 	ax.plot([0, 1], [0, 1], linestyle='--', lw=2, color='r',
-	# 			label='Chance', alpha=.8)
-	# 
-	# 	mean_tpr = np.mean(tprs, axis=0)
-	# 	mean_tpr[-1] = 1.0
-	# 	mean_auc = auc(mean_fpr, mean_tpr)
-	# 	std_auc = np.std(aucs)
-	# 
-	# 	ax.plot(mean_fpr, mean_tpr, color='b',
-	# 			label=r'Mean ROC (AUC = %0.2f $\pm$ %0.2f)' % (np.mean(aucs), np.std(aucs)),
-	# 			lw=2, alpha=.8)
-	# 
-	# 	std_tpr = np.std(tprs, axis=0)
-	# 	tprs_upper = np.minimum(mean_tpr + std_tpr, 1)
-	# 	tprs_lower = np.maximum(mean_tpr - std_tpr, 0)
-	# 	ax.fill_between(mean_fpr, tprs_lower, tprs_upper, color='grey', alpha=.2,
-	# 					label=r'$\pm$ 1 std. dev.')
-	#
-	# 	ax.set(xlim=[-0.05, 1.05], ylim=[-0.05, 1.05],
-	# 		   title="Receiver operating characteristic: " + title)
-	# 	ax.legend(loc="lower right")
-	# 	plt.tight_layout()
-	# 	plt.savefig(plotOutputFile)
 
 #function to classify on a case where 1 patient is left out at a time
 #the similarity matrices are pre-made, with each time 1 patient being left out.
 #so we can just load these in, and then train our standard classifier on that.
 #report on the performance of each patient.
-def leaveOnePatientOutCV(leaveOneOutDataFolder, classifier):
+def leaveOnePatientOutCV(leaveOneOutDataFolder, classifier, svType, plotOutputFile, title):
 
 	#first get the names of all patients
 	allFiles = glob.glob(leaveOneOutDataFolder + '*_[0-9]*' + svType + '.npy')
@@ -197,10 +206,13 @@ def leaveOnePatientOutCV(leaveOneOutDataFolder, classifier):
 
 
 	#for each patient, get the train/test combination, and run the classifier
-	performances = []
+	tprs = []
 	aucs = []
+	mean_fpr = np.linspace(0, 1, 100)
+	fig, ax = plt.subplots()
+	ind = 0
+	predictions = dict()
 	for patient in patientFiles:
-		print(patient)
 
 		for dataFile in patientFiles[patient]:
 
@@ -213,134 +225,109 @@ def leaveOnePatientOutCV(leaveOneOutDataFolder, classifier):
 			if re.search('bagLabelsTest', dataFile):
 				bagLabelsTest = np.load(dataFile, encoding='latin1', allow_pickle=True)
 
-		print(bagLabelsTest)
-		classifier = RandomForestClassifier(n_estimators= 100)
 		#then train the classifier
 		classifier.fit(similarityMatrixTrain, bagLabelsTrain)
-		print(classifier.predict(similarityMatrixTest))
 
-		preds = classifier.predict(similarityMatrixTrain)
-		diff = np.sum(np.abs(bagLabelsTrain - preds)) / len(bagLabelsTrain)
-		print('train diff: ', diff)
-
+		#output the predictions to a file for the COSMIC analysis
 		preds = classifier.predict(similarityMatrixTest)
-		diff = np.sum(np.abs(bagLabelsTest - preds)) / len(bagLabelsTest)
-		print('test diff: ', diff)
+		predictions[patient] = preds
+		
 
-		print('train: ', classifier.score(similarityMatrixTrain, bagLabelsTrain))
-		print('test: ', classifier.score(similarityMatrixTest, bagLabelsTest))
-		performances.append(classifier.score(similarityMatrixTest, bagLabelsTest))
-
-		fig, ax = plt.subplots()
 		viz = plot_roc_curve(classifier, similarityMatrixTest, bagLabelsTest,
 							 name='roc',
 							 alpha=0.3, lw=1, ax=ax)
+		interp_tpr = interp(mean_fpr, viz.fpr, viz.tpr)
+		interp_tpr[0] = 0.0
+		tprs.append(interp_tpr)
 		aucs.append(np.mean(viz.roc_auc))
 		print('auc: ', np.mean(viz.roc_auc))
 
-		#optimize on this fold
-		#Number of trees in random forest
-		from sklearn.model_selection import RandomizedSearchCV
-		n_estimators = [int(x) for x in np.linspace(start = 200, stop = 2000, num = 10)]
-		# Number of features to consider at every split
-		max_features = ['auto', 'sqrt']
-		# Maximum number of levels in tree
-		max_depth = [int(x) for x in np.linspace(10, 110, num = 11)]
-		max_depth.append(None)
-		# Minimum number of samples required to split a node
-		min_samples_split = [2, 5, 10]
-		# Minimum number of samples required at each leaf node
-		min_samples_leaf = [1, 2, 4]
-		# Method of selecting samples for training each tree
-		bootstrap = [True, False]# Create the random grid
-		random_grid = {'n_estimators': n_estimators,
-					   'max_features': max_features,
-					   'max_depth': max_depth,
-					   'min_samples_split': min_samples_split,
-					   'min_samples_leaf': min_samples_leaf,
-					   'bootstrap': bootstrap}
-
-		#initial classifier to optimize from
-		rfClassifier = RandomForestClassifier(n_estimators= 100)
-		rf_random = RandomizedSearchCV(estimator = rfClassifier, param_distributions = random_grid, n_iter = 10, cv = 2, verbose=2, random_state=42, n_jobs = -1)
-		rf_random.fit(similarityMatrixTrain, bagLabelsTrain)
-		print('best params; ')
-		print(rf_random.best_params_)
-		print('new score: ')
-		print(rf_random.score(similarityMatrixTest, bagLabelsTest))
-
-
-		
-	print(aucs)
 	print(np.mean(aucs))
-	print(performances)
-	print(np.mean(performances))
+	
+	#make the CV plot, just plot the mean
+	fig, ax = plt.subplots()
+	ax.plot([0, 1], [0, 1], linestyle='--', lw=2, color='r',
+				label='Chance', alpha=.8)
+
+	mean_tpr = np.mean(tprs, axis=0)
+	mean_tpr[-1] = 1.0
+	mean_auc = auc(mean_fpr, mean_tpr)
+	std_auc = np.std(aucs)
+
+	ax.plot(mean_fpr, mean_tpr, color='b',
+			label=r'Mean ROC (AUC = %0.2f $\pm$ %0.2f)' % (np.mean(aucs), np.std(aucs)),
+			lw=2, alpha=.8)
+
+	# std_tpr = np.std(tprs, axis=0)
+	# tprs_upper = np.minimum(mean_tpr + std_tpr, 1)
+	# tprs_lower = np.maximum(mean_tpr - std_tpr, 0)
+	# ax.fill_between(mean_fpr, tprs_lower, tprs_upper, color='grey', alpha=.2,
+	# 				label=r'$\pm$ 1 std. dev.')
+
+	ax.set(xlim=[-0.05, 1.05], ylim=[-0.05, 1.05],
+		   title="Leave-one-patient-out CV: " + title)
+	ax.legend(loc="lower right")
+	plt.tight_layout()
+	plt.savefig(plotOutputFile)
+	
 
 	#output these values to a file
 	finalOutDir = outDir + '/multipleInstanceLearning/leaveOnePatientOutCV/'
 	if not os.path.exists(finalOutDir):
 		os.makedirs(finalOutDir)
 
-	outFile = finalOutDir + '/leaveOnePatientOutCV_' + svType + '_10patients.txt'
+	outFile = finalOutDir + '/leaveOnePatientOutCV_' + svType + '.txt'
 
 	strAucs = [str(i) for i in aucs]
 	strAuc = '\t'.join(strAucs)
-	strAccs = [str(i) for i in performances]
-	strAcc = '\t'.join(strAccs)
-	with open(outFile, 'a') as outF:
-		outF.write(strAuc)
-		outF.write('\n')
-		outF.write(str(np.mean(aucs)))
-		outF.write('\n')
-		outF.write(strAcc)
-		outF.write('\n')
-		outF.write(str(np.mean(performances)))
-		outF.write('\n')
 
-	return 0
+	with open(outFile, 'a') as outF:
+
+		for patient in predictions:
+			outF.write(patient + '\t' + '\t'.join([str(i) for i in predictions[patient]]) + "\n")
+
 
 for svType in svTypes:
 
 	if svType == 'DEL':
-		classifier = RandomForestClassifier(n_estimators= 600, min_samples_split=5, min_samples_leaf=1, max_features='auto', max_depth=80, bootstrap=True)
+		classifier = RandomForestClassifier(random_state=785, n_estimators= 600, min_samples_split=5, min_samples_leaf=1, max_features='auto', max_depth=80, bootstrap=True)
 		title = 'deletions'
 	elif svType == 'DUP':
-		#classifier = RandomForestClassifier(n_estimators= 600, min_samples_split=2, min_samples_leaf=2, max_features='sqrt', max_depth=110, bootstrap=False)
-		classifier = RandomForestClassifier(n_estimators= 600, min_samples_split=5, min_samples_leaf=1, max_features='auto', max_depth=80, bootstrap=True)
-		#classifier = RandomForestClassifier(n_estimators= 1200, min_samples_split=2, min_samples_leaf=4, max_features='sqrt', max_depth=70, bootstrap=False)
+		classifier = RandomForestClassifier(random_state=785, n_estimators= 600, min_samples_split=5, min_samples_leaf=1, max_features='auto', max_depth=80, bootstrap=True)
 		title = 'duplications'
 	elif svType == 'INV':
-		classifier = RandomForestClassifier(n_estimators= 200, min_samples_split=5, min_samples_leaf=4, max_features='auto', max_depth=10, bootstrap=True)
+		classifier = RandomForestClassifier(random_state=785, n_estimators= 200, min_samples_split=5, min_samples_leaf=4, max_features='auto', max_depth=10, bootstrap=True)
 		title = 'inversions'
 	elif svType == 'ITX':
-		classifier = RandomForestClassifier(n_estimators= 1000, min_samples_split=5, min_samples_leaf=1, max_features='auto', max_depth=80, bootstrap=True)
+		classifier = RandomForestClassifier(random_state=785, n_estimators= 1000, min_samples_split=5, min_samples_leaf=1, max_features='auto', max_depth=80, bootstrap=True)
 		title = 'translocations'
 	else:
-		classifier = RandomForestClassifier(n_estimators= 600, min_samples_split=5, min_samples_leaf=1, max_features='auto', max_depth=80, bootstrap=True)
-		title = 'All SV types'
+		print('Please provide a SV type')
+		exit(1)
 
 	#obtain the right similarity matrix and bag labels for this SV type
-	dataPath = outDir + '/multipleInstanceLearning/similarityMatrices/'
 
-	if os.path.isfile(dataPath + '/similarityMatrix_' + svType + '.npy') == False:
-		continue
+
+	#if os.path.isfile(dataPath + '/similarityMatrix_' + svType + '.npy') == False:
+	#	continue
 
 	#similarityMatrix = np.load(dataPath + '/similarityMatrix_' + svType + '.npy', encoding='latin1', allow_pickle=True)
 	#bagLabels = np.load(dataPath + '/bagLabels_' + svType + '.npy', encoding='latin1', allow_pickle=True)
 
 	plot = False
 	#don't make the plots for each feature to eliminate
-	if featureElimination == "False" and leaveOnePatientOut == 'False':
+	if featureElimination == "False" and leaveBagsOut == 'True':
 		plot = True
 	
 		plotOutputPath = outDir + '/multipleInstanceLearning/rocCurves/'
 		if not os.path.exists(plotOutputPath):
 			os.makedirs(plotOutputPath)
 
-		plotOutputFile = plotOutputPath + '/rocCurve_' + svType + '.svg'
+		plotOutputFile = plotOutputPath + '/rocCurve_' + svType + '_leaveBagsOut.svg'
 		outputFile = outDir + '/multipleInstanceLearning/performance_' + svType + '.txt'
-		allFiles = glob.glob(dataPath + '*_' + svType + '_' + str(fold) + '.npy')
-		cvClassification(allFiles, classifier, svType, title, plot, plotOutputFile, outputFile, False)
+		dataPath = outDir + '/multipleInstanceLearning/similarityMatrices/leaveBagsOut/'
+		
+		bagsCVClassification(dataPath, classifier, svType, title, plot, plotOutputFile, outputFile, False)
 		
 		#repeat, but then with random labels.
 		#mind here, if multiple iterations, the baglabels are permanently shuffled!
@@ -374,10 +361,15 @@ for svType in svTypes:
 	elif featureElimination == 'False' and leaveOnePatientOut == 'True':
 		
 		leaveOneOutDataFolder = outDir + '/multipleInstanceLearning/similarityMatrices/leaveOnePatientOut/'
-		
-		leaveOnePatientOutCV(leaveOneOutDataFolder, classifier)
+		plotOutputFile = outDir + '/multipleInstanceLearning/rocCurves/rocCurve_' + svType + '_leaveOnePatientOut.svg'
+		leaveOnePatientOutCV(leaveOneOutDataFolder, classifier, svType, plotOutputFile, title)
 
+	elif featureElimination == 'False' and leaveOneChromosomeOut == 'True':
 		
+		leaveOneChromosomeOutDataFolder = outDir + '/multipleInstanceLearning/similarityMatrices/leaveOneChromosomeOut/'
+		plotOutputFile = outDir + '/multipleInstanceLearning/rocCurves/rocCurve_' + svType + '_leaveOneChromosomeOut.svg'
+		leaveOneChromosomeOutCV(leaveOneChromosomeOutDataFolder, classifier, svType, plotOutputFile, title)
+	
 	else:
 		
 		print('Combination of options not implemented')

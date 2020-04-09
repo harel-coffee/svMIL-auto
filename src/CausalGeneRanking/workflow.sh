@@ -94,7 +94,7 @@ if $run; then
 	#python "$runFolder/normalizeBags.py" "$outputFolder"
 
 	#then generate the similarity matrices for all SVs
-	python "$runFolder/generateSimilarityMatrices.py" "$outputFolder" "False" "False"
+	python "$runFolder/generateSimilarityMatrices.py" "$outputFolder" "False" "True" "False" "False"
 
 fi
 
@@ -103,23 +103,26 @@ fi
 
 ### FIGURE 2 ###
 
-### FIGURE 3 - MIL PERFORMANCE CURVES PER SV TYPE ###
+### FIGURE 3 - MIL PERFORMANCE CURVES PER SV TYPE, PER-PATIENT CV ###
 run=false
 
 if $run; then
 	runFolder='./multipleInstanceLearning/'
 
 	#test the classifier and output the MIL curves
-	python "$runFolder/runMILClassifier.py" "$outputFolder" "False" "False"
+	python "$runFolder/runMILClassifier.py" "$outputFolder" "False" "True" "False" "False"
 
 fi
 
 
 ### FIGURE 4 - FEATURE IMPORTANCE AND RECURRENCE ###
-run=false
+run=true
 
 if $run; then
 	runFolder='./multipleInstanceLearning/'
+
+	#first output the full similarity matrix to train the classifier on the whole dataset.
+	python "$runFolder/generateSimilarityMatrices.py" "$outputFolder" "False" "False" "False" "False" "True"
 
 	#Generate the plotting data, and plot the feature importances for ALL instances,
 	#don't split into cosmic/non-cosmic and gains/losses
@@ -145,7 +148,7 @@ fi
 ### SUPPLEMENTARY FIGURE 5 ###
 
 ### SUPPLEMENTARY TABLE 1 - FEATURE ELIMINATION ###
-run=true
+run=false
 
 if $run; then
 	runFolder='./multipleInstanceLearning/'
@@ -164,15 +167,27 @@ fi
 #optimizing the MIL classifiers
 #simple ML
 
-## leave-one-patient-out
+## Per-chromosome CV
 run=false
 
 if $run; then
 	runFolder='./multipleInstanceLearning/'
 
-	python "$runFolder/generateSimilarityMatrices.py" "$outputFolder" "False" "True"
+	python "$runFolder/generateSimilarityMatrices.py" "$outputFolder" "False" "False" "True" "False"
 
-	#python "$runFolder/runMILClassifier.py" "$outputFolder" "False" "True"
+	python "$runFolder/runMILClassifier.py" "$outputFolder" "False" "False" "True" "False"
+
+fi
+
+## leave bags out CV
+run=false
+
+if $run; then
+	runFolder='./multipleInstanceLearning/'
+
+	python "$runFolder/generateSimilarityMatrices.py" "$outputFolder" "False" "False" "False" "True"
+
+	python "$runFolder/runMILClassifier.py" "$outputFolder" "False" "False" "False" "True"
 
 fi
 
