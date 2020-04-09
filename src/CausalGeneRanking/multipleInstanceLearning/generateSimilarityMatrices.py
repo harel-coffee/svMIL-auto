@@ -23,6 +23,7 @@ leaveBagsOut = sys.argv[5] #random bags in each CV fold
 fullDataset = sys.argv[6] #generate sim matrix for the whole dataset.
 
 svTypes = ['DEL', 'DUP', 'INV', 'ITX']
+svTypes = ['ITX']
 
 outDir = sys.argv[1]
 finalOutDir = outDir + '/multipleInstanceLearning/similarityMatrices/'
@@ -554,6 +555,11 @@ for svType in svTypes:
 				#if chromosome != 'chr16':
 				#	continue
 				
+				if chromosome not in positiveBagsPerChromosome:
+					continue
+				if chromosome not in negativeBagsPerChromosome:
+					continue
+
 
 				#make stratified
 				testPositiveBags = positiveBagsPerChromosome[chromosome]
@@ -591,6 +597,11 @@ for svType in svTypes:
 				for chromosome2 in chromosomes:
 
 					if chromosome == chromosome2:
+						continue
+					
+					if chromosome2 not in positiveBagsPerChromosome:
+						continue
+					if chromosome2 not in negativeBagsPerChromosome:
 						continue
 
 					#make stratified

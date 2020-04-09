@@ -30,7 +30,7 @@ leaveOneChromosomeOut = sys.argv[4] #1 chromosome at a time in the test set
 leaveBagsOut = sys.argv[5] #random bags in each CV fold
 
 svTypes = ['DEL', 'DUP', 'INV', 'ITX']
-svTypes = ['DUP', 'INV', 'ITX']
+svTypes = ['ITX']
 outDir = sys.argv[1]
 
 def leaveOneChromosomeOutCV(leaveChromosomeOutDataFolder, classifier, svType, plotOutputFile, title):
