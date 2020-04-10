@@ -3,6 +3,8 @@ import numpy as np
 import os
 from os import listdir
 from os.path import isfile, join
+import glob
+import re
 path = sys.argv[1]
 sys.path.insert(1, path)
 sys.path.insert(1, 'linkSVsGenes/')
@@ -359,6 +361,143 @@ def getPatientsWithSNVs_tcga(snvDir):
 				snvPatients[shortPatientID].append(geneName)
 
 	return snvPatients
+
+def getMetadataPCAWG(metadataFile):
+
+	nameMap = dict()
+	with open(metadataFile, 'r') as inF:
+
+		header = dict()
+		lineCount = 0
+		for line in inF:
+			line = line.strip()
+			splitLine = line.split('\t')
+			if lineCount < 1:
+
+				for colInd in range(0, len(splitLine)):
+					header[splitLine[colInd]] = colInd
+
+				lineCount += 1
+				continue
+
+			#only get the ones with the right study that we selected in the settings
+			if settings.general['cancerType'] == 'OV':
+				if splitLine[header['study']] != 'Ovarian Cancer - AU':
+					continue
+
+			if header['matched_wgs_aliquot_id'] < len(splitLine):
+				wgsName = splitLine[header['matched_wgs_aliquot_id']]
+				rnaName = splitLine[header['aliquot_id']]
+
+				nameMap[wgsName] = rnaName
+
+	return nameMap
+
+def getPatientsWithSNVs_pcawg(snvDir, allGenes, nameMap):
+
+	import gzip
+	#search through the SNVs and link these to genes.
+	vcfs = glob.glob(snvDir + '/*.vcf.gz', recursive=True)
+
+	patientsWithSNVs = dict()
+	for vcf in vcfs:
+
+		#get the samplename from the vcf
+		splitFileName = vcf.split('.')[4]
+		wgsSampleName = splitFileName.split('/')[4]
+
+		##use the rna sample names here, map from the metadata
+		#based on the settings we already select the right cancer type, so these snvs will be skipped
+		if wgsSampleName not in nameMap:
+			continue
+		sampleName = nameMap[wgsSampleName]
+
+
+		#open the .gz file
+		with gzip.open(vcf, 'rb') as inF:
+
+			for line in inF:
+				line = line.strip().decode('utf-8')
+
+				if re.search('^#', line): #skip header
+					continue
+				
+				splitLine = line.split("\t")
+
+				#Check if this SNV has any affiliation with a gene. This means that in the info field, a gene is mentioned somewhere. That is, there is an ENSG identifier.
+				infoField = splitLine[7]
+
+				#check if the mutation is silent
+				splitInfoField = infoField.split(';')
+				skip = False
+				for field in splitInfoField:
+
+					splitField = field.split('=')
+					if splitField[0] == 'Variant_Classification' and splitField[1] == 'Silent':
+						skip = True
+
+				if skip == True:
+					continue
+
+				#link it to the gene it is in
+				geneChrSubset = allGenes[allGenes[:,0] == 'chr' + splitLine[0]]
+
+				geneMatch = geneChrSubset[(geneChrSubset[:,1] <= int(splitLine[1])) * (geneChrSubset[:,2] >= int(splitLine[1]))]
+
+				if len(geneMatch) < 1:
+					continue
+
+				geneName = geneMatch[0][3].name
+
+				if sampleName not in patientsWithSNVs:
+					patientsWithSNVs[sampleName] = []
+				patientsWithSNVs[sampleName].append(geneName)
+
+	return patientsWithSNVs
+
+def getPatientsWithCNVGeneBased_pcawg(cnvFile, nameMap):
+
+	cnvPatientsDel = dict()
+	cnvPatientsAmp = dict()
+
+	with open(cnvFile, 'r') as inF:
+
+		#first line is samples
+		samples = []
+		lineCount = 0
+		for line in inF:
+			line = line.strip()
+			splitLine = line.split('\t')
+
+			if lineCount < 1:
+				lineCount += 1
+				samples = splitLine
+				continue
+
+			#read for each sample what the CN is
+			gene = splitLine[0]
+
+			for sampleInd in range(0, len(samples)):
+
+				if sampleInd > 2:
+					wgsSampleName = samples[sampleInd]
+					if wgsSampleName not in nameMap:
+						continue
+					sampleName = nameMap[wgsSampleName]
+
+					if sampleName not in cnvPatientsAmp:
+						cnvPatientsAmp[sampleName] = []
+					if sampleName not in cnvPatientsDel:
+						cnvPatientsDel[sampleName] = []
+
+					if splitLine[sampleInd] != 'NaN':
+
+						if float(splitLine[sampleInd]) > 2.3:
+							cnvPatientsAmp[sampleName].append(splitLine[0])
+						elif float(splitLine[sampleInd]) < 1.7:
+							cnvPatientsDel[sampleName].append(splitLine[0])
+
+	return cnvPatientsAmp, cnvPatientsDel
 		
 causalGenes = InputParser().readCausalGeneFile(settings.files['causalGenesFile'])
 nonCausalGenes = InputParser().readNonCausalGeneFile(settings.files['nonCausalGenesFile'], causalGenes) #In the same format as the causal genes.
@@ -370,10 +509,16 @@ allGenes = np.concatenate((causalGenes, nonCausalGenes), axis=0)
 #snvPatients = getPatientsWithSNVs_hmf(sys.argv[1])
 #svPatientsDel, svPatientsDup, svPatientsInv, svPatientsItx = getPatientsWithSVs_hmf(sys.argv[1], allGenes)
 
+# svPatientsDel, svPatientsDup, svPatientsInv, svPatientsItx = getPatientsWithSVs_tcga(settings.files['svFile'], allGenes)
+# cnvPatientsAmp = dict()
+# cnvPatientsDel = dict()
+# snvPatients = getPatientsWithSNVs_tcga(settings.files['snvDir'])
+
+nameMap = getMetadataPCAWG(settings.files['metaDataFile'])
+snvPatients = getPatientsWithSNVs_pcawg(settings.files['snvDir'], allGenes, nameMap)
+cnvPatientsAmp, cnvPatientsDel = getPatientsWithCNVGeneBased_pcawg(settings.files['cnvFile'], nameMap)
 svPatientsDel, svPatientsDup, svPatientsInv, svPatientsItx = getPatientsWithSVs_tcga(settings.files['svFile'], allGenes)
-cnvPatientsAmp = dict()
-cnvPatientsDel = dict()
-snvPatients = getPatientsWithSNVs_tcga(settings.files['snvDir'])
+
 
 finalOutDir = outDir + '/patientGeneMutationPairs/'
 

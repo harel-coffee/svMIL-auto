@@ -5,7 +5,7 @@
 #$ -m as
 #$ -M m.m.nieboer@umcutrecht.nl
 #$ -l h_vmem=16G
-#$ -l h_rt=06:00:00
+#$ -l h_rt=08:00:00
 #$ -e workflow_err
 #$ -o workflow_out
 
@@ -67,25 +67,27 @@ run=false
 
 if $run; then
 	runFolder='./tadDisruptionsZScores/'
-	expressionFile='../../data/expression/gdac.broadinstitute.org_OV.Merge_rnaseqv2__illuminahiseq_rnaseqv2__unc_edu__Level_3__RSEM_genes_normalized__data.Level_3.2016012800.0.0/OV.rnaseqv2__illuminahiseq_rnaseqv2__unc_edu__Level_3__RSEM_genes_normalized__data.data.txt'
+	expressionFile='../../data/expression/tophat_star_fpkm_uq.v2_aliquot_gl.tsv'
+
+
 
 	#first link mutations to patients. These are required to quickly check which patients
 	#have which mutations in which genes
-	python "$runFolder/determinePatientGeneMutationPairs.py" "$settingsFolder" "$outputFolder"
+	#python "$runFolder/determinePatientGeneMutationPairs.py" "$settingsFolder" "$outputFolder"
 
 	#identify which TADs are disrupted in these patients, and compute the
 	#z-scores of the genes in these TADs. Filter out genes with coding mutations.
 
 	#### TO DO fix the parameters here (settings file)
 
-	#python "$runFolder/computeZScoresDisruptedTads.py" '../../data/genes/allGenesAndIdsHg19.txt' '/hpc/compgen/users/mnieboer/data/pipeline/read_counts/brca_tmm.txt' '/hpc/compgen/users/mnieboer/data/somatics/' "$settingsFolder" "$outputFolder"
+	python "$runFolder/computeZScoresDisruptedTads.py" '../../data/genes/allGenesAndIdsHg19.txt' '/hpc/compgen/users/mnieboer/data/pipeline/read_counts/brca_tmm.txt' "$settingsFolder" "$outputFolder"
 	#python "$runFolder/computeZScoresDisruptedTads.py" '../../data/genes/allGenesAndIdsHg19.txt' '../../data/expression/gdac.broadinstitute.org_BRCA.Merge_rnaseqv2__illuminahiseq_rnaseqv2__unc_edu__Level_3__RSEM_genes_normalized__data.Level_3.2016012800.0.0/BRCA.rnaseqv2__illuminahiseq_rnaseqv2__unc_edu__Level_3__RSEM_genes_normalized__data.data.txt' '/hpc/compgen/users/mnieboer/data/somatics/' "$settingsFolder" "$outputFolder"
 	#python "$runFolder/computeZScoresDisruptedTads.py" '../../data/genes/allGenesAndIdsHg19.txt' '../../data/expression/gdac.broadinstitute.org_LUAD.Merge_rnaseqv2__illuminahiseq_rnaseqv2__unc_edu__Level_3__RSEM_genes_normalized__data.Level_3.2016012800.0.0/LUAD.rnaseqv2__illuminahiseq_rnaseqv2__unc_edu__Level_3__RSEM_genes_normalized__data.data.txt' '/hpc/compgen/users/mnieboer/data/somatics/' "$settingsFolder" "$outputFolder"
-	python "$runFolder/computeZScoresDisruptedTads.py" '../../data/genes/allGenesAndIdsHg19.txt' "$expressionFile" '/hpc/compgen/users/mnieboer/data/somatics/' "$settingsFolder" "$outputFolder"
+	#python "$runFolder/computeZScoresDisruptedTads.py" '../../data/genes/allGenesAndIdsHg19.txt' "$expressionFile" "$settingsFolder" "$outputFolder"
 fi
 
 ### PART 4 - SETTING UP FOR MULTIPLE INSTANCE LEARNING ###
-run=false #these steps only need to be done when outputting anything related to multiple instance learning
+run=true #these steps only need to be done when outputting anything related to multiple instance learning
 
 if $run; then
 	runFolder='./multipleInstanceLearning/'
@@ -94,7 +96,7 @@ if $run; then
 	#python "$runFolder/normalizeBags.py" "$outputFolder"
 
 	#then generate the similarity matrices for all SVs
-	python "$runFolder/generateSimilarityMatrices.py" "$outputFolder" "False" "True" "False" "False"
+	python "$runFolder/generateSimilarityMatrices.py" "$outputFolder" "False" "True" "False" "False" "False"
 
 fi
 
@@ -104,7 +106,7 @@ fi
 ### FIGURE 2 ###
 
 ### FIGURE 3 - MIL PERFORMANCE CURVES PER SV TYPE, PER-PATIENT CV ###
-run=false
+run=true
 
 if $run; then
 	runFolder='./multipleInstanceLearning/'
@@ -116,23 +118,29 @@ fi
 
 
 ### FIGURE 4 - FEATURE IMPORTANCE AND RECURRENCE ###
-run=true
+run=false
 
 if $run; then
 	runFolder='./multipleInstanceLearning/'
 
 	#first output the full similarity matrix to train the classifier on the whole dataset.
-	python "$runFolder/generateSimilarityMatrices.py" "$outputFolder" "False" "False" "False" "False" "True"
+	#python "$runFolder/generateSimilarityMatrices.py" "$outputFolder" "False" "False" "False" "False" "True"
 
 	#Generate the plotting data, and plot the feature importances for ALL instances,
 	#don't split into cosmic/non-cosmic and gains/losses
-	python "$runFolder/plotFeatureImportances.py" "$outputFolder" "True" "ALL" "ALL"
+	#python "$runFolder/plotFeatureImportances.py" "$outputFolder" "True" "ALL" "ALL" "$settingsFolder" "False"
 
 	#plot for GAINS only
-	#python "$runFolder/plotFeatureImportances.py" "$outputFolder" "True" "GAIN" "ALL"
+	#python "$runFolder/plotFeatureImportances.py" "$outputFolder" "True" "GAIN" "ALL" "$settingsFolder" "False"
 
 	#plot for LOSSES only
-	#python "$runFolder/plotFeatureImportances.py" "$outputFolder" "True" "LOSS" "ALL"
+	#python "$runFolder/plotFeatureImportances.py" "$outputFolder" "True" "LOSS" "ALL" "$settingsFolder" "False"
+
+	#needs a step to output deg/non-deg pairs
+
+	##Recurrence figure
+	python "$runFolder/recurrenceAnalysis.py" "$outputFolder"
+
 fi
 
 
@@ -144,8 +152,46 @@ fi
 ### SUPPLEMENTARY FIGURE 3 ###
 
 ### SUPPLEMENTARY FIGURE 4 ###
+run=false
 
-### SUPPLEMENTARY FIGURE 5 ###
+if $run; then
+	runFolder='./multipleInstanceLearning/'
+
+	#first output the full similarity matrix to train the classifier on the whole dataset.
+	#python "$runFolder/generateSimilarityMatrices.py" "$outputFolder" "False" "False" "False" "False" "True"
+
+	#Generate the figure. The final param will make sure only the plot is saved
+	python "$runFolder/plotFeatureImportances.py" "$outputFolder" "True" "ALL" "ALL" "$settingsFolder" "True"
+
+fi
+
+### SUPPLEMENTARY FIGURE 5 - FEATURE IMPORTANCES SPECIFIC FOR COSMIC GENES ###
+run=false
+
+if $run; then
+	runFolder='./multipleInstanceLearning/'
+
+	#Generate the plotting data, and plot the feature importances for ALL instances,
+	#don't split into cosmic/non-cosmic and gains/losses
+	python "$runFolder/plotFeatureImportances.py" "$outputFolder" "True" "ALL" "COSMIC" "$settingsFolder" "False"
+
+	#plot for GAINS only
+	#python "$runFolder/plotFeatureImportances.py" "$outputFolder" "True" "GAIN" "COSMIC" "$settingsFolder" "False"
+
+	#plot for LOSSES only
+	#python "$runFolder/plotFeatureImportances.py" "$outputFolder" "True" "LOSS" "COSMIC" "$settingsFolder" "False"
+
+	#then run for non-cosmic
+	#python "$runFolder/plotFeatureImportances.py" "$outputFolder" "True" "ALL" "NONCOSMIC" "$settingsFolder" "False"
+
+	#plot for GAINS only
+	#python "$runFolder/plotFeatureImportances.py" "$outputFolder" "True" "GAIN" "NONCOSMIC" "$settingsFolder" "False"
+
+	#plot for LOSSES only
+	#python "$runFolder/plotFeatureImportances.py" "$outputFolder" "True" "LOSS" "NONCOSMIC" "$settingsFolder" "False"
+
+fi
+
 
 ### SUPPLEMENTARY TABLE 1 - FEATURE ELIMINATION ###
 run=false
@@ -173,7 +219,7 @@ run=false
 if $run; then
 	runFolder='./multipleInstanceLearning/'
 
-	python "$runFolder/generateSimilarityMatrices.py" "$outputFolder" "False" "False" "True" "False"
+	python "$runFolder/generateSimilarityMatrices.py" "$outputFolder" "False" "False" "True" "False" "False"
 
 	python "$runFolder/runMILClassifier.py" "$outputFolder" "False" "False" "True" "False"
 
@@ -185,7 +231,7 @@ run=false
 if $run; then
 	runFolder='./multipleInstanceLearning/'
 
-	python "$runFolder/generateSimilarityMatrices.py" "$outputFolder" "False" "False" "False" "True"
+	python "$runFolder/generateSimilarityMatrices.py" "$outputFolder" "False" "False" "False" "True" "False"
 
 	python "$runFolder/runMILClassifier.py" "$outputFolder" "False" "False" "False" "True"
 
@@ -201,5 +247,25 @@ if $run; then
 
 fi
 
+#cosmic analysis
+run=false
 
+if $run; then
+	runFolder='./multipleInstanceLearning/'
 
+	python "$runFolder/checkCosmicEnrichment.py" "$outputFolder" "$settingsFolder"
+
+fi
+
+#tad plot
+run=false
+
+if $run; then
+	runFolder='./tadDisruptionsZScores/'
+
+	python "$runFolder/plotDisruptedTadZScores.py" "DEL" '../../data/genes/allGenesAndIdsHg19.txt' '/hpc/compgen/users/mnieboer/data/pipeline/read_counts/brca_tmm.txt'
+	#python "$runFolder/plotDisruptedTadZScores.py" "DUP" '../../data/genes/allGenesAndIdsHg19.txt' '/hpc/compgen/users/mnieboer/data/pipeline/read_counts/brca_tmm.txt'
+	#python "$runFolder/plotDisruptedTadZScores.py" "INV" '../../data/genes/allGenesAndIdsHg19.txt' '/hpc/compgen/users/mnieboer/data/pipeline/read_counts/brca_tmm.txt'
+	#python "$runFolder/plotDisruptedTadZScores.py" "ITX" '../../data/genes/allGenesAndIdsHg19.txt' '/hpc/compgen/users/mnieboer/data/pipeline/read_counts/brca_tmm.txt'
+
+fi

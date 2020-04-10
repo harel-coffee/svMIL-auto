@@ -14,7 +14,7 @@ import random
 
 
 import matplotlib
-#matplotlib.use('Agg')
+matplotlib.use('Agg')
 
 featureElimination = sys.argv[2]
 leaveOnePatientOut = sys.argv[3] #make the similarity matrices for each left out patient
@@ -23,7 +23,6 @@ leaveBagsOut = sys.argv[5] #random bags in each CV fold
 fullDataset = sys.argv[6] #generate sim matrix for the whole dataset.
 
 svTypes = ['DEL', 'DUP', 'INV', 'ITX']
-svTypes = ['ITX']
 
 outDir = sys.argv[1]
 finalOutDir = outDir + '/multipleInstanceLearning/similarityMatrices/'
@@ -62,6 +61,18 @@ print(degPairs)
 
 print("initial number of bags: ", len(bagDict))
 print('initial deg pairs: ', degPairs.shape[0])
+
+mutDir = 'output/HMF_BRCA/patientGeneMutationPairs/'
+cnvPatientsAmp = np.load(mutDir + 'cnvPatientsAmp.npy', allow_pickle=True, encoding='latin1').item()
+svPatientsDup = np.load(mutDir + 'svPatientsDup.npy', allow_pickle=True, encoding='latin1').item()
+svGenePairs = np.loadtxt(outDir + '/linkedSVGenePairs/nonCoding_geneSVPairs.txt_', dtype='object')
+splitSVGenePairs = []
+for pair in svGenePairs:
+
+	splitPair = pair[0].split('_')
+
+	splitSVGenePairs.append(splitPair[0] + '_' + splitPair[7] + '_' + splitPair[12])
+
 
 #function to get the similarity matrix
 def getSimilarityMatrix(bags, instances, reverseBagMap):
@@ -156,10 +167,23 @@ for svType in svTypes:
 				if len(instances) < 1:
 					continue
 
+				###Here do an extra check:
+				#to make fig2A, we only look at TADs with SVs across the boundary, so those z-scores are in the set.
+				#BUT some of these genes are not actually affected by the SV, since this doesn't lead to
+				#regulatory elements gained/lost. SO, we need to remove those here to get the actual pairs.
+				#This only goes wrong for duplications, because we also keep CNV amps that could be the same event,
+				#but then the duplication does not lead to gains/losses, while the CNV amp does because it is slightly
+				#longer. So if there is evidence of a cnv AMP, but no non-coding duplication linked, we can remove
+				#this as a positive pair.
 
-				positiveBagPairNames.append(pair)
-				positiveBags.append(instances)
-
+				dupMatch = splitPair[0] + '_' + splitPair[7] + '_DUP'
+				if splitPair[0] in cnvPatientsAmp[splitPair[7]] and dupMatch not in splitSVGenePairs:
+					negativeBags.append(instances)
+					negativeBagPairNames.append(pair)
+					
+				else:
+					positiveBagPairNames.append(pair)
+					positiveBags.append(instances)
 			else: #if the z-score is anything else, this bag will be labeled negative.
 
 				#get the right number of features per instance
@@ -769,8 +793,10 @@ for svType in svTypes:
 				if patientId not in perPatientPositiveBags:
 					perPatientPositiveBags[patientId] = dict()
 					perPatientPositiveBags[patientId]['bags'] = []
+					perPatientPositiveBags[patientId]['pairLabels'] = []
 
 				perPatientPositiveBags[patientId]['bags'].append(positiveBags[bagInd])
+				perPatientPositiveBags[patientId]['pairLabels'].append(bagPairLabel)
 
 			perPatientNegativeBags = dict()
 			for bagInd in range(0, negativeBags.shape[0]):
@@ -784,8 +810,10 @@ for svType in svTypes:
 				if patientId not in perPatientNegativeBags:
 					perPatientNegativeBags[patientId] = dict()
 					perPatientNegativeBags[patientId]['bags'] = []
+					perPatientNegativeBags[patientId]['pairLabels'] = []
 
 				perPatientNegativeBags[patientId]['bags'].append(negativeBags[bagInd])
+				perPatientNegativeBags[patientId]['pairLabels'].append(bagPairLabel)
 	
 			#for each patient, randomly subsample as many negative bags as there are positives
 			perPatientBags = dict()
@@ -800,9 +828,15 @@ for svType in svTypes:
 					perPatientBags[patient] = dict()
 					perPatientBags[patient]['bags'] = []
 					perPatientBags[patient]['labels'] = []
+					perPatientBags[patient]['pairLabels'] = []
 
 				patientNegativeBags = perPatientNegativeBags[patient]['bags']
 				patientNegativeBags = np.array(patientNegativeBags)
+				
+				#also get the labels
+				patientNegativeBagLabels = perPatientNegativeBags[patient]['pairLabels']
+				patientNegativeBagLabels = np.array(patientNegativeBagLabels)
+				
 				#add the same number of positives/negatives
 
 				if len(perPatientPositiveBags[patient]['bags']) > patientNegativeBags.shape[0]:
@@ -811,14 +845,19 @@ for svType in svTypes:
 					randomInd = random.sample(range(0, patientNegativeBags.shape[0]), sampleCount)
 
 					randomNegativeBags = patientNegativeBags[randomInd]
+					randomNegativeBagPairLabels = patientNegativeBagLabels[randomInd]
 
 					for bag in randomNegativeBags:
 						perPatientBags[patient]['bags'].append(bag)
 						perPatientBags[patient]['labels'].append(0)
+					for label in randomNegativeBagPairLabels:
+						perPatientBags[patient]['pairLabels'].append(label)
 
 					for bag in perPatientPositiveBags[patient]['bags']:
 						perPatientBags[patient]['bags'].append(bag)
 						perPatientBags[patient]['labels'].append(1)
+					for label in perPatientPositiveBags[patient]['pairLabels']:
+						perPatientBags[patient]['pairLabels'].append(label)
 
 				else:
 					sampleCount = len(perPatientPositiveBags[patient]['bags'])
@@ -826,14 +865,19 @@ for svType in svTypes:
 					randomInd = random.sample(range(0, patientNegativeBags.shape[0]), sampleCount)
 
 					randomNegativeBags = patientNegativeBags[randomInd]
+					randomNegativeBagPairLabels = patientNegativeBagLabels[randomInd]
 
 					for bag in randomNegativeBags:
 						perPatientBags[patient]['bags'].append(bag)
 						perPatientBags[patient]['labels'].append(0)
+					for label in randomNegativeBagPairLabels:
+						perPatientBags[patient]['pairLabels'].append(label)
 
 					for bag in perPatientPositiveBags[patient]['bags']:
 						perPatientBags[patient]['bags'].append(bag)
 						perPatientBags[patient]['labels'].append(1)
+					for label in perPatientPositiveBags[patient]['pairLabels']:
+						perPatientBags[patient]['pairLabels'].append(label)
 				
 			print(skippedPatients)
 
@@ -875,14 +919,17 @@ for svType in svTypes:
 				trainBags = []
 				testLabels = []
 				trainLabels = []
+				testPairLabels = []
 				for patient in perPatientBags:
 
 					patientBags = perPatientBags[patient]['bags']
 					patientLabels = perPatientBags[patient]['labels']
+					patientPairLabels = perPatientBags[patient]['pairLabels']
 
 					if patient in testPatients[fold]:
 						testBags += patientBags
 						testLabels += patientLabels
+						testPairLabels += patientPairLabels
 					else:
 						trainBags += patientBags
 						trainLabels += patientLabels
@@ -915,6 +962,9 @@ for svType in svTypes:
 				#also save the labels
 				np.save(leaveOnePatientOutDir + '/' + 'bagLabelsTrain_' + str(fold) + '_' + svType + '.npy', trainLabels)
 				np.save(leaveOnePatientOutDir + '/' + 'bagLabelsTest_' + str(fold) + '_' + svType + '.npy', testLabels)
+
+				#and the test pair labels
+				np.save(leaveOnePatientOutDir + '/' + 'bagPairLabelsTest_' + str(fold) + '_' + svType + '.npy', testPairLabels)
 
 
 		else: #output the whole similarity matrix

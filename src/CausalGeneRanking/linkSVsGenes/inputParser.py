@@ -124,7 +124,21 @@ class InputParser:
 					svType = 'INV'
 				elif svType == 'transl_inter':
 					svType = 'ITX'
+
+				#also for pcawg data
+				elif svType == 'DEL':
+					svType = 'DEL'
+				elif svType == 'DUP':
+					svType = 'DUP'
+				elif svType == 't2tINV':
+					svType = 'INV'
+				elif svType == 'h2hINV':
+					svType = 'INV'
+				elif svType == 'TRA':
+					svType = 'ITX'
+
 				else:
+					print(svType)
 					continue
 	
 				if list(chr1)[0] == "c": #add the chr notation only when it is not already there
@@ -152,7 +166,6 @@ class InputParser:
 				
 			
 		regions = np.array(variantsList, dtype='object')
-		
 		return regions
 	
 	def getSVsFromFile_hmf(self, svDir): 
@@ -178,6 +191,7 @@ class InputParser:
 			
 			#get the samplename from the vcf
 			sampleName = re.search('.*\/([A-Z\d]+)\.', vcf).group(1)
+
 
 			# count += 1
 			# if count > 2:

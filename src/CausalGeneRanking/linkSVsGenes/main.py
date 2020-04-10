@@ -71,9 +71,9 @@ causalGenes = np.concatenate((causalGenes, nonCausalGenes), axis=0)
 variantData = []
 if mode == "SV":
 	
-	if settings.general['source'] == 'TCGA':
+	if settings.general['source'] == 'TCGA' or settings.general['source'] == 'PCAWG':
 		
-		print("Reading SV data TCGA")
+		print("Reading SV data TCGA or PCAWG")
 		svFile = settings.files['svFile']
 		svData = InputParser().getSVsFromFile(svFile, "all")
 	if settings.general['source'] == 'HMF':
