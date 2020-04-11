@@ -322,9 +322,6 @@ class Gene:
 
 			tadStrentghsSignal = [splitSV[12], splitSV[13], splitSV[14], splitSV[15]]
 
-
-			print([enhancerType, promoterType, eQTLType, superEnhancerType])
-
 			#if we get here, we passed all checks and there is a valid gain OR loss
 			if elementStr not in self.alteredElements[sv]:
 				#self.alteredElements[sv][elementStr] = lossGains + elementMethylation + enhScore

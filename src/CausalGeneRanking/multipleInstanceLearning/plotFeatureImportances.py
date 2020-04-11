@@ -378,7 +378,7 @@ for svType in usedSVTypes:
 	print('area')
 	area = 2 * (1 + (-np.log(adjustedPValues[svType])))
 	print(area)
-	ax.scatter(centers+offset[ind], scaledP[svType], color=colors[ind], alpha=0.4, s=area)
+	ax.scatter(centers+offset[ind], scaledP[svType], color=colors[ind], alpha=0.5, s=area)
 	ind += 1
 
 ax.set_xticks(centers)

@@ -28,9 +28,15 @@ featureElimination = sys.argv[2]
 leaveOnePatientOut = sys.argv[3] #1 patient at a time in the test set
 leaveOneChromosomeOut = sys.argv[4] #1 chromosome at a time in the test set
 leaveBagsOut = sys.argv[5] #random bags in each CV fold
+randomLabels = sys.argv[6] #running CV with randomized labels, only implemented for lopoCV
 
 svTypes = ['DEL', 'DUP', 'INV', 'ITX']
 outDir = sys.argv[1]
+
+finalOutDir = outDir + '/multipleInstanceLearning/rocCurves/'
+
+if not os.path.exists(finalOutDir):
+	os.makedirs(finalOutDir)
 
 def leaveOneChromosomeOutCV(leaveChromosomeOutDataFolder, classifier, svType, plotOutputFile, title):
 
@@ -187,7 +193,7 @@ def bagsCVClassification(dataPath, clf, svType, title, plot, plotOutputFile, out
 #the similarity matrices are pre-made, with each time 1 patient being left out.
 #so we can just load these in, and then train our standard classifier on that.
 #report on the performance of each patient.
-def leaveOnePatientOutCV(leaveOneOutDataFolder, classifier, svType, plotOutputFile, title):
+def leaveOnePatientOutCV(leaveOneOutDataFolder, classifier, svType, plotOutputFile, title, shuffleLabels):
 
 	#first get the names of all patients
 	allFiles = glob.glob(leaveOneOutDataFolder + '*_[0-9]*' + svType + '.npy')
@@ -223,6 +229,10 @@ def leaveOnePatientOutCV(leaveOneOutDataFolder, classifier, svType, plotOutputFi
 				bagLabelsTrain = np.load(dataFile, encoding='latin1', allow_pickle=True)
 			if re.search('bagLabelsTest', dataFile):
 				bagLabelsTest = np.load(dataFile, encoding='latin1', allow_pickle=True)
+
+		if shuffleLabels == True:
+			shuffle(bagLabelsTrain)
+			shuffle(bagLabelsTest)
 
 		#then train the classifier
 		classifier.fit(similarityMatrixTrain, bagLabelsTrain)
@@ -271,19 +281,20 @@ def leaveOnePatientOutCV(leaveOneOutDataFolder, classifier, svType, plotOutputFi
 	
 
 	#output these values to a file
-	finalOutDir = outDir + '/multipleInstanceLearning/leaveOnePatientOutCV/'
-	if not os.path.exists(finalOutDir):
-		os.makedirs(finalOutDir)
+	if shuffleLabels == False:
+		finalOutDir = outDir + '/multipleInstanceLearning/leaveOnePatientOutCV/'
+		if not os.path.exists(finalOutDir):
+			os.makedirs(finalOutDir)
 
-	outFile = finalOutDir + '/leaveOnePatientOutCV_' + svType + '.txt'
+		outFile = finalOutDir + '/leaveOnePatientOutCV_' + svType + '.txt'
 
-	strAucs = [str(i) for i in aucs]
-	strAuc = '\t'.join(strAucs)
+		strAucs = [str(i) for i in aucs]
+		strAuc = '\t'.join(strAucs)
 
-	with open(outFile, 'a') as outF:
+		with open(outFile, 'a') as outF:
 
-		for patient in predictions:
-			outF.write(patient + '\t' + '\t'.join([str(i) for i in predictions[patient]]) + "\n")
+			for patient in predictions:
+				outF.write(patient + '\t' + '\t'.join([str(i) for i in predictions[patient]]) + "\n")
 
 
 for svType in svTypes:
@@ -359,14 +370,23 @@ for svType in svTypes:
 			cvClassification(similarityMatrix, bagLabels, classifier, svType, title, plot, '', outputFile)
 	elif featureElimination == 'False' and leaveOnePatientOut == 'True':
 		
+		shuffleLabels = False
+		if randomLabels == 'True':
+			shuffleLabels = True
+			plotOutputFile = outDir + '/multipleInstanceLearning/rocCurves/rocCurve_' + svType + '_leaveOnePatientOut_random.svg'
+		else:
+			plotOutputFile = outDir + '/multipleInstanceLearning/rocCurves/rocCurve_' + svType + '_leaveOnePatientOut.svg'
+
+
+
 		leaveOneOutDataFolder = outDir + '/multipleInstanceLearning/similarityMatrices/leaveOnePatientOut/'
-		plotOutputFile = outDir + '/multipleInstanceLearning/rocCurves/rocCurve_' + svType + '_leaveOnePatientOut.svg'
-		leaveOnePatientOutCV(leaveOneOutDataFolder, classifier, svType, plotOutputFile, title)
+		leaveOnePatientOutCV(leaveOneOutDataFolder, classifier, svType, plotOutputFile, title, shuffleLabels)
 
 	elif featureElimination == 'False' and leaveOneChromosomeOut == 'True':
-		
-		leaveOneChromosomeOutDataFolder = outDir + '/multipleInstanceLearning/similarityMatrices/leaveOneChromosomeOut/'
+
 		plotOutputFile = outDir + '/multipleInstanceLearning/rocCurves/rocCurve_' + svType + '_leaveOneChromosomeOut.svg'
+
+		leaveOneChromosomeOutDataFolder = outDir + '/multipleInstanceLearning/similarityMatrices/leaveOneChromosomeOut/'
 		leaveOneChromosomeOutCV(leaveOneChromosomeOutDataFolder, classifier, svType, plotOutputFile, title)
 	
 	else:

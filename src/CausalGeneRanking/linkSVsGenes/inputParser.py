@@ -124,6 +124,8 @@ class InputParser:
 					svType = 'INV'
 				elif svType == 'transl_inter':
 					svType = 'ITX'
+				elif svType == 'INV':
+					svType = 'INV'
 
 				#also for pcawg data
 				elif svType == 'DEL':

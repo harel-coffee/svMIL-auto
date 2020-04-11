@@ -155,6 +155,8 @@ def getCancerGeneEnrichment(outDir, leaveOneOutDataFolder, allGenes, cosmicGeneN
 	z = patientCount - np.mean(patientCountNegative) / np.std(patientCountNegative)
 	pValue = stats.norm.sf(abs(z))*2
 
+	print(np.mean(patientCountNegative))
+	print(np.std(patientCountNegative))
 	print(z)
 	print(pValue)
 
@@ -203,5 +205,5 @@ for pair in cosmicPairs:
 		
 		
 	#get the ones with no mut
-	if svType == 'DEL':
-	
+	#if svType == 'DEL':
+

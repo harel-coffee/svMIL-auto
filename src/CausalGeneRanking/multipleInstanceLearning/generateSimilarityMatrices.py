@@ -175,15 +175,20 @@ for svType in svTypes:
 				#but then the duplication does not lead to gains/losses, while the CNV amp does because it is slightly
 				#longer. So if there is evidence of a cnv AMP, but no non-coding duplication linked, we can remove
 				#this as a positive pair.
-
-				dupMatch = splitPair[0] + '_' + splitPair[7] + '_DUP'
-				if splitPair[0] in cnvPatientsAmp[splitPair[7]] and dupMatch not in splitSVGenePairs:
-					negativeBags.append(instances)
-					negativeBagPairNames.append(pair)
-					
-				else:
+				if splitPair[7] not in cnvPatientsAmp:
 					positiveBagPairNames.append(pair)
 					positiveBags.append(instances)
+				else:
+
+					dupMatch = splitPair[0] + '_' + splitPair[7] + '_DUP'
+
+					if splitPair[0] in cnvPatientsAmp[splitPair[7]] and dupMatch not in splitSVGenePairs:
+						negativeBags.append(instances)
+						negativeBagPairNames.append(pair)
+
+					else:
+						positiveBagPairNames.append(pair)
+						positiveBags.append(instances)
 			else: #if the z-score is anything else, this bag will be labeled negative.
 
 				#get the right number of features per instance
