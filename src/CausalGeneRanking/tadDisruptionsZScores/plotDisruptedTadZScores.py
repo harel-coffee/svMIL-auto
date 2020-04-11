@@ -3,8 +3,11 @@
 
 """
 import sys
-sys.path.insert(1, 'settings/settings_HMF_BRCA')
 
+path = sys.argv[2]
+sys.path.insert(1, path)
+
+import settings
 #this code depends on the input parser from the linking part. This is quick and dirty, is there a better solution?
 sys.path.insert(1, 'linkSVsGenes/')
 
@@ -24,8 +27,8 @@ matplotlib.use('Agg')
 
 bins = 10
 
-def getBinScores(zScores, randomPValuesDir):
-	
+def getBinScores(zScores, rules, cosmicRules, expressionCutoff, randomExpression):
+
 	splitZScores = []
 	allPatients = []
 	for zScore in zScores:
@@ -82,9 +85,6 @@ def getBinScores(zScores, randomPValuesDir):
 
 	tadPairs = dict() #keep the pair as name, and the patients as value.
 	for sv in filteredSVs:
-
-		#if len(tadPairs) > 50:
-		#	continue
 
 		#get the left and rightmost TAD.
 
@@ -215,7 +215,7 @@ def getBinScores(zScores, randomPValuesDir):
 
 	#also use a map for the gene names
 	geneNameConversionMap = dict()
-	geneNameConversionFile = sys.argv[2]
+	geneNameConversionFile = settings.files['geneNameConversionFile']
 	with open(geneNameConversionFile, 'r') as inF:
 
 		lineCount = 0
@@ -232,17 +232,26 @@ def getBinScores(zScores, randomPValuesDir):
 			geneNameConversionMap[splitEnsgId[0]] = geneName
 
 
-
-	ruleBasedCombinations = np.loadtxt('output/HMF_BRCA/linkedSVGenePairs/nonCoding_geneSVPairs.txt_', dtype='object')
-	ruleBasedPairs = []
-	ruleBasedPairsSVs = []
-	for combination in ruleBasedCombinations:
-
-		splitPair = combination[0].split('_')
-
-		ruleBasedPairs.append(splitPair[0] + '_' + splitPair[7])
-		ruleBasedPairsSVs.append(splitPair[0] + '_' + splitPair[7])
-
+	if rules == 'True':
+		ruleBasedCombinations = np.loadtxt('output/HMF_BRCA/linkedSVGenePairs/nonCoding_geneSVPairs.txt_', dtype='object')
+		ruleBasedPairs = []
+		ruleBasedPairsSVs = []
+		for combination in ruleBasedCombinations:
+	
+			splitPair = combination[0].split('_')
+	
+			ruleBasedPairs.append(splitPair[0] + '_' + splitPair[7])
+			ruleBasedPairsSVs.append(splitPair[0] + '_' + splitPair[7])
+	elif cosmicRules == 'True':
+		ruleBasedCombinations = np.loadtxt('output/HMF_BRCA/linkedSVGenePairs/cosmic/nonCoding_geneSVPairs.txt_', dtype='object')
+		ruleBasedPairs = []
+		ruleBasedPairsSVs = []
+		for combination in ruleBasedCombinations:
+	
+			splitPair = combination[0].split('_')
+	
+			ruleBasedPairs.append(splitPair[0] + '_' + splitPair[7])
+			ruleBasedPairsSVs.append(splitPair[0] + '_' + splitPair[7])
 
 	mutDir = 'output/HMF_BRCA/patientGeneMutationPairs/'
 	#Collect all patients with mutations, easier in the adjacent TAds to just filter all patienst with ANY mutations witout having to go through all types individually.
@@ -336,8 +345,9 @@ def getBinScores(zScores, randomPValuesDir):
 						if geneZScores[patient,0] not in tadPairs[tad]:
 							continue
 
-						if float(geneZScores[patient,2]) < 1.5 and float(geneZScores[patient,2]) > -1.5:
-							continue
+						if expressionCutoff == 'True':
+							if float(geneZScores[patient,2]) < 1.5 and float(geneZScores[patient,2]) > -1.5:
+								continue
 
 						if geneZScores[patient,0] not in perTadPositivePatients[tad]:
 							perTadPositivePatients[tad].append(geneZScores[patient,0])
@@ -345,14 +355,15 @@ def getBinScores(zScores, randomPValuesDir):
 
 						sample = geneZScores[patient,0]
 
-						if geneName + '_' + sample not in ruleBasedPairs:
-							continue
+						if rules == 'True' or cosmicRules == 'True':
+							if geneName + '_' + sample not in ruleBasedPairs:
+								continue
 
-						#check cnv amp
+							#check cnv amp
 
-						#if gene[3].name in cnvPatientsAmp[sample] and gene[3].name not in svPatientsDup[sample]:
-						if gene[3].name in cnvPatientsAmp[sample] and gene[3].name + '_' + sample + '_DUP' not in ruleBasedPairsSVs:
-							continue
+							#if gene[3].name in cnvPatientsAmp[sample] and gene[3].name not in svPatientsDup[sample]:
+							if gene[3].name in cnvPatientsAmp[sample] and gene[3].name + '_' + sample + '_DUP' not in ruleBasedPairsSVs:
+								continue
 
 						if svType == 'DEL':
 							#only for a deletion, we do not need to print the deleted genes.
@@ -407,16 +418,18 @@ def getBinScores(zScores, randomPValuesDir):
 						if geneZScores[patient,0] not in perTadPositivePatients[tad]:
 							perTadPositivePatients[tad].append(geneZScores[patient,0])
 						
-						if float(geneZScores[patient,2]) < 1.5 and float(geneZScores[patient,2]) > -1.5:
-							continue
+						if expressionCutoff == 'True':
+							if float(geneZScores[patient,2]) < 1.5 and float(geneZScores[patient,2]) > -1.5:
+								continue
 					
 						sample = geneZScores[patient,0]
 						
-						if geneName + '_' + sample not in ruleBasedPairs:
-							continue
+						if rules == 'True' or cosmicRules == 'True':
+							if geneName + '_' + sample not in ruleBasedPairs:
+								continue
 						
-						if gene[3].name in cnvPatientsAmp[sample] and gene[3].name + '_' + sample + '_DUP' not in ruleBasedPairsSVs:
-							continue
+							if gene[3].name in cnvPatientsAmp[sample] and gene[3].name + '_' + sample + '_DUP' not in ruleBasedPairsSVs:
+								continue
 						#do the check per SV type, depending on which SV we are looking at.
 						#this is because if we have a deletion, there could still be effects from duplications in the same TAD, because we exclude genes overlapped by duplications to see dup effects.
 						#but for deletions, this is not relevant, and we should remove all such mutations.
@@ -474,7 +487,7 @@ def getBinScores(zScores, randomPValuesDir):
 			binZScoresPerPatientOffset[patient][binInd+10] = binZScoresPerPatient[patient][binInd]
 	
 	#get the expression data
-	expressionFile = sys.argv[3]
+	expressionFile = settings.files['expressionFile']
 	
 	expressionData = []
 	samples = []
@@ -485,7 +498,7 @@ def getBinScores(zScores, randomPValuesDir):
 			if lineCount == 0:
 				samples = ['']
 				samples += line.split("\t")
-	
+
 				lineCount += 1
 				continue
 			splitLine = line.split("\t")
@@ -493,8 +506,8 @@ def getBinScores(zScores, randomPValuesDir):
 			if fullGeneName not in geneNameConversionMap:
 				continue
 			geneName = geneNameConversionMap[fullGeneName] #get the gene name rather than the ENSG ID
-	
-			data = splitLine[1:len(splitLine)] 
+
+			data = splitLine[1:len(splitLine)]
 			fixedData = [geneName]
 			fixedData += data
 			expressionData.append(fixedData)
@@ -502,22 +515,23 @@ def getBinScores(zScores, randomPValuesDir):
 	expressionData = np.array(expressionData, dtype="object")
 	
 	#generate the randomized expression for the regions outside the TAD boundaries
-	from copy import deepcopy
-	randomizedExpressionMatrices = []
-	shuffleIterations = 1
-	for i in range(0,shuffleIterations):
-		genes = expressionData[:,0]
-		expression = deepcopy(expressionData[:,1:])
-		expressionT = expression.T
-		np.random.shuffle(expressionT)
-		shuffledExpression = expressionT.T
-		shuffledExpressionData = np.empty(expressionData.shape, dtype='object')
-		shuffledExpressionData[:,0] = genes
-		shuffledExpressionData[:,1:] = shuffledExpression
-	
-		randomizedExpressionMatrices.append(shuffledExpressionData)
-	
-	#expressionData = randomizedExpressionMatrices[0]
+	if randomExpression == 'True':
+		from copy import deepcopy
+		randomizedExpressionMatrices = []
+		shuffleIterations = 1
+		for i in range(0,shuffleIterations):
+			genes = expressionData[:,0]
+			expression = deepcopy(expressionData[:,1:])
+			expressionT = expression.T
+			np.random.shuffle(expressionT)
+			shuffledExpression = expressionT.T
+			shuffledExpressionData = np.empty(expressionData.shape, dtype='object')
+			shuffledExpressionData[:,0] = genes
+			shuffledExpressionData[:,1:] = shuffledExpression
+
+			randomizedExpressionMatrices.append(shuffledExpressionData)
+		
+		expressionData = randomizedExpressionMatrices[0]
 	
 	#pre-filter expression data, for the positive and negative set in the adjacent TADs.
 	filteredExpressionData = dict()
@@ -658,8 +672,9 @@ def getBinScores(zScores, randomPValuesDir):
 				for patientInd in range(0, len(positiveExpr)):
 					patient = positiveExpr[patientInd]
 					
-					if float(patient) > -1.5 and float(patient) < 1.5:
-						continue
+					if expressionCutoff == 'True':
+						if float(patient) > -1.5 and float(patient) < 1.5:
+							continue
 	
 					print('LAT: ', binInd, geneName, positivePatients[patientInd])
 	
@@ -767,8 +782,9 @@ def getBinScores(zScores, randomPValuesDir):
 				for patientInd in range(0, len(positiveExpr)):
 					patient = positiveExpr[patientInd]
 					
-					if float(patient) > -1.5 and float(patient) < 1.5:
-						continue
+					if expressionCutoff == 'True':
+						if float(patient) > -1.5 and float(patient) < 1.5:
+							continue
 	
 	
 					if float(np.std(negativeExpr)) == 0:
@@ -794,63 +810,61 @@ def getBinScores(zScores, randomPValuesDir):
 
 ## based on DEGs
 
-#Get the DEGs and their p-values
-svType = sys.argv[1]
-#plot the z-scores.
+svTypes = ['DEL', 'DUP', 'INV', 'ITX']
+#svTypes = ['INV', 'ITX']
 
-pValues = np.loadtxt('output/HMF_BRCA/tadDisruptionsZScores/zScores.txt', dtype='object')
+outDir = sys.argv[1]
+rules = sys.argv[3] #apply rules yes/no
+cosmicRules = sys.argv[4] #look at cosmic genes with rules yes/no
+expressionCutoff = sys.argv[5] #use > 1.5 and < -1.5 cutoff to show genes with differences
+randomExpression = sys.argv[6]
 
-randomPValuesDir = 'tadDisr/'
-binScores, binZScoresPerPatientOffset = getBinScores(pValues, randomPValuesDir)
+outFilePrefix = ''
 
-print('plotting')
+rulesName = 'rules'
+cosmicRulesName = 'cosmicRules'
+expressionCutoffName = 'zScoreCutoff'
+randomExpressionName = 'randomZScores'
 
-allData = []
-totalLen = 0
-lat = []
-lt = []
-rt = []
-rat = []
-for binInd in range(0, len(binScores)):
-	#print('bin:', binInd)
-	#print(len(binScores[binInd]))
-	#totalLen += len(binScores[binInd])
-	#plt.plot(binInd+1, len(binScores[binInd]), marker='*')
-	#plt.plot(binInd, len(randomBinScores[binInd]), marker='o') #this can later be a boxplot of 100 iterations
-	allData.append(binScores[binInd])
-	#allData.append(randomBinScores[binInd])
+if rules == 'True':
+	outFilePrefix += rulesName
+	outFilePrefix += '_'
+if cosmicRules == 'True':
+	outFilePrefix += cosmicRulesName
+	outFilePrefix += '_'
+if expressionCutoff == 'True':
+	outFilePrefix += expressionCutoffName
+	outFilePrefix += '_'
+if randomExpression == 'True':
+	outFilePrefix += expressionCutoffName
+	outFilePrefix += '_'
+#get the z-scores per bin
+for svType in svTypes:
 
-	if binInd < 10:
-		lat += binScores[binInd]
-	if binInd >= 10 and binInd < 20:
-		lt += binScores[binInd]
-	if binInd >= 20 and binInd < 30:
-		rt += binScores[binInd]
-	if binInd >= 30:
-		rat += binScores[binInd]
-
-print(lat, lt, rt, rat)
-
-#plt.boxplot([lat, lt, rt, rat])
-#plt.show()
+	#get the right zScore file here depending on if we shuffle or not
+	if randomExpression == 'False':
+		zScores = np.loadtxt('output/HMF_BRCA/tadDisruptionsZScores/zScores.txt', dtype='object')
+	else:
+		zScores = np.loadtxt('output/HMF_BRCA/tadDisruptionsZScores/zScores_random.txt', dtype='object')
+	binScores = getBinScores(zScores, rules, cosmicRules, expressionCutoff, randomExpression)
 
 
+	print('plotting')
+	
+	allData = []
 
-print(allData)
-print(totalLen)
+	for binInd in range(0, len(binScores)):
+		allData.append(binScores[binInd])
 
-np.save('plotData_' + svType + '_allGenes_rules_zScoreCutoff.npy', allData)
+
+	np.save(outFilePrefix + svType + '.npy', allData)
 exit()
-#
-# plt.xticks(range(1,len(binScores)+1))
-# plt.boxplot(allData)
-# plt.show()
 
 
 ###combined figures
 
-svTypes = ['DEL', 'DUP', 'INV', 'ITX']
-svTypes = ['DEL']
+
+
 colors = ['blue', 'red', 'magenta', 'black']
 offsets = [-0.25, -0.1, 0.1, 0.25]
 #colors = plt.cm.RdYlBu(np.linspace(0,1,4))
@@ -858,7 +872,7 @@ typeInd = -1
 for svType in svTypes:
 	typeInd += 1
 	
-	allData = np.load('plotData_' + svType + '_allGenes.npy', allow_pickle=True, encoding='latin1')
+	allData = np.load(outFilePrefix + svType + '.npy', allow_pickle=True, encoding='latin1')
 
 	#first combine bins
 	
@@ -910,35 +924,37 @@ plt.xticks([])
 plt.savefig('allGenes.svg')
 plt.show()
 exit()
-### the old 1-by-1 figures with boxplots
-svType = 'ITX'
-allData = np.load('plotData_' + svType + '_allGenes_rules_random.npy', allow_pickle=True, encoding='latin1')
 
-plt.boxplot(allData)
-plt.ylim()
-plt.show()
-
-filteredData = []
-for binData in allData:
-	
-	if len(binData) == 0:
-		filteredData.append([])
-		continue
-	
-	binData = np.array(binData)
-	#filteredBinData = binData[binData < np.percentile(binData, 99)]
-	filteredBinData = binData[binData < 10]
-	filteredBinData = filteredBinData[filteredBinData > -10]
-	filteredData.append(filteredBinData)
-
-plt.boxplot(filteredData)
-#plt.ylim(-2,5)
-plt.ylim(-5,11)
-plt.savefig(svType + '_allGenes.svg')
-plt.show()
-#plt.savefig('distanceBased_ruleBased_' + sys.argv[1] + '_shuffled.svg')
-#plt.savefig('zScoresOfZScores_distanceBased_2.svg')
-exit()
+# 
+# ### the old 1-by-1 figures with boxplots
+# svType = 'ITX'
+# allData = np.load('plotData_' + svType + '_allGenes_rules_random.npy', allow_pickle=True, encoding='latin1')
+# 
+# plt.boxplot(allData)
+# plt.ylim()
+# plt.show()
+# 
+# filteredData = []
+# for binData in allData:
+# 	
+# 	if len(binData) == 0:
+# 		filteredData.append([])
+# 		continue
+# 	
+# 	binData = np.array(binData)
+# 	#filteredBinData = binData[binData < np.percentile(binData, 99)]
+# 	filteredBinData = binData[binData < 10]
+# 	filteredBinData = filteredBinData[filteredBinData > -10]
+# 	filteredData.append(filteredBinData)
+# 
+# plt.boxplot(filteredData)
+# #plt.ylim(-2,5)
+# plt.ylim(-5,11)
+# plt.savefig(svType + '_allGenes.svg')
+# plt.show()
+# #plt.savefig('distanceBased_ruleBased_' + sys.argv[1] + '_shuffled.svg')
+# #plt.savefig('zScoresOfZScores_distanceBased_2.svg')
+# exit()
 
 
 

@@ -5,7 +5,7 @@
 """
 import sys
 
-path = sys.argv[3]
+path = sys.argv[1]
 sys.path.insert(1, path)
 
 #this code depends on the input parser from the linking part. This is quick and dirty, is there a better solution?
@@ -26,9 +26,10 @@ from scipy.stats import rankdata
 from genomicShuffler import GenomicShuffler
 
 ###parameters
-geneNameConversionFile = sys.argv[1]
-expressionFile = sys.argv[2]
-outDir = sys.argv[4]
+geneNameConversionFile = settings.files['geneNameConversionFile']
+expressionFile = settings.files['expressionFile']
+outDir = sys.argv[2]
+randomize = sys.argv[3] #shuffle expression to get random z-scores?
 
 specificOutDir = outDir + '/tadDisruptionsZScores/'
 
@@ -41,7 +42,7 @@ if not os.path.exists(specificOutDir):
 causalGenes = InputParser().readCausalGeneFile(settings.files['causalGenesFile'])
 nonCausalGenes = InputParser().readNonCausalGeneFile(settings.files['nonCausalGenesFile'], causalGenes) #In the same format as the causal genes.
 
-#Combine the genes into one set. 
+#Combine the genes into one set.
 allGenes = np.concatenate((causalGenes, nonCausalGenes), axis=0)
 #allGenes = causalGenes
 
@@ -55,10 +56,10 @@ genes = np.array(genes, dtype='object')
 #also use a map for the gene names
 geneNameConversionMap = dict()
 with open(geneNameConversionFile, 'r') as inF:
-	
+
 	lineCount = 0
 	for line in inF:
-		
+
 		if lineCount < 1:
 			lineCount += 1
 			continue
@@ -294,31 +295,32 @@ for tad in tadDisruptions:
 
 print('disrupting SVs: ', len(disruptingSVs))
 print('per type: ', typeDistribution)
-#
-# exit()
-#
-# #to shuffle across patients, first transpose, the shuffle, then transpose back.
-#
-# genes = expressionData[:,0]
-# expression = expressionData[:,1:]
-# expressionT = expression.T
-# print(expressionT)
-# print(expressionT.shape)
-# np.random.shuffle(expressionT)
-# print(expressionT)
-# print(expressionT.shape)
-# shuffledExpression = expressionT.T
-# print(shuffledExpression)
-# print(shuffledExpression.shape)
-#
-# shuffledExpressionData = np.empty(expressionData.shape, dtype='object')
-# shuffledExpressionData[:,0] = genes
-# shuffledExpressionData[:,1:] = shuffledExpression
-#
-# print(samples)
-# print(shuffledExpressionData)
-#
-# expressionData = shuffledExpressionData
+
+
+if randomize == 'True':
+	#to shuffle across patients, first transpose, the shuffle, then transpose back.
+	
+	genes = expressionData[:,0]
+	expression = expressionData[:,1:]
+	expressionT = expression.T
+	print(expressionT)
+	print(expressionT.shape)
+	np.random.shuffle(expressionT)
+	print(expressionT)
+	print(expressionT.shape)
+	shuffledExpression = expressionT.T
+	print(shuffledExpression)
+	print(shuffledExpression.shape)
+	
+	shuffledExpressionData = np.empty(expressionData.shape, dtype='object')
+	shuffledExpressionData[:,0] = genes
+	shuffledExpressionData[:,1:] = shuffledExpression
+	
+	print(samples)
+	print(shuffledExpressionData)
+	
+	expressionData = shuffledExpressionData
+
 
 mutDir = outDir + '/patientGeneMutationPairs/'
 snvPatients = np.load(mutDir + 'snvPatients.npy', allow_pickle=True, encoding='latin1').item()
@@ -633,7 +635,10 @@ for pValueInd in range(0, len(pValues[:,1])):
 signPatients = np.array(signPatients, dtype='object')
 
 print(signPatients.shape)
-np.savetxt(specificOutDir + '/zScores.txt', signPatients, fmt='%s', delimiter='\t')
+if randomize == 'True':
+	np.savetxt(specificOutDir + '/zScores_random.txt', signPatients, fmt='%s', delimiter='\t')
+else:
+	np.savetxt(specificOutDir + '/zScores.txt', signPatients, fmt='%s', delimiter='\t')
 
 
 
