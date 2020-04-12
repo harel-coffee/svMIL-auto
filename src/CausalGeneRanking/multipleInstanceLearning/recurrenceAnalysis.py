@@ -289,7 +289,7 @@ svTypes = ['DEL', 'DUP', 'INV', 'ITX']
 for svType in svTypes:
 	#path should not be fixed
 	svPairs = np.loadtxt(outDir + '/pairLabels_top100_' + svType + '.txt', dtype='object')
-	
+
 	rankedPairs = []
 	ind = len(svPairs)
 	for pair in svPairs:
@@ -314,7 +314,7 @@ for pair in positivePairs: #get stats for all pairs
 	splitPairs[splitPair[0] + '_' + splitPair[7]].append(pair)
 
 	if splitPair[0] not in genes:
-		
+
 		#count, cross-patient count, nc: del, dup, inv, itx, snv, cnv amp, cnv del, sv del, sv dup, sv inv, sv itx
 		genes[splitPair[0]] = [0]*13
 		genes[splitPair[0]].append([]) #add the patient names here
@@ -345,7 +345,7 @@ for gene in genes:
 	uniquePatients = np.unique(genes[gene][13])
 	
 	data = [gene] + [len(uniquePatients)] + genes[gene]
-	
+
 	recurrentGenes.append(data)
 
 recurrentGenes = np.array(recurrentGenes, dtype='object')
@@ -355,24 +355,24 @@ sortedGenes = recurrentGenes[np.argsort(recurrentGenes[:,1])[::-1]]
 
 sortedGenesTop = []
 for gene in sortedGenes:
-	
+
 	#if gene[0] not in topPairGenes:
 	#	continue
 	sortedGenesTop.append(gene)
 	
-sortedGenesTop = np.array(sortedGenesTop, dtype='object')	
-	
+sortedGenesTop = np.array(sortedGenesTop, dtype='object')
+
 
 #make a matrix in which we show visually which genes are affected in which patients
 #this matrix is genes x patients
 uniquePatients = dict()
-top = 15 #making the matrix only for the top X genes
+top = 50 #making the matrix only for the top X genes
 ind = 0
 for gene in sortedGenesTop:
 	
 	if ind >= top:
 		continue
-	
+
 	patients = gene[15]
 	for patient in patients:
 		if patient not in uniquePatients:
@@ -391,7 +391,7 @@ for patientInd in range(0, len(uniquePatients)):
 	patient = list(uniquePatients.keys())[patientInd]
 	
 	patientOrder[patient] = patientInd
-	
+
 for gene in sortedGenesTop:
 	
 	if ind >= top:
@@ -399,7 +399,7 @@ for gene in sortedGenesTop:
 	
 	patients = gene[15]
 	for patient in patients:
-		
+
 		patientInd = patientOrder[patient]
 		recurrenceMatrix[ind, patientInd] += 1
 		
@@ -409,14 +409,14 @@ print(recurrenceMatrix)
 
 #make a grid plot, showing the different SV types that the patients have
 #color the genes with -/+ direction, see if it correlates with the SV types.
-fig, ax = plt.subplots()
+fig, ax = plt.subplots(figsize=(20,10))
 for row in range(0, recurrenceMatrix.shape[0]):
-	
+
 	if row < recurrenceMatrix.shape[0]-1:
 		ax.axhline(row+0.5, linestyle='--', color='k', linewidth=0.5)
-	
+
 	for col in range(0, recurrenceMatrix.shape[1]):
-		
+
 		if col < recurrenceMatrix.shape[1]-1:
 			ax.axvline(col+0.5, linestyle='--', color='k', linewidth=0.5)
 		
@@ -550,13 +550,13 @@ geneInd = 0
 ymax = 0
 for gene in sortedGenes[0:15]:
 	
-	plt.bar(geneInd, gene[5], color='yellow')
-	plt.bar(geneInd, gene[6], bottom=gene[5], color='cyan')
-	plt.bar(geneInd, gene[7], bottom=gene[5]+gene[6], color='grey')
-	plt.bar(geneInd, gene[8], bottom=gene[5]+gene[6]+gene[7], color='blue')
-	plt.bar(geneInd, gene[9], bottom=gene[5]+gene[6]+gene[7]+gene[8], color='red')
-	plt.bar(geneInd, gene[10], bottom=gene[5]+gene[6]+gene[7]+gene[8]+gene[9], color='magenta')
-	plt.bar(geneInd, gene[11], bottom=gene[5]+gene[6]+gene[7]+gene[8]+gene[9]+gene[10], color='black')
+	plt.bar(geneInd, gene[5], color='#ffcc00ff')
+	plt.bar(geneInd, gene[6], bottom=gene[5], color='#9955ffff')
+	plt.bar(geneInd, gene[7], bottom=gene[5]+gene[6], color='#ff6600b5')
+	plt.bar(geneInd, gene[8], bottom=gene[5]+gene[6]+gene[7], color='#0000ffb4')
+	plt.bar(geneInd, gene[9], bottom=gene[5]+gene[6]+gene[7]+gene[8], color='#d40000c6')
+	plt.bar(geneInd, gene[10], bottom=gene[5]+gene[6]+gene[7]+gene[8]+gene[9], color='#ff00ccb8')
+	plt.bar(geneInd, gene[11], bottom=gene[5]+gene[6]+gene[7]+gene[8]+gene[9]+gene[10], color='#808080ff')
 	
 	#add non-coding negative SVs as well
 	#plt.bar(geneInd, gene[16], bottom=gene[5]+gene[6]+gene[7]+gene[8]+gene[9]+gene[10]+gene[11], color='blue')

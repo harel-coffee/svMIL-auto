@@ -299,27 +299,47 @@ print('per type: ', typeDistribution)
 
 if randomize == 'True':
 	#to shuffle across patients, first transpose, the shuffle, then transpose back.
-	
+	#print(expressionData)
 	genes = expressionData[:,0]
 	expression = expressionData[:,1:]
-	expressionT = expression.T
-	print(expressionT)
-	print(expressionT.shape)
-	np.random.shuffle(expressionT)
-	print(expressionT)
-	print(expressionT.shape)
-	shuffledExpression = expressionT.T
-	print(shuffledExpression)
-	print(shuffledExpression.shape)
-	
+	np.random.shuffle(expression)
+
+	# shuffledExpression = []
+	# for row in range(0, expression.shape[0]):
+	# 	shuffled = np.random.shuffle(expression[row])
+	# 	shuffledExpression.append(expression)
+	#
+	# shuffledExpression = np.array(shuffledExpression)
 	shuffledExpressionData = np.empty(expressionData.shape, dtype='object')
 	shuffledExpressionData[:,0] = genes
-	shuffledExpressionData[:,1:] = shuffledExpression
+	shuffledExpressionData[:,1:] = expression
+
+	# print(shuffledExpressionData)
+	# 
+	# exit()
 	
-	print(samples)
-	print(shuffledExpressionData)
+	# expressionT = expression.T
+	# print(expressionT)
+	# print(expressionT.shape)
+	# np.random.shuffle(expressionT)
+	# print(expressionT)
+	# print(expressionT.shape)
+	# shuffledExpression = expressionT.T
+	# print(shuffledExpression)
+	# print(shuffledExpression.shape)
+	#
+	# shuffledExpressionData = np.empty(expressionData.shape, dtype='object')
+	# shuffledExpressionData[:,0] = genes
+	# shuffledExpressionData[:,1:] = shuffledExpression
+	#
+	# print(samples)
+	# print(shuffledExpressionData)
 	
 	expressionData = shuffledExpressionData
+
+
+
+
 
 
 mutDir = outDir + '/patientGeneMutationPairs/'

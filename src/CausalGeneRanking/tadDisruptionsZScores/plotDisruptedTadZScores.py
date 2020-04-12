@@ -23,7 +23,7 @@ import ast
 from genomicShuffler import GenomicShuffler
 
 import matplotlib
-matplotlib.use('Agg')
+#matplotlib.use('Agg')
 
 bins = 10
 
@@ -47,7 +47,12 @@ def getBinScores(zScores, rules, cosmicRules, expressionCutoff, randomExpression
 
 	#Combine the genes into one set.
 	allGenes = np.concatenate((causalGenes, nonCausalGenes), axis=0)
-	#allGenes = causalGenes
+	if cosmicRules == 'True':
+		allGenes = causalGenes
+
+	causalGeneList = []
+	for gene in causalGenes:
+		causalGeneList.append(gene[3].name)
 	#then go through the TADs that are disrupted by a non-coding SV.
 
 	#Get all SVs
@@ -237,11 +242,21 @@ def getBinScores(zScores, rules, cosmicRules, expressionCutoff, randomExpression
 		ruleBasedPairs = []
 		ruleBasedPairsSVs = []
 		for combination in ruleBasedCombinations:
-	
+
 			splitPair = combination[0].split('_')
-	
+
 			ruleBasedPairs.append(splitPair[0] + '_' + splitPair[7])
 			ruleBasedPairsSVs.append(splitPair[0] + '_' + splitPair[7])
+	# elif rules == 'True' and randomExpression == 'True':
+	# 	ruleBasedCombinations = np.loadtxt('output/HMF_BRCA/linkedSVGenePairs/random/nonCoding_geneSVPairs.txt_0', dtype='object')
+	# 	ruleBasedPairs = []
+	# 	ruleBasedPairsSVs = []
+	# 	for combination in ruleBasedCombinations:
+	#
+	# 		splitPair = combination[0].split('_')
+	# 
+	# 		ruleBasedPairs.append(splitPair[0] + '_' + splitPair[7])
+	# 		ruleBasedPairsSVs.append(splitPair[0] + '_' + splitPair[7])
 	elif cosmicRules == 'True':
 		ruleBasedCombinations = np.loadtxt('output/HMF_BRCA/linkedSVGenePairs/cosmic/nonCoding_geneSVPairs.txt_', dtype='object')
 		ruleBasedPairs = []
@@ -345,10 +360,6 @@ def getBinScores(zScores, rules, cosmicRules, expressionCutoff, randomExpression
 						if geneZScores[patient,0] not in tadPairs[tad]:
 							continue
 
-						if expressionCutoff == 'True':
-							if float(geneZScores[patient,2]) < 1.5 and float(geneZScores[patient,2]) > -1.5:
-								continue
-
 						if geneZScores[patient,0] not in perTadPositivePatients[tad]:
 							perTadPositivePatients[tad].append(geneZScores[patient,0])
 
@@ -374,20 +385,36 @@ def getBinScores(zScores, rules, cosmicRules, expressionCutoff, randomExpression
 								continue
 
 
-						print('LT: ', binInd, geneName, geneZScores[patient,0])
+
 
 						if str(float(geneZScores[patient,2])) == 'nan':
 							continue
 
-						allGeneZScores.append(float(geneZScores[patient,2]))
+						finalScore = 0
+						if randomExpression == 'True':
+							import random
+							randInd = random.sample(range(0, zScores.shape[0]), 1)[0]
+							finalScore = float(zScores[randInd,2])
+						else:
+							finalScore = float(geneZScores[patient,2])
+
+						if expressionCutoff == 'True':
+							if finalScore < 1.5 and finalScore > -1.5:
+								continue
+							
+						allGeneZScores.append(finalScore)
+						print('LT: ', binInd, geneName, geneZScores[patient,0], finalScore)
+						# import random
+						# randInd = random.sample(range(0, zScores.shape[0]), 1)[0]
+						# randomScore = float(zScores[randInd,2])
+						# finalScore = float(geneZScores[patient,2])
+						#
+						# allGeneZScores.append(abs(finalScore - randomScore) * np.sign(finalScore))
+						# print('LT: ', binInd, geneName, geneZScores[patient,0], abs(finalScore - randomScore))
 
 
 			if len(allGeneZScores) > 0:
 				binZScores[binInd] += allGeneZScores
-
-				for patient in geneZScoresPerPatient:
-
-					binZScoresPerPatient[patient][binInd] += geneZScoresPerPatient[patient]
 
 		#now for TAD 2, start from where the TAD 1 indices left off.
 		geneChrSubset = allGenes[allGenes[:,0] == splitTad[3]]
@@ -411,57 +438,69 @@ def getBinScores(zScores, rules, cosmicRules, expressionCutoff, randomExpression
 
 					#keep the z-scores separate for each patient
 					for patient in range(0, len(geneZScores[:,0])):
-						
+
 						if geneZScores[patient,0] not in tadPairs[tad]:
 							continue
 						
 						if geneZScores[patient,0] not in perTadPositivePatients[tad]:
 							perTadPositivePatients[tad].append(geneZScores[patient,0])
 						
-						if expressionCutoff == 'True':
-							if float(geneZScores[patient,2]) < 1.5 and float(geneZScores[patient,2]) > -1.5:
-								continue
+
 					
 						sample = geneZScores[patient,0]
 						
 						if rules == 'True' or cosmicRules == 'True':
 							if geneName + '_' + sample not in ruleBasedPairs:
 								continue
-						
+
 							if gene[3].name in cnvPatientsAmp[sample] and gene[3].name + '_' + sample + '_DUP' not in ruleBasedPairsSVs:
 								continue
 						#do the check per SV type, depending on which SV we are looking at.
 						#this is because if we have a deletion, there could still be effects from duplications in the same TAD, because we exclude genes overlapped by duplications to see dup effects.
 						#but for deletions, this is not relevant, and we should remove all such mutations.
-						
+
 						if svType == 'DEL':
 							#only for a deletion, we do not need to print the deleted genes.
 							#if a gene is deleted, the deletion will never result in the gain effect.
-							#this is only true for deletions. 
-						
+							#this is only true for deletions.
+
 							if gene[3].name in svPatientsDel[sample] or gene[3].name in cnvPatientsDel[sample]:
 								continue
 						
 					
-						print('RT: ', binInd, geneName, geneZScores[patient,0])
+						
 						
 						
 						if str(float(geneZScores[patient,2])) == 'nan':
 							continue
-						allGeneZScores.append(float(geneZScores[patient,2]))
-						if geneZScores[patient,0] not in geneZScoresPerPatient:
-							geneZScoresPerPatient[geneZScores[patient,0]] = []
-						geneZScoresPerPatient[geneZScores[patient,0]].append(float(geneZScores[patient,2]))
 						
-	
+						finalScore = 0
+						if randomExpression == 'True':
+							import random
+							randInd = random.sample(range(0, zScores.shape[0]), 1)[0]
+							finalScore = float(zScores[randInd,2])
+						else:
+							finalScore = float(geneZScores[patient,2])
+
+						if expressionCutoff == 'True':
+							if finalScore < 1.5 and finalScore > -1.5:
+								continue
+							
+						allGeneZScores.append(finalScore)
+						
+						print('RT: ', binInd, geneName, geneZScores[patient,0], finalScore)
+						# import random
+						# randInd = random.sample(range(0, zScores.shape[0]), 1)[0]
+						# randomScore = float(zScores[randInd,2])
+						# finalScore = float(geneZScores[patient,2])
+						# 
+						# allGeneZScores.append(abs(finalScore - randomScore) * np.sign(finalScore))
+						# print('RT: ', binInd, geneName, geneZScores[patient,0], abs(finalScore - randomScore))
+						# 
 			if len(allGeneZScores) > 0:
 				#binZScores[binInd+bins].append(np.mean(allGeneZScores))
 				binZScores[binInd+bins] += allGeneZScores
 				
-				for patient in geneZScoresPerPatient:
-					binZScoresPerPatient[patient][binInd+bins] += geneZScoresPerPatient[patient]
-
-	
 	#divide the region into 3 bins on each side.
 	#so, get the coordinates on each side depending on where the TAD pair starts and ends
 	#determine which genes are in these regions
@@ -488,7 +527,7 @@ def getBinScores(zScores, rules, cosmicRules, expressionCutoff, randomExpression
 	
 	#get the expression data
 	expressionFile = settings.files['expressionFile']
-	
+
 	expressionData = []
 	samples = []
 	with open(expressionFile, 'r') as inF:
@@ -511,9 +550,9 @@ def getBinScores(zScores, rules, cosmicRules, expressionCutoff, randomExpression
 			fixedData = [geneName]
 			fixedData += data
 			expressionData.append(fixedData)
-	
+
 	expressionData = np.array(expressionData, dtype="object")
-	
+
 	#generate the randomized expression for the regions outside the TAD boundaries
 	if randomExpression == 'True':
 		from copy import deepcopy
@@ -530,288 +569,310 @@ def getBinScores(zScores, rules, cosmicRules, expressionCutoff, randomExpression
 			shuffledExpressionData[:,1:] = shuffledExpression
 
 			randomizedExpressionMatrices.append(shuffledExpressionData)
-		
+
 		expressionData = randomizedExpressionMatrices[0]
-	
+
 	#pre-filter expression data, for the positive and negative set in the adjacent TADs.
 	filteredExpressionData = dict()
 	for sampleInd in range(0, len(samples)):
 		sample = samples[sampleInd]
-	
+
 		if sample == '':
 			continue
-	
+
 		if sample not in filteredExpressionData:
 			filteredExpressionData[sample] = dict()
-	
+
 		for row in expressionData:
 			geneName = row[0]
-	
+
 			#if geneName in svPatients[sample] or geneName in snvPatients[sample] or geneName in cnvPatients[sample]:
 			#	continue
 			filteredExpressionData[sample][geneName] = float(row[sampleInd])
-	
+
 	#np.save('filteredExpressionData.npy', filteredExpressionData)
 	#filteredExpressionData = np.load('filteredExpressionData.npy', allow_pickle=True, encoding='latin1').item()
-	
+
 	affectedCount = 0
 	tadPositiveAndNegativeSet = []
 	with open('output/HMF_BRCA/tadDisruptionsZScores/tadPositiveAndNegativeSet.txt', 'r') as inF:
 	#with open('tadPositiveAndNegativeSet.txt', 'r') as inF:
 		for line in inF:
-	
+
 			splitLine = line.split('\t')
 			tad = splitLine[0]
 			positiveSet = ast.literal_eval(splitLine[1])
 			negativeSet = ast.literal_eval(splitLine[2])
 			svTypes = ast.literal_eval(splitLine[3])
-	
+
 			if len(positiveSet) > 0:
 				affectedCount += 1
-	
+
 			tadPositiveAndNegativeSet.append([tad, positiveSet, negativeSet, svTypes])
-	
+
 	tadPositiveAndNegativeSet = np.array(tadPositiveAndNegativeSet, dtype='object')
 	print('affected tads: ', affectedCount)
-	
-	
+
+
 	#so instead of looking at a region around the TADs, use the TADs that are not affected.
 	#so per pair, find where it is in the positive/negative set file
 	#get the previous or next one
 	#check if this tad is affected or not
 	#if the tad is not affected, add the same amount of bins as the affected tads and plot these on the left and right.
-	
+
 	for tad in tadPairs:
-	
+
 		splitTad = tad.split('_')
 		leftTad = splitTad[0] + '_' + splitTad[1] + '_' + splitTad[2]
-	
+
 		#get the TAD to the left of this tad pair
 		leftTadPosition = np.where(tadPositiveAndNegativeSet[:,0] == leftTad)[0]
-	
+
 		leftAdjacentTad = tadPositiveAndNegativeSet[leftTadPosition-1][0]
 		splitLeftAdjacentTad = leftAdjacentTad[0].split('_')
 		leftNegativeSet = leftAdjacentTad[2]
-	
+
 		splitPos = splitLeftAdjacentTad[0].split('_')
-	
+
 		if splitPos[0] != splitTad[0]: #check if the TAD is on the next chromosome
 			continue
-	
+
 		#check if this TAD is disrupted, if yes, skip this TAD pair
 		#if len(leftAdjacentTad[1]) > 0:
 		#	continue
-	
+
 		#otherwise, divide this tad into bins, and get the z-scores of z-scores for the genes.
 		binSizeTad1 = (float(splitLeftAdjacentTad[2]) - float(splitLeftAdjacentTad[1])) / bins
 		currentStart = float(splitLeftAdjacentTad[1]) #start at the TAD start
-	
+
 		binStartsTad1 = [currentStart] #list at which position each bin should start.
 		for binInd in range(0, bins):
-	
+
 			currentStart += binSizeTad1
 			binStartsTad1.append(currentStart)
-	
+
 		#Go through the genes of the first TAD; find the genes that will be in this bin
 		geneChrSubset = allGenes[allGenes[:,0] == splitLeftAdjacentTad[0]]
-	
+
 		for binInd in range(0, len(binStartsTad1)-1):
-	
+
 			#get the genes in this bin
 			genes = geneChrSubset[(geneChrSubset[:,2] >= binStartsTad1[binInd]) * (geneChrSubset[:,1] <= binStartsTad1[binInd+1])]
-	
+
 			#get the z-scores of these genes
 			allGeneZScores = []
 			geneZScoresPerPatient = dict()
 			for gene in genes:
 				geneName = gene[3].name
-	
+
 				#get the expression of this gene in the negative set
 				negativeExpr = []
 				positiveExpr = []
-	
+
 				if geneName not in expressionData[:,0]:
-	
+
 					continue
-	
+
 				positiveSampleInd = []
 				negativeSampleInd = []
 				positivePatients = []
 				negativePatients = []
 				for sample in range(0, len(samples)):
-	
+
 					if samples[sample] == '':
 						continue
-	
+
 					#we use the tad itself to define the positive set.
 					#based on the left adjacent tad, we define the negative set.
 					if samples[sample] in perTadPositivePatients[tad]:
-	
+
 						if samples[sample] in leftAdjacentTad[1]: #skip if this patient has a disruption of the adjacent TAD.
 							continue
-	
+
 						#exclude this gene if it overlaps a mutation
 						if geneName in svPatients[samples[sample]] or geneName in snvPatients[samples[sample]] or geneName in cnvPatients[samples[sample]]:
-	
+
 							continue
-	
+
 						positiveSampleInd.append(sample)
 						positiveExpr.append(filteredExpressionData[samples[sample]][geneName])
 						positivePatients.append(samples[sample])
 					elif samples[sample] in leftNegativeSet:
-	
+
 						#exclude this gene if it overlaps a mutation
 						if geneName in svPatients[samples[sample]] or geneName in snvPatients[samples[sample]] or geneName in cnvPatients[samples[sample]]:
-	
+
 							continue
-	
+
 						negativeExpr.append(filteredExpressionData[samples[sample]][geneName])
 						negativePatients.append(samples[sample])
 						negativeSampleInd.append(sample)
-	
+
 				for patientInd in range(0, len(positiveExpr)):
 					patient = positiveExpr[patientInd]
-					
-					if expressionCutoff == 'True':
-						if float(patient) > -1.5 and float(patient) < 1.5:
-							continue
-	
-					print('LAT: ', binInd, geneName, positivePatients[patientInd])
-	
+
+
+
+
+
 					if float(np.std(negativeExpr)) == 0:
-	
+
 						continue
-	
+
 					z = (float(patient) - np.mean(negativeExpr)) / float(np.std(negativeExpr))
-	
+
 					if str(z) == 'nan':
 						continue
-	
+					
+					if expressionCutoff == 'True':
+						if z > -1.5 and z < 1.5:
+							continue
+
+					print('LAT: ', binInd, geneName, positivePatients[patientInd], z)
+					
 					allGeneZScores.append(z)
-	
+					# import random
+					# randInd = random.sample(range(0, zScores.shape[0]), 1)[0]
+					# randomScore = float(zScores[randInd,2])
+					# allGeneZScores.append(abs(z-randomScore) * np.sign(z))
+					# 
+					# print('LAT: ', binInd, geneName, positivePatients[patientInd], abs(z-randomScore))
+
 			if len(allGeneZScores) > 0:
 				#binZScoresOffset[binInd].append(np.mean(allGeneZScores))
-	
+
 				binZScoresOffset[binInd] += allGeneZScores
-	
+
 		#repeat for right TAD
 		rightTad = splitTad[3] + '_' + splitTad[4] + '_' + splitTad[5]
-	
+
 		#get the TAD to the left of this tad pair
 		rightTadPosition = np.where(tadPositiveAndNegativeSet[:,0] == rightTad)[0]
-	
+
 		if rightTadPosition+1 >= len(tadPositiveAndNegativeSet):
 			continue #TAD is outside the genome.
-	
+
 		rightAdjacentTad = tadPositiveAndNegativeSet[rightTadPosition+1][0]
 		splitRightAdjacentTad = rightAdjacentTad[0].split('_')
 		rightNegativeSet = rightAdjacentTad[2]
-	
+
 		splitPos = splitRightAdjacentTad[0].split('_')
 		if splitPos[0] != splitTad[3]: #check if the TAD is on the next chromosome
 			continue
-	
+
 		#otherwise, divide this tad into bins, and get the z-scores of z-scores for the genes.
 		binSizeTad1 = (float(splitRightAdjacentTad[2]) - float(splitRightAdjacentTad[1])) / bins
 		currentStart = float(splitRightAdjacentTad[1]) #start at the TAD start
-	
+
 		binStartsTad1 = [currentStart] #list at which position each bin should start.
 		for binInd in range(0, bins):
-	
+
 			currentStart += binSizeTad1
 			binStartsTad1.append(currentStart)
-	
+
 		#Go through the genes of the first TAD; find the genes that will be in this bin
 		geneChrSubset = allGenes[allGenes[:,0] == splitRightAdjacentTad[0]]
-	
+
 		for binInd in range(0, len(binStartsTad1)-1):
-	
+
+
 			#get the genes in this bin
 			genes = geneChrSubset[(geneChrSubset[:,2] >= binStartsTad1[binInd]) * (geneChrSubset[:,1] <= binStartsTad1[binInd+1])]
-	
+
 			#get the z-scores of these genes
 			allGeneZScores = []
 			geneZScoresPerPatient = dict()
 			for gene in genes:
 				geneName = gene[3].name
-	
+
 				#get the expression of this gene in the negative set
 				negativeExpr = []
 				positiveExpr = []
-	
+
 				if geneName not in expressionData[:,0]:
-	
+
 					continue
-	
+
 				#geneExpr = expressionData[expressionData[:,0] == geneName][0]
-	
+
 				positiveSampleInd = []
 				negativeSampleInd = []
 				positivePatients = []
 				negativePatients = []
 				for sample in range(0, len(samples)):
-	
+
 					if samples[sample] == '':
 						continue
-	
+
 					#we use the tad itself to define the positive set.
 					#based on the left adjacent tad, we define the negative set.
 					if samples[sample] in perTadPositivePatients[tad]:
-	
+
 						if samples[sample] in rightAdjacentTad[1]: #skip if this patient has a disruption of the adjacent TAD.
 							continue
-	
+
 						#exclude this gene if it overlaps a mutation
 						if geneName in svPatients[samples[sample]] or geneName in snvPatients[samples[sample]] or geneName in cnvPatients[samples[sample]]:
 							continue
-	
+
 						positiveSampleInd.append(sample)
 						positiveExpr.append(filteredExpressionData[samples[sample]][geneName])
 						positivePatients.append(samples[sample])
 					elif samples[sample] in rightNegativeSet:
-	
+
 						#exclude this gene if it overlaps a mutation
 						if geneName in svPatients[samples[sample]] or geneName in snvPatients[samples[sample]] or geneName in cnvPatients[samples[sample]]:
 							continue
-	
+
 						negativeExpr.append(filteredExpressionData[samples[sample]][geneName])
 						negativePatients.append(samples[sample])
 						negativeSampleInd.append(sample)
-	
-	
+
+
 				for patientInd in range(0, len(positiveExpr)):
 					patient = positiveExpr[patientInd]
+
 					
-					if expressionCutoff == 'True':
-						if float(patient) > -1.5 and float(patient) < 1.5:
-							continue
-	
-	
+
+
 					if float(np.std(negativeExpr)) == 0:
 						continue
-	
-					print('RAT: ', binInd, geneName, positivePatients[patientInd])
-	
+
+					
+
 					z = (float(patient) - np.mean(negativeExpr)) / float(np.std(negativeExpr))
-	
+
 					if str(z) == 'nan':
 						continue
-	
+					
+					if expressionCutoff == 'True':
+						if z > -1.5 and z < 1.5:
+							continue
+						
+					print('RAT: ', binInd, geneName, positivePatients[patientInd], z)
+
 					allGeneZScores.append(z)
-					#allGeneZScores.append(float(patient))
-	
+					# import random
+					# randInd = random.sample(range(0, zScores.shape[0]), 1)[0]
+					# randomScore = float(zScores[randInd,2])
+					# allGeneZScores.append(abs(z-randomScore) * np.sign(z))
+					#
+					# print('RAT: ', binInd, geneName, positivePatients[patientInd], abs(z-randomScore))
+
+
 			if len(allGeneZScores) > 0:
-	
+
 				#binZScoresOffset[binInd+30].append(np.mean(allGeneZScores))
 				binZScoresOffset[binInd+30] += allGeneZScores
-	
-	
-	return binZScoresOffset, binZScoresPerPatientOffset
+
+
+	return binZScoresOffset
 
 ## based on DEGs
 
 svTypes = ['DEL', 'DUP', 'INV', 'ITX']
 #svTypes = ['INV', 'ITX']
+svTypes = ['DEL']
 
 outDir = sys.argv[1]
 rules = sys.argv[3] #apply rules yes/no
@@ -824,7 +885,7 @@ outFilePrefix = ''
 rulesName = 'rules'
 cosmicRulesName = 'cosmicRules'
 expressionCutoffName = 'zScoreCutoff'
-randomExpressionName = 'randomZScores'
+randomExpressionName = 'random'
 
 if rules == 'True':
 	outFilePrefix += rulesName
@@ -836,7 +897,7 @@ if expressionCutoff == 'True':
 	outFilePrefix += expressionCutoffName
 	outFilePrefix += '_'
 if randomExpression == 'True':
-	outFilePrefix += expressionCutoffName
+	outFilePrefix += randomExpressionName
 	outFilePrefix += '_'
 #get the z-scores per bin
 for svType in svTypes:
@@ -850,7 +911,7 @@ for svType in svTypes:
 
 
 	print('plotting')
-	
+
 	allData = []
 
 	for binInd in range(0, len(binScores)):
@@ -858,7 +919,7 @@ for svType in svTypes:
 
 
 	np.save(outFilePrefix + svType + '.npy', allData)
-exit()
+#exit()
 
 
 ###combined figures
@@ -870,14 +931,19 @@ offsets = [-0.25, -0.1, 0.1, 0.25]
 #colors = plt.cm.RdYlBu(np.linspace(0,1,4))
 typeInd = -1
 for svType in svTypes:
+	print(svType)
 	typeInd += 1
 	
 	allData = np.load(outFilePrefix + svType + '.npy', allow_pickle=True, encoding='latin1')
+	#allData = allData[0]
+	#if svType not in ['DEL', 'DUP']:
+	#	allData = allData[0]
 
 	#first combine bins
 	
 	combinedBins = [0]*20
 	for binInd in range(0, len(allData)):
+		print(allData[binInd])
 		
 		if binInd < 20:
 			combinedBins[binInd] = allData[binInd]
@@ -885,8 +951,8 @@ for svType in svTypes:
 			combinedBins[binInd-10] += allData[binInd]
 		else:
 			combinedBins[binInd-30] += allData[binInd]
-	
-	
+
+	print(combinedBins)
 			
 	medianData = []
 	upperQuantiles = []
@@ -894,7 +960,8 @@ for svType in svTypes:
 	for binInd in range(0, len(combinedBins)):
 		
 		if len(combinedBins[binInd]) > 0:
-			median = np.median(combinedBins[binInd])
+			#print(combinedBins[binInd])
+			median = np.mean(combinedBins[binInd])
 			upperQuantile = np.quantile(combinedBins[binInd], 0.9) #0.75/25
 			lowerQuantile = np.quantile(combinedBins[binInd], 0.1)
 		else:
@@ -906,6 +973,8 @@ for svType in svTypes:
 		
 		upperQuantiles.append(upperQuantile-median)
 		lowerQuantiles.append(median-lowerQuantile)
+		
+	print(medianData)
 
 	plt.plot(np.arange(0, len(medianData)), medianData, color=colors[typeInd], alpha=0.5)
 	#plt.plot(np.arange(0, len(upperQuantile)), upperQuantile, color=colors[typeInd], alpha=0.5)
@@ -919,7 +988,7 @@ for svType in svTypes:
 	
 	
 	plt.errorbar(np.arange(0, len(medianData)), medianData, yerr=[lowerQuantiles, upperQuantiles], color=colors[typeInd], capsize=5, alpha=0.3)
-plt.ylim([-2,5])
+#plt.ylim([-2,5])
 plt.xticks([])
 plt.savefig('allGenes.svg')
 plt.show()

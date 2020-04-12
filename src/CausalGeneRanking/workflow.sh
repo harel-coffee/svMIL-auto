@@ -110,7 +110,7 @@ if $run; then
 	runFolder='./multipleInstanceLearning/'
 
 	#test the classifier and output the MIL curves
-	python "$runFolder/runMILClassifier.py" "$outputFolder" "False" "True" "False" "False"
+	python "$runFolder/runMILClassifier.py" "$outputFolder" "False" "True" "False" "False" "False"
 
 fi
 
@@ -122,22 +122,22 @@ if $run; then
 	runFolder='./multipleInstanceLearning/'
 
 	#first output the full similarity matrix to train the classifier on the whole dataset.
-	python "$runFolder/generateSimilarityMatrices.py" "$outputFolder" "False" "False" "False" "False" "True"
+	#python "$runFolder/generateSimilarityMatrices.py" "$outputFolder" "False" "False" "False" "False" "True"
 
 	#Generate the plotting data, and plot the feature importances for ALL instances,
 	#don't split into cosmic/non-cosmic and gains/losses
-	python "$runFolder/plotFeatureImportances.py" "$outputFolder" "True" "ALL" "ALL" "$settingsFolder" "False"
+	#python "$runFolder/plotFeatureImportances.py" "$outputFolder" "True" "ALL" "ALL" "$settingsFolder" "False"
 
 	#plot for GAINS only
-	python "$runFolder/plotFeatureImportances.py" "$outputFolder" "True" "GAIN" "ALL" "$settingsFolder" "False"
+	#python "$runFolder/plotFeatureImportances.py" "$outputFolder" "True" "GAIN" "ALL" "$settingsFolder" "False"
 
 	#plot for LOSSES only
-	python "$runFolder/plotFeatureImportances.py" "$outputFolder" "True" "LOSS" "ALL" "$settingsFolder" "False"
+	#python "$runFolder/plotFeatureImportances.py" "$outputFolder" "True" "LOSS" "ALL" "$settingsFolder" "False"
 
 	#needs a step to output deg/non-deg pairs
 
 	##Recurrence figure
-	python "$runFolder/recurrenceAnalysis.py" "$outputFolder"
+	#python "$runFolder/recurrenceAnalysis.py" "$outputFolder"
 
 fi
 
@@ -171,22 +171,22 @@ if $run; then
 
 	#Generate the plotting data, and plot the feature importances for ALL instances,
 	#don't split into cosmic/non-cosmic and gains/losses
-	python "$runFolder/plotFeatureImportances.py" "$outputFolder" "True" "ALL" "COSMIC" "$settingsFolder" "False"
+	#python "$runFolder/plotFeatureImportances.py" "$outputFolder" "True" "ALL" "COSMIC" "$settingsFolder" "False"
 
 	#plot for GAINS only
 	python "$runFolder/plotFeatureImportances.py" "$outputFolder" "True" "GAIN" "COSMIC" "$settingsFolder" "False"
 
 	#plot for LOSSES only
-	python "$runFolder/plotFeatureImportances.py" "$outputFolder" "True" "LOSS" "COSMIC" "$settingsFolder" "False"
+	#python "$runFolder/plotFeatureImportances.py" "$outputFolder" "True" "LOSS" "COSMIC" "$settingsFolder" "False"
 
 	#then run for non-cosmic
-	python "$runFolder/plotFeatureImportances.py" "$outputFolder" "True" "ALL" "NONCOSMIC" "$settingsFolder" "False"
+	#python "$runFolder/plotFeatureImportances.py" "$outputFolder" "True" "ALL" "NONCOSMIC" "$settingsFolder" "False"
 
 	#plot for GAINS only
-	python "$runFolder/plotFeatureImportances.py" "$outputFolder" "True" "GAIN" "NONCOSMIC" "$settingsFolder" "False"
+	#python "$runFolder/plotFeatureImportances.py" "$outputFolder" "True" "GAIN" "NONCOSMIC" "$settingsFolder" "False"
 
 	#plot for LOSSES only
-	python "$runFolder/plotFeatureImportances.py" "$outputFolder" "True" "LOSS" "NONCOSMIC" "$settingsFolder" "False"
+	#python "$runFolder/plotFeatureImportances.py" "$outputFolder" "True" "LOSS" "NONCOSMIC" "$settingsFolder" "False"
 
 fi
 
@@ -198,9 +198,9 @@ if $run; then
 	runFolder='./multipleInstanceLearning/'
 
 	#First generate the similarity matrices based on the bags in which 1 feature is shuffled each time
-	python "$runFolder/generateSimilarityMatrices.py" "$outputFolder" "True" "False" "False"
+	python "$runFolder/generateSimilarityMatrices.py" "$outputFolder" "True" "False" "True" "False" "False"
 	#Then get the performance on all of these similarity matrices
-	#python "$runFolder/runMILClassifier.py" "$outputFolder" "True"
+	#python "$runFolder/runMILClassifier.py" "$outputFolder" "True" "False" "False" "False" "False"
 fi
 
 
@@ -269,7 +269,7 @@ if $run; then
 fi
 
 #tad plot
-run=true
+run=false
 
 if $run; then
 	runFolder='./tadDisruptionsZScores/'
@@ -277,7 +277,7 @@ if $run; then
 	#rules, cosmicRules, expression, random
 
 	#first a run with rules and expression cutoff
-	python "$runFolder/plotDisruptedTadZScores.py" "$outputFolder" "$settingsFolder" "True" "False" "True" "False"
+	#python "$runFolder/plotDisruptedTadZScores.py" "$outputFolder" "$settingsFolder" "True" "False" "True" "False"
 
 	#also re-run z-scores with random expression to get plot with randomized expression.
 	#python "$runFolder/computeZScoresDisruptedTads.py" "$settingsFolder" "$outputFolder" "True"
@@ -288,4 +288,20 @@ if $run; then
 
 	#and finally a run with cosmic rules and expression cutoff
 	#python "$runFolder/plotDisruptedTadZScores.py" "$outputFolder" "$settingsFolder" "False" "True" "True" "False"
+
+	#python "$runFolder/plotDisruptedTadZScores.py" "$outputFolder" "$settingsFolder" "False" "True" "False" "False"
+
+	#python "$runFolder/plotDisruptedTadZScores.py" "$outputFolder" "$settingsFolder" "False" "True" "True" "True"
+
+	#rules, random SVs, no cutoff. 
+	#python "$runFolder/plotDisruptedTadZScores.py" "$outputFolder" "$settingsFolder" "True" "False" "False" "True"
+
+	#rules,
+	#python "$runFolder/plotDisruptedTadZScores.py" "$outputFolder" "$settingsFolder" "True" "False" "False" "False"
+
+	python "$runFolder/plotDisruptedTadZScores.py" "$outputFolder" "$settingsFolder" "True" "False" "True" "False"
+
+	#python "$runFolder/plotDisruptedTadZScores.py" "$outputFolder" "$settingsFolder" "True" "False" "True" "False"
+
+
 fi

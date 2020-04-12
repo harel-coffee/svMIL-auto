@@ -64,7 +64,7 @@ else:
 svType = np.array(svTypes)
 usedSVTypes = [] #use this to later determine which colors need to be used in the plot in case we skip an sv type, e.g.
 #for cosmic when translocations are not linked to any cosmic gene.
-
+svTypes = ['ITX']
 if cosmicName != 'all':
 	#read the cosmic files to split instances into cosmic/non-cosmic.
 	cosmicGenes = InputParser().readCausalGeneFile(settings.files['causalGenesFile'])
@@ -175,6 +175,7 @@ if generatePlottingData == "True":
 			topPairLabels.append(bagLabel)
 
 			shortPair = splitPair[7] + '_' + splitPair[0]
+			
 
 			if splitPair[0] not in uniqueGenes:
 				uniqueGenes.append(splitPair[0])
@@ -275,6 +276,9 @@ if generatePlottingData == "True":
 		#for cosmic, remove the cosmic feature
 		#del featureZScores[31]
 		#pAdjusted = np.delete(pAdjusted, 31)
+
+		print(pAdjusted)
+		exit()
 
 		allFeatureZScores[svType] = featureZScores
 		adjustedPValues[svType] = pAdjusted
