@@ -5,7 +5,7 @@
 #$ -m as
 #$ -M m.m.nieboer@umcutrecht.nl
 #$ -l h_vmem=16G
-#$ -l h_rt=24:00:00
+#$ -l h_rt=06:00:00
 #$ -e workflow_err
 #$ -o workflow_out
 
@@ -31,11 +31,26 @@
 #Load in a settings file with the paths to the data that all code will be run on.
 ## path here
 settingsFolder='./settings/settings_HMF_BRCA/'
+#settingsFolder='./settings/settings_TCGA_OV/'
+settingsFolder='./settings/settings_PCAWG_OV/'
 
 #Create a folder in which all output for this data will be stored
 #Different steps will create their own intermediate folders in here
 outputFolder='output/HMF_BRCA'
+#outputFolder='output/TCGA_OV'
+outputFolder='output/PCAWG_OV'
 
+#for TCGA data, some pre-processing is required.
+run=false
+
+if $run; then
+	runFolder='./DataProcessing/'
+	#python "$runFolder/parseTCGASVs.py" "$settingsFolder" "../../data/svs/brca_tcga_05022019.txt" "../../data/svs/brca_tcga_parsed.txt"
+	#python "$runFolder/parseTCGASVs.py" "$settingsFolder" "../../data/svs/luad_tcga_02042020.txt" "../../data/svs/luad_tcga_parsed.txt"
+	#python "$runFolder/parseTCGASVs.py" "$settingsFolder" "../../data/svs/ovca_tcga_03042020.txt" "../../data/svs/ovca_tcga_parsed.txt"
+	python "$runFolder/parsePCAWGSVs.py" "$settingsFolder" "../../data/svs/icgc/open/" "../../data/svs/icgc_metadata.tsv" "../../data/svs/ov_pcawg_parsed.txt"
+
+fi
 #the output needs to be fixed, to where settings can access it too.
 
 ### (REQUIRED) PART 2 - LINK SVS TO GENES ###
@@ -52,6 +67,9 @@ run=false
 
 if $run; then
 	runFolder='./tadDisruptionsZScores/'
+	expressionFile='../../data/expression/tophat_star_fpkm_uq.v2_aliquot_gl.tsv'
+
+
 
 	#first link mutations to patients. These are required to quickly check which patients
 	#have which mutations in which genes
@@ -59,7 +77,9 @@ if $run; then
 
 	#identify which TADs are disrupted in these patients, and compute the
 	#z-scores of the genes in these TADs. Filter out genes with coding mutations.
-	python "$runFolder/computeZScoresDisruptedTads.py" "$settingsFolder" "$outputFolder" "False"
+
+	#### TO DO fix the parameters here (settings file)
+	python "$runFolder/computeZScoresDisruptedTads.py" '../../data/genes/allGenesAndIdsHg19.txt' "$expressionFile" "$settingsFolder" "$outputFolder"
 fi
 
 ### PART 4 - SETTING UP FOR MULTIPLE INSTANCE LEARNING ###
@@ -80,31 +100,9 @@ fi
 ### FIGURE 1 ###
 
 ### FIGURE 2 ###
-run=false
-
-if $run; then
-	runFolder='./linkSVsGenes/'
-
-	#Map the SVs to genes. Specific for germline, settings for this are different
-	#settingsFolder='./settings/settings_HMF_BRCA_germline/'
-	#python "$runFolder/main.py" "germline" "False" "0" "$settingsFolder" "$outputFolder"
-
-	#Repeat for shuffled SVs
-	#settingsFolder='./settings/settings_HMF_BRCA/'
-	#python "$runFolder/main.py" "random" "False" "0" "$settingsFolder" "$outputFolder"
-
-	#split affected/non-affected pairs
-	inFile="$outputFolder/linkedSVGenePairs/nonCoding_geneSVPairs.txt_"
-	zScoresFile="$outputFolder/tadDisruptionsZScores/zScores.txt"
-	#python "outputDegNonDegPairsFeatures.py" "$inFile" "$zScoresFile"
-
-	#Then make the heatmap plot
-	python "plotCodingNonCodingFeatures.py" "$outputFolder"
-
-fi
 
 ### FIGURE 3 - MIL PERFORMANCE CURVES PER SV TYPE, PER-PATIENT CV ###
-run=false
+run=true
 
 if $run; then
 	runFolder='./multipleInstanceLearning/'
@@ -137,7 +135,7 @@ if $run; then
 	#needs a step to output deg/non-deg pairs
 
 	##Recurrence figure
-	#python "$runFolder/recurrenceAnalysis.py" "$outputFolder"
+	python "$runFolder/recurrenceAnalysis.py" "$outputFolder"
 
 fi
 
@@ -171,10 +169,10 @@ if $run; then
 
 	#Generate the plotting data, and plot the feature importances for ALL instances,
 	#don't split into cosmic/non-cosmic and gains/losses
-	#python "$runFolder/plotFeatureImportances.py" "$outputFolder" "True" "ALL" "COSMIC" "$settingsFolder" "False"
+	python "$runFolder/plotFeatureImportances.py" "$outputFolder" "True" "ALL" "COSMIC" "$settingsFolder" "False"
 
 	#plot for GAINS only
-	python "$runFolder/plotFeatureImportances.py" "$outputFolder" "True" "GAIN" "COSMIC" "$settingsFolder" "False"
+	#python "$runFolder/plotFeatureImportances.py" "$outputFolder" "True" "GAIN" "COSMIC" "$settingsFolder" "False"
 
 	#plot for LOSSES only
 	#python "$runFolder/plotFeatureImportances.py" "$outputFolder" "True" "LOSS" "COSMIC" "$settingsFolder" "False"
@@ -198,28 +196,18 @@ if $run; then
 	runFolder='./multipleInstanceLearning/'
 
 	#First generate the similarity matrices based on the bags in which 1 feature is shuffled each time
-	python "$runFolder/generateSimilarityMatrices.py" "$outputFolder" "True" "False" "True" "False" "False"
+	python "$runFolder/generateSimilarityMatrices.py" "$outputFolder" "True" "False" "False"
 	#Then get the performance on all of these similarity matrices
-	python "$runFolder/runMILClassifier.py" "$outputFolder" "True" "False" "False" "False" "False"
+	#python "$runFolder/runMILClassifier.py" "$outputFolder" "True"
 fi
+
+
+
 
 ### ADDITIONAL, NON-FIGURE ###
 
 #optimizing the MIL classifiers
 #simple ML
-
-
-## leave one patient out CV with random labels
-run=false
-
-if $run; then
-	runFolder='./multipleInstanceLearning/'
-
-	#test the classifier and output the MIL curves
-	python "$runFolder/runMILClassifier.py" "$outputFolder" "False" "True" "False" "False" "True"
-
-fi
-
 
 ## Per-chromosome CV
 run=false
@@ -229,7 +217,7 @@ if $run; then
 
 	#python "$runFolder/generateSimilarityMatrices.py" "$outputFolder" "False" "False" "True" "False" "False"
 
-	python "$runFolder/runMILClassifier.py" "$outputFolder" "False" "False" "True" "False" "False"
+	python "$runFolder/runMILClassifier.py" "$outputFolder" "False" "False" "True" "False"
 
 fi
 
@@ -241,7 +229,7 @@ if $run; then
 
 	python "$runFolder/generateSimilarityMatrices.py" "$outputFolder" "False" "False" "False" "True" "False"
 
-	python "$runFolder/runMILClassifier.py" "$outputFolder" "False" "False" "False" "True"
+	#python "$runFolder/runMILClassifier.py" "$outputFolder" "False" "False" "False" "True"
 
 fi
 
@@ -262,72 +250,5 @@ if $run; then
 	runFolder='./multipleInstanceLearning/'
 
 	python "$runFolder/checkCosmicEnrichment.py" "$outputFolder" "$settingsFolder"
-
-fi
-
-#comparing to simple ML
-run=false
-
-if $run; then
-	runFolder='./'
-
-	python "$runFolder/simpleML.py" "$outputFolder" "$settingsFolder"
-
-fi
-
-#test with promoters, strengths etc
-run=true
-
-if $run; then
-	runFolder='./multipleInstanceLearning/'
-	outputFolder='./output/test'
-
-	#normalize bags
-	#python "$runFolder/normalizeBags.py" "$outputFolder"
-
-	#chrCV
-	python "$runFolder/generateSimilarityMatrices.py" "$outputFolder" "False" "False" "True" "False" "False"
-
-	python "$runFolder/runMILClassifier.py" "$outputFolder" "False" "False" "True" "False" "False"
-
-
-fi
-
-
-#tad plot
-run=false
-
-if $run; then
-	runFolder='./tadDisruptionsZScores/'
-
-	#rules, cosmicRules, expression, random
-
-	#first a run with rules and expression cutoff
-	#python "$runFolder/plotDisruptedTadZScores.py" "$outputFolder" "$settingsFolder" "True" "False" "True" "False"
-
-	#also re-run z-scores with random expression to get plot with randomized expression.
-	#python "$runFolder/computeZScoresDisruptedTads.py" "$settingsFolder" "$outputFolder" "True"
-	#python "$runFolder/plotDisruptedTadZScores.py" "$outputFolder" "$settingsFolder" "True" "False" "True" "True"
-
-	#then a run with all genes and cutoff, but no rules
-	#python "$runFolder/plotDisruptedTadZScores.py" "$outputFolder" "$settingsFolder" "False" "False" "True" "False"
-
-	#and finally a run with cosmic rules and expression cutoff
-	#python "$runFolder/plotDisruptedTadZScores.py" "$outputFolder" "$settingsFolder" "False" "True" "True" "False"
-
-	#python "$runFolder/plotDisruptedTadZScores.py" "$outputFolder" "$settingsFolder" "False" "True" "False" "False"
-
-	#python "$runFolder/plotDisruptedTadZScores.py" "$outputFolder" "$settingsFolder" "False" "True" "True" "True"
-
-	#rules, random SVs, no cutoff.
-	#python "$runFolder/plotDisruptedTadZScores.py" "$outputFolder" "$settingsFolder" "True" "False" "False" "True"
-
-	#rules,
-	#python "$runFolder/plotDisruptedTadZScores.py" "$outputFolder" "$settingsFolder" "True" "False" "False" "False"
-
-	python "$runFolder/plotDisruptedTadZScores.py" "$outputFolder" "$settingsFolder" "True" "False" "True" "False"
-
-	#python "$runFolder/plotDisruptedTadZScores.py" "$outputFolder" "$settingsFolder" "True" "False" "True" "False"
-
 
 fi
