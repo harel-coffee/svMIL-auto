@@ -25,7 +25,7 @@ plt.scatter(fprsDEL, tprsDEL, marker='.', facecolor=methodColors, edgecolor=meth
 plt.scatter(fprsDUP, tprsDUP, marker='s', facecolor=methodColors, edgecolor=methodColors)
 plt.scatter(fprsINV, tprsINV, marker='^', facecolor=methodColors, edgecolor=methodColors)
 plt.scatter(fprsITX, tprsITX, marker='*', facecolor=methodColors, edgecolor=methodColors)
-plt.show()
+
 plt.savefig('tpr_fpr.svg')
 
 
