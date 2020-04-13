@@ -213,14 +213,13 @@ class Gene:
 		
 		#allowedElements = ['enhancer']
 		#allowedElements = ['superEnhancer']
-		#allowedElements = ['enhancer', 'promoter', 'eQTL', 'superEnhancer']
-		allowedElements = ['enhancer', 'eQTL', 'superEnhancer']
+		allowedElements = ['enhancer', 'promoter', 'eQTL', 'superEnhancer']
+		#allowedElements = ['enhancer', 'eQTL', 'superEnhancer']
 
 		if len(elements) > 0:
 			if sv not in self.alteredElements:
 				self.alteredElements[sv] = dict()
-			
-		
+
 		#For methylation marks, gather all relevant marks here for easy lookup.
 		#For now, just focus on what is relevant for enhancers
 		methylationMarks = []

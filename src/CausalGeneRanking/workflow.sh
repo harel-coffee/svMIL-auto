@@ -5,7 +5,7 @@
 #$ -m as
 #$ -M m.m.nieboer@umcutrecht.nl
 #$ -l h_vmem=16G
-#$ -l h_rt=12:00:00
+#$ -l h_rt=24:00:00
 #$ -e workflow_err
 #$ -o workflow_out
 
@@ -192,7 +192,7 @@ fi
 
 
 ### SUPPLEMENTARY TABLE 1 - FEATURE ELIMINATION ###
-run=false
+run=true
 
 if $run; then
 	runFolder='./multipleInstanceLearning/'
@@ -200,11 +200,8 @@ if $run; then
 	#First generate the similarity matrices based on the bags in which 1 feature is shuffled each time
 	python "$runFolder/generateSimilarityMatrices.py" "$outputFolder" "True" "False" "True" "False" "False"
 	#Then get the performance on all of these similarity matrices
-	#python "$runFolder/runMILClassifier.py" "$outputFolder" "True" "False" "False" "False" "False"
+	python "$runFolder/runMILClassifier.py" "$outputFolder" "True" "False" "False" "False" "False"
 fi
-
-
-
 
 ### ADDITIONAL, NON-FIGURE ###
 
@@ -230,9 +227,9 @@ run=false
 if $run; then
 	runFolder='./multipleInstanceLearning/'
 
-	python "$runFolder/generateSimilarityMatrices.py" "$outputFolder" "False" "False" "True" "False" "False"
+	#python "$runFolder/generateSimilarityMatrices.py" "$outputFolder" "False" "False" "True" "False" "False"
 
-	python "$runFolder/runMILClassifier.py" "$outputFolder" "False" "False" "True" "False"
+	python "$runFolder/runMILClassifier.py" "$outputFolder" "False" "False" "True" "False" "False"
 
 fi
 
@@ -268,6 +265,35 @@ if $run; then
 
 fi
 
+#comparing to simple ML
+run=false
+
+if $run; then
+	runFolder='./'
+
+	python "$runFolder/simpleML.py" "$outputFolder" "$settingsFolder"
+
+fi
+
+#test with promoters, strengths etc
+run=false
+
+if $run; then
+	runFolder='./multipleInstanceLearning/'
+	outputFolder='./output/test'
+
+	#normalize bags
+	python "$runFolder/normalizeBags.py" "$outputFolder"
+
+	#chrCV
+	#python "$runFolder/generateSimilarityMatrices.py" "$outputFolder" "False" "False" "True" "False" "False"
+
+	#python "$runFolder/runMILClassifier.py" "$outputFolder" "False" "False" "True" "False" "False"
+
+
+fi
+
+
 #tad plot
 run=false
 
@@ -293,7 +319,7 @@ if $run; then
 
 	#python "$runFolder/plotDisruptedTadZScores.py" "$outputFolder" "$settingsFolder" "False" "True" "True" "True"
 
-	#rules, random SVs, no cutoff. 
+	#rules, random SVs, no cutoff.
 	#python "$runFolder/plotDisruptedTadZScores.py" "$outputFolder" "$settingsFolder" "True" "False" "False" "True"
 
 	#rules,

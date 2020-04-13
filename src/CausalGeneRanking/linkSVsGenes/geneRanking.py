@@ -180,20 +180,7 @@ class GeneRanking:
 				pairScores[ind,71] = duplication
 				pairScores[ind,72] = inversion
 				pairScores[ind,73] = translocation
-				
-				#check cosmic
-				if splitSV[0] in cosmicGenes:
-					pairScores[ind,74] = 1
-				else:
-					pairScores[ind,74] = 0
-			
-				#add TAD strength
-			
-				pairScores[ind,75] = splitSV[8]
-				pairScores[ind,76] = splitSV[9]
-				pairScores[ind,77] = splitSV[10]
-				pairScores[ind,78] = splitSV[11]
-				
+
 			
 			print('del pairs: ', delCount)
 			print('inv pairs: ', invCount)
@@ -512,14 +499,14 @@ class GeneRanking:
 					if loss == True:
 
 						pairScores[pairId] = 1 #assume that each SV can disrupt a gene only once
-						#pairScores[pairId] = gene.lostElementsSVs[sv][element]
+						#pairScores[pairId] = len(gene.lostElementsSVs[sv][element])
 						
 		return pairScores, svGeneMap, svGeneIndices		
 		
 	def scoreByElementGainsSVs(self, genes, svGeneMap, svGeneIndices, elementType):
 		"""
 			Determine for each gene how many elements are lost. 
-			
+
 			genes:  (numpy array) array with the genes and their information. chr, start, end, geneObject
 			sampleMap: (dictionary) each sample is a key, and the value is the index of where the gene score is in the final scoring matrix.
 			geneMap: (dictionary) each gene is a key, and the value is the index of where the gene score is in the final scoring matrix.
@@ -599,7 +586,7 @@ class GeneRanking:
 							gain = True
 					if gain == True:
 						pairScores[pairId] = 1 #assume that each SV can disrupt a gene only once
-						#pairScores[pairId] = gene.gainedElementsSVs[sv][element]
+						#pairScores[pairId] = len(gene.gainedElementsSVs[sv][element])
 					
 					
 		

@@ -24,6 +24,7 @@ files = dict(
 	snvDir = '../../../../somatics',
 	cnvDir = '../../../../somatics',
 	geneNameConversionFile = '../../data/genes/allGenesAndIdsHg19.txt', #used with HMF SNVs, converting ENSG identifiers to gene names.
+	expressionFile = '/hpc/compgen/users/mnieboer/data/pipeline/read_counts/brca_tmm.txt',
 	
 	#specific for HMEC
 	enhancerFile = '../../data/enhancers/hmec_encoderoadmap_elasticnet.117.txt', #File with enhancers specific for normal cell lines

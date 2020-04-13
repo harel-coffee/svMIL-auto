@@ -12,7 +12,6 @@ import numpy as np
 import pickle as pkl
 import random
 
-
 import matplotlib
 matplotlib.use('Agg')
 
@@ -387,11 +386,6 @@ for svType in svTypes:
 			testBags = dict()
 			trainLabels = dict()
 			testLabels = dict()
-			aucs = []
-			performances = []
-			tprs = []
-			mean_fpr = np.linspace(0, 1, 100)
-			fig, ax = plt.subplots()
 			for chromosome in chromosomes:
 
 				if chromosome not in positiveBagsPerChromosome:
@@ -505,43 +499,15 @@ for svType in svTypes:
 				#now the curent patient bags need to be to the instances of the training set
 				similarityMatrixTest = getSimilarityMatrixTest(testBags[chromosome], shuffledInstances, testLabels)
 
-				classifier.fit(similarityMatrixTrain, trainLabels[chromosome])
-
-				trainPreds = classifier.predict(similarityMatrixTrain)
-				diff = np.sum(np.abs(trainLabels[chromosome] - trainPreds)) / len(trainLabels[chromosome])
-	
-
-				preds = classifier.predict(similarityMatrixTest)
-
-				diff = np.sum(np.abs(testLabels[chromosome] - preds)) / len(testLabels[chromosome])
-
-
-				predProb = classifier.predict_proba(similarityMatrixTest)
-
-				performances.append(classifier.score(similarityMatrixTest, testLabels[chromosome]))
-
-				fig, ax = plt.subplots()
-				viz = plot_roc_curve(classifier, similarityMatrixTest, testLabels[chromosome],
-									 name='roc',
-									 alpha=0.3, lw=1, ax=ax)
-				interp_tpr = interp(mean_fpr, viz.fpr, viz.tpr)
-				interp_tpr[0] = 0.0
-				tprs.append(interp_tpr)
-				aucs.append(np.mean(viz.roc_auc))
-				plt.close()
-				
 				#output these to a file
 				#write these data to disk so that we can access it later on
 				np.save(featureEliminationOutDir + '/' + 'similarityMatrixTrain_' + svType + '_' + chromosome + '_' + str(featureInd) + '.npy', similarityMatrixTrain)
 				np.save(featureEliminationOutDir + '/' + 'similarityMatrixTest_' + svType + '_' + chromosome + '_' + str(featureInd) + '.npy', similarityMatrixTest)
 
 				#also save the labels
-				np.save(featureEliminationOutDir + '/' + 'bagLabelsTrain_' + svType + '_' + chromosome + '_' + str(featureInd) + '.npy', trainLabels)
-				np.save(featureEliminationOutDir + '/' + 'bagLabelsTest_' + svType + '_' + chromosome + '_' + str(featureInd) + '.npy', testLabels)
+				np.save(featureEliminationOutDir + '/' + 'bagLabelsTrain_' + svType + '_' + chromosome + '_' + str(featureInd) + '.npy', trainLabels[chromosome])
+				np.save(featureEliminationOutDir + '/' + 'bagLabelsTest_' + svType + '_' + chromosome + '_' + str(featureInd) + '.npy', testLabels[chromosome])
 
-			print(np.mean(aucs))
-			plt.close()
-			continue
 
 		elif featureElimination == 'False' and leaveOneChromosomeOut == 'True':
 

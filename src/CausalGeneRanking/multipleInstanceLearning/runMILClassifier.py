@@ -31,6 +31,7 @@ leaveBagsOut = sys.argv[5] #random bags in each CV fold
 randomLabels = sys.argv[6] #running CV with randomized labels, only implemented for lopoCV
 
 svTypes = ['DEL', 'DUP', 'INV', 'ITX']
+
 outDir = sys.argv[1]
 
 finalOutDir = outDir + '/multipleInstanceLearning/rocCurves/'
@@ -38,10 +39,13 @@ finalOutDir = outDir + '/multipleInstanceLearning/rocCurves/'
 if not os.path.exists(finalOutDir):
 	os.makedirs(finalOutDir)
 
-def leaveOneChromosomeOutCV(leaveChromosomeOutDataFolder, classifier, svType, plotOutputFile, title):
+def leaveOneChromosomeOutCV(leaveChromosomeOutDataFolder, classifier, svType, plotOutputFile, title, featureInd):
 
 	#first get the names of all patients
-	allFiles = glob.glob(leaveChromosomeOutDataFolder + '*_' + svType + '.npy')
+	if featureInd == 'False': #set to false to use regular chrCV
+		allFiles = glob.glob(leaveChromosomeOutDataFolder + '*_' + svType + '.npy')
+	else:
+		allFiles = glob.glob(leaveChromosomeOutDataFolder + '*_' + svType + '_*_' + str(featureInd) + '.npy')
 
 	chromosomeFiles = dict()
 	for dataFile in allFiles:
@@ -61,6 +65,10 @@ def leaveOneChromosomeOutCV(leaveChromosomeOutDataFolder, classifier, svType, pl
 	mean_fpr = np.linspace(0, 1, 100)
 	fig, ax = plt.subplots()
 	ind = 0
+	totalTP = 0
+	totalFP = 0
+	totalTN = 0
+	totalFN = 0
 	for chromosome in chromosomeFiles:
 
 		for dataFile in chromosomeFiles[chromosome]:
@@ -78,7 +86,18 @@ def leaveOneChromosomeOutCV(leaveChromosomeOutDataFolder, classifier, svType, pl
 		classifier.fit(similarityMatrixTrain, bagLabelsTrain)
 
 		#output the predictions to a file for the COSMIC analysis
-		preds = classifier.predict(similarityMatrixTest)
+		predictions = classifier.predict(similarityMatrixTest)
+		for labelInd in range(0, len(bagLabelsTest)):
+
+			if bagLabelsTest[labelInd] == 1 and predictions[labelInd] == 1:
+				totalTP += 1
+			elif bagLabelsTest[labelInd] == 0 and predictions[labelInd] == 1:
+				totalFP += 1
+			elif bagLabelsTest[labelInd] == 1 and predictions[labelInd] == 0:
+				totalFN += 1
+			else:
+				totalTN += 1
+
 	
 		viz = plot_roc_curve(classifier, similarityMatrixTest, bagLabelsTest,
 							 name='roc',
@@ -90,32 +109,50 @@ def leaveOneChromosomeOutCV(leaveChromosomeOutDataFolder, classifier, svType, pl
 		print('auc: ', np.mean(viz.roc_auc))
 
 	print(np.mean(aucs))
-	
-	#make the CV plot, just plot the mean
-	fig, ax = plt.subplots()
-	ax.plot([0, 1], [0, 1], linestyle='--', lw=2, color='r',
-				label='Chance', alpha=.8)
+	tpr = totalTP / (totalTP + totalFN)
+	fpr = totalFP / (totalTN + totalFP)
+	print('tpr', tpr)
+	print('fpr', fpr)
 
-	mean_tpr = np.mean(tprs, axis=0)
-	mean_tpr[-1] = 1.0
-	mean_auc = auc(mean_fpr, mean_tpr)
-	std_auc = np.std(aucs)
+	#write to the output file in case of feature elimination
+	if featureInd != 'False':
+		finalOutDir = outDir + '/multipleInstanceLearning/featureElimination/'
+		if not os.path.exists(finalOutDir):
+			os.makedirs(finalOutDir)
 
-	ax.plot(mean_fpr, mean_tpr, color='b',
-			label=r'Mean ROC (AUC = %0.2f $\pm$ %0.2f)' % (np.mean(aucs), np.std(aucs)),
-			lw=2, alpha=.8)
+		outFile = finalOutDir + '/featureElimination_' + svType + '.txt'
 
-	# std_tpr = np.std(tprs, axis=0)
-	# tprs_upper = np.minimum(mean_tpr + std_tpr, 1)
-	# tprs_lower = np.maximum(mean_tpr - std_tpr, 0)
-	# ax.fill_between(mean_fpr, tprs_lower, tprs_upper, color='grey', alpha=.2,
-	# 				label=r'$\pm$ 1 std. dev.')
+		with open(outFile, 'a') as outF:
 
-	ax.set(xlim=[-0.05, 1.05], ylim=[-0.05, 1.05],
-		   title="Leave-one-patient-out CV: " + title)
-	ax.legend(loc="lower right")
-	plt.tight_layout()
-	plt.savefig(plotOutputFile)
+			outF.write(str(featureInd) + '\t' + str(np.mean(aucs)) + '\n')
+
+	else:
+
+		#make the CV plot, just plot the mean
+		fig, ax = plt.subplots()
+		ax.plot([0, 1], [0, 1], linestyle='--', lw=2, color='r',
+					label='Chance', alpha=.8)
+
+		mean_tpr = np.mean(tprs, axis=0)
+		mean_tpr[-1] = 1.0
+		mean_auc = auc(mean_fpr, mean_tpr)
+		std_auc = np.std(aucs)
+
+		ax.plot(mean_fpr, mean_tpr, color='b',
+				label=r'Mean ROC (AUC = %0.2f $\pm$ %0.2f)' % (np.mean(aucs), np.std(aucs)),
+				lw=2, alpha=.8)
+
+		# std_tpr = np.std(tprs, axis=0)
+		# tprs_upper = np.minimum(mean_tpr + std_tpr, 1)
+		# tprs_lower = np.maximum(mean_tpr - std_tpr, 0)
+		# ax.fill_between(mean_fpr, tprs_lower, tprs_upper, color='grey', alpha=.2,
+		# 				label=r'$\pm$ 1 std. dev.')
+
+		ax.set(xlim=[-0.05, 1.05], ylim=[-0.05, 1.05],
+			   title="Leave-one-chromosome-out CV: " + title)
+		ax.legend(loc="lower right")
+		plt.tight_layout()
+		plt.savefig(plotOutputFile)
 
 
 def bagsCVClassification(dataPath, clf, svType, title, plot, plotOutputFile, outputFile, shuffleLabels):
@@ -350,24 +387,27 @@ for svType in svTypes:
 		
 		#do the feature elimination here. Go through each similarity matrix with eliminated feature,
 		#and obtain the classification scores.
-		#the plot should not be made, and the AUCs should be written to a file
-		
-		#get each similarity matrix
 		
 		featureEliminationDataFolder = outDir + '/multipleInstanceLearning/similarityMatrices/featureSelection/'
-		featureEliminationFiles = glob.glob(featureEliminationDataFolder + '*_' + svType + '_*')
+		#check the folder to get the max feature to check
+		featureEliminationFiles = glob.glob(featureEliminationDataFolder + '/bagLabelsTest_' + svType + '*')
 
-		#
+		#get the feature indices
+		featureIndices = []
+		for feFile in featureEliminationFiles:
+			splitName = feFile.split('_')
+			ind = splitName[len(splitName)-1]
+			splitInd = ind.split('.')
+			featureInd = splitInd[0]
+			featureIndices.append(int(featureInd))
+
+
 
 		#file to write to aucs to	
 		outputFile = outDir + '/multipleInstanceLearning/featureEliminationResults_' + svType + '.txt'
-		for fileInd in range(0, len(featureEliminationFiles)):
-
-
-
-			#get the right similarity matrix for this shuffled feature
-			#similarityMatrix = np.load(featureEliminationDataFolder + '/similarityMatrix_' + svType + '_' + str(fileInd) + '.npy')
-			cvClassification(similarityMatrix, bagLabels, classifier, svType, title, plot, '', outputFile)
+		for featureInd in range(0, max(featureIndices)):
+			#each time provide the feature index
+			leaveOneChromosomeOutCV(featureEliminationDataFolder, classifier, svType, '', title, featureInd)
 	elif featureElimination == 'False' and leaveOnePatientOut == 'True':
 		
 		shuffleLabels = False
@@ -387,7 +427,7 @@ for svType in svTypes:
 		plotOutputFile = outDir + '/multipleInstanceLearning/rocCurves/rocCurve_' + svType + '_leaveOneChromosomeOut.svg'
 
 		leaveOneChromosomeOutDataFolder = outDir + '/multipleInstanceLearning/similarityMatrices/leaveOneChromosomeOut/'
-		leaveOneChromosomeOutCV(leaveOneChromosomeOutDataFolder, classifier, svType, plotOutputFile, title)
+		leaveOneChromosomeOutCV(leaveOneChromosomeOutDataFolder, classifier, svType, plotOutputFile, title, 'False')
 	
 	else:
 		

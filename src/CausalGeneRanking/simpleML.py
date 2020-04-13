@@ -10,83 +10,164 @@ from sklearn.metrics import plot_roc_curve, auc, average_precision_score
 import matplotlib.pyplot as plt
 from scipy import interp
 import random
+from sklearn.ensemble import RandomForestClassifier
 
-positivePairs = np.loadtxt(sys.argv[1], dtype='object')
-negativePairs = np.loadtxt(sys.argv[2], dtype='object')
+outDir = sys.argv[1]
 
-#try simple classification on this.
+positivePairs = np.loadtxt(outDir + '/linkedSVGenePairs/nonCoding_geneSVPairs.txt__degPairsFeatures.txt', dtype='object')
+negativePairs = np.loadtxt(outDir + '/linkedSVGenePairs/nonCoding_geneSVPairs.txt__nonDegPairsFeatures.txt', dtype='object')
 
-#divide into chromosomes.
+##Some features were not used in MIL, so we skip them here too to make it comparable.
+#keep the features in the file to be able to plot them for figure 2.
+allowedFeatures = list(np.arange(1,3)) #skip name (0) and promoter losses (3)
+allowedFeatures += list(np.arange(4,29)) #skip promoter gains (29)
+allowedFeatures += list(np.arange(30,69))
 
-positivePairsPerChromosome = dict()
+#normalize the data
+#get the min and max from all pairs
+currentMax = [0]*positivePairs.shape[1]
+currentMin = [float('inf')]*positivePairs.shape[1]
 for pair in positivePairs:
 
-	splitPair = pair[0].split('_')
+	for featureInd in range(1, len(pair)): #skip the name
 
-	if splitPair[12] != 'DEL':
-		continue
-
-	if splitPair[1] not in positivePairsPerChromosome:
-		positivePairsPerChromosome[splitPair[1]] = []
-
-	positivePairsPerChromosome[splitPair[1]].append(pair[1:60])
-
-negativePairsPerChromosome = dict()
+		if float(pair[featureInd]) < currentMin[featureInd]:
+			currentMin[featureInd] = float(pair[featureInd])
+		if float(pair[featureInd]) > currentMax[featureInd]:
+			currentMax[featureInd] = float(pair[featureInd])
 for pair in negativePairs:
 
-	splitPair = pair[0].split('_')
+	for featureInd in range(1, len(pair)): #skip name
 
-	if splitPair[12] != 'DEL':
-		continue
+		if float(pair[featureInd]) < currentMin[featureInd]:
+			currentMin[featureInd] = float(pair[featureInd])
+		if float(pair[featureInd]) > currentMax[featureInd]:
+			currentMax[featureInd] = float(pair[featureInd])
 
-	if splitPair[1] not in negativePairsPerChromosome:
-		negativePairsPerChromosome[splitPair[1]] = []
+#the normalize the data
+normalizedPositivePairs = []
+for pair in positivePairs:
 
-	negativePairsPerChromosome[splitPair[1]].append(pair[1:60])
+	normalizedValues = [pair[0]]
+	for featureInd in range(1, len(pair)):
+		if currentMin[featureInd] == 0 and currentMax[featureInd] == 0: #if the min/max are 0 for this feature, the normalized value should also be 0.
+			normalizedValues.append(0)
+			continue
 
-chromosomes = ['chr1', 'chr2', 'chr3', 'chr4', 'chr5', 'chr6', 'chr7',
-			   'chr8', 'chr9', 'chr10', 'chr11', 'chr12', 'chr13',
-			   'chr14', 'chr15', 'chr16', 'chr17', 'chr18', 'chr19',
-			   'chr20', 'chr21', 'chr22']
+		if currentMax[featureInd] - currentMin[featureInd] == 0:
+			normalizedValues.append(0) #min and max should be the same, so no norm necessary
+			continue
+
+		normFeature = (float(pair[featureInd])-currentMin[featureInd])/(currentMax[featureInd]-currentMin[featureInd])
+		normalizedValues.append(normFeature)
+
+	normalizedPositivePairs.append(normalizedValues)
+
+normalizedNegativePairs = []
+for pair in negativePairs:
+
+	normalizedValues = [pair[0]]
+	for featureInd in range(1, len(pair)):
+		if currentMin[featureInd] == 0 and currentMax[featureInd] == 0: #if the min/max are 0 for this feature, the normalized value should also be 0.
+			normalizedValues.append(0)
+			continue
+
+		if currentMax[featureInd] - currentMin[featureInd] == 0:
+			normalizedValues.append(0) #min and max should be the same, so no norm necessary
+			continue
+
+		normFeature = (float(pair[featureInd])-currentMin[featureInd])/(currentMax[featureInd]-currentMin[featureInd])
+		normalizedValues.append(normFeature)
+
+	normalizedNegativePairs.append(normalizedValues)
+
+normalizedPositivePairs = np.array(normalizedPositivePairs, dtype='object')
+normalizedNegativePairs = np.array(normalizedNegativePairs, dtype='object')
+
+#try simple classification on this.
+svTypes  = ['DEL', 'DUP', 'INV', 'ITX']
+for svType in svTypes:
+
+	if svType == 'DEL':
+		classifier = RandomForestClassifier(random_state=785, n_estimators= 600, min_samples_split=5, min_samples_leaf=1, max_features='auto', max_depth=80, bootstrap=True)
+	elif svType == 'DUP':
+		classifier = RandomForestClassifier(random_state=785, n_estimators= 600, min_samples_split=5, min_samples_leaf=1, max_features='auto', max_depth=80, bootstrap=True)
+	elif svType == 'INV':
+		classifier = RandomForestClassifier(random_state=785, n_estimators= 200, min_samples_split=5, min_samples_leaf=4, max_features='auto', max_depth=10, bootstrap=True)
+	elif svType == 'ITX':
+		classifier = RandomForestClassifier(random_state=785, n_estimators= 1000, min_samples_split=5, min_samples_leaf=1, max_features='auto', max_depth=80, bootstrap=True)
+	else:
+		print('Please provide a valid SV type')
+		exit(1)
 
 
-from sklearn.neural_network import MLPClassifier
-from sklearn.neighbors import KNeighborsClassifier
-from sklearn.svm import SVC
-from sklearn.gaussian_process import GaussianProcessClassifier
-from sklearn.gaussian_process.kernels import RBF
-from sklearn.tree import DecisionTreeClassifier
-from sklearn.ensemble import RandomForestClassifier, AdaBoostClassifier
-from sklearn.naive_bayes import GaussianNB
-from sklearn.discriminant_analysis import QuadraticDiscriminantAnalysis
+	#divide into chromosomes.
+
+	positivePairsPerChromosome = dict()
+	for pair in normalizedPositivePairs:
+
+		splitPair = pair[0].split('_')
+
+		if splitPair[12] != svType:
+			continue
+
+		if splitPair[1] not in positivePairsPerChromosome:
+			positivePairsPerChromosome[splitPair[1]] = []
+
+		allFeatures = []
+		for featureInd in range(1, len(pair)):
+
+			if featureInd in allowedFeatures:
+				allFeatures.append(pair[featureInd])
+
+		positivePairsPerChromosome[splitPair[1]].append(allFeatures)
 
 
-names = ["Nearest Neighbors", "Linear SVM", "RBF SVM", "Gaussian Process",
-         "Decision Tree", "Random Forest", "Neural Net", "AdaBoost",
-         "Naive Bayes", "QDA"]
+	negativePairsPerChromosome = dict()
+	matchPairsNeg = 0
+	for pair in normalizedNegativePairs:
 
-classifiers = [
-    KNeighborsClassifier(3),
-    SVC(kernel="linear", C=0.025),
-    SVC(gamma=2, C=1),
-    GaussianProcessClassifier(1.0 * RBF(1.0)),
-    DecisionTreeClassifier(max_depth=5),
-    RandomForestClassifier(max_depth=500, n_estimators=1000, max_features=1),
-    MLPClassifier(alpha=1, max_iter=1000),
-    AdaBoostClassifier(),
-    GaussianNB(),
-    QuadraticDiscriminantAnalysis()]
+		splitPair = pair[0].split('_')
 
-clfInd = -1
-for classifier in classifiers:
-	clfInd += 1
-	print(names[clfInd])
-	
+		if splitPair[12] != svType:
+			continue
+
+		if splitPair[1] not in negativePairsPerChromosome:
+			negativePairsPerChromosome[splitPair[1]] = []
+
+		allFeatures = []
+		for featureInd in range(1, len(pair)):
+
+			#if featureInd-1 in badIdx: #skip 0 variance
+			#	continue
+
+			if featureInd in allowedFeatures:
+				allFeatures.append(pair[featureInd])
+
+		negativePairsPerChromosome[splitPair[1]].append(allFeatures)
+
+	chromosomes = ['chr1', 'chr2', 'chr3', 'chr4', 'chr5', 'chr6', 'chr7',
+				   'chr8', 'chr9', 'chr10', 'chr11', 'chr12', 'chr13',
+				   'chr14', 'chr15', 'chr16', 'chr17', 'chr18', 'chr19',
+				   'chr20', 'chr21', 'chr22']
+
+
+
 	#go through the chromosomes and make the positive/negative sets
 	#subsample the negative set to the same size.
 	aucs = []
+	#for the test set, keep statistics for TPR and FPR to compare between methods
+	totalTP = 0
+	totalFP = 0
+	totalTN = 0
+	totalFN = 0
+	totalP = 0
+	totalN = 0
 	for chromosome in chromosomes:
-	
+
+		if chromosome not in positivePairsPerChromosome or chromosome not in negativePairsPerChromosome:
+			continue
+
 		testPositivePairs = np.array(positivePairsPerChromosome[chromosome])
 		testNegativePairs = np.array(negativePairsPerChromosome[chromosome])
 
@@ -97,11 +178,17 @@ for classifier in classifiers:
 		testSet = np.concatenate((testPositivePairs, testNegativeSubset))
 		testLabels = [1]*testPositivePairs.shape[0] + [0]*testNegativeSubset.shape[0]
 
+		totalP += testPositivePairs.shape[0]
+		totalN += testNegativeSubset.shape[0]
+
 		trainingSet = []
 		trainingLabels = []
 		for chromosome2 in positivePairsPerChromosome:
 
 			if chromosome2 == chromosome:
+				continue
+
+			if chromosome2 not in positivePairsPerChromosome or chromosome2 not in negativePairsPerChromosome:
 				continue
 
 			chrPositivePairs = np.array(positivePairsPerChromosome[chromosome2])
@@ -125,22 +212,34 @@ for classifier in classifiers:
 
 		trainingSet = np.array(trainingSet)
 
+		allPairs = np.concatenate((trainingSet, testSet))
+		from sklearn.feature_selection import VarianceThreshold
+		t = 0
+		vt = VarianceThreshold(threshold=t)
+		vt.fit(allPairs)
+		idx = np.where(vt.variances_ > t)[0]
+		badIdx = np.where(vt.variances_ <= t)[0]
 
-		#test classifier for this fold
-		# print(chromosome)
-		#
-		# print(trainingSet.shape)
-		# print(len(trainingLabels))
-		# print(testSet.shape)
-		# print(len(testLabels))
+		trainingSet = trainingSet[:,idx]
+		testSet = testSet[:,idx]
 
-		clf = RandomForestClassifier(n_estimators= 200, random_state=42)
-		clf.fit(trainingSet, trainingLabels)
-		# print('train: ', clf.score(trainingSet, trainingLabels))
-		# print('test: ', clf.score(testSet, testLabels))
-		#
+		classifier.fit(trainingSet, trainingLabels)
+
+		#check true/false positives/negatives
+		predictions = classifier.predict(testSet)
+		for labelInd in range(0, len(testLabels)):
+
+			if testLabels[labelInd] == 1 and predictions[labelInd] == 1:
+				totalTP += 1
+			elif testLabels[labelInd] == 0 and predictions[labelInd] == 1:
+				totalFP += 1
+			elif testLabels[labelInd] == 1 and predictions[labelInd] == 0:
+				totalFN += 1
+			else:
+				totalTN += 1
+
 		fig, ax = plt.subplots()
-		viz = plot_roc_curve(clf, testSet, testLabels,
+		viz = plot_roc_curve(classifier, testSet, testLabels,
 							 name='roc',
 							 alpha=0.3, lw=1, ax=ax)
 
@@ -150,4 +249,9 @@ for classifier in classifiers:
 
 	print(np.mean(aucs))
 
+	#report on true positive and false positie rate
+	print(totalTP, totalFP, totalFN, totalTN)
+	tpr = totalTP / (totalTP + totalFN)
+	fpr = totalFP / (totalTN + totalFP)
+	print(tpr, fpr)
 

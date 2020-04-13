@@ -14,31 +14,31 @@ negativePairsFeatures = []
 
 for pair in svGenePairs:
 	features = list(pair)
-	
+
 	#check for enhancer gain or loss. Otherwise, ignore.
 	#f2 is enhancer loss.
 	#f28 is enhancer gain
-	#+1 because the first entry is the pair name. 
-	
-		
+	#+1 because the first entry is the pair name.
+
+
 	#if str(features[2]) != '1.0' and str(features[28]) != '1.0':
-	#	continue 
-	
+	#	continue
+
 	splitPair = pair[0].split('_')
 	shortPair = splitPair[7] + '_' + splitPair[0]
-	
+
 	if pair[0] == 'BRSK1_chr17_74160042_74160042_chr19_55473991_55473991_CPCT02010419T_0_0_0_0_ITX':
 		print(pair)
 		print(shortPair)
-	
+
 	if shortPair in degPairs[:,0]:
-		
+
 		#check if this is true or not.
 		degPairInfo = degPairs[degPairs[:,0] == shortPair][0]
 		if pair[0] == 'BRSK1_chr17_74160042_74160042_chr19_55473991_55473991_CPCT02010419T_0_0_0_0_ITX':
 			print(degPairInfo)
 		#features.append(np.abs(float(degPairInfo[5])))
-			
+
 		#if degPairInfo[3] == 'True':
 		# 	positivePairsFeatures.append(features)
 		# else:
