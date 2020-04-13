@@ -276,17 +276,17 @@ if $run; then
 fi
 
 #test with promoters, strengths etc
-run=true
+run=false
 
 if $run; then
 	runFolder='./multipleInstanceLearning/'
-	outputFolder='./output/test'
+	#outputFolder='./output/test'
 
 	#normalize bags
 	#python "$runFolder/normalizeBags.py" "$outputFolder"
 
 	#chrCV
-	python "$runFolder/generateSimilarityMatrices.py" "$outputFolder" "False" "False" "True" "False" "False"
+	#python "$runFolder/generateSimilarityMatrices.py" "$outputFolder" "False" "False" "True" "False" "False"
 
 	python "$runFolder/runMILClassifier.py" "$outputFolder" "False" "False" "True" "False" "False"
 
@@ -295,7 +295,7 @@ fi
 
 
 #tad plot
-run=false
+run=true
 
 if $run; then
 	runFolder='./tadDisruptionsZScores/'
@@ -313,7 +313,9 @@ if $run; then
 	#python "$runFolder/plotDisruptedTadZScores.py" "$outputFolder" "$settingsFolder" "False" "False" "True" "False"
 
 	#and finally a run with cosmic rules and expression cutoff
-	#python "$runFolder/plotDisruptedTadZScores.py" "$outputFolder" "$settingsFolder" "False" "True" "True" "False"
+	python "$runFolder/plotDisruptedTadZScores.py" "$outputFolder" "$settingsFolder" "False" "True" "False" "False"
+
+	python "$runFolder/plotDisruptedTadZScores.py" "$outputFolder" "$settingsFolder" "False" "True" "False" "True"
 
 	#python "$runFolder/plotDisruptedTadZScores.py" "$outputFolder" "$settingsFolder" "False" "True" "False" "False"
 
@@ -325,7 +327,7 @@ if $run; then
 	#rules,
 	#python "$runFolder/plotDisruptedTadZScores.py" "$outputFolder" "$settingsFolder" "True" "False" "False" "False"
 
-	python "$runFolder/plotDisruptedTadZScores.py" "$outputFolder" "$settingsFolder" "True" "False" "True" "False"
+	#python "$runFolder/plotDisruptedTadZScores.py" "$outputFolder" "$settingsFolder" "True" "False" "True" "False"
 
 	#python "$runFolder/plotDisruptedTadZScores.py" "$outputFolder" "$settingsFolder" "True" "False" "True" "False"
 

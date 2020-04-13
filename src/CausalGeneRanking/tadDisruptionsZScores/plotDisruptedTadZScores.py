@@ -27,7 +27,7 @@ import matplotlib
 
 bins = 10
 
-def getBinScores(zScores, rules, cosmicRules, expressionCutoff, randomExpression):
+def getBinScores(zScores, rules, cosmicRules, expressionCutoff, randomExpression, svType):
 
 	splitZScores = []
 	allPatients = []
@@ -56,32 +56,29 @@ def getBinScores(zScores, rules, cosmicRules, expressionCutoff, randomExpression
 	#then go through the TADs that are disrupted by a non-coding SV.
 
 	#Get all SVs
-	# svDir = settings.files['svDir']
-	# svData = InputParser().getSVsFromFile_hmf(svDir)
-	#
-	#
-	# svType = sys.argv[1]
-	#
-	# filteredSVs = []
-	# types = []
-	# for sv in svData:
-	#
-	# 	if svType != 'ALL':
-	# 		if sv[8].svType != svType:
-	# 			continue
-	#
-	# 	svEntry = sv[0] + "_" + str(sv[1]) + "_" + str(sv[2]) + "_" + sv[3] + "_" + str(sv[4]) + "_" + str(sv[5]) + "_" + sv[8].sampleName
-	# 	#if svEntry not in excludedSVs:
-	# 	#	filteredSVs.append(sv)
-	# 	filteredSVs.append(sv)
-	# 	if sv[8].svType not in types:
-	# 		types.append(sv[8].svType)
-	#
-	# print(types)
-	# filteredSVs = np.array(filteredSVs, dtype='object')
-	#
-	# np.save('filteredSVs_tadPairs_' + svType + '.npy', filteredSVs)
-	filteredSVs = np.load('filteredSVs_tadPairs_' + svType + '.npy', allow_pickle=True, encoding='latin1')
+	svDir = settings.files['svDir']
+	svData = InputParser().getSVsFromFile_hmf(svDir)
+
+	filteredSVs = []
+	types = []
+	for sv in svData:
+
+		if svType != 'ALL':
+			if sv[8].svType != svType:
+				continue
+
+		svEntry = sv[0] + "_" + str(sv[1]) + "_" + str(sv[2]) + "_" + sv[3] + "_" + str(sv[4]) + "_" + str(sv[5]) + "_" + sv[8].sampleName
+		#if svEntry not in excludedSVs:
+		#	filteredSVs.append(sv)
+		filteredSVs.append(sv)
+		if sv[8].svType not in types:
+			types.append(sv[8].svType)
+
+	print(types)
+	filteredSVs = np.array(filteredSVs, dtype='object')
+
+	#np.save('filteredSVs_tadPairs_' + svType + '.npy', filteredSVs)
+	#filteredSVs = np.load('filteredSVs_tadPairs_' + svType + '.npy', allow_pickle=True, encoding='latin1')
 
 	#For each SV, determine which TAD it starts and ends in.
 	#Keep this as a TAD pair.
@@ -215,9 +212,8 @@ def getBinScores(zScores, rules, cosmicRules, expressionCutoff, randomExpression
 				tadPairsFiltered[pairStr] = pairPatients
 
 	#np.save('tadPairsFiltered_' + svType + '.npy', tadPairsFiltered)
-	tadPairsFiltered = np.load('tadPairsFiltered_' + svType + '.npy', allow_pickle=True, encoding='latin1').item()
-
-
+	#tadPairsFiltered = np.load('tadPairsFiltered_' + svType + '.npy', allow_pickle=True, encoding='latin1').item()
+	
 	#also use a map for the gene names
 	geneNameConversionMap = dict()
 	geneNameConversionFile = settings.files['geneNameConversionFile']
@@ -871,8 +867,6 @@ def getBinScores(zScores, rules, cosmicRules, expressionCutoff, randomExpression
 ## based on DEGs
 
 svTypes = ['DEL', 'DUP', 'INV', 'ITX']
-#svTypes = ['INV', 'ITX']
-svTypes = ['DEL']
 
 outDir = sys.argv[1]
 rules = sys.argv[3] #apply rules yes/no
@@ -899,27 +893,27 @@ if expressionCutoff == 'True':
 if randomExpression == 'True':
 	outFilePrefix += randomExpressionName
 	outFilePrefix += '_'
-#get the z-scores per bin
-for svType in svTypes:
-
-	#get the right zScore file here depending on if we shuffle or not
-	if randomExpression == 'False':
-		zScores = np.loadtxt('output/HMF_BRCA/tadDisruptionsZScores/zScores.txt', dtype='object')
-	else:
-		zScores = np.loadtxt('output/HMF_BRCA/tadDisruptionsZScores/zScores_random.txt', dtype='object')
-	binScores = getBinScores(zScores, rules, cosmicRules, expressionCutoff, randomExpression)
-
-
-	print('plotting')
-
-	allData = []
-
-	for binInd in range(0, len(binScores)):
-		allData.append(binScores[binInd])
-
-
-	np.save(outFilePrefix + svType + '.npy', allData)
-#exit()
+# #get the z-scores per bin
+# for svType in svTypes:
+#
+# 	#get the right zScore file here depending on if we shuffle or not
+# 	if randomExpression == 'False':
+# 		zScores = np.loadtxt('output/HMF_BRCA/tadDisruptionsZScores/zScores.txt', dtype='object')
+# 	else:
+# 		zScores = np.loadtxt('output/HMF_BRCA/tadDisruptionsZScores/zScores_random.txt', dtype='object')
+# 	binScores = getBinScores(zScores, rules, cosmicRules, expressionCutoff, randomExpression, svType)
+#
+#
+# 	print('plotting')
+#
+# 	allData = []
+#
+# 	for binInd in range(0, len(binScores)):
+# 		allData.append(binScores[binInd])
+#
+#
+# 	np.save(outFilePrefix + svType + '.npy', allData)
+# exit()
 
 
 ###combined figures
@@ -943,8 +937,7 @@ for svType in svTypes:
 	
 	combinedBins = [0]*20
 	for binInd in range(0, len(allData)):
-		print(allData[binInd])
-		
+
 		if binInd < 20:
 			combinedBins[binInd] = allData[binInd]
 		elif binInd > 19 and binInd < 30:
@@ -952,8 +945,6 @@ for svType in svTypes:
 		else:
 			combinedBins[binInd-30] += allData[binInd]
 
-	print(combinedBins)
-			
 	medianData = []
 	upperQuantiles = []
 	lowerQuantiles = []
@@ -962,8 +953,8 @@ for svType in svTypes:
 		if len(combinedBins[binInd]) > 0:
 			#print(combinedBins[binInd])
 			median = np.mean(combinedBins[binInd])
-			upperQuantile = np.quantile(combinedBins[binInd], 0.9) #0.75/25
-			lowerQuantile = np.quantile(combinedBins[binInd], 0.1)
+			upperQuantile = np.quantile(combinedBins[binInd], 0.6) #0.75/25
+			lowerQuantile = np.quantile(combinedBins[binInd], 0.4)
 		else:
 			median = 0
 			upperQuantile = 0
