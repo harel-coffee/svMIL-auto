@@ -5,7 +5,7 @@ import numpy as np
 
 outDir = sys.argv[1]
 
-svGenePairs = np.loadtxt(outDir + '/linkedSVGenePairs/nonCoding_geneSVPairs.txt', dtype='object')
+svGenePairs = np.loadtxt(outDir + '/linkedSVGenePairs/nonCoding_geneSVPairs.txt_', dtype='object')
 degPairs = np.loadtxt(outDir + '/tadDisruptionsZScores/zScores.txt', dtype='object')
 
 #also load the mutation pairs.
@@ -21,7 +21,7 @@ splitSVGenePairs = []
 for pair in svGenePairs:
 	splitPair = pair[0].split('_')
 
-	splitSVGenePairs.append(splitPair[7] + '_' + splitPair[0] + '_' + splitPair[12]
+	splitSVGenePairs.append(splitPair[7] + '_' + splitPair[0] + '_' + splitPair[12])
 
 positivePairsFeatures = []
 negativePairsFeatures = []
@@ -33,6 +33,8 @@ for pair in svGenePairs:
 	shortPair = splitPair[7] + '_' + splitPair[0]
 
 	if shortPair in degPairs[:,0]:
+
+		degPairInfo = degPairs[degPairs[:,0] == shortPair][0]
 
 		if float(degPairInfo[5]) > 1.5 or float(degPairInfo[5]) < -1.5:
 

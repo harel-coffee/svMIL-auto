@@ -83,29 +83,28 @@ fi
 
 ### FIGURE 2 - 2A-D ###
 
-#dumpster fire
+#TAD disruption plots. Needs some further testing.
+
 
 ### FIGURE 2 - 2E: HEATMAP ###
-run=false
+run=true
 
 if $run; then
 	runFolder='./linkSVsGenes/'
 
 	#Map the SVs to genes. Specific for germline, settings for this are different
-	settingsFolder='./settings/settings_HMF_BRCA_germline/'
-	python "$runFolder/main.py" "germline" "False" "0" "$settingsFolder" "$outputFolder"
+	#settingsFolder='./settings/settings_HMF_BRCA_germline/'
+	#python "$runFolder/main.py" "germline" "False" "0" "$settingsFolder" "$outputFolder"
 
 	#Repeat for shuffled SVs
-	settingsFolder='./settings/settings_HMF_BRCA/'
-	python "$runFolder/main.py" "random" "True" "0" "$settingsFolder" "$outputFolder"
+	#settingsFolder='./settings/settings_HMF_BRCA/'
+	#python "$runFolder/main.py" "random" "True" "0" "$settingsFolder" "$outputFolder"
 
 	#split affected/non-affected pairs
-	inFile="$outputFolder/linkedSVGenePairs/nonCoding_geneSVPairs.txt_"
-	zScoresFile="$outputFolder/tadDisruptionsZScores/zScores.txt"
-	#python "$runFolder/outputDegNonDegPairsFeatures.py" "$inFile" "$zScoresFile"
+	#python "$runFolder/splitPairsPathogenicNonPathogenic.py" "$outputFolder"
 
 	#Then make the heatmap plot
-	python "$runFolder/plotCodingNonCodingFeatures.py" "$outputFolder"
+	python "$runFolder/plotPathogenicNonPathogenicFeatures.py" "$outputFolder"
 
 fi
 
