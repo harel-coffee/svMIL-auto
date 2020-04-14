@@ -39,12 +39,12 @@ outputFolder='output/HMF_BRCA'
 #the output needs to be fixed, to where settings can access it too.
 
 ### (REQUIRED) PART 2 - LINK SVS TO GENES ###
-run=false #Only skip this step if all output has already been generated!
+run=true #Only skip this step if all output has already been generated!
 
 if $run; then
 	runFolder='./linkSVsGenes/'
 	#Map the SVs to genes. This also outputs bags for MIL.
-	python "$runFolder/main.py" "" "False" "0" "$settingsFolder" "$outputFolder"
+	python "$runFolder/main.py" "test" "False" "0" "$settingsFolder" "$outputFolder"
 
 fi
 
@@ -87,7 +87,7 @@ fi
 
 
 ### FIGURE 2 - 2E: HEATMAP ###
-run=true
+run=false
 
 if $run; then
 	runFolder='./linkSVsGenes/'

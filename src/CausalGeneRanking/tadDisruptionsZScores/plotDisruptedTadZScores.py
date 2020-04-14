@@ -953,8 +953,8 @@ for svType in svTypes:
 		if len(combinedBins[binInd]) > 0:
 			#print(combinedBins[binInd])
 			median = np.mean(combinedBins[binInd])
-			upperQuantile = np.quantile(combinedBins[binInd], 0.6) #0.75/25
-			lowerQuantile = np.quantile(combinedBins[binInd], 0.4)
+			upperQuantile = np.quantile(combinedBins[binInd], 0.95) #0.75/25
+			lowerQuantile = np.quantile(combinedBins[binInd], 0.05)
 		else:
 			median = 0
 			upperQuantile = 0
@@ -979,9 +979,9 @@ for svType in svTypes:
 	
 	
 	plt.errorbar(np.arange(0, len(medianData)), medianData, yerr=[lowerQuantiles, upperQuantiles], color=colors[typeInd], capsize=5, alpha=0.3)
-#plt.ylim([-2,5])
+plt.ylim([-2,16])
 plt.xticks([])
-plt.savefig('allGenes.svg')
+plt.savefig(outFilePrefix + '.svg')
 plt.show()
 exit()
 
