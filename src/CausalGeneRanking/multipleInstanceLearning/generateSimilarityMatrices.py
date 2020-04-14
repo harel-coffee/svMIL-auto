@@ -61,10 +61,10 @@ print(degPairs)
 print("initial number of bags: ", len(bagDict))
 print('initial deg pairs: ', degPairs.shape[0])
 
-mutDir = 'output/HMF_BRCA/patientGeneMutationPairs/'
+mutDir = outDir + '/patientGeneMutationPairs/'
 cnvPatientsAmp = np.load(mutDir + 'cnvPatientsAmp.npy', allow_pickle=True, encoding='latin1').item()
 svPatientsDup = np.load(mutDir + 'svPatientsDup.npy', allow_pickle=True, encoding='latin1').item()
-svGenePairs = np.loadtxt(outDir + '/linkedSVGenePairs/nonCoding_geneSVPairs.txt_', dtype='object')
+svGenePairs = np.loadtxt(outDir + '/linkedSVGenePairs/promoters/nonCoding_geneSVPairs.txt_', dtype='object')
 splitSVGenePairs = []
 for pair in svGenePairs:
 

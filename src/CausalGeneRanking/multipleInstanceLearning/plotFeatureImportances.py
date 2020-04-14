@@ -53,8 +53,13 @@ else:
 	print('invalid option for COSMIC')
 	exit(1)
 
+finalOutDir = outDir + '/featureImportance/'
+
+if not os.path.exists(finalOutDir):
+	os.makedirs(finalOutDir)
+
 #maybe output the .npy files to a tmp dir to make them easier to find
-outFilePrefix = outDir + '/' + gainLossName + '_' + cosmicName + '_'
+outFilePrefix = finalOutDir + '/' + gainLossName + '_' + cosmicName + '_'
 
 if gainLossName != 'loss':
 	svTypes = ['DEL', 'DUP', 'INV', 'ITX']
@@ -128,7 +133,7 @@ if generatePlottingData == "True":
 				   color="r", align="center")
 			plt.xticks(range(similarityMatrix.shape[1])[0:1000][::25], range(0,1000, 25), rotation=90)
 			plt.tight_layout()
-			plt.savefig(outDir + '/feature_importances_top1000_' + svType + '.svg')
+			plt.savefig(finalOutDir + '/feature_importances_top1000_' + svType + '.svg')
 	
 			continue
 
@@ -203,7 +208,8 @@ if generatePlottingData == "True":
 			else:
 				filteredInstances.append(topInstances[instanceInd])
 
-		np.savetxt(outDir + '/pairLabels_top100_' + svType + '.txt', topPairLabels, fmt='%s', delimiter='\t')
+		if gainLossName == 'all' and cosmicName == 'all':
+			np.savetxt(finalOutDir + '/pairLabels_top100_' + svType + '.txt', topPairLabels, fmt='%s', delimiter='\t')
 		filteredInstances = np.array(filteredInstances)
 		print('number of instances used: ', filteredInstances.shape)
 

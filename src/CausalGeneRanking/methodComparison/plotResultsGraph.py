@@ -1,12 +1,16 @@
 import matplotlib.pyplot as plt
 
+outDir = sys.argv[1]
+
+finalOutDir = outDir + '/methodComparison/results/'
+if not os.path.exists(finalOutDir):
+	os.makedirs(finalOutDir)
 
 #make a plot showing the true positive and false positive rates of each method.
 #each sv type will get its own icon, and methods can be labeled by color
 
 methods = ['chrCV MIL', 'chrCV simple RF', 'VEP', 'SVScore']
 methodColors = ['#0055d4ff', '#c83737ff', '#9955ffff', '#808080ff']
-#methodColors = ['#0055d4ff', '#c83737ff', '#9955ffff']
 
 tprsDEL = [0.64, 0.41, 0.02, 0.009]
 fprsDEL = [0.19, 0.28, 0.2, 0.09]
@@ -26,7 +30,7 @@ plt.scatter(fprsDUP, tprsDUP, marker='s', facecolor=methodColors, edgecolor=meth
 plt.scatter(fprsINV, tprsINV, marker='^', facecolor=methodColors, edgecolor=methodColors)
 plt.scatter(fprsITX, tprsITX, marker='*', facecolor=methodColors, edgecolor=methodColors)
 
-plt.savefig('tpr_fpr.svg')
+plt.savefig(finalOutDir + '/tpr_fpr.svg')
 
 
 

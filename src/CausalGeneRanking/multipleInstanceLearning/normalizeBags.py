@@ -18,7 +18,7 @@ if not os.path.exists(finalOutDir):
 #with open(outDir + '/linkedSVGenePairs/bags.pkl', 'rb') as handle:
 #	bagDict = pkl.load(handle)
 
-with open(outDir + '/linkedSVGenePairs/ctcfStrengths/bags.pkl', 'rb') as handle:
+with open(outDir + '/linkedSVGenePairs/promoters/bags.pkl', 'rb') as handle:
 	bagDict = pkl.load(handle)
 
 
@@ -77,6 +77,6 @@ bagDict = normalizedBagDict
 #save to a file to prevent heavy computing load
 # with open(finalOutDir + '/normalizedBags.pkl', 'wb') as handle:
 # 		pkl.dump(bagDict, handle, protocol=pkl.HIGHEST_PROTOCOL)
-with open(outDir + '/linkedSVGenePairs/ctcfStrengths/normalizedBags.pkl', 'wb') as handle:
+with open(outDir + '/linkedSVGenePairs/promoters/normalizedBags.pkl', 'wb') as handle:
 		pkl.dump(bagDict, handle, protocol=pkl.HIGHEST_PROTOCOL)		
 		

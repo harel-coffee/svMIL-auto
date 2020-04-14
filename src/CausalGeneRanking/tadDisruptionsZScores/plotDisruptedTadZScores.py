@@ -242,7 +242,7 @@ def getBinScores(zScores, rules, cosmicRules, expressionCutoff, randomExpression
 			splitPair = combination[0].split('_')
 
 			ruleBasedPairs.append(splitPair[0] + '_' + splitPair[7])
-			ruleBasedPairsSVs.append(splitPair[0] + '_' + splitPair[7])
+			ruleBasedPairsSVs.append(splitPair[0] + '_' + splitPair[7] + '_' + splitPair[12])
 	# elif rules == 'True' and randomExpression == 'True':
 	# 	ruleBasedCombinations = np.loadtxt('output/HMF_BRCA/linkedSVGenePairs/random/nonCoding_geneSVPairs.txt_0', dtype='object')
 	# 	ruleBasedPairs = []
@@ -262,7 +262,7 @@ def getBinScores(zScores, rules, cosmicRules, expressionCutoff, randomExpression
 			splitPair = combination[0].split('_')
 	
 			ruleBasedPairs.append(splitPair[0] + '_' + splitPair[7])
-			ruleBasedPairsSVs.append(splitPair[0] + '_' + splitPair[7])
+			ruleBasedPairsSVs.append(splitPair[0] + '_' + splitPair[7] + '_' + splitPair[12])
 
 	mutDir = 'output/HMF_BRCA/patientGeneMutationPairs/'
 	#Collect all patients with mutations, easier in the adjacent TAds to just filter all patienst with ANY mutations witout having to go through all types individually.

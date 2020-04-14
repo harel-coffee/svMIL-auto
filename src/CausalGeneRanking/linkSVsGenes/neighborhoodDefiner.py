@@ -38,58 +38,23 @@ class NeighborhoodDefiner:
 		
 	"""
 	
-	def checkIfSettingsAreSame(self):
-		"""
-			The purpose of this function is to check if the settings were updated since last run (currently only support for the data). If these did not change, we can load a pre-existing pkl to
-			speed up the runs. 
-			
-			The settings are stored in a separate file. If the settings in the actual settings file are the same as in this cached file, return false.
-			Otherwise, return true. 
-			
-			*** Currently, this function is not used becuase with pkl we exceed the recursion depth if we store the genes. I cannot change this depth. 
-		"""
-		
-		#If the settings file is not on disk, create it
-		settingsCacheFile = 'settings.cache'
-
-		if os.path.isfile(settingsCacheFile) == False:
-					
-			with open(settingsCacheFile, 'w') as cacheFile:
-				 json.dump(settings.general, cacheFile)
-		
-			#In this case, return true because the settings were just initialized and so we have no neighborhood yet
-			return True
-		else: #In this case, the file exists, so we can start checking if the settings are the same
-			with open(settingsCacheFile, 'r') as cacheFile:
-				cachedSettings = json.load(cacheFile)
-				matchedSettings = True #if even 1 is different, the data should be re-loaded
-				for setting in cachedSettings:
-					if cachedSettings[setting] != settings.general[setting]:
-						matchedSettings = False
-						break
-				
-				return matchedSettings
-
-	def __init__(self, genes, svData, snvData, mode):
+	def __init__(self, genes, svData):
 		"""
 			Initialize the neighborhood defining. This involves gathering all required data types, mapping these to TADs/genes, and associating the effects of SVs to genes. 
 
 			genes: (numpy array) array with the genes and their information. chr, start, end, geneObject
 			svData: (numpy array) array with the SVs and their information. chr1, s1, e1, chr2, s2, e2, cancerType, sampleName, svObject. Can be empty in SNV mode. 
-			snvData: (numpy array) array with the SNVs and their information. chr, start, end, None, None, None, sampleName, cancerType. Can be empty in SV mode (NOT WORKING ATM)
-			mode: (string) SV, SNV or SV+SNV.
 		"""
 		
 		#1. Get TADs from the TAD file, and then map TADs to genes (left/right TAD).
 		tadData = []
-		if settings.general['tads'] == True:
-			tadFile = settings.files['tadFile']
 
-			print("Getting TADs")
-			tadData = InputParser().getTADsFromFile(tadFile)
-			
-			#Filter the SVs out that overlap more than 10 TADs. (temporarily)
-			print("original number of svs:", svData.shape)
+		tadFile = settings.files['tadFile']
+
+		print("Getting TADs")
+		tadData = InputParser().getTADsFromFile(tadFile)
+
+		print("original number of svs:", svData.shape)
 			
 			
 			# filteredSvData = []
@@ -97,10 +62,10 @@ class NeighborhoodDefiner:
 			# for sv in svData:
 			# 	if sv[8].svType == "del" or sv[8].svType == "invers" or sv[8].svType == "tandem_dup": #only do the threshold thing for dels, invers and dups
 			# 		tadSubset = tadData[tadData[:,0] == sv[0]]
-			# 	
+			#
 			# 		startMatches = sv[1] < tadSubset[:,1]
 			# 		endMatches = sv[5] > tadSubset[:,2]
-			# 		
+			#
 			# 		allMatches = startMatches * endMatches
 			# 		overlappedTads = tadSubset[allMatches]
 			# 		if len(overlappedTads) > 2:
@@ -109,11 +74,11 @@ class NeighborhoodDefiner:
 			# 	else:
 			# 		filteredSvData.append(sv)
 			# 	types.append(sv[8].svType)
-			# 	
-			# print np.unique(types)	
+			#
+			# print np.unique(types)
 			# svData = np.array(filteredSvData, dtype="object")
 			# print "number of svs: ", svData.shape
-			# 
+			#
 			# #temporarily write to a file
 			# testOut = "unshuffledSVs.txt"
 			# header = "chr1\ts1\te1\to1\tchr2\ts2\te2\to2\tsource\tsample_name\tsv_type\tcancer_type\n"
@@ -124,27 +89,27 @@ class NeighborhoodDefiner:
 			# 		line = sv[0] + "\t" + str(sv[1]) + "\t" + str(sv[2]) + "\t" + sv[8].o1 + "\t" + sv[3] + "\t" + str(sv[4]) + "\t" + str(sv[5]) + "\t" + sv[8].o2 + "\t-\t" + sv[8].sampleName + "\t" + sv[8].svType + "\t" + sv[8].cancerType + "\n"
 			# 		outF.write(line)
 			# exit()
-			
+
 			#Plot the number of SVs that start or end in a TAD
 			# svCount = []
 			# for sv in svData:
-			# 	
+			#
 			# 	tadChrSubset = tadData[tadData[:,0] == sv[0]]
-			# 	
+			#
 			# 	#Number of TADs that are overlapped by an SV
 			# 	startMatches = sv[1] < tadChrSubset[:,2]
 			# 	endMatches = sv[5] > tadChrSubset[:,1]
 			# 	
 			# 	tadMatches = tadChrSubset[startMatches * endMatches]
-			# 	# 
+			# 	#
 			# 	# startMatches = (sv[1] > tadChrSubset[:,1]) * (sv[1] < tadChrSubset[:,2])
 			# 	# endMatches = (sv[5] > tadChrSubset[:,1]) * (sv[5] < tadChrSubset[:,2])
-			# 	# 
+			# 	#
 			# 	# tadMatches = tadChrSubset[startMatches + endMatches]
 			# 	
 			# 	# if tadMatches.shape[0] not in svCount:
 			# 	# 	svCount[tadMatches.shape[0]] = 0
-			# 	# svCount[tadMatches.shape[0]] += 1	
+			# 	# svCount[tadMatches.shape[0]] += 1
 			# 	#
 			# 	if tadMatches.shape[0] < 50:
 			# 		svCount.append(tadMatches.shape[0])
@@ -158,76 +123,58 @@ class NeighborhoodDefiner:
 			# exit()
 				
 			
-			
-			if settings.general['shuffleTads'] == True:
-				#Shuffle the TADs. Assign random genomic positions to the TADs, but keep the same length. 
-				genomicShuffler = GenomicShuffler()
-				tadData = genomicShuffler.shuffleTADs(tadData)
 
-			print("mapping TADs to genes")
-			self.mapTADsToGenes(genes[:,3], tadData)
-		
+		if settings.general['shuffleTads'] == True:
+			#Shuffle the TADs. Assign random genomic positions to the TADs, but keep the same length.
+			genomicShuffler = GenomicShuffler()
+			tadData = genomicShuffler.shuffleTADs(tadData)
+
+		print("mapping TADs to genes")
+		self.mapTADsToGenes(genes[:,3], tadData)
+
 		#For every SV, find the TADs on the left and right
 		
 		#Compute how large this window is in total and report that (sum left TAD + right TAD for translocations)
 		# windowSizes = []
 		# for sv in svData:
-		# 	
+		#
 		# 	tadChr1Subset = tadData[tadData[:,0] == sv[0]]
 		# 	tadChr2Subset = tadData[tadData[:,0] == sv[3]]
 		# 
 		# 	#Get the TAD that is overlapped by the left part of the SV
 		# 	leftTad = tadChr1Subset[(tadChr1Subset[:,1] <= sv[1]) * (tadChr1Subset[:,2] >= sv[1])]
 		# 	rightTad = tadChr2Subset[(tadChr2Subset[:,1] <= sv[4]) * (tadChr2Subset[:,2] >= sv[4])]
-		# 	
+		#
 		# 	if len(leftTad) < 1 or len(rightTad) < 1:
 		# 		continue
 		# 	
 		# 	leftTad = leftTad[0]
 		# 	rightTad = rightTad[0]
-		# 	
+		#
 		# 	if leftTad[3] == rightTad[3]:
 		# 		continue
 		# 	
 		# 	leftTadSize = leftTad[2] - leftTad[1]
 		# 	rightTadSize = rightTad[2] - rightTad[1]
-		# 	
+		#
 		# 	windowSizes.append(leftTadSize + rightTadSize)
-		# 
-		# 
+		#
+		#
 		# print windowSizes
 		# import matplotlib.pyplot as plt
-		# 
+		#
 		# plt.hist(windowSizes)
 		# plt.show()
 		# exit()
 		
 		
 		#2. Get eQTLs from the eQTL file, and map eQTLs to genes. 
-		eQTLData = [] #Keep empty by default in case we do not use eQTLs
-		if settings.general['eQTLs'] == True: #Always check if eQTLs are enabled in the settings
-			#Save the processed data, only needs to be done once
 			
-			# import os.path
-			# 
-			# if os.path.exists('eQTLData.pkl'):
-			# 	print "loading eQTLs from pkl"
-			# 	#Load the eqtls
-			# 	with open('eQTLData.pkl', 'rb') as h:
-			# 		eQTLData = pkl.load(h)
-		
-			eQTLFile = settings.files['eQTLFile']
-			print("getting eQTLs")
-			eQTLData = InputParser().getEQTLsFromFile(eQTLFile, genes[:,3], self)
+		eQTLFile = settings.files['eQTLFile']
+		print("getting eQTLs")
+		eQTLData = InputParser().getEQTLsFromFile(eQTLFile, genes[:,3], self)
 
-			# with open('eQTLData.pkl', 'wb') as h:
-			# 	pkl.dump(eQTLData, h, protocol=pkl.HIGHEST_PROTOCOL)
-			tadData = self.mapElementsToTads(eQTLData, tadData)
-		
-		#Read the lncRNA data. If we enable lncRNAs, for now we switch that for eQTLs. Will be fixed in a later version. 
-		if settings.general['lncRNA'] == True:
-			lncRNAData = InputParser().getLncRNAsFromFile(settings.files['lncRNAFile'])
-			eQTLData = lncRNAData 
+		tadData = self.mapElementsToTads(eQTLData, tadData)
 
 		#Map the elements to the TADs, and map the genes to the TADs. 
 		
@@ -235,115 +182,90 @@ class NeighborhoodDefiner:
 		
 		#3. Get enhancers
 		
-		if settings.general['enhancers'] == True:
-			print("getting enhancers")
-			enhancerData = InputParser().getEnhancersFromFile(settings.files['enhancerFile'], genes[:,3], self)
-			#Add the enhancers to TADs & genes as well	
-			tadData = self.mapElementsToTads(enhancerData, tadData)	
+		print("getting enhancers")
+		enhancerData = InputParser().getEnhancersFromFile(settings.files['enhancerFile'], genes[:,3], self)
+		#Add the enhancers to TADs & genes as well	
+		tadData = self.mapElementsToTads(enhancerData, tadData)	
 		
 		#4. Get promoters
 		
-		if settings.general['promoters'] == True:
-			print("getting promoters")
-			promoterData = InputParser().getPromotersFromFile(settings.files['promoterFile'], genes[:,3], self)
+		print("getting promoters")
+		promoterData = InputParser().getPromotersFromFile(settings.files['promoterFile'], genes[:,3], self)
 			
-			#Add the promoters to the TADs
-			tadData = self.mapElementsToTads(promoterData, tadData)
+		#Add the promoters to the TADs
+		tadData = self.mapElementsToTads(promoterData, tadData)
 		
 		#5. Get CpG islands
-		if settings.general['cpgIslands'] == True:
-			print("Getting cpg islands")
-			cpgData = InputParser().getCpgIslandsFromFile(settings.files['cpgFile'])
+		print("Getting cpg islands")
+		cpgData = InputParser().getCpgIslandsFromFile(settings.files['cpgFile'])
 		
-			#Add the CpG sites to the TADs
-			tadData = self.mapElementsToTads(cpgData, tadData)
+		#Add the CpG sites to the TADs
+		tadData = self.mapElementsToTads(cpgData, tadData)
 		
 		#6. Get Transcription factors
-		if settings.general['transcriptionFactors'] == True:
-			print("Getting transcription factors")
+		print("Getting transcription factors")
 
-			tfData = InputParser().getTranscriptionFactorsFromFile(settings.files['tfFile'])
+		tfData = InputParser().getTranscriptionFactorsFromFile(settings.files['tfFile'])
 	
-			#Add the CpG sites to the TADs
-			tadData = self.mapElementsToTads(tfData, tadData)
+		#Add the CpG sites to the TADs
+		tadData = self.mapElementsToTads(tfData, tadData)
 		
 		
 		#7. Get Hi-C data
-		if settings.general['hiC'] == True:
-			print("Getting Hi-C data")
-			hicData = InputParser().getHiCInteractionsFromFile(settings.files['hicFile'])
+		print("Getting Hi-C data")
+		hicData = InputParser().getHiCInteractionsFromFile(settings.files['hicFile'])
 			
-			#Map the interactions to TADs as elements
-			tadData = self.mapInteractionsToTads(hicData, tadData)
+		#Map the interactions to TADs as elements
+		tadData = self.mapInteractionsToTads(hicData, tadData)
 		
 		#8. Get histone marks
-		if settings.general['histones'] == True:
-			print("Getting histone marks")
-			files = [settings.files['h3k9me3'], settings.files['h3k4me3'], settings.files['h3k27ac'], settings.files['h3k27me3'],
-					 settings.files['h3k4me1'], settings.files['h3k36me3']]
-			types = ['h3k9me3', 'h3k4me3', 'h3k27ac', 'h3k27me3', 'h3k4me1', 'h3k36me3']
-			for histoneFileInd in range(0, len(files)):
-				histoneData = InputParser().getHistoneMarksFromFile(files[histoneFileInd], types[histoneFileInd])
+		
+		print("Getting histone marks")
+		files = [settings.files['h3k9me3'], settings.files['h3k4me3'], settings.files['h3k27ac'], settings.files['h3k27me3'],
+					settings.files['h3k4me1'], settings.files['h3k36me3']]
+		types = ['h3k9me3', 'h3k4me3', 'h3k27ac', 'h3k27me3', 'h3k4me1', 'h3k36me3']
+		for histoneFileInd in range(0, len(files)):
+			histoneData = InputParser().getHistoneMarksFromFile(files[histoneFileInd], types[histoneFileInd])
 			
-				#map the histone marks to the TADs
-				tadData = self.mapElementsToTads(histoneData, tadData)
+			#map the histone marks to the TADs
+			tadData = self.mapElementsToTads(histoneData, tadData)
 		
 		#9. Get DNAse I hypersensitivty sites
-		if settings.general['dnaseI'] == True:
-			print("Getting DNAse I hypersensitivity sites")
+		print("Getting DNAse I hypersensitivity sites")
 			
-			dnaseIData = InputParser().getDNAseIFromFile(settings.files['dnaseIFile'])
+		dnaseIData = InputParser().getDNAseIFromFile(settings.files['dnaseIFile'])
 			
-			tadData = self.mapElementsToTads(dnaseIData, tadData)
+		tadData = self.mapElementsToTads(dnaseIData, tadData)
 		
 		#10. get chromHMM states
-		if settings.general['chromHMM'] == True:
-			print("Getting chromHMM states")
-			chromHmmData = InputParser().getChromHmmFromFile(settings.files['chromHmmFile'])
+		print("Getting chromHMM states")
+		chromHmmData = InputParser().getChromHmmFromFile(settings.files['chromHmmFile'])
 			
-			tadData = self.mapElementsToTads(chromHmmData, tadData)
+		tadData = self.mapElementsToTads(chromHmmData, tadData)
 		
 		#11. get RNAPolII peaks
-		if settings.general['rnaPol'] == True:
-			print("Getting rnaPol binding sites")
-			rnaPolData = InputParser().getRnaPolFromFile(settings.files['rnaPolFile'])
+		print("Getting rnaPol binding sites")
+		rnaPolData = InputParser().getRnaPolFromFile(settings.files['rnaPolFile'])
 			
-			tadData = self.mapElementsToTads(rnaPolData, tadData)
+		tadData = self.mapElementsToTads(rnaPolData, tadData)
 		
 		#12. get super enhancers
-		if settings.general['superEnhancers'] == True:
-			print("Getting super enhancers")
-			superEnhancerData = InputParser().getSuperEnhancersFromFile(settings.files['superEnhancerFile'])
+		print("Getting super enhancers")
+		superEnhancerData = InputParser().getSuperEnhancersFromFile(settings.files['superEnhancerFile'])
 			
-			tadData = self.mapElementsToTads(superEnhancerData, tadData)
+		tadData = self.mapElementsToTads(superEnhancerData, tadData)
 		
-		if settings.general['ctcfSites'] == True:
-			print("Getting ctcf sites")
-			ctcfData = InputParser().getCTCFSitesFromFile(settings.files['ctcfFile'])
+		#13. get CTCF sites
+		print("Getting ctcf sites")
+		ctcfData = InputParser().getCTCFSitesFromFile(settings.files['ctcfFile'])
 			
-			tadData = self.mapElementsToTads(ctcfData, tadData)
-			tadData = self.mapCTCFStrengthToTads(ctcfData, tadData)
+		tadData = self.mapElementsToTads(ctcfData, tadData)
+		tadData = self.mapCTCFStrengthToTads(ctcfData, tadData)
 		
 		
 		#3. Map SVs to all neighborhood elements
-		if mode == "SV":
-			print("Mapping SVs to the neighborhood")
-			self.mapSVsToNeighborhood(genes, svData, tadData)
-
-		# if settings.general['snvs'] == False: #in this case, we want to filter out pairs that have SNV effects.
-		# 	print('Mapping SNVs to genes')
-		# 	self.mapSNVsToNeighborhood(genes, settings.files['snvDir'])
-		# 	
-		# if settings.general['cnvs'] == False: #in this case, we want to filter out pairs that have SNV effects.
-		# 	print('Mapping CNVs to genes')
-		# 	self.mapCNVsToNeighborhood(genes, settings.files['cnvDir'])
-		# 		
-			
-
-		#Add the gene methylation to genes for MIL. Do this step here, because the file is huge and takes a long time to process.
-		if settings.general['methylation'] == True:
-			InputParser().getMethylationFromFile(settings.files['methylationFile'], genes)
-		
+		print("Mapping SVs to the neighborhood")
+		self.mapSVsToNeighborhood(genes, svData, tadData)
 			
 	def mapCTCFStrengthToTads(self, ctcfData, tadData):
 		

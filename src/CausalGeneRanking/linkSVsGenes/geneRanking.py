@@ -27,7 +27,7 @@ class GeneRanking:
 	
 	"""
 	
-	def __init__(self, genes, svData, mode, runId, permutationRound):
+	def __init__(self, genes, svData, runId, permutationRound):
 		"""
 			genes: (numpy array) array with the genes and their information. chr	start	end	Gene (object)
 			
@@ -227,10 +227,6 @@ class GeneRanking:
 					
 				for sv in gene.alteredElements:
 					
-					#filter out SNV/CNV effects
-					splitSV = sv.split("_")
-					sample = splitSV[6]
-					
 					instances = []
 					for element in gene.alteredElements[sv]:
 						instances.append(gene.alteredElements[sv][element])
@@ -245,10 +241,6 @@ class GeneRanking:
 			with open(outDir + '/' + runId + '/bags.pkl', 'wb') as handle:
 				pkl.dump(bags, handle, protocol=pkl.HIGHEST_PROTOCOL)
 
-	
-		self.scores = scores #Currently, we make it part of the object, but in principle this could be returned and that would be a bit nicer.
-
-				
 	def scoreBySVsInGenes(self, genes, sampleMap, geneMap):
 		"""
 			Determine for each gene how many samples have at least 1 SV overlapping with the gene. These were already mapped to the gene in the neighborhoodDefiner.
@@ -305,9 +297,6 @@ class GeneRanking:
 		scoringMatrix = np.zeros([len(sampleMap), len(geneMap)]) #store the final scores
 		geneMatrix = np.zeros(len(geneMap))
 		
-		if settings.general['gains'] == False:
-			return scoringMatrix, geneMatrix
-		
 		for geneInd in range(0, len(genes)):
 			
 			gene = genes[geneInd]
@@ -317,48 +306,48 @@ class GeneRanking:
 				geneSVSamples.append(splitSV[len(splitSV)-2])
 
 			matrixGeneInd = geneMap[gene]
-			
-			
+
+
 			if len(gene.gainedElements) > 0: #if the gene has gained elements
 				for sample in gene.gainedElements:
-					
-					#If mutually exclusive mode, skip genes that also have coding SVs in the same sample. 
-					if settings.general['nonCoding'] == True and settings.general['coding'] == False:
-						
-						
-							
-						if sample in geneSVSamples:
-							continue
-					
-					#check if we need to ignore a pair if it has an SNV in that patient.  
-					if settings.general['nonCoding'] == True and settings.general['snvs'] == False: 
 
-						if sample in gene.SNVs:
-							continue
-					
-					#check if there is a CNV in the patient. 
-					if settings.general['nonCoding'] == True and settings.general['cnvs'] == False: 
-
-						if sample in gene.CNVs:
-							continue
+					#If mutually exclusive mode, skip genes that also have coding SVs in the same sample.
+					# if settings.general['nonCoding'] == True and settings.general['coding'] == False:
+					#
+					#
+					#
+					# 	if sample in geneSVSamples:
+					# 		continue
+					#
+					# #check if we need to ignore a pair if it has an SNV in that patient.
+					# if settings.general['nonCoding'] == True and settings.general['snvs'] == False:
+					# 
+					# 	if sample in gene.SNVs:
+					# 		continue
+					# 
+					# #check if there is a CNV in the patient. 
+					# if settings.general['nonCoding'] == True and settings.general['cnvs'] == False: 
+					# 
+					# 	if sample in gene.CNVs:
+					# 		continue
 					
 					gain = False #Make sure that we only focus on gained elements of the provided type. 
 					for element in gene.gainedElements[sample]:
 						if element == elementType:
 							gain = True
-					if gain == True: 
+					if gain == True:
 						sampleInd = sampleMap[sample]
 
 						scoringMatrix[sampleInd][matrixGeneInd] = 1
 						geneMatrix[geneInd] += 1
-				
-		
+
+
 		return scoringMatrix, geneMatrix
-	
+
 	def scoreByElementLosses(self, genes, sampleMap, geneMap, elementType):
 		"""
-			Determine for each gene how many elements are lost. 
-			
+			Determine for each gene how many elements are lost.
+
 			genes:  (numpy array) array with the genes and their information. chr, start, end, geneObject
 			sampleMap: (dictionary) each sample is a key, and the value is the index of where the gene score is in the final scoring matrix.
 			geneMap: (dictionary) each gene is a key, and the value is the index of where the gene score is in the final scoring matrix.
@@ -370,10 +359,7 @@ class GeneRanking:
 		
 		scoringMatrix = np.zeros([len(sampleMap), len(geneMap)])
 		geneMatrix = np.zeros(len(geneMap))
-		
-		if settings.general['losses'] == False:
-			return scoringMatrix, geneMatrix
-		
+
 		for geneInd in range(0, len(genes)):
 			
 			gene = genes[geneInd]
@@ -387,24 +373,24 @@ class GeneRanking:
 			
 			if len(gene.lostElements) > 0:
 				for sample in gene.lostElements:
-					#If mutually exclusive mode, skip genes that also have coding SVs in the same sample. 
-					if settings.general['nonCoding'] == True and settings.general['coding'] == False:
-						
-						
-					
-						if sample in geneSVSamples:
-							continue
-					
-					#check if we need to ignore a pair if it has an SNV in that patient.  
-					if settings.general['nonCoding'] == True and settings.general['snvs'] == False: 
-
-						if sample in gene.SNVs:
-							continue
-					
-					if settings.general['nonCoding'] == True and settings.general['cnvs'] == False: 
-
-						if sample in gene.CNVs:
-							continue
+					# #If mutually exclusive mode, skip genes that also have coding SVs in the same sample. 
+					# if settings.general['nonCoding'] == True and settings.general['coding'] == False:
+					# 	
+					# 	
+					# 
+					# 	if sample in geneSVSamples:
+					# 		continue
+					# 
+					# #check if we need to ignore a pair if it has an SNV in that patient.  
+					# if settings.general['nonCoding'] == True and settings.general['snvs'] == False: 
+					# 
+					# 	if sample in gene.SNVs:
+					# 		continue
+					# 
+					# if settings.general['nonCoding'] == True and settings.general['cnvs'] == False: 
+					# 
+					# 	if sample in gene.CNVs:
+					# 		continue
 					
 					loss = False #Make sure that we only focus on lost elements of the provided type. 
 					for element in gene.lostElements[sample]:
@@ -539,10 +525,10 @@ class GeneRanking:
 						#print('gene SVs: ', geneSV)
 						
 					#If mutually exclusive mode, skip genes that also have coding SVs in the same sample. 
-					if settings.general['nonCoding'] == True and settings.general['coding'] == False:
-						
-						splitSV = sv.split("_")
-						
+					# if settings.general['nonCoding'] == True and settings.general['coding'] == False:
+					# 	
+					# 	splitSV = sv.split("_")
+					# 	
 						#check properly. If DUP or INV, do not exclude the
 						#genes within that SV, because these are affected.
 						

@@ -10,9 +10,14 @@ import re
 import numpy as np
 import glob
 
+path = sys.argv[1]
+sys.path.insert(1, path)
+
+import settings
+
 #First read the vcfs and get the scores per SV
 
-svScoreOutDir = sys.argv[1]
+svScoreOutDir = settings.files['svDir']
 
 svScoreFiles = glob.glob(svScoreOutDir + '/**/*.svScore*', recursive=True)
 

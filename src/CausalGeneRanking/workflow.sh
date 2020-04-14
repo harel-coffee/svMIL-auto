@@ -45,6 +45,7 @@ if $run; then
 	runFolder='./linkSVsGenes/'
 	#Map the SVs to genes. This also outputs bags for MIL.
 	python "$runFolder/main.py" "" "False" "0" "$settingsFolder" "$outputFolder"
+
 fi
 
 ### (REQUIRED) PART 3 - IDENTIFY PATHOGENIC SV-GENE PAIRS ###
@@ -60,6 +61,10 @@ if $run; then
 	#identify which TADs are disrupted in these patients, and compute the
 	#z-scores of the genes in these TADs. Filter out genes with coding mutations.
 	python "$runFolder/computeZScoresDisruptedTads.py" "$settingsFolder" "$outputFolder" "False"
+	
+	#split the SV-gene pairs into pathogenic/non-pathogenic, which we use later on.
+	#python splitPairsPathogenicNonPathogenic.py "$outputFolder"
+	
 fi
 
 ### PART 4 - SETTING UP FOR MULTIPLE INSTANCE LEARNING ###
@@ -76,34 +81,35 @@ if $run; then
 
 fi
 
+### FIGURE 2 - 2A-D ###
 
-### FIGURE 1 ###
+#dumpster fire
 
-### FIGURE 2 ###
+### FIGURE 2 - 2E: HEATMAP ###
 run=false
 
 if $run; then
 	runFolder='./linkSVsGenes/'
 
 	#Map the SVs to genes. Specific for germline, settings for this are different
-	#settingsFolder='./settings/settings_HMF_BRCA_germline/'
-	#python "$runFolder/main.py" "germline" "False" "0" "$settingsFolder" "$outputFolder"
+	settingsFolder='./settings/settings_HMF_BRCA_germline/'
+	python "$runFolder/main.py" "germline" "False" "0" "$settingsFolder" "$outputFolder"
 
 	#Repeat for shuffled SVs
-	#settingsFolder='./settings/settings_HMF_BRCA/'
-	#python "$runFolder/main.py" "random" "False" "0" "$settingsFolder" "$outputFolder"
+	settingsFolder='./settings/settings_HMF_BRCA/'
+	python "$runFolder/main.py" "random" "True" "0" "$settingsFolder" "$outputFolder"
 
 	#split affected/non-affected pairs
 	inFile="$outputFolder/linkedSVGenePairs/nonCoding_geneSVPairs.txt_"
 	zScoresFile="$outputFolder/tadDisruptionsZScores/zScores.txt"
-	#python "outputDegNonDegPairsFeatures.py" "$inFile" "$zScoresFile"
+	#python "$runFolder/outputDegNonDegPairsFeatures.py" "$inFile" "$zScoresFile"
 
 	#Then make the heatmap plot
-	python "plotCodingNonCodingFeatures.py" "$outputFolder"
+	python "$runFolder/plotCodingNonCodingFeatures.py" "$outputFolder"
 
 fi
 
-### FIGURE 3 - MIL PERFORMANCE CURVES PER SV TYPE, PER-PATIENT CV ###
+### FIGURE 3 - 3A: MIL PERFORMANCE CURVES PER SV TYPE, PER-PATIENT CV ###
 run=false
 
 if $run; then
@@ -111,6 +117,49 @@ if $run; then
 
 	#test the classifier and output the MIL curves
 	python "$runFolder/runMILClassifier.py" "$outputFolder" "False" "True" "False" "False" "False"
+
+fi
+
+### FIGURE 3 - 3D: METHOD COMPARISON PRE-PROCESSING ###
+run=false
+
+if $run; then
+	runFolder='./methodComparison/'
+
+	#Fix the VCFs so that VEP and SVScore can use them
+	python "$runFolder/fixVCFs.py" "$settingsFolder"
+
+	#First run VEP in parallel
+	qsub -t 1-181 -tc 75 "$runFolder/runVEP.sh"
+
+	#Then also run SVScore in parallel
+	#This requires some additional setup; see notes in script
+	qsub -t 1-181 -tc 75 "$runFolder/runSVScore.sh"
+
+fi
+
+### FIGURE 3 - 3D: METHOD COMPARISON GENERATING FIGURE ###
+run=false
+
+if $run; then
+	runFolder='./methodComparison/'
+
+	#Get the TPRs and FPRs of each method
+	#For simple ML
+	python "$runFolder/simpleML.py" "$outputFolder"
+
+	#For VEP
+	#Should have been a better output folder in hindsight
+	#make sure it matches the one in runVEP.sh.
+	vepOutDir='/hpc/compgen/users/mnieboer/Tools/ensembl-vep/outDir'
+	python "$runFolder/getVEPTprFpr.py" "$vepOutDir"
+	
+	#For SVScore
+	python "$runFolder/getSVScoreTprFpr.py" "$settingsFolder"
+
+	#Then gather all the TPRs and FPRs output from these method and add them in this script.
+	#was done by hand for simplicity.
+	python "$runFolder/plotResultsGraph.py" "$outputFolder"
 
 fi
 
@@ -122,34 +171,48 @@ if $run; then
 	runFolder='./multipleInstanceLearning/'
 
 	#first output the full similarity matrix to train the classifier on the whole dataset.
-	#python "$runFolder/generateSimilarityMatrices.py" "$outputFolder" "False" "False" "False" "False" "True"
+	python "$runFolder/generateSimilarityMatrices.py" "$outputFolder" "False" "False" "False" "False" "True"
 
 	#Generate the plotting data, and plot the feature importances for ALL instances,
-	#don't split into cosmic/non-cosmic and gains/losses
-	#python "$runFolder/plotFeatureImportances.py" "$outputFolder" "True" "ALL" "ALL" "$settingsFolder" "False"
+	#don't split into cosmic/non-cosmic and gains/losses. We need these for normalization.
+	python "$runFolder/plotFeatureImportances.py" "$outputFolder" "True" "ALL" "ALL" "$settingsFolder" "False"
 
 	#plot for GAINS only
-	#python "$runFolder/plotFeatureImportances.py" "$outputFolder" "True" "GAIN" "ALL" "$settingsFolder" "False"
+	python "$runFolder/plotFeatureImportances.py" "$outputFolder" "True" "GAIN" "ALL" "$settingsFolder" "False"
 
 	#plot for LOSSES only
-	#python "$runFolder/plotFeatureImportances.py" "$outputFolder" "True" "LOSS" "ALL" "$settingsFolder" "False"
+	python "$runFolder/plotFeatureImportances.py" "$outputFolder" "True" "LOSS" "ALL" "$settingsFolder" "False"
 
-	#needs a step to output deg/non-deg pairs
-
-	##Recurrence figure
-	#python "$runFolder/recurrenceAnalysis.py" "$outputFolder"
+	#Recurrence figure
+	#This depends on the pair labels from the ALL feature importance run.
+	python "$runFolder/recurrenceAnalysis.py" "$outputFolder"
 
 fi
 
 
-
 ### SUPPLEMENTARY FIGURE 1 ###
 
-### SUPPLEMENTARY FIGURE 2 ###
+### SUPPLEMENTARY FIGURE 2 - lopoCV random labels, chrSV and leave-bags out CV ###
+run=false
 
-### SUPPLEMENTARY FIGURE 3 ###
+if $run; then
+	runFolder='./multipleInstanceLearning/'
 
-### SUPPLEMENTARY FIGURE 4 ###
+	#Get the performance with random labels using leave-one-patient-out CV
+	python "$runFolder/runMILClassifier.py" "$outputFolder" "False" "True" "False" "False" "True"
+
+	#Get the performance using leave-one-chromosome-out CV
+	python "$runFolder/generateSimilarityMatrices.py" "$outputFolder" "False" "False" "True" "False" "False"
+	python "$runFolder/runMILClassifier.py" "$outputFolder" "False" "False" "True" "False" "False"
+
+	#Get the performance using leave-bags-out CV
+	python "$runFolder/generateSimilarityMatrices.py" "$outputFolder" "False" "False" "False" "True" "False"
+	python "$runFolder/runMILClassifier.py" "$outputFolder" "False" "False" "False" "True"
+
+fi
+
+
+### SUPPLEMENTARY FIGURE 3 - Full feature importance plots ###
 run=false
 
 if $run; then
@@ -163,7 +226,7 @@ if $run; then
 
 fi
 
-### SUPPLEMENTARY FIGURE 5 - FEATURE IMPORTANCES SPECIFIC FOR COSMIC GENES ###
+### SUPPLEMENTARY FIGURE 4 - FEATURE IMPORTANCES SPECIFIC FOR COSMIC GENES ###
 run=false
 
 if $run; then
@@ -171,22 +234,22 @@ if $run; then
 
 	#Generate the plotting data, and plot the feature importances for ALL instances,
 	#don't split into cosmic/non-cosmic and gains/losses
-	#python "$runFolder/plotFeatureImportances.py" "$outputFolder" "True" "ALL" "COSMIC" "$settingsFolder" "False"
+	python "$runFolder/plotFeatureImportances.py" "$outputFolder" "True" "ALL" "COSMIC" "$settingsFolder" "False"
 
 	#plot for GAINS only
 	python "$runFolder/plotFeatureImportances.py" "$outputFolder" "True" "GAIN" "COSMIC" "$settingsFolder" "False"
 
-	#plot for LOSSES only
-	#python "$runFolder/plotFeatureImportances.py" "$outputFolder" "True" "LOSS" "COSMIC" "$settingsFolder" "False"
+	#plot for LOSSES only (this will fail because there are no losses for cosmic genes.)
+	python "$runFolder/plotFeatureImportances.py" "$outputFolder" "True" "LOSS" "COSMIC" "$settingsFolder" "False"
 
 	#then run for non-cosmic
-	#python "$runFolder/plotFeatureImportances.py" "$outputFolder" "True" "ALL" "NONCOSMIC" "$settingsFolder" "False"
+	python "$runFolder/plotFeatureImportances.py" "$outputFolder" "True" "ALL" "NONCOSMIC" "$settingsFolder" "False"
 
 	#plot for GAINS only
-	#python "$runFolder/plotFeatureImportances.py" "$outputFolder" "True" "GAIN" "NONCOSMIC" "$settingsFolder" "False"
+	python "$runFolder/plotFeatureImportances.py" "$outputFolder" "True" "GAIN" "NONCOSMIC" "$settingsFolder" "False"
 
 	#plot for LOSSES only
-	#python "$runFolder/plotFeatureImportances.py" "$outputFolder" "True" "LOSS" "NONCOSMIC" "$settingsFolder" "False"
+	python "$runFolder/plotFeatureImportances.py" "$outputFolder" "True" "LOSS" "NONCOSMIC" "$settingsFolder" "False"
 
 fi
 
@@ -206,56 +269,9 @@ fi
 ### ADDITIONAL, NON-FIGURE ###
 
 #optimizing the MIL classifiers
-#simple ML
 
 
-## leave one patient out CV with random labels
-run=false
-
-if $run; then
-	runFolder='./multipleInstanceLearning/'
-
-	#test the classifier and output the MIL curves
-	python "$runFolder/runMILClassifier.py" "$outputFolder" "False" "True" "False" "False" "True"
-
-fi
-
-
-## Per-chromosome CV
-run=false
-
-if $run; then
-	runFolder='./multipleInstanceLearning/'
-
-	#python "$runFolder/generateSimilarityMatrices.py" "$outputFolder" "False" "False" "True" "False" "False"
-
-	python "$runFolder/runMILClassifier.py" "$outputFolder" "False" "False" "True" "False" "False"
-
-fi
-
-## leave bags out CV
-run=false
-
-if $run; then
-	runFolder='./multipleInstanceLearning/'
-
-	python "$runFolder/generateSimilarityMatrices.py" "$outputFolder" "False" "False" "False" "True" "False"
-
-	python "$runFolder/runMILClassifier.py" "$outputFolder" "False" "False" "False" "True"
-
-fi
-
-## checking cosmic in CV loop
-run=false
-
-if $run; then
-	runFolder='./multipleInstanceLearning/'
-
-	python "$runFolder/runMILClassifier.py" "$outputFolder" "False" "False"
-
-fi
-
-#cosmic analysis
+### COSMIC AALYSIS WITHIN LEAVE-ONE-PATIENT-OUT-CV ###
 run=false
 
 if $run; then
@@ -265,37 +281,8 @@ if $run; then
 
 fi
 
-#comparing to simple ML
-run=false
-
-if $run; then
-	runFolder='./'
-
-	python "$runFolder/simpleML.py" "$outputFolder" "$settingsFolder"
-
-fi
-
-#test with promoters, strengths etc
-run=false
-
-if $run; then
-	runFolder='./multipleInstanceLearning/'
-	#outputFolder='./output/test'
-
-	#normalize bags
-	#python "$runFolder/normalizeBags.py" "$outputFolder"
-
-	#chrCV
-	#python "$runFolder/generateSimilarityMatrices.py" "$outputFolder" "False" "False" "True" "False" "False"
-
-	python "$runFolder/runMILClassifier.py" "$outputFolder" "False" "False" "True" "False" "False"
-
-
-fi
-
-
 #tad plot
-run=true
+run=false
 
 if $run; then
 	runFolder='./tadDisruptionsZScores/'

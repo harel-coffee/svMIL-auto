@@ -56,8 +56,6 @@ startTime = time.time() #Keep run time of the program
 #0. Collect all the relevant parameters here for clarity
 uuid = sys.argv[1] #This uuid will normally be provided by the sh script when running in parallel. It is the folder name that will be created in RankedGenes, and where the output will be written to. 
 permutationYN = sys.argv[2] #True or False depending on if we want to permute or not
-mode = settings.general['mode'] #Either SV or SNV, then the relevant functions for this data type will be called.
-#permutationRound is parameter 5, only used when running on the HPC
 
 #1. Read and parse the causal genes and the nonCausal genes. For now, keep them separate to test on causal/non-causal genes separately
 causalGenes = InputParser().readCausalGeneFile(settings.files['causalGenesFile'])
@@ -69,17 +67,16 @@ causalGenes = np.concatenate((causalGenes, nonCausalGenes), axis=0)
 
 #2. Read the SVs or SNVs depending on the mode.
 variantData = []
-if mode == "SV":
-	
-	if settings.general['source'] == 'TCGA' or settings.general['source'] == 'PCAWG':
-		
-		print("Reading SV data TCGA or PCAWG")
-		svFile = settings.files['svFile']
-		svData = InputParser().getSVsFromFile(svFile, "all")
-	if settings.general['source'] == 'HMF':
-		print("Reading SV data")
-		svDir = settings.files['svDir']
-		svData = InputParser().getSVsFromFile_hmf(svDir)
+
+if settings.general['source'] == 'TCGA' or settings.general['source'] == 'PCAWG':
+
+	print("Reading SV data TCGA or PCAWG")
+	svFile = settings.files['svFile']
+	svData = InputParser().getSVsFromFile(svFile, "all")
+if settings.general['source'] == 'HMF':
+	print("Reading SV data")
+	svDir = settings.files['svDir']
+	svData = InputParser().getSVsFromFile_hmf(svDir)
 
 delCount = 0
 dupCount = 0
@@ -103,45 +100,20 @@ if permutationYN == "True":
 	print("Shuffling variants")
 	genomicShuffler = GenomicShuffler()
 	#Shuffle the variants, provide the mode such that the function knows how to permute
-	if mode == "SV":
-		svData = genomicShuffler.shuffleSVs(svData)
-	if mode == "SNV":
-		snvData = genomicShuffler.shuffleSNVs(snvData)
-	if mode == "SV+SNV":
-		svData = genomicShuffler.shuffleSVs(svData)
-		snvData = genomicShuffler.shuffleSNVs(snvData)
 
+	svData = genomicShuffler.shuffleSVs(svData)
+	
 permutationRound = ""
 if permutationYN == "True":
 	permutationRound = sys.argv[3]
 
 #2. Get the neighborhood for these genes based on the SVs or SNVs
-if mode == "SV":
-	print("Defining the neighborhood for the causal genes and the SVs")
-	NeighborhoodDefiner(causalGenes, svData, None, mode) #Provide the mode to ensure that the right variant type is used (different positions used in annotation)
-	
+print("Defining the neighborhood for the causal genes and the SVs")
+NeighborhoodDefiner(causalGenes, svData)
 
 #3. Do ranking of the genes and report the causal SVs
 print("Ranking the genes for the variants")
-geneRanking = GeneRanking(causalGenes[:,3], svData, mode, sys.argv[1], permutationRound)
-exit()
-#Save the causal genes up until here and load them for faster development of the deep learning part
-# import pickle
-# 
-# filehandler = open("GenesAndNeighborhoods.pkl", 'wb')
-# pickle.dump(causalGenes, filehandler)
-# filehandler.close()
-#
-# #For using deep learning, call the channel visualizer that makes channels for the disruptions and visualizes that. 
-# ChannelVisualizer(causalGenes[:,3], mode, genome)
-# 
-# exit()
-
-
-#Output the ranking scores to a file. 
-
-
-OutputWriter().writeOutput(geneRanking, causalGenes, uuid, permutationYN, permutationRound)
+geneRanking = GeneRanking(causalGenes[:,3], svData, sys.argv[1], permutationRound)
 
 endTime = time.time()
 print("The program took ", endTime-startTime, " seconds to complete")
