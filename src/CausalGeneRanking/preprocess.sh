@@ -59,18 +59,27 @@ if $run; then
 fi
 
 ### PARSE GERMLINE VARIANTS ###
-run=true
+run=false
 
 #Requires download of germline variants. See svs/readme.txt
 
 if $run; then
 	runFolder='./DataProcessing'
 	inFile='../../data/svs/GRCh37_hg19_variants_2020-02-25.txt'
-	outFile='../../data/svs/GRCh37_hg19_variants_2020-02-25_filtered.txt'
+	outFile='../../data/cpg/cpg2.bed'
 
-	python "$runFolder/filterDgvVariants.py" "$inFile" "$outFile"
+	python "$runFolder/cpgToBed.py" "$inFile" "$outFile"
 
 fi
 
+### TMM NORMALIZATION ###
+run=false
 
+#Requires download of germline variants. See svs/readme.txt
 
+if $run; then
+	runFolder='./DataProcessing'
+	
+	Rscript "$runFolder/normalizeEdgeR.R"
+
+fi
