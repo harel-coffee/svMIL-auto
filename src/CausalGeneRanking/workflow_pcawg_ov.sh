@@ -6,8 +6,8 @@
 #$ -M m.m.nieboer@umcutrecht.nl
 #$ -l h_vmem=16G
 #$ -l h_rt=24:00:00
-#$ -e workflow_err
-#$ -o workflow_out
+#$ -e workflow_ov_err
+#$ -o workflow_ov_out
 
 ### INSTRUCTIONS ###
 
@@ -36,10 +36,23 @@ settingsFolder='./settings/settings_PCAWG_OV/'
 #Different steps will create their own intermediate folders in here
 outputFolder='output/PCAWG_OV'
 
-#the output needs to be fixed, to where settings can access it too.
+
+#First process the PCAWG SVs
+run=false
+
+if $run; then
+	runFolder='./DataProcessing/'
+	inputFolder='../../data/svs/icgc/open/'
+	metadataFile='../../data/svs/icgc_metadata.tsv'
+	outFile='../../data/svs/ov_pcawg_parsed.txt'
+
+	#Process the PCAWG SVs into a file specific for ovarian.
+	python "$runFolder/parsePCAWGSVs.py" "$settingsFolder" "$inputFolder" "$metadataFile" "$outFile"
+
+fi
 
 ### (REQUIRED) PART 2 - LINK SVS TO GENES ###
-run=true #Only skip this step if all output has already been generated!
+run=false #Only skip this step if all output has already been generated!
 
 if $run; then
 	runFolder='./linkSVsGenes/'
@@ -49,7 +62,7 @@ if $run; then
 fi
 
 ### (REQUIRED) PART 3 - IDENTIFY PATHOGENIC SV-GENE PAIRS ###
-run=false
+run=true
 
 if $run; then
 	runFolder='./tadDisruptionsZScores/'
@@ -63,18 +76,18 @@ if $run; then
 	python "$runFolder/computeZScoresDisruptedTads.py" "$settingsFolder" "$outputFolder" "False"
 	
 	#split the SV-gene pairs into pathogenic/non-pathogenic, which we use later on.
-	#python splitPairsPathogenicNonPathogenic.py "$outputFolder"
-	
+	runFolder='./linkSVsGenes/'
+	python "$runFolder/splitPairsPathogenicNonPathogenic.py" "$outputFolder"
 fi
 
 ### PART 4 - SETTING UP FOR MULTIPLE INSTANCE LEARNING ###
-run=false #these steps only need to be done when outputting anything related to multiple instance learning
+run=true #these steps only need to be done when outputting anything related to multiple instance learning
 
 if $run; then
 	runFolder='./multipleInstanceLearning/'
 
 	#first normalize the bags
-	#python "$runFolder/normalizeBags.py" "$outputFolder"
+	python "$runFolder/normalizeBags.py" "$outputFolder"
 
 	#then generate the similarity matrices for all SVs
 	python "$runFolder/generateSimilarityMatrices.py" "$outputFolder" "False" "True" "False" "False" "False"
@@ -82,7 +95,7 @@ if $run; then
 fi
 
 ### FIGURE 3 - MIL PERFORMANCE CURVES PER SV TYPE, PER-PATIENT CV ###
-run=false
+run=true
 
 if $run; then
 	runFolder='./multipleInstanceLearning/'

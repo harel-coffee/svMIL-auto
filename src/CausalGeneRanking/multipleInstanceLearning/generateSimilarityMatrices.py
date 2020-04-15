@@ -11,6 +11,8 @@ import os
 import numpy as np
 import pickle as pkl
 import random
+random.seed(785)
+np.random.seed(785)
 
 import matplotlib
 matplotlib.use('Agg')
@@ -64,7 +66,7 @@ print('initial deg pairs: ', degPairs.shape[0])
 mutDir = outDir + '/patientGeneMutationPairs/'
 cnvPatientsAmp = np.load(mutDir + 'cnvPatientsAmp.npy', allow_pickle=True, encoding='latin1').item()
 svPatientsDup = np.load(mutDir + 'svPatientsDup.npy', allow_pickle=True, encoding='latin1').item()
-svGenePairs = np.loadtxt(outDir + '/linkedSVGenePairs/promoters/nonCoding_geneSVPairs.txt_', dtype='object')
+svGenePairs = np.loadtxt(outDir + '/linkedSVGenePairs/nonCoding_geneSVPairs.txt_', dtype='object')
 splitSVGenePairs = []
 for pair in svGenePairs:
 
@@ -281,7 +283,7 @@ for svType in svTypes:
 
 	#set a random seed to always subsample the same set
 	if leaveOnePatientOut == 'False':
-		np.random.seed(0)
+		
 		#subsample the negative set to the same number of positives.
 		negativeBagsSubsampled = np.random.choice(negativeBags, positiveBags.shape[0])
 
@@ -401,7 +403,7 @@ for svType in svTypes:
 				testPositiveBags = np.array(testPositiveBags)
 				testNegativeBags = np.array(testNegativeBags)
 
-				random.seed(785)
+				
 				randInd = random.sample(range(0, testNegativeBags.shape[0]), testPositiveBags.shape[0])
 				testSubsetNegativeBags = testNegativeBags[randInd]
 

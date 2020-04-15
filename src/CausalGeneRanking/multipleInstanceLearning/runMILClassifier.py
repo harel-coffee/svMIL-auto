@@ -15,7 +15,6 @@ from sklearn import model_selection
 from sklearn.metrics import plot_roc_curve, auc
 import matplotlib.pyplot as plt
 from scipy import interp
-from random import shuffle
 import os
 import os.path
 import glob
@@ -31,7 +30,6 @@ leaveBagsOut = sys.argv[5] #random bags in each CV fold
 randomLabels = sys.argv[6] #running CV with randomized labels, only implemented for lopoCV
 
 svTypes = ['DEL', 'DUP', 'INV', 'ITX']
-svTypes = ['INV', 'ITX', 'DUP']
 
 outDir = sys.argv[1]
 

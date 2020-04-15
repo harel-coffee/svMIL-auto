@@ -34,9 +34,7 @@ settingsFolder='./settings/settings_HMF_BRCA/'
 
 #Create a folder in which all output for this data will be stored
 #Different steps will create their own intermediate folders in here
-outputFolder='output/HMF_BRCA'
-
-#the output needs to be fixed, to where settings can access it too.
+outputFolder='output/HMF_BRCA_test'
 
 ### (REQUIRED) PART 2 - LINK SVS TO GENES ###
 run=true #Only skip this step if all output has already been generated!
@@ -44,37 +42,38 @@ run=true #Only skip this step if all output has already been generated!
 if $run; then
 	runFolder='./linkSVsGenes/'
 	#Map the SVs to genes. This also outputs bags for MIL.
-	python "$runFolder/main.py" "test" "False" "0" "$settingsFolder" "$outputFolder"
+	python "$runFolder/main.py" "" "False" "0" "$settingsFolder" "$outputFolder"
 
 fi
 
 ### (REQUIRED) PART 3 - IDENTIFY PATHOGENIC SV-GENE PAIRS ###
-run=false
+run=true
 
 if $run; then
 	runFolder='./tadDisruptionsZScores/'
 
 	#first link mutations to patients. These are required to quickly check which patients
 	#have which mutations in which genes
-	#python "$runFolder/determinePatientGeneMutationPairs.py" "$settingsFolder" "$outputFolder"
+	python "$runFolder/determinePatientGeneMutationPairs.py" "$settingsFolder" "$outputFolder"
 
 	#identify which TADs are disrupted in these patients, and compute the
 	#z-scores of the genes in these TADs. Filter out genes with coding mutations.
 	python "$runFolder/computeZScoresDisruptedTads.py" "$settingsFolder" "$outputFolder" "False"
 	
 	#split the SV-gene pairs into pathogenic/non-pathogenic, which we use later on.
-	#python splitPairsPathogenicNonPathogenic.py "$outputFolder"
+	runFolder='./linkSVsGenes/'
+	python "$runFolder/splitPairsPathogenicNonPathogenic.py" "$outputFolder"
 	
 fi
 
 ### PART 4 - SETTING UP FOR MULTIPLE INSTANCE LEARNING ###
-run=false #these steps only need to be done when outputting anything related to multiple instance learning
+run=true #these steps only need to be done when outputting anything related to multiple instance learning
 
 if $run; then
 	runFolder='./multipleInstanceLearning/'
 
 	#first normalize the bags
-	#python "$runFolder/normalizeBags.py" "$outputFolder"
+	python "$runFolder/normalizeBags.py" "$outputFolder"
 
 	#then generate the similarity matrices for all SVs
 	python "$runFolder/generateSimilarityMatrices.py" "$outputFolder" "False" "True" "False" "False" "False"
@@ -192,21 +191,21 @@ fi
 ### SUPPLEMENTARY FIGURE 1 ###
 
 ### SUPPLEMENTARY FIGURE 2 - lopoCV random labels, chrSV and leave-bags out CV ###
-run=false
+run=true
 
 if $run; then
 	runFolder='./multipleInstanceLearning/'
 
 	#Get the performance with random labels using leave-one-patient-out CV
-	python "$runFolder/runMILClassifier.py" "$outputFolder" "False" "True" "False" "False" "True"
+	#python "$runFolder/runMILClassifier.py" "$outputFolder" "False" "True" "False" "False" "True"
 
 	#Get the performance using leave-one-chromosome-out CV
 	python "$runFolder/generateSimilarityMatrices.py" "$outputFolder" "False" "False" "True" "False" "False"
 	python "$runFolder/runMILClassifier.py" "$outputFolder" "False" "False" "True" "False" "False"
 
 	#Get the performance using leave-bags-out CV
-	python "$runFolder/generateSimilarityMatrices.py" "$outputFolder" "False" "False" "False" "True" "False"
-	python "$runFolder/runMILClassifier.py" "$outputFolder" "False" "False" "False" "True"
+	#python "$runFolder/generateSimilarityMatrices.py" "$outputFolder" "False" "False" "False" "True" "False"
+	#python "$runFolder/runMILClassifier.py" "$outputFolder" "False" "False" "False" "True"
 
 fi
 
@@ -286,36 +285,25 @@ run=false
 if $run; then
 	runFolder='./tadDisruptionsZScores/'
 
-	#rules, cosmicRules, expression, random
+	#run with super enhancers, and shuffled expression
+	#python "$runFolder/plotDisruptedTadZScores.py" "$outputFolder" "$settingsFolder" "True" "False" "False" "False" "se"
+	#python "$runFolder/plotDisruptedTadZScores.py" "$outputFolder" "$settingsFolder" "True" "False" "False" "True" "se"
+	#
+	##then run for promoters, also shuffle
+	#python "$runFolder/plotDisruptedTadZScores.py" "$outputFolder" "$settingsFolder" "True" "False" "False" "False" "promoter"
+	#python "$runFolder/plotDisruptedTadZScores.py" "$outputFolder" "$settingsFolder" "True" "False" "False" "True" "promoter"
+	#
+	##and finally, all rules, and shuffledpython "$runFolder/plotDisruptedTadZScores.py" "$outputFolder" "$settingsFolder" "True" "False" "False" "False" "se"
+	#python "$runFolder/plotDisruptedTadZScores.py" "$outputFolder" "$settingsFolder" "True" "False" "False" "False" "all"
+	#python "$runFolder/plotDisruptedTadZScores.py" "$outputFolder" "$settingsFolder" "True" "False" "False" "True" "all"
+	#
+	##also generate shuffled expression for enh and eQTL_eh_se, which are already there
+	#python "$runFolder/plotDisruptedTadZScores.py" "$outputFolder" "$settingsFolder" "True" "False" "False" "True" "eQTL_se_enh"
+	#python "$runFolder/plotDisruptedTadZScores.py" "$outputFolder" "$settingsFolder" "True" "False" "False" "True" "enh"
 
-	#first a run with rules and expression cutoff
-	#python "$runFolder/plotDisruptedTadZScores.py" "$outputFolder" "$settingsFolder" "True" "False" "True" "False"
-
-	#also re-run z-scores with random expression to get plot with randomized expression.
-	#python "$runFolder/computeZScoresDisruptedTads.py" "$settingsFolder" "$outputFolder" "True"
-	#python "$runFolder/plotDisruptedTadZScores.py" "$outputFolder" "$settingsFolder" "True" "False" "True" "True"
-
-	#then a run with all genes and cutoff, but no rules
-	#python "$runFolder/plotDisruptedTadZScores.py" "$outputFolder" "$settingsFolder" "False" "False" "True" "False"
-
-	#and finally a run with cosmic rules and expression cutoff
-	python "$runFolder/plotDisruptedTadZScores.py" "$outputFolder" "$settingsFolder" "False" "True" "False" "False"
-
-	python "$runFolder/plotDisruptedTadZScores.py" "$outputFolder" "$settingsFolder" "False" "True" "False" "True"
-
-	#python "$runFolder/plotDisruptedTadZScores.py" "$outputFolder" "$settingsFolder" "False" "True" "False" "False"
-
-	#python "$runFolder/plotDisruptedTadZScores.py" "$outputFolder" "$settingsFolder" "False" "True" "True" "True"
-
-	#rules, random SVs, no cutoff.
-	#python "$runFolder/plotDisruptedTadZScores.py" "$outputFolder" "$settingsFolder" "True" "False" "False" "True"
-
-	#rules,
-	#python "$runFolder/plotDisruptedTadZScores.py" "$outputFolder" "$settingsFolder" "True" "False" "False" "False"
-
-	#python "$runFolder/plotDisruptedTadZScores.py" "$outputFolder" "$settingsFolder" "True" "False" "True" "False"
-
-	#python "$runFolder/plotDisruptedTadZScores.py" "$outputFolder" "$settingsFolder" "True" "False" "True" "False"
+	#and run for all genes, no rules
+	python "$runFolder/plotDisruptedTadZScores.py" "$outputFolder" "$settingsFolder" "False" "False" "False" "False" "all"
+	python "$runFolder/plotDisruptedTadZScores.py" "$outputFolder" "$settingsFolder" "False" "False" "False" "True" "all"
 
 
 fi

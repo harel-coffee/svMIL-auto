@@ -27,14 +27,13 @@ import matplotlib
 
 bins = 10
 
-def getBinScores(zScores, rules, cosmicRules, expressionCutoff, randomExpression, svType):
+def getBinScores(zScores, rules, cosmicRules, expressionCutoff, randomExpression, svType, elementType):
 
 	splitZScores = []
 	allPatients = []
 	for zScore in zScores:
 		splitScore = zScore[0].split("_")
 
-		#if zScore[3] != 'False': #only look at the ones which we actually mapped.
 		splitZScores.append([splitScore[0], splitScore[1], float(zScore[5])])
 
 		if splitScore[0] not in allPatients:
@@ -47,8 +46,10 @@ def getBinScores(zScores, rules, cosmicRules, expressionCutoff, randomExpression
 
 	#Combine the genes into one set.
 	allGenes = np.concatenate((causalGenes, nonCausalGenes), axis=0)
-	if cosmicRules == 'True':
-		allGenes = causalGenes
+	#if cosmicRules == 'True':
+	#	allGenes = causalGenes
+
+	#allGenes = causalGenes
 
 	causalGeneList = []
 	for gene in causalGenes:
@@ -68,8 +69,7 @@ def getBinScores(zScores, rules, cosmicRules, expressionCutoff, randomExpression
 				continue
 
 		svEntry = sv[0] + "_" + str(sv[1]) + "_" + str(sv[2]) + "_" + sv[3] + "_" + str(sv[4]) + "_" + str(sv[5]) + "_" + sv[8].sampleName
-		#if svEntry not in excludedSVs:
-		#	filteredSVs.append(sv)
+
 		filteredSVs.append(sv)
 		if sv[8].svType not in types:
 			types.append(sv[8].svType)
@@ -211,8 +211,6 @@ def getBinScores(zScores, rules, cosmicRules, expressionCutoff, randomExpression
 			if pairStr not in tadPairsFiltered:
 				tadPairsFiltered[pairStr] = pairPatients
 
-	#np.save('tadPairsFiltered_' + svType + '.npy', tadPairsFiltered)
-	#tadPairsFiltered = np.load('tadPairsFiltered_' + svType + '.npy', allow_pickle=True, encoding='latin1').item()
 	
 	#also use a map for the gene names
 	geneNameConversionMap = dict()
@@ -233,16 +231,36 @@ def getBinScores(zScores, rules, cosmicRules, expressionCutoff, randomExpression
 			geneNameConversionMap[splitEnsgId[0]] = geneName
 
 
-	if rules == 'True':
-		ruleBasedCombinations = np.loadtxt('output/HMF_BRCA/linkedSVGenePairs/nonCoding_geneSVPairs.txt_', dtype='object')
-		ruleBasedPairs = []
-		ruleBasedPairsSVs = []
-		for combination in ruleBasedCombinations:
+	#if rules == 'True':
+	ruleBasedCombinations = np.loadtxt('output/HMF_BRCA/linkedSVGenePairs/nonCoding_geneSVPairs.txt_', dtype='object')
+	ruleBasedPairs = []
+	ruleBasedPairsSVs = []
+	for combination in ruleBasedCombinations:
+		splitPair = combination[0].split('_')
 
-			splitPair = combination[0].split('_')
+		#use for the CNV amp check
+		ruleBasedPairsSVs.append(splitPair[0] + '_' + splitPair[7] + '_' + splitPair[12])
 
+		#use to exclude based on rules
+		#now check for specific features.
+		#eQTLs: 0 and 26, enhancers: 1 and 27, SEs: 24, 50
+		if elementType == 'eQTL_se_enh':
+			if combination[1] == '1.0' or combination[27] == '1.0' or combination[2] == '1.0' or combination[28] == '1.0' or combination[25] == '1.0' or combination[51] == '1.0':
+				ruleBasedPairs.append(splitPair[0] + '_' + splitPair[7])
+		elif elementType == 'enh':
+			#enhancers only
+			if combination[2] == '1.0' or combination[28] == '1.0':
+				ruleBasedPairs.append(splitPair[0] + '_' + splitPair[7])
+		elif elementType == 'se':
+			#se only
+			if combination[25] == '1.0' or combination[51] == '1.0':
+				ruleBasedPairs.append(splitPair[0] + '_' + splitPair[7])
+		elif elementType == 'promoter':
+			if combination[3] == '1.0' or combination[29] == '1.0':
+				ruleBasedPairs.append(splitPair[0] + '_' + splitPair[7])
+		else: #add everything, without filter.
 			ruleBasedPairs.append(splitPair[0] + '_' + splitPair[7])
-			ruleBasedPairsSVs.append(splitPair[0] + '_' + splitPair[7] + '_' + splitPair[12])
+
 	# elif rules == 'True' and randomExpression == 'True':
 	# 	ruleBasedCombinations = np.loadtxt('output/HMF_BRCA/linkedSVGenePairs/random/nonCoding_geneSVPairs.txt_0', dtype='object')
 	# 	ruleBasedPairs = []
@@ -250,19 +268,19 @@ def getBinScores(zScores, rules, cosmicRules, expressionCutoff, randomExpression
 	# 	for combination in ruleBasedCombinations:
 	#
 	# 		splitPair = combination[0].split('_')
-	# 
+	#
 	# 		ruleBasedPairs.append(splitPair[0] + '_' + splitPair[7])
 	# 		ruleBasedPairsSVs.append(splitPair[0] + '_' + splitPair[7])
-	elif cosmicRules == 'True':
-		ruleBasedCombinations = np.loadtxt('output/HMF_BRCA/linkedSVGenePairs/cosmic/nonCoding_geneSVPairs.txt_', dtype='object')
-		ruleBasedPairs = []
-		ruleBasedPairsSVs = []
-		for combination in ruleBasedCombinations:
-	
-			splitPair = combination[0].split('_')
-	
-			ruleBasedPairs.append(splitPair[0] + '_' + splitPair[7])
-			ruleBasedPairsSVs.append(splitPair[0] + '_' + splitPair[7] + '_' + splitPair[12])
+	# elif cosmicRules == 'True':
+	# 	ruleBasedCombinations = np.loadtxt('output/HMF_BRCA/linkedSVGenePairs/cosmic/nonCoding_geneSVPairs.txt_', dtype='object')
+	# 	ruleBasedPairs = []
+	# 	ruleBasedPairsSVs = []
+	# 	for combination in ruleBasedCombinations:
+	#
+	# 		splitPair = combination[0].split('_')
+	#
+	# 		ruleBasedPairs.append(splitPair[0] + '_' + splitPair[7])
+	# 		ruleBasedPairsSVs.append(splitPair[0] + '_' + splitPair[7] + '_' + splitPair[12])
 
 	mutDir = 'output/HMF_BRCA/patientGeneMutationPairs/'
 	#Collect all patients with mutations, easier in the adjacent TAds to just filter all patienst with ANY mutations witout having to go through all types individually.
@@ -369,8 +387,8 @@ def getBinScores(zScores, rules, cosmicRules, expressionCutoff, randomExpression
 							#check cnv amp
 
 							#if gene[3].name in cnvPatientsAmp[sample] and gene[3].name not in svPatientsDup[sample]:
-							if gene[3].name in cnvPatientsAmp[sample] and gene[3].name + '_' + sample + '_DUP' not in ruleBasedPairsSVs:
-								continue
+						if gene[3].name in cnvPatientsAmp[sample] and gene[3].name + '_' + sample + '_DUP' not in ruleBasedPairsSVs:
+							continue
 
 						if svType == 'DEL':
 							#only for a deletion, we do not need to print the deleted genes.
@@ -394,21 +412,10 @@ def getBinScores(zScores, rules, cosmicRules, expressionCutoff, randomExpression
 						else:
 							finalScore = float(geneZScores[patient,2])
 
-						if expressionCutoff == 'True':
-							if finalScore < 1.5 and finalScore > -1.5:
-								continue
 							
 						allGeneZScores.append(finalScore)
 						print('LT: ', binInd, geneName, geneZScores[patient,0], finalScore)
-						# import random
-						# randInd = random.sample(range(0, zScores.shape[0]), 1)[0]
-						# randomScore = float(zScores[randInd,2])
-						# finalScore = float(geneZScores[patient,2])
-						#
-						# allGeneZScores.append(abs(finalScore - randomScore) * np.sign(finalScore))
-						# print('LT: ', binInd, geneName, geneZScores[patient,0], abs(finalScore - randomScore))
-
-
+					
 			if len(allGeneZScores) > 0:
 				binZScores[binInd] += allGeneZScores
 
@@ -449,8 +456,8 @@ def getBinScores(zScores, rules, cosmicRules, expressionCutoff, randomExpression
 							if geneName + '_' + sample not in ruleBasedPairs:
 								continue
 
-							if gene[3].name in cnvPatientsAmp[sample] and gene[3].name + '_' + sample + '_DUP' not in ruleBasedPairsSVs:
-								continue
+						if gene[3].name in cnvPatientsAmp[sample] and gene[3].name + '_' + sample + '_DUP' not in ruleBasedPairsSVs:
+							continue
 						#do the check per SV type, depending on which SV we are looking at.
 						#this is because if we have a deletion, there could still be effects from duplications in the same TAD, because we exclude genes overlapped by duplications to see dup effects.
 						#but for deletions, this is not relevant, and we should remove all such mutations.
@@ -485,14 +492,7 @@ def getBinScores(zScores, rules, cosmicRules, expressionCutoff, randomExpression
 						allGeneZScores.append(finalScore)
 						
 						print('RT: ', binInd, geneName, geneZScores[patient,0], finalScore)
-						# import random
-						# randInd = random.sample(range(0, zScores.shape[0]), 1)[0]
-						# randomScore = float(zScores[randInd,2])
-						# finalScore = float(geneZScores[patient,2])
-						# 
-						# allGeneZScores.append(abs(finalScore - randomScore) * np.sign(finalScore))
-						# print('RT: ', binInd, geneName, geneZScores[patient,0], abs(finalScore - randomScore))
-						# 
+						
 			if len(allGeneZScores) > 0:
 				#binZScores[binInd+bins].append(np.mean(allGeneZScores))
 				binZScores[binInd+bins] += allGeneZScores
@@ -720,9 +720,6 @@ def getBinScores(zScores, rules, cosmicRules, expressionCutoff, randomExpression
 					if str(z) == 'nan':
 						continue
 					
-					if expressionCutoff == 'True':
-						if z > -1.5 and z < 1.5:
-							continue
 
 					print('LAT: ', binInd, geneName, positivePatients[patientInd], z)
 					
@@ -841,9 +838,6 @@ def getBinScores(zScores, rules, cosmicRules, expressionCutoff, randomExpression
 					if str(z) == 'nan':
 						continue
 					
-					if expressionCutoff == 'True':
-						if z > -1.5 and z < 1.5:
-							continue
 						
 					print('RAT: ', binInd, geneName, positivePatients[patientInd], z)
 
@@ -873,6 +867,7 @@ rules = sys.argv[3] #apply rules yes/no
 cosmicRules = sys.argv[4] #look at cosmic genes with rules yes/no
 expressionCutoff = sys.argv[5] #use > 1.5 and < -1.5 cutoff to show genes with differences
 randomExpression = sys.argv[6]
+elementType = sys.argv[7]
 
 outFilePrefix = ''
 
@@ -893,27 +888,30 @@ if expressionCutoff == 'True':
 if randomExpression == 'True':
 	outFilePrefix += randomExpressionName
 	outFilePrefix += '_'
-# #get the z-scores per bin
-# for svType in svTypes:
-#
-# 	#get the right zScore file here depending on if we shuffle or not
-# 	if randomExpression == 'False':
-# 		zScores = np.loadtxt('output/HMF_BRCA/tadDisruptionsZScores/zScores.txt', dtype='object')
-# 	else:
-# 		zScores = np.loadtxt('output/HMF_BRCA/tadDisruptionsZScores/zScores_random.txt', dtype='object')
-# 	binScores = getBinScores(zScores, rules, cosmicRules, expressionCutoff, randomExpression, svType)
-#
-#
-# 	print('plotting')
-#
-# 	allData = []
-#
-# 	for binInd in range(0, len(binScores)):
-# 		allData.append(binScores[binInd])
-#
-#
-# 	np.save(outFilePrefix + svType + '.npy', allData)
-# exit()
+if elementType != 'False':
+	outFilePrefix += elementType
+	outFilePrefix += '_'
+#get the z-scores per bin
+for svType in svTypes:
+
+	#get the right zScore file here depending on if we shuffle or not
+	if randomExpression == 'False':
+		zScores = np.loadtxt('output/HMF_BRCA/tadDisruptionsZScores/zScores.txt', dtype='object')
+	else:
+		zScores = np.loadtxt('output/HMF_BRCA/tadDisruptionsZScores/zScores_random.txt', dtype='object')
+	binScores = getBinScores(zScores, rules, cosmicRules, expressionCutoff, randomExpression, svType, elementType)
+
+
+	print('plotting')
+
+	allData = []
+
+	for binInd in range(0, len(binScores)):
+		allData.append(binScores[binInd])
+
+
+	np.save(outFilePrefix + svType + '.npy', allData)
+exit()
 
 
 ###combined figures
@@ -928,10 +926,7 @@ for svType in svTypes:
 	print(svType)
 	typeInd += 1
 	
-	allData = np.load(outFilePrefix + svType + '.npy', allow_pickle=True, encoding='latin1')
-	#allData = allData[0]
-	#if svType not in ['DEL', 'DUP']:
-	#	allData = allData[0]
+	allData = np.load(outFilePrefix + svType + '_se.npy', allow_pickle=True, encoding='latin1')
 
 	#first combine bins
 	
@@ -965,8 +960,6 @@ for svType in svTypes:
 		upperQuantiles.append(upperQuantile-median)
 		lowerQuantiles.append(median-lowerQuantile)
 		
-	print(medianData)
-
 	plt.plot(np.arange(0, len(medianData)), medianData, color=colors[typeInd], alpha=0.5)
 	#plt.plot(np.arange(0, len(upperQuantile)), upperQuantile, color=colors[typeInd], alpha=0.5)
 	
@@ -981,7 +974,7 @@ for svType in svTypes:
 	plt.errorbar(np.arange(0, len(medianData)), medianData, yerr=[lowerQuantiles, upperQuantiles], color=colors[typeInd], capsize=5, alpha=0.3)
 plt.ylim([-2,16])
 plt.xticks([])
-plt.savefig(outFilePrefix + '.svg')
+plt.savefig(outFilePrefix + '_se.svg')
 plt.show()
 exit()
 
