@@ -9,12 +9,14 @@
 import os
 import glob
 import re
+import sys
 
-hiCFolder = "../../../data/thresholdedHiC/" #Edit to read the thresholded data. The code will read a folder inside this thresholdedHiC folder, so if the folder Intrachromosomal is in there, it will read from inside that Intrachromosomal directory. 
+hiCFolder = sys.argv[1] #Edit to read the thresholded data. The code will read a folder inside this thresholdedHiC folder, so if the folder Intrachromosomal is in there, it will read from inside that Intrachromosomal directory.
 intrachromosomal = True
 #Obtain the names of the files that we wish to read for each folder, use a wildcard since the names are different
 filesToRead = []
 for folderName in os.listdir(hiCFolder):
+	print(folderName)
 	
 	#Skip if it is an osx specific file and not a folder
 	if os.path.isdir(hiCFolder + "/" + folderName):
@@ -23,11 +25,11 @@ for folderName in os.listdir(hiCFolder):
 #1. Get the TADs
 
 
-relationsFile = '../../../data/HiC/HMEC_interactions.txt'
+relationsFile = sys.argv[2]
 with open(relationsFile, 'w') as relationsOut:
 	
 	for hiCFile in filesToRead:
-		print hiCFile
+		print(hiCFile)
 		#Read the chromosome identifier from the file name, this is not present in the data
 		splitPath = re.split("/", hiCFile)
 		fileName = splitPath[len(splitPath)-1]

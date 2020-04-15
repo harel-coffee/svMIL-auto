@@ -34,9 +34,6 @@ with open(hiCFile, 'r') as inF:
 	lineCount = 0
 	for line in inF:
 		
-		if lineCount % 50000 == 0:
-			print lineCount
-		
 		line = line.strip()
 		splitLine = line.split("\t")
 		
@@ -77,26 +74,21 @@ with open(hiCFile, 'r') as inF:
 			tadInteractions[tadStr].append(region1Pos)
 			tadInteractions[tadStr].append(region2Pos)
 		lineCount += 1
-#Get some statistics
-print "Number of TADs with interactions: ", len(tadInteractions)
+# #Get some statistics
+# print "Number of TADs with interactions: ", len(tadInteractions)
+#
+# maxInt = 0
+# minInt = float("inf")
+# totalInteractions = 0
+# for tad in tadInteractions:
+# 	if len(tadInteractions[tad]) > maxInt:
+# 		maxInt = len(tadInteractions[tad])
+# 	if len(tadInteractions[tad]) < minInt:
+# 		minInt = len(tadInteractions[tad])
+# 	totalInteractions += len(tadInteractions[tad])
+#
+# avgInt = totalInteractions / float(len(tadInteractions))
 
-maxInt = 0
-minInt = float("inf")
-totalInteractions = 0
-for tad in tadInteractions:
-	if len(tadInteractions[tad]) > maxInt:
-		maxInt = len(tadInteractions[tad])
-	if len(tadInteractions[tad]) < minInt:
-		minInt = len(tadInteractions[tad])
-	totalInteractions += len(tadInteractions[tad])
-
-avgInt = totalInteractions / float(len(tadInteractions))
-
-print "Min no of interactions: ", minInt
-print "Max no of interactions: ", maxInt
-print "Avg no of interactions: ", avgInt
-
-print "Total number of tads: ", len(tads)
 
 #Write the Hi-c interaction indices to a file grouped by TADs
 with open(outFile, 'w') as outF:

@@ -5,7 +5,7 @@ cpgFile = sys.argv[1]
 outFile = sys.argv[2]
 
 with open(outFile, 'w') as outF:
-	with open(cpgFile, 'rb') as f:
+	with open(cpgFile, 'r') as f:
 			
 		lineCount = 0
 		for line in f:

@@ -16,7 +16,7 @@ with open(inFile) as inF:
 		if re.search("#", line) == None:
 			line = line.strip()
 			splitLine = line.split("\t")
-			
+
 			if splitLine[2] == "gene":
 				
 				info = splitLine[8]
@@ -26,7 +26,9 @@ with open(inFile) as inF:
 					splitField = field.split("=")
 					
 					fieldDict[splitField[0]] = splitField[1]
-				
+
+				#if fieldDict["gene_biotype"] != "protein_coding":
+				#	continue
 				if fieldDict["gene_biotype"] != "protein_coding":
 					continue
 				# 	
@@ -41,14 +43,17 @@ with open(inFile) as inF:
 					genes[fieldDict["Name"]] = []
 				#Complicated chromosome encoding
 				splitLocusId = splitLine[0].split(".")
+				#print(splitLocusId)
 				
-				splitSplitLocusId = splitLocusId[0].split("_")
+				#splitSplitLocusId = splitLocusId[0].split("_")
+
 				
 				#Now replace all 0s in the second part
 				#But make sure that numbers such as 10 or 20 are not removed
 				#chromId = splitSplitLocusId[1].replace("0", "")
 				# print splitSplitLocusId[1]
-				chromId = list(splitSplitLocusId[1])
+				#chromId = list(splitSplitLocusId[1])
+				chromId = splitLine[0]
 				
 				numberFound = False
 				chromNumber = ""
@@ -89,9 +94,6 @@ for gene in genes:
 		filteredGenes.append(currentLongest)
 	else:
 		filteredGenes.append(genes[gene][0])
-		
-print len(filteredGenes)
-print np.array(filteredGenes)
 
 #Write the genes to an output file
 
