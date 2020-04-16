@@ -34,7 +34,7 @@ settingsFolder='./settings/settings_HMF_BRCA/'
 
 #Create a folder in which all output for this data will be stored
 #Different steps will create their own intermediate folders in here
-outputFolder='output/HMF_BRCA'
+outputFolder='output/HMF_BRCA_test'
 
 ### (REQUIRED) PART 2 - LINK SVS TO GENES ###
 run=false #Only skip this step if all output has already been generated!
@@ -81,7 +81,7 @@ if $run; then
 fi
 
 ### FIGURE 2 - 2A-D ###
-run=true
+run=false
 
 if $run; then
 	runFolder='./tadDisruptionsZScores/'
@@ -126,7 +126,7 @@ if $run; then
 	#python "$runFolder/main.py" "random" "True" "0" "$settingsFolder" "$outputFolder"
 
 	#split affected/non-affected pairs
-	#python "$runFolder/splitPairsPathogenicNonPathogenic.py" "$outputFolder"
+	python "$runFolder/splitPairsPathogenicNonPathogenic.py" "$outputFolder"
 
 	#Then make the heatmap plot
 	python "$runFolder/plotPathogenicNonPathogenicFeatures.py" "$outputFolder"
@@ -214,7 +214,15 @@ if $run; then
 fi
 
 
-### SUPPLEMENTARY FIGURE 1 ###
+### SUPPLEMENTARY FIGURE 1 - NUMBER OF GENES PUTATIVELY DISRUPTED PER TAD ###
+run=false
+
+if $run; then
+	runFolder='./linkSVsGenes/'
+
+	python "$runFolder/getGeneCountPerTad.py" "$settingsFolder" "$outputFolder"
+
+fi
 
 ### SUPPLEMENTARY FIGURE 2 - lopoCV random labels, chrSV and leave-bags out CV ###
 run=false
@@ -223,15 +231,15 @@ if $run; then
 	runFolder='./multipleInstanceLearning/'
 
 	#Get the performance with random labels using leave-one-patient-out CV
-	#python "$runFolder/runMILClassifier.py" "$outputFolder" "False" "True" "False" "False" "True"
+	python "$runFolder/runMILClassifier.py" "$outputFolder" "False" "True" "False" "False" "True"
 
 	#Get the performance using leave-one-chromosome-out CV
-	python "$runFolder/generateSimilarityMatrices.py" "$outputFolder" "False" "False" "True" "False" "False"
-	python "$runFolder/runMILClassifier.py" "$outputFolder" "False" "False" "True" "False" "False"
+	#python "$runFolder/generateSimilarityMatrices.py" "$outputFolder" "False" "False" "True" "False" "False"
+	#python "$runFolder/runMILClassifier.py" "$outputFolder" "False" "False" "True" "False" "False"
 
 	#Get the performance using leave-bags-out CV
 	#python "$runFolder/generateSimilarityMatrices.py" "$outputFolder" "False" "False" "False" "True" "False"
-	#python "$runFolder/runMILClassifier.py" "$outputFolder" "False" "False" "False" "True"
+	python "$runFolder/runMILClassifier.py" "$outputFolder" "False" "False" "False" "True" "False"
 
 fi
 
@@ -279,7 +287,7 @@ fi
 
 
 ### SUPPLEMENTARY TABLE 1 - FEATURE ELIMINATION ###
-run=false
+run=true
 
 if $run; then
 	runFolder='./multipleInstanceLearning/'
