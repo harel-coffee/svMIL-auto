@@ -34,10 +34,10 @@ settingsFolder='./settings/settings_HMF_BRCA/'
 
 #Create a folder in which all output for this data will be stored
 #Different steps will create their own intermediate folders in here
-outputFolder='output/HMF_BRCA_test'
+outputFolder='output/HMF_BRCA'
 
 ### (REQUIRED) PART 2 - LINK SVS TO GENES ###
-run=true #Only skip this step if all output has already been generated!
+run=false #Only skip this step if all output has already been generated!
 
 if $run; then
 	runFolder='./linkSVsGenes/'
@@ -47,18 +47,18 @@ if $run; then
 fi
 
 ### (REQUIRED) PART 3 - IDENTIFY PATHOGENIC SV-GENE PAIRS ###
-run=true
+run=false
 
 if $run; then
 	runFolder='./tadDisruptionsZScores/'
 
 	#first link mutations to patients. These are required to quickly check which patients
 	#have which mutations in which genes
-	python "$runFolder/determinePatientGeneMutationPairs.py" "$settingsFolder" "$outputFolder"
+	#python "$runFolder/determinePatientGeneMutationPairs.py" "$settingsFolder" "$outputFolder"
 
 	#identify which TADs are disrupted in these patients, and compute the
 	#z-scores of the genes in these TADs. Filter out genes with coding mutations.
-	python "$runFolder/computeZScoresDisruptedTads.py" "$settingsFolder" "$outputFolder" "False"
+	#python "$runFolder/computeZScoresDisruptedTads.py" "$settingsFolder" "$outputFolder" "False"
 	
 	#split the SV-gene pairs into pathogenic/non-pathogenic, which we use later on.
 	runFolder='./linkSVsGenes/'
@@ -67,7 +67,7 @@ if $run; then
 fi
 
 ### PART 4 - SETTING UP FOR MULTIPLE INSTANCE LEARNING ###
-run=true #these steps only need to be done when outputting anything related to multiple instance learning
+run=false #these steps only need to be done when outputting anything related to multiple instance learning
 
 if $run; then
 	runFolder='./multipleInstanceLearning/'
@@ -81,8 +81,34 @@ if $run; then
 fi
 
 ### FIGURE 2 - 2A-D ###
+run=true
 
-#TAD disruption plots. Needs some further testing.
+if $run; then
+	runFolder='./tadDisruptionsZScores/'
+
+	#run with super enhancers (PANEL B), and shuffled expression (PANEL C)
+	#python "$runFolder/plotDisruptedTadZScores.py" "$outputFolder" "$settingsFolder" "True" "False" "False" "False" "se"
+	python "$runFolder/plotDisruptedTadZScores.py" "$outputFolder" "$settingsFolder" "True" "False" "False" "True" "se"
+	#
+	##then run for promoters, also shuffle
+	#python "$runFolder/plotDisruptedTadZScores.py" "$outputFolder" "$settingsFolder" "True" "False" "False" "False" "promoter"
+	#python "$runFolder/plotDisruptedTadZScores.py" "$outputFolder" "$settingsFolder" "True" "False" "False" "True" "promoter"
+	#
+	##and finally, all rules, and shuffled
+	#python "$runFolder/plotDisruptedTadZScores.py" "$outputFolder" "$settingsFolder" "True" "False" "False" "False" "all"
+	#python "$runFolder/plotDisruptedTadZScores.py" "$outputFolder" "$settingsFolder" "True" "False" "False" "True" "all"
+	#
+	##also generate shuffled expression for enh and eQTL_eh_se, which are already there
+	#python "$runFolder/plotDisruptedTadZScores.py" "$outputFolder" "$settingsFolder" "True" "False" "False" "True" "eQTL_se_enh"
+	#python "$runFolder/plotDisruptedTadZScores.py" "$outputFolder" "$settingsFolder" "True" "False" "False" "True" "enh"
+
+	#and run for all genes, no rules (PANEL A)
+	#python "$runFolder/plotDisruptedTadZScores.py" "$outputFolder" "$settingsFolder" "False" "False" "False" "False" "all"
+	#python "$runFolder/plotDisruptedTadZScores.py" "$outputFolder" "$settingsFolder" "False" "False" "False" "True" "all"
+
+	## ADD COSMIC, PANEL D
+
+fi
 
 
 ### FIGURE 2 - 2E: HEATMAP ###
@@ -151,7 +177,7 @@ if $run; then
 	#make sure it matches the one in runVEP.sh.
 	vepOutDir='/hpc/compgen/users/mnieboer/Tools/ensembl-vep/outDir'
 	python "$runFolder/getVEPTprFpr.py" "$vepOutDir"
-	
+
 	#For SVScore
 	python "$runFolder/getSVScoreTprFpr.py" "$settingsFolder"
 
@@ -191,7 +217,7 @@ fi
 ### SUPPLEMENTARY FIGURE 1 ###
 
 ### SUPPLEMENTARY FIGURE 2 - lopoCV random labels, chrSV and leave-bags out CV ###
-run=true
+run=false
 
 if $run; then
 	runFolder='./multipleInstanceLearning/'
@@ -267,43 +293,23 @@ fi
 ### ADDITIONAL, NON-FIGURE ###
 
 #optimizing the MIL classifiers
+run=false
+
+if $run; then
+	runFolder='./multipleInstanceLearning/'
+
+	#First generate the similarity matrices based on the bags in which 1 feature is shuffled each time
+	python "$runFolder/optimizeClassifiers.py" "$outputFolder"
+
+fi
 
 
-### COSMIC AALYSIS WITHIN LEAVE-ONE-PATIENT-OUT-CV ###
+### COSMIC ANALYSIS WITHIN LEAVE-ONE-PATIENT-OUT-CV ###
 run=false
 
 if $run; then
 	runFolder='./multipleInstanceLearning/'
 
 	python "$runFolder/checkCosmicEnrichment.py" "$outputFolder" "$settingsFolder"
-
-fi
-
-#tad plot
-run=false
-
-if $run; then
-	runFolder='./tadDisruptionsZScores/'
-
-	#run with super enhancers, and shuffled expression
-	#python "$runFolder/plotDisruptedTadZScores.py" "$outputFolder" "$settingsFolder" "True" "False" "False" "False" "se"
-	#python "$runFolder/plotDisruptedTadZScores.py" "$outputFolder" "$settingsFolder" "True" "False" "False" "True" "se"
-	#
-	##then run for promoters, also shuffle
-	#python "$runFolder/plotDisruptedTadZScores.py" "$outputFolder" "$settingsFolder" "True" "False" "False" "False" "promoter"
-	#python "$runFolder/plotDisruptedTadZScores.py" "$outputFolder" "$settingsFolder" "True" "False" "False" "True" "promoter"
-	#
-	##and finally, all rules, and shuffledpython "$runFolder/plotDisruptedTadZScores.py" "$outputFolder" "$settingsFolder" "True" "False" "False" "False" "se"
-	#python "$runFolder/plotDisruptedTadZScores.py" "$outputFolder" "$settingsFolder" "True" "False" "False" "False" "all"
-	#python "$runFolder/plotDisruptedTadZScores.py" "$outputFolder" "$settingsFolder" "True" "False" "False" "True" "all"
-	#
-	##also generate shuffled expression for enh and eQTL_eh_se, which are already there
-	#python "$runFolder/plotDisruptedTadZScores.py" "$outputFolder" "$settingsFolder" "True" "False" "False" "True" "eQTL_se_enh"
-	#python "$runFolder/plotDisruptedTadZScores.py" "$outputFolder" "$settingsFolder" "True" "False" "False" "True" "enh"
-
-	#and run for all genes, no rules
-	python "$runFolder/plotDisruptedTadZScores.py" "$outputFolder" "$settingsFolder" "False" "False" "False" "False" "all"
-	python "$runFolder/plotDisruptedTadZScores.py" "$outputFolder" "$settingsFolder" "False" "False" "False" "True" "all"
-
 
 fi
