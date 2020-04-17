@@ -14,6 +14,9 @@ from sklearn.ensemble import RandomForestClassifier
 import random
 from scipy import stats
 from statsmodels.sandbox.stats.multicomp import multipletests
+import os
+
+random.seed(785)
 
 path = sys.argv[5]
 sys.path.insert(1, path)
@@ -53,13 +56,16 @@ else:
 	print('invalid option for COSMIC')
 	exit(1)
 
-finalOutDir = outDir + '/featureImportance/'
+finalOutDir = outDir + '/figure4_S4/'
+tmpOutDir = outDir + '/featureImportance/'
 
 if not os.path.exists(finalOutDir):
 	os.makedirs(finalOutDir)
+if not os.path.exists(tmpOutDir):
+	os.makedirs(tmpOutDir)
 
 #maybe output the .npy files to a tmp dir to make them easier to find
-outFilePrefix = finalOutDir + '/' + gainLossName + '_' + cosmicName + '_'
+outFilePrefix = gainLossName + '_' + cosmicName + '_'
 
 if gainLossName != 'loss':
 	svTypes = ['DEL', 'DUP', 'INV', 'ITX']
@@ -69,7 +75,7 @@ else:
 svType = np.array(svTypes)
 usedSVTypes = [] #use this to later determine which colors need to be used in the plot in case we skip an sv type, e.g.
 #for cosmic when translocations are not linked to any cosmic gene.
-svTypes = ['ITX']
+
 if cosmicName != 'all':
 	#read the cosmic files to split instances into cosmic/non-cosmic.
 	cosmicGenes = InputParser().readCausalGeneFile(settings.files['causalGenesFile'])
@@ -125,7 +131,7 @@ if generatePlottingData == "True":
 		#rank these importances by score
 		indices = np.argsort(importances)[::-1]
 
-		###Figure S4
+		###Figure S3
 		if outputTop1000FeatureImportance == 'True':
 			plt.figure()
 			plt.title("Feature importances")
@@ -133,7 +139,12 @@ if generatePlottingData == "True":
 				   color="r", align="center")
 			plt.xticks(range(similarityMatrix.shape[1])[0:1000][::25], range(0,1000, 25), rotation=90)
 			plt.tight_layout()
-			plt.savefig(finalOutDir + '/feature_importances_top1000_' + svType + '.svg')
+
+			s3OutDir = outDir + '/figureS3/'
+			if not os.path.exists(s3OutDir):
+				os.makedirs(s3OutDir)
+
+			plt.savefig(s3OutDir + '/feature_importances_top1000_' + svType + '.svg')
 	
 			continue
 
@@ -209,7 +220,7 @@ if generatePlottingData == "True":
 				filteredInstances.append(topInstances[instanceInd])
 
 		if gainLossName == 'all' and cosmicName == 'all':
-			np.savetxt(finalOutDir + '/pairLabels_top100_' + svType + '.txt', topPairLabels, fmt='%s', delimiter='\t')
+			np.savetxt(tmpOutDir + '/pairLabels_top100_' + svType + '.txt', topPairLabels, fmt='%s', delimiter='\t')
 		filteredInstances = np.array(filteredInstances)
 		print('number of instances used: ', filteredInstances.shape)
 
@@ -284,7 +295,7 @@ if generatePlottingData == "True":
 		#pAdjusted = np.delete(pAdjusted, 31)
 
 		print(pAdjusted)
-		exit()
+		#exit()
 
 		allFeatureZScores[svType] = featureZScores
 		adjustedPValues[svType] = pAdjusted
@@ -292,14 +303,16 @@ if generatePlottingData == "True":
 		svTypeInd += 1
 
 	#set the right names based on the parameters
-	np.save(outFilePrefix + 'featureZScores.npy', allFeatureZScores)
-	np.save(outFilePrefix + 'adjustedPValues.npy', adjustedPValues)
+	np.save(tmpOutDir + '/' + outFilePrefix + 'featureZScores.npy', allFeatureZScores)
+	np.save(tmpOutDir + '/' + outFilePrefix + 'adjustedPValues.npy', adjustedPValues)
 
+if outputTop1000FeatureImportance == 'True':
+	exit()
 #load the data and make the polar plots
 #use the parameters to determine which plot to make
 
 ### ALWAYS load the right ALL set here of gains/losses to normalize properly
-allSet = outDir + '/all_' + cosmicName + '_'
+allSet = tmpOutDir + '/' + '/all_' + cosmicName + '_'
 
 allFeatureZScores = np.load(allSet + 'featureZScores.npy', allow_pickle=True, encoding='latin1').item()
 adjustedPValues = np.load(allSet + 'adjustedPValues.npy', allow_pickle=True, encoding='latin1').item()
@@ -329,8 +342,8 @@ for svType in usedSVTypes:
 		overallMax = np.max(directionalAdjustedP)
 
 
-allFeatureZScores = np.load(outFilePrefix + 'featureZScores.npy', allow_pickle=True, encoding='latin1').item()
-adjustedPValues = np.load(outFilePrefix + 'adjustedPValues.npy', allow_pickle=True, encoding='latin1').item()
+allFeatureZScores = np.load(tmpOutDir + '/' + outFilePrefix + 'featureZScores.npy', allow_pickle=True, encoding='latin1').item()
+adjustedPValues = np.load(tmpOutDir + '/' + outFilePrefix + 'adjustedPValues.npy', allow_pickle=True, encoding='latin1').item()
 
 scaledP = dict()
 
@@ -388,7 +401,7 @@ for svType in usedSVTypes:
 	print('area')
 	area = 2 * (1 + (-np.log(adjustedPValues[svType])))
 	print(area)
-	ax.scatter(centers+offset[ind], scaledP[svType], color=colors[ind], alpha=0.5, s=area)
+	ax.scatter(centers+offset[ind], scaledP[svType], color=colors[ind], alpha=0.6, s=area)
 	ind += 1
 
 ax.set_xticks(centers)
@@ -407,4 +420,4 @@ gridlines[2].set_linestyle('--')
 
 ax.set_rorigin(-200)
 ax.set_theta_zero_location('N', offset=10)
-plt.savefig(outFilePrefix + 'featureImportances.svg')
+plt.savefig(finalOutDir + '/' + outFilePrefix + 'featureImportances.svg')

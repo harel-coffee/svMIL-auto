@@ -14,15 +14,19 @@ import random
 from scipy import stats
 from statsmodels.sandbox.stats.multicomp import multipletests
 import matplotlib.pyplot as plt
+import os
 
 outDir = sys.argv[1]
 
-finalOutDir = outDir + '/recurrence/'
+finalOutDir = outDir + '/figure4/'
 if not os.path.exists(finalOutDir):
 	os.makedirs(finalOutDir)
+finalOutDirFullFigure = outDir + '/figS5/'
+if not os.path.exists(finalOutDirFullFigure):
+	os.makedirs(finalOutDirFullFigure)
 
 #load the sv-gene pairs
-positivePairs = np.loadtxt(outDir + '/linkedSVGenePairs/nonCoding_geneSVPairs.txt__pathogenicPairsFeatures.txt', dtype='object')
+positivePairs = np.loadtxt(outDir + '/linkedSVGenePairs/nonCoding_geneSVPairs.txt_pathogenicPairsFeatures.txt', dtype='object')
 print(positivePairs.shape)
 
 topPairs = dict()
@@ -93,6 +97,15 @@ recurrentGenes = np.array(recurrentGenes, dtype='object')
 
 #sort
 sortedGenes = recurrentGenes[np.argsort(recurrentGenes[:,1])[::-1]]
+
+sortedGenesTop = []
+for gene in sortedGenes:
+
+	if gene[0] not in topPairGenes:
+		continue
+	sortedGenesTop.append(gene)
+
+sortedGenesTop = np.array(sortedGenesTop, dtype='object')
 
 #make a matrix in which we show visually which genes are affected in which patients
 #this matrix is genes x patients
@@ -479,7 +492,7 @@ plt.yticks(range(0, recurrenceMatrix.shape[0]), sortedGenesTop[0:top,0][::-1])
 plt.xticks(range(0, recurrenceMatrix.shape[1]), list(uniquePatients.keys()), rotation=90)
 #plt.grid()
 plt.tight_layout()
-plt.savefig(finalOutDir + '/recurrence_allPatients.svg')
+plt.savefig(finalOutDirFullFigure + '/recurrence_allPatients.svg')
 plt.show()
 plt.clf()
 

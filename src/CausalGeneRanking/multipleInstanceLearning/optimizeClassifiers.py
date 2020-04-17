@@ -2,6 +2,7 @@ import numpy as np
 import sys
 from sklearn.model_selection import train_test_split
 from sklearn.ensemble import RandomForestClassifier
+from sklearn.model_selection import RandomizedSearchCV
 
 outDir = sys.argv[1]
 

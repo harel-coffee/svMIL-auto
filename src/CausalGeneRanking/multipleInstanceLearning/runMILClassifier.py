@@ -19,6 +19,7 @@ import os
 import os.path
 import glob
 import re
+from random import shuffle
 
 import matplotlib
 matplotlib.use('Agg')
@@ -33,7 +34,7 @@ svTypes = ['DEL', 'DUP', 'INV', 'ITX']
 
 outDir = sys.argv[1]
 
-finalOutDir = outDir + '/multipleInstanceLearning/rocCurves/'
+finalOutDir = outDir + '/rocCurves_fig3_S2/'
 
 if not os.path.exists(finalOutDir):
 	os.makedirs(finalOutDir)
@@ -364,12 +365,9 @@ for svType in svTypes:
 	#don't make the plots for each feature to eliminate
 	if featureElimination == "False" and leaveBagsOut == 'True':
 		plot = True
-	
-		plotOutputPath = outDir + '/multipleInstanceLearning/rocCurves/'
-		if not os.path.exists(plotOutputPath):
-			os.makedirs(plotOutputPath)
 
-		plotOutputFile = plotOutputPath + '/rocCurve_' + svType + '_leaveBagsOut.svg'
+
+		plotOutputFile = finalOutDir + '/rocCurve_' + svType + '_leaveBagsOut.svg'
 		outputFile = outDir + '/multipleInstanceLearning/performance_' + svType + '.txt'
 		dataPath = outDir + '/multipleInstanceLearning/similarityMatrices/leaveBagsOut/'
 		
@@ -412,9 +410,9 @@ for svType in svTypes:
 		shuffleLabels = False
 		if randomLabels == 'True':
 			shuffleLabels = True
-			plotOutputFile = outDir + '/multipleInstanceLearning/rocCurves/rocCurve_' + svType + '_leaveOnePatientOut_random.svg'
+			plotOutputFile = finalOutDir + '/rocCurve_' + svType + '_leaveOnePatientOut_random.svg'
 		else:
-			plotOutputFile = outDir + '/multipleInstanceLearning/rocCurves/rocCurve_' + svType + '_leaveOnePatientOut.svg'
+			plotOutputFile = finalOutDir + '/rocCurve_' + svType + '_leaveOnePatientOut.svg'
 
 
 
@@ -423,7 +421,7 @@ for svType in svTypes:
 
 	elif featureElimination == 'False' and leaveOneChromosomeOut == 'True':
 
-		plotOutputFile = outDir + '/multipleInstanceLearning/rocCurves/rocCurve_' + svType + '_leaveOneChromosomeOut.svg'
+		plotOutputFile = finalOutDir + '/rocCurve_' + svType + '_leaveOneChromosomeOut.svg'
 
 		leaveOneChromosomeOutDataFolder = outDir + '/multipleInstanceLearning/similarityMatrices/leaveOneChromosomeOut/'
 		leaveOneChromosomeOutCV(leaveOneChromosomeOutDataFolder, classifier, svType, plotOutputFile, title, 'False')

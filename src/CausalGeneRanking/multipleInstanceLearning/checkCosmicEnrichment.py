@@ -82,6 +82,10 @@ def getCancerGeneEnrichment(outDir, leaveOneOutDataFolder, allGenes, cosmicGeneN
 
 
 		#for each patient, get the train/test combination, and run the classifier
+		totalTP = 0
+		totalFP = 0
+		totalTN = 0
+		totalFN = 0
 
 		predictions = dict()
 		for patient in patientFiles:
@@ -94,7 +98,7 @@ def getCancerGeneEnrichment(outDir, leaveOneOutDataFolder, allGenes, cosmicGeneN
 					bagLabelsTest = np.load(dataFile, encoding='latin1', allow_pickle=True)
 				if re.search('bagPairLabels', dataFile):
 					bagPairLabels = np.load(dataFile, encoding='latin1', allow_pickle=True)
-			
+
 			for labelInd in range(0, len(bagPairLabels)):
 
 				if bagLabelsTest[labelInd] == 1 and perPatientPredictions[patient][labelInd] == 1:
@@ -107,6 +111,15 @@ def getCancerGeneEnrichment(outDir, leaveOneOutDataFolder, allGenes, cosmicGeneN
 							patientsWithCorrectCosmic[splitLabel[7]] = 0
 						patientsWithCorrectCosmic[splitLabel[7]] += 1
 						cosmicPairs.append(splitLabel[0] + '_' + splitLabel[7] + '_' + svType)
+
+				if bagLabelsTest[labelInd] == 1 and perPatientPredictions[patient][labelInd] == 1:
+					totalTP += 1
+				elif bagLabelsTest[labelInd] == 0 and perPatientPredictions[patient][labelInd] == 1:
+					totalFP += 1
+				elif bagLabelsTest[labelInd] == 1 and perPatientPredictions[patient][labelInd] == 0:
+					totalFN += 1
+				else:
+					totalTN += 1
 
 			#randomly sample as many genes as there are bags. Use these to check significance.
 			for randIteration in range(0, 100):
@@ -132,6 +145,11 @@ def getCancerGeneEnrichment(outDir, leaveOneOutDataFolder, allGenes, cosmicGeneN
 							patientsWithCorrectCosmicRandom[randIteration][splitLabel[7]] += 1
 
 
+		tpr = totalTP / (totalTP + totalFN)
+		fpr = totalFP / (totalTN + totalFP)
+		print(svType)
+		print('tpr', tpr)
+		print('fpr', fpr)
 
 	patientCount = len(patientsWithCorrectCosmic)
 	patientCountNegative = []
