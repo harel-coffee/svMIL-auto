@@ -1,7 +1,13 @@
 """
 	The goal of this script is to generate the similarity matrices for MIL
+	The similarity matrices are pre-generated for the CV type that these will be used for.
+	There is:
+	- leave-one-chromosome-out CV
+	- leave-one-patient-out CV
+	- leave-bags-out CV
+	- the similarity matrix on the whole dataset (used for feature importance)
 
-	If we do feature selection, we have similarity matrices for each feature
+	If we do feature elimination, we have similarity matrices for each feature
 	output these as well.
 
 """
@@ -75,8 +81,16 @@ for pair in svGenePairs:
 	splitSVGenePairs.append(splitPair[0] + '_' + splitPair[7] + '_' + splitPair[12])
 
 
-#function to get the similarity matrix
+
 def getSimilarityMatrix(bags, instances, reverseBagMap):
+	"""
+		function to get the similarity matrix. This is mainly used to make the sim matrix for the training set.
+		To make the test set sim matrix, use the function below.
+		
+		bags (numpy array): all bags that we use for this matrix
+		instances (numpy array): all instances in the bags
+		reverseBagMap (dictionary): bag index as key, instance indices as values. Used to find out which instances are in which bag. 
+	"""
 
 	bagIndices = np.arange(bags.shape[0])
 	similarityMatrix = np.zeros([bags.shape[0], instances.shape[0]])
@@ -100,6 +114,14 @@ def getSimilarityMatrix(bags, instances, reverseBagMap):
 	return similarityMatrix
 
 def getSimilarityMatrixTest(testBags, trainInstances, labels):
+	"""
+		function to get the similarity matrix specific for the test case.
+		The instances that we map the distance to are the provided train instances.
+
+		testBags (numpy array): all test bags that we use for this matrix
+		trainInstances (numpy array): all instances in the bags of the training data, we compute distance to these instances from the test bags
+		labels (list): obsolete.
+	"""
 
 	similarityMatrix = np.zeros([testBags.shape[0], trainInstances.shape[0]])
 
@@ -123,11 +145,9 @@ def getSimilarityMatrixTest(testBags, trainInstances, labels):
 	return similarityMatrix
 
 
-
-#then, generate the similarity matrices for the SV types
+#Generate the similarity matrices for the SV types
 for svType in svTypes:
 	
-	#allow for running with feature selection
 	bagLabels = []
 	positiveBagPairNames = []
 	negativeBagPairNames = []
@@ -154,7 +174,6 @@ for svType in svTypes:
 
 			#if the z-score matches this criterion, the SV-gene pair is positive
 			if float(degPairInfo[5]) > 1.5 or float(degPairInfo[5]) < -1.5:
-			#if float(degPairInfo[5]) > 1 or float(degPairInfo[5]) < -1:
 				#go through the instances of this SV-gene pair, and include only those that have gains and losses, and more than 1 instance. This should in principle not happen, but good to keep a check.
 				instances = []
 				for instance in bagDict[pair]:
@@ -234,6 +253,7 @@ for svType in svTypes:
 
 	allInstances = np.concatenate((posInstances, negInstances))
 
+	#remove instances with 0 variance across all instances. These are not useful for the classifier. 
 	from sklearn.feature_selection import VarianceThreshold
 	t = 0
 	vt = VarianceThreshold(threshold=t)
@@ -281,7 +301,7 @@ for svType in svTypes:
 	if positiveBags.shape[0] == 0 or negativeBags.shape[0] == 0:
 		continue
 
-	#set a random seed to always subsample the same set
+	#subsample negative to the same number of positives. 
 	if leaveOnePatientOut == 'False':
 		
 		#subsample the negative set to the same number of positives.
@@ -341,20 +361,18 @@ for svType in svTypes:
 	#save bagmap for later
 	np.save(finalOutDir + '/bagMap_' + svType + '.npy', bagMap)
 
-	#if we do feature selection, randomize the features here
+	#if we do feature elimination, randomize the features here
 	featureCount = instances.shape[1]
-
 	featureStart = featureCount-1
 	if featureElimination == "True":
-		featureStart = 0 #set this to featureCount to run with all features. (make setting later)
+		featureStart = 0 #set this to featureCount to run with all features.
 
 	#if featureStart is not updated, this will run once
 	#otherwise it will randomize a new feature each time
 	for featureInd in range(featureStart, featureCount):
-	#for featureInd in range(0,featureCount):
 		print('current feature: ', featureInd+1)
 
-		if featureElimination == "True":
+		if featureElimination == "True": #in case of feature elimination, we use the leave-one-chromosome-out CV setting
 
 			#per chromosome, shuffle the features in the training set.
 			#then output the original test set
@@ -511,9 +529,8 @@ for svType in svTypes:
 				np.save(featureEliminationOutDir + '/' + 'bagLabelsTest_' + svType + '_' + chromosome + '_' + str(featureInd) + '.npy', testLabels[chromosome])
 
 
-		elif featureElimination == 'False' and leaveOneChromosomeOut == 'True':
+		elif featureElimination == 'False' and leaveOneChromosomeOut == 'True': ### leave-one-chromosome-out CV setting
 
-			###### again different option, per chromosome
 
 			chromosomes = ['chr1', 'chr2', 'chr3', 'chr4', 'chr5', 'chr6', 'chr7',
 						   'chr8', 'chr9', 'chr10', 'chr11', 'chr12', 'chr13',
@@ -650,7 +667,7 @@ for svType in svTypes:
 				np.save(leaveOneChromosomeOutDir + '/' + 'bagLabelsTrain_' + chromosome + '_' + svType + '.npy', trainLabels[chromosome])
 				np.save(leaveOneChromosomeOutDir + '/' + 'bagLabelsTest_' + chromosome + '_' + svType + '.npy', testLabels[chromosome])
 
-		elif featureElimination == 'False' and leaveBagsOut == 'True':
+		elif featureElimination == 'False' and leaveBagsOut == 'True': ### leave-bags-out CV setting
 			
 			#divide into X bags, regardless of patients
 			foldSize = 10
@@ -750,7 +767,7 @@ for svType in svTypes:
 				np.save(leaveBagsOutDir + '/bagLabelsTrain_' + svType + '_' + str(foldInd) + '.npy', trainLabels[foldInd])
 				np.save(leaveBagsOutDir + '/bagLabelsTest_' + svType + '_' + str(foldInd) + '.npy', testLabels[foldInd])
 
-		elif featureElimination == 'False' and leaveOnePatientOut == 'True':
+		elif featureElimination == 'False' and leaveOnePatientOut == 'True': ### leave-one-patient-out CV setting
 
 			#first, get the bags and labels per patient
 			perPatientPositiveBags = dict()

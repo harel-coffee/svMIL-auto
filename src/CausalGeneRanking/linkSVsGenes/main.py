@@ -1,34 +1,29 @@
 """
-	Set of scripts intended to do ranking of (causal) genes based on their neighborhood and the influence that SVs have in this neighborhood. 
+	Set of scripts intended to link SVs to genes by rules based on gains and losses of regulatory elements caused by TAD disruptions
 
-	The idea is to look at all genes. The neighborhood may consist of eQTLs that have an effect on this gene, or TADs directly neighboring the gene.
-	If we annotate causal genes with these effects, then we can check for potential effects on the gene (expression) if anything in the neighborhood is affected by SVs.
-	Using some magical statistics, we can then make a prediction on how much more likely the effects on the neighborhood are to be disruptive to the genes than expected by random chance.
+	The idea is that we first make a 'neighborhood' in which all regulatory elements are assigned to genes (regulator set).
+	These are the regulatory elements within the TAD of the gene, and specifically what is linked to the gene in the data for eQTLs, promoters and enhancers.
+	Then we look at the TADs that are disrupted by SVs, and determine how the interactions between genes and regulatory elements are re-wired.
 
-	The setup of these scripts will initally be (it will not be too pretty and perfect at first):
+	The setup of these scripts is:
 	
 	- The main script where the input (genes) are parsed and the relevant scripts are called
-	- The neighborhoodDefiner, which takes SNVs or SVs as input (or both) and links these to the genes and elements in the neighborhood of that gene that these variants disrupt
-	- The geneRanking script, which takes annotated neighborhoods of genes as input, and then computes a score for each layer (i.e. genes, TADs, eQTLs)
-	- The above 3 scripts need to be repeated 100 times (or more) with permutations to compute the scores for genes when the variants are randomly distributed
-	
-	To run these scripts with permutations, the starting point is runRankingWithPermutations.sh. It does not require any parameters (set the file locations in settings.py), and will run 1 normal scoring run and 100 permutations on the HPC.
-	Then when all permutations are completed, you will need to run computePValuesPerGene.py. This script reads a given output directory containing all gene scores for the normal run and 100 permutation runs. It will compute
-	a p-value for each layer and rank the causal genes by which have significant p-values in the most layers.
-	
-	To run without permutations, this script main.py can be run as: main.py "runName" N, so for example "main.py ABC N" will run the code once without permutations, and write output to a folder named ABC in the
-	RankedGenes subfolder. 
-	
-	Using a gene-based approach will likely be quicker than an SV-based approach, and we can get the relevant SVs through the genes. If an SV is never affecting any of our features defined as interesting, there is no
-	need to look at that SV at all. This idea may change along the way.
+	- The neighborhoodDefiner, which takes the genes as input and assigns their regulator set. It also accepts SVs as input, and then makes a call to link them to the genes.
+	- The derivativeTADMaker, which for each SV determines how the TAD is disrupted, and then assigns to each gene what the gains and losses in the regulator set are.
+	- The geneRanking script, which then takes the genes and SVs that are linked to these, and outputs a list of SV-gene pairs and which regulatory elements are gained and lost for that gene.
+	This used to provide a ranking, but not anymore. It also outputs the bags used for mulitple instance learning.
+
+	The main script has 4 input parameters:
+	- the uuid; this will be the output name of the folder that the data is written to.
+	- permutationYN; if set to True, will randomly shuffle the SVs.
+	- permutationRound; if running multiple permutations, this can be assigned a different value to get different output files for each run within the uuid folder.
+	- path; path to where the settings (with all data locations) can be found.
 
 
 """
 #############
 ###Imports###
 
-from __future__ import absolute_import
-from __future__ import print_function
 import sys
 import numpy as np
 import random
@@ -38,14 +33,12 @@ import re
 import time
 
 path = sys.argv[4]
-sys.path.insert(1, path)
+sys.path.insert(1, path) #path to the settings file
 
 from neighborhoodDefiner import NeighborhoodDefiner
 from geneRanking import GeneRanking
 from inputParser import InputParser
 from genomicShuffler import GenomicShuffler
-from outputWriter import OutputWriter
-# from genome import Genome
 import settings
 
 ###############
@@ -54,18 +47,17 @@ import settings
 startTime = time.time() #Keep run time of the program
 
 #0. Collect all the relevant parameters here for clarity
-uuid = sys.argv[1] #This uuid will normally be provided by the sh script when running in parallel. It is the folder name that will be created in RankedGenes, and where the output will be written to. 
-permutationYN = sys.argv[2] #True or False depending on if we want to permute or not
+uuid = sys.argv[1] #It is the folder name that will be created within the output folder specified in the settings, and where the output will be written to.
+permutationYN = sys.argv[2] #True or False depending on if we want to permute or not (keep in mind True should be a string)
 
 #1. Read and parse the causal genes and the nonCausal genes. For now, keep them separate to test on causal/non-causal genes separately
 causalGenes = InputParser().readCausalGeneFile(settings.files['causalGenesFile'])
 nonCausalGenes = InputParser().readNonCausalGeneFile(settings.files['nonCausalGenesFile'], causalGenes) #In the same format as the causal genes.
 
-#Combine the genes into one set. 
+#Combine the genes into one set.
 causalGenes = np.concatenate((causalGenes, nonCausalGenes), axis=0)
 
-
-#2. Read the SVs or SNVs depending on the mode.
+#2. Read the SVs, depending on the data source. Currently a TCGA format is supported (see data preprocessing), PCAWG and HMF
 variantData = []
 
 if settings.general['source'] == 'TCGA' or settings.general['source'] == 'PCAWG':
@@ -77,7 +69,9 @@ if settings.general['source'] == 'HMF':
 	print("Reading SV data")
 	svDir = settings.files['svDir']
 	svData = InputParser().getSVsFromFile_hmf(svDir)
+print(svData) #check if the SVs are read in correctly
 
+#Check the SV distribution
 delCount = 0
 dupCount = 0
 invCount = 0
@@ -94,25 +88,24 @@ for sv in svData:
 		itxCount += 1
 		
 print(delCount, dupCount, invCount, itxCount)
-	
-#3. If this is a permutation run, we wish to shuffle these SVs or SNVs.
+
+#3. If this is a permutation run, we wish to shuffle these SVs
 if permutationYN == "True":
 	print("Shuffling variants")
 	genomicShuffler = GenomicShuffler()
-	#Shuffle the variants, provide the mode such that the function knows how to permute
-
+	#Shuffle the variants
 	svData = genomicShuffler.shuffleSVs(svData)
 	
 permutationRound = ""
 if permutationYN == "True":
-	permutationRound = sys.argv[3]
+	permutationRound = sys.argv[3] #will be appended to the output file name. 
 
-#2. Get the neighborhood for these genes based on the SVs or SNVs
-print("Defining the neighborhood for the causal genes and the SVs")
+#2. Get the neighborhood for these genes based on the SVs
+print("Defining the neighborhood for the genes and the SVs")
 NeighborhoodDefiner(causalGenes, svData)
 
-#3. Do ranking of the genes and report the causal SVs
-print("Ranking the genes for the variants")
+#3. Get the SV-gene pairs and their gains and losses, output this to a file, and create the bags for MIL.
+print("Gathering gains and losses for SV-gene pairs and output to a file")
 geneRanking = GeneRanking(causalGenes[:,3], svData, sys.argv[1], permutationRound)
 
 endTime = time.time()

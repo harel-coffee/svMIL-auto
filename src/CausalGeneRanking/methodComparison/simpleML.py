@@ -1,4 +1,7 @@
-### test alternative to MIL
+"""
+	Non-MIL-RF, compare the performance to other methods.
+	We use leave-one-patient-out CV to determine the performance.
+"""
 
 import sys
 import numpy as np
@@ -12,16 +15,18 @@ from scipy import interp
 import random
 from sklearn.ensemble import RandomForestClassifier
 
+random.seed(785)
+
 outDir = sys.argv[1]
 
-positivePairs = np.loadtxt(outDir + '/linkedSVGenePairs/nonCoding_geneSVPairs.txt__degPairsFeatures.txt', dtype='object')
-negativePairs = np.loadtxt(outDir + '/linkedSVGenePairs/nonCoding_geneSVPairs.txt__nonDegPairsFeatures.txt', dtype='object')
+positivePairs = np.loadtxt(outDir + '/linkedSVGenePairs/nonCoding_geneSVPairs.txt_pathogenicPairsFeatures.txt', dtype='object')
+negativePairs = np.loadtxt(outDir + '/linkedSVGenePairs/nonCoding_geneSVPairs.txt_nonPathogenicPairsFeatures.txt', dtype='object')
 
 ##Some features were not used in MIL, so we skip them here too to make it comparable.
 #keep the features in the file to be able to plot them for figure 2.
 allowedFeatures = list(np.arange(1,3)) #skip name (0) and promoter losses (3)
 allowedFeatures += list(np.arange(4,29)) #skip promoter gains (29)
-allowedFeatures += list(np.arange(30,69))
+allowedFeatures += list(np.arange(30,52)) #52 would be the ctcf gain, last feature to use
 
 #normalize the data
 #get the min and max from all pairs
@@ -100,10 +105,10 @@ for svType in svTypes:
 		print('Please provide a valid SV type')
 		exit(1)
 
-
-	#divide into chromosomes.
-
-	positivePairsPerChromosome = dict()
+	#use lopoCV
+	#first, get the bags and labels per patient
+	patients = []
+	positivePairsPerPatient = dict()
 	for pair in normalizedPositivePairs:
 
 		splitPair = pair[0].split('_')
@@ -111,8 +116,11 @@ for svType in svTypes:
 		if splitPair[12] != svType:
 			continue
 
-		if splitPair[1] not in positivePairsPerChromosome:
-			positivePairsPerChromosome[splitPair[1]] = []
+		if splitPair[7] not in positivePairsPerPatient:
+			positivePairsPerPatient[splitPair[7]] = []
+
+		if splitPair[7] not in patients:
+			patients.append(splitPair[7])
 
 		allFeatures = []
 		for featureInd in range(1, len(pair)):
@@ -120,10 +128,10 @@ for svType in svTypes:
 			if featureInd in allowedFeatures:
 				allFeatures.append(pair[featureInd])
 
-		positivePairsPerChromosome[splitPair[1]].append(allFeatures)
+		positivePairsPerPatient[splitPair[7]].append(allFeatures)
 
 
-	negativePairsPerChromosome = dict()
+	negativePairsPerPatient = dict()
 	matchPairsNeg = 0
 	for pair in normalizedNegativePairs:
 
@@ -132,29 +140,22 @@ for svType in svTypes:
 		if splitPair[12] != svType:
 			continue
 
-		if splitPair[1] not in negativePairsPerChromosome:
-			negativePairsPerChromosome[splitPair[1]] = []
+		if splitPair[7] not in negativePairsPerPatient:
+			negativePairsPerPatient[splitPair[7]] = []
+
+		if splitPair[7] not in patients:
+			patients.append(splitPair[7])
 
 		allFeatures = []
 		for featureInd in range(1, len(pair)):
 
-			#if featureInd-1 in badIdx: #skip 0 variance
-			#	continue
-
 			if featureInd in allowedFeatures:
 				allFeatures.append(pair[featureInd])
 
-		negativePairsPerChromosome[splitPair[1]].append(allFeatures)
+		negativePairsPerPatient[splitPair[7]].append(allFeatures)
 
-	chromosomes = ['chr1', 'chr2', 'chr3', 'chr4', 'chr5', 'chr6', 'chr7',
-				   'chr8', 'chr9', 'chr10', 'chr11', 'chr12', 'chr13',
-				   'chr14', 'chr15', 'chr16', 'chr17', 'chr18', 'chr19',
-				   'chr20', 'chr21', 'chr22']
+	##copied from chrCV, so naming needs to be updated... 
 
-
-
-	#go through the chromosomes and make the positive/negative sets
-	#subsample the negative set to the same size.
 	aucs = []
 	#for the test set, keep statistics for TPR and FPR to compare between methods
 	totalTP = 0
@@ -163,17 +164,22 @@ for svType in svTypes:
 	totalFN = 0
 	totalP = 0
 	totalN = 0
-	for chromosome in chromosomes:
+	for chromosome in patients:
 
-		if chromosome not in positivePairsPerChromosome or chromosome not in negativePairsPerChromosome:
+		if chromosome not in positivePairsPerPatient or chromosome not in negativePairsPerPatient:
 			continue
 
-		testPositivePairs = np.array(positivePairsPerChromosome[chromosome])
-		testNegativePairs = np.array(negativePairsPerChromosome[chromosome])
+		testPositivePairs = np.array(positivePairsPerPatient[chromosome])
+		testNegativePairs = np.array(negativePairsPerPatient[chromosome])
 
 		#randomly subsample
-		randInd = random.sample(range(0, testNegativePairs.shape[0]), testPositivePairs.shape[0])
-		testNegativeSubset = testNegativePairs[randInd]
+		if testNegativePairs.shape[0] >= testPositivePairs.shape[0]:
+			randInd = random.sample(range(0, testNegativePairs.shape[0]), testPositivePairs.shape[0])
+			testNegativeSubset = testNegativePairs[randInd]
+		else:
+			randInd = random.sample(range(0, testPositivePairs.shape[0]), testNegativePairs.shape[0])
+			testNegativeSubset = testNegativePairs
+			testPositivePairs = testPositivePairs[randInd]
 
 		testSet = np.concatenate((testPositivePairs, testNegativeSubset))
 		testLabels = [1]*testPositivePairs.shape[0] + [0]*testNegativeSubset.shape[0]
@@ -183,24 +189,26 @@ for svType in svTypes:
 
 		trainingSet = []
 		trainingLabels = []
-		for chromosome2 in positivePairsPerChromosome:
+		for chromosome2 in positivePairsPerPatient:
 
 			if chromosome2 == chromosome:
 				continue
 
-			if chromosome2 not in positivePairsPerChromosome or chromosome2 not in negativePairsPerChromosome:
+			if chromosome2 not in positivePairsPerPatient or chromosome2 not in negativePairsPerPatient:
 				continue
 
-			chrPositivePairs = np.array(positivePairsPerChromosome[chromosome2])
-			chrNegativePairs = np.array(negativePairsPerChromosome[chromosome2])
+			chrPositivePairs = np.array(positivePairsPerPatient[chromosome2])
+			chrNegativePairs = np.array(negativePairsPerPatient[chromosome2])
 
 			#randomly subsample
-			randInd = random.sample(range(0, chrNegativePairs.shape[0]), chrPositivePairs.shape[0])
-			chrNegativeSubset = chrNegativePairs[randInd]
+			if chrPositivePairs.shape[0] <= chrNegativePairs.shape[0]:
+				randInd = random.sample(range(0, chrNegativePairs.shape[0]), chrPositivePairs.shape[0])
+				chrNegativeSubset = chrNegativePairs[randInd]
 
-			#chrTrainingSet = np.concatenate((chrPositivePairs, chrNegativeSubset))
-
-			#trainingSet.append(list(chrTrainingSet))
+			else:
+				randInd = random.sample(range(0, chrPositivePairs.shape[0]), chrNegativePairs.shape[0])
+				chrPositivePairs = chrPositivePairs[randInd]
+				chrNegativeSubset = chrNegativePairs
 
 			for pair in chrPositivePairs:
 				trainingSet.append(pair)

@@ -22,9 +22,6 @@
 #	Memory requirements vary per workflow step and based on your dataset size.
 #	For the HMF data, at least 16 GB of memory is required to generate the bags for MIL.
 
-#	Each step has its own .sh file that can be used to run this step on the cluster, which
-#	is named by the step it executes.
-
 
 ### (REQUIRED) PART 1 - DATA AND PATHS ###
 
@@ -86,27 +83,18 @@ run=false
 if $run; then
 	runFolder='./tadDisruptionsZScores/'
 
-	#run with super enhancers (PANEL B), and shuffled expression (PANEL C)
-	#python "$runFolder/plotDisruptedTadZScores.py" "$outputFolder" "$settingsFolder" "True" "False" "False" "False" "se"
+	#make sure to also have random z-scores ready.
+
+	#run with super enhancers (PANEL C), and shuffled expression (PANEL D)
+	python "$runFolder/plotDisruptedTadZScores.py" "$outputFolder" "$settingsFolder" "True" "False" "False" "False" "se"
 	python "$runFolder/plotDisruptedTadZScores.py" "$outputFolder" "$settingsFolder" "True" "False" "False" "True" "se"
-	#
-	##then run for promoters, also shuffle
-	#python "$runFolder/plotDisruptedTadZScores.py" "$outputFolder" "$settingsFolder" "True" "False" "False" "False" "promoter"
-	#python "$runFolder/plotDisruptedTadZScores.py" "$outputFolder" "$settingsFolder" "True" "False" "False" "True" "promoter"
-	#
-	##and finally, all rules, and shuffled
-	#python "$runFolder/plotDisruptedTadZScores.py" "$outputFolder" "$settingsFolder" "True" "False" "False" "False" "all"
-	#python "$runFolder/plotDisruptedTadZScores.py" "$outputFolder" "$settingsFolder" "True" "False" "False" "True" "all"
-	#
-	##also generate shuffled expression for enh and eQTL_eh_se, which are already there
-	#python "$runFolder/plotDisruptedTadZScores.py" "$outputFolder" "$settingsFolder" "True" "False" "False" "True" "eQTL_se_enh"
-	#python "$runFolder/plotDisruptedTadZScores.py" "$outputFolder" "$settingsFolder" "True" "False" "False" "True" "enh"
 
 	#and run for all genes, no rules (PANEL A)
-	#python "$runFolder/plotDisruptedTadZScores.py" "$outputFolder" "$settingsFolder" "False" "False" "False" "False" "all"
+	python "$runFolder/plotDisruptedTadZScores.py" "$outputFolder" "$settingsFolder" "False" "False" "False" "False" "all"
 	#python "$runFolder/plotDisruptedTadZScores.py" "$outputFolder" "$settingsFolder" "False" "False" "False" "True" "all"
 
-	## ADD COSMIC, PANEL D
+	#and for COSMIC genes, no rules (PANEL B)
+	python "$runFolder/plotDisruptedTadZScores.py" "$outputFolder" "$settingsFolder" "False" "True" "False" "False" "all"
 
 fi
 
@@ -126,7 +114,7 @@ if $run; then
 	#python "$runFolder/main.py" "random" "True" "0" "$settingsFolder" "$outputFolder"
 
 	#split affected/non-affected pairs
-	python "$runFolder/splitPairsPathogenicNonPathogenic.py" "$outputFolder"
+	#python "$runFolder/splitPairsPathogenicNonPathogenic.py" "$outputFolder"
 
 	#Then make the heatmap plot
 	python "$runFolder/plotPathogenicNonPathogenicFeatures.py" "$outputFolder"
@@ -143,6 +131,10 @@ if $run; then
 	python "$runFolder/runMILClassifier.py" "$outputFolder" "False" "True" "False" "False" "False"
 
 fi
+
+### FIGURE 3 - 3B-C: MIL PCAWG results ###
+
+#Run respective workflows for PCAWG data.
 
 ### FIGURE 3 - 3D: METHOD COMPARISON PRE-PROCESSING ###
 run=false
@@ -170,19 +162,19 @@ if $run; then
 
 	#Get the TPRs and FPRs of each method
 	#For simple ML
-	python "$runFolder/simpleML.py" "$outputFolder"
+	#python "$runFolder/simpleML.py" "$outputFolder"
 
 	#For VEP
 	#Should have been a better output folder in hindsight
 	#make sure it matches the one in runVEP.sh.
-	vepOutDir='/hpc/compgen/users/mnieboer/Tools/ensembl-vep/outDir'
-	python "$runFolder/getVEPTprFpr.py" "$vepOutDir"
+	#vepOutDir='/hpc/compgen/users/mnieboer/Tools/ensembl-vep/outDir'
+	#python "$runFolder/getVEPTprFpr.py" "$vepOutDir"
 
 	#For SVScore
-	python "$runFolder/getSVScoreTprFpr.py" "$settingsFolder"
+	#python "$runFolder/getSVScoreTprFpr.py" "$settingsFolder"
 
 	#Then gather all the TPRs and FPRs output from these method and add them in this script.
-	#was done by hand for simplicity.
+	#was filled in by hand for simplicity.
 	python "$runFolder/plotResultsGraph.py" "$outputFolder"
 
 fi
@@ -195,21 +187,21 @@ if $run; then
 	runFolder='./multipleInstanceLearning/'
 
 	#first output the full similarity matrix to train the classifier on the whole dataset.
-	python "$runFolder/generateSimilarityMatrices.py" "$outputFolder" "False" "False" "False" "False" "True"
+	#python "$runFolder/generateSimilarityMatrices.py" "$outputFolder" "False" "False" "False" "False" "True"
 
 	#Generate the plotting data, and plot the feature importances for ALL instances,
 	#don't split into cosmic/non-cosmic and gains/losses. We need these for normalization.
-	python "$runFolder/plotFeatureImportances.py" "$outputFolder" "True" "ALL" "ALL" "$settingsFolder" "False"
+	#python "$runFolder/plotFeatureImportances.py" "$outputFolder" "True" "ALL" "ALL" "$settingsFolder" "False"
 
 	#plot for GAINS only
 	python "$runFolder/plotFeatureImportances.py" "$outputFolder" "True" "GAIN" "ALL" "$settingsFolder" "False"
 
 	#plot for LOSSES only
-	python "$runFolder/plotFeatureImportances.py" "$outputFolder" "True" "LOSS" "ALL" "$settingsFolder" "False"
+	#python "$runFolder/plotFeatureImportances.py" "$outputFolder" "True" "LOSS" "ALL" "$settingsFolder" "False"
 
 	#Recurrence figure
 	#This depends on the pair labels from the ALL feature importance run.
-	python "$runFolder/recurrenceAnalysis.py" "$outputFolder"
+	#python "$runFolder/recurrenceAnalysis.py" "$outputFolder"
 
 fi
 
@@ -231,14 +223,14 @@ if $run; then
 	runFolder='./multipleInstanceLearning/'
 
 	#Get the performance with random labels using leave-one-patient-out CV
-	python "$runFolder/runMILClassifier.py" "$outputFolder" "False" "True" "False" "False" "True"
+	#python "$runFolder/runMILClassifier.py" "$outputFolder" "False" "True" "False" "False" "True"
 
 	#Get the performance using leave-one-chromosome-out CV
-	#python "$runFolder/generateSimilarityMatrices.py" "$outputFolder" "False" "False" "True" "False" "False"
-	#python "$runFolder/runMILClassifier.py" "$outputFolder" "False" "False" "True" "False" "False"
+	python "$runFolder/generateSimilarityMatrices.py" "$outputFolder" "False" "False" "True" "False" "False"
+	python "$runFolder/runMILClassifier.py" "$outputFolder" "False" "False" "True" "False" "False"
 
 	#Get the performance using leave-bags-out CV
-	#python "$runFolder/generateSimilarityMatrices.py" "$outputFolder" "False" "False" "False" "True" "False"
+	python "$runFolder/generateSimilarityMatrices.py" "$outputFolder" "False" "False" "False" "True" "False"
 	python "$runFolder/runMILClassifier.py" "$outputFolder" "False" "False" "False" "True" "False"
 
 fi
@@ -266,28 +258,28 @@ if $run; then
 
 	#Generate the plotting data, and plot the feature importances for ALL instances,
 	#don't split into cosmic/non-cosmic and gains/losses
-	python "$runFolder/plotFeatureImportances.py" "$outputFolder" "True" "ALL" "COSMIC" "$settingsFolder" "False"
+	#python "$runFolder/plotFeatureImportances.py" "$outputFolder" "True" "ALL" "COSMIC" "$settingsFolder" "False"
 
 	#plot for GAINS only
-	python "$runFolder/plotFeatureImportances.py" "$outputFolder" "True" "GAIN" "COSMIC" "$settingsFolder" "False"
+	#python "$runFolder/plotFeatureImportances.py" "$outputFolder" "True" "GAIN" "COSMIC" "$settingsFolder" "False"
 
 	#plot for LOSSES only (this will fail because there are no losses for cosmic genes.)
-	python "$runFolder/plotFeatureImportances.py" "$outputFolder" "True" "LOSS" "COSMIC" "$settingsFolder" "False"
+	#python "$runFolder/plotFeatureImportances.py" "$outputFolder" "True" "LOSS" "COSMIC" "$settingsFolder" "False"
 
 	#then run for non-cosmic
-	python "$runFolder/plotFeatureImportances.py" "$outputFolder" "True" "ALL" "NONCOSMIC" "$settingsFolder" "False"
+	#python "$runFolder/plotFeatureImportances.py" "$outputFolder" "True" "ALL" "NONCOSMIC" "$settingsFolder" "False"
 
 	#plot for GAINS only
 	python "$runFolder/plotFeatureImportances.py" "$outputFolder" "True" "GAIN" "NONCOSMIC" "$settingsFolder" "False"
 
 	#plot for LOSSES only
-	python "$runFolder/plotFeatureImportances.py" "$outputFolder" "True" "LOSS" "NONCOSMIC" "$settingsFolder" "False"
+	#python "$runFolder/plotFeatureImportances.py" "$outputFolder" "True" "LOSS" "NONCOSMIC" "$settingsFolder" "False"
 
 fi
 
 
 ### SUPPLEMENTARY TABLE 1 - FEATURE ELIMINATION ###
-run=true
+run=false
 
 if $run; then
 	runFolder='./multipleInstanceLearning/'
@@ -307,6 +299,9 @@ if $run; then
 	runFolder='./multipleInstanceLearning/'
 
 	#First generate the similarity matrices based on the bags in which 1 feature is shuffled each time
+	python "$runFolder/generateSimilarityMatrices.py" "$outputFolder" "False" "False" "False" "False" "True"
+
+	#Then do optimization of the classifiers.
 	python "$runFolder/optimizeClassifiers.py" "$outputFolder"
 
 fi

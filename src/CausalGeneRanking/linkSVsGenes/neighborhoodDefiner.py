@@ -13,10 +13,7 @@ import gzip
 from tad import TAD
 from sv import SV
 from gene import Gene
-from element import Element
-# from snv import SNV
 from derivativeTADMaker import DerivativeTADMaker
-# from genome import Genome
 from genomicShuffler import GenomicShuffler
 from inputParser import InputParser
 
@@ -25,16 +22,7 @@ from six.moves import range
 
 class NeighborhoodDefiner:
 	"""
-		Class responsible for defining the neighborhood of genes.
-		
-		Currently, the neighborhood consists of:
-		
-		- All TADs in the genome
-		- nearest TADs on the left and right of the gene
-		- all eQTLs mapped to the gene and TADs (can be switched for lncRNAs)
-		- all enhancers mapped to the gene and TADs
-		- SVs (and SNVs) overlapping either the gene directly, or other elements in the neighborhood
-		- Genes, with gains and losses of specific elements annotated as a result of SVs
+		Class responsible for defining the neighborhood, 'regulator set', of genes.
 		
 	"""
 	
@@ -43,7 +31,7 @@ class NeighborhoodDefiner:
 			Initialize the neighborhood defining. This involves gathering all required data types, mapping these to TADs/genes, and associating the effects of SVs to genes. 
 
 			genes: (numpy array) array with the genes and their information. chr, start, end, geneObject
-			svData: (numpy array) array with the SVs and their information. chr1, s1, e1, chr2, s2, e2, cancerType, sampleName, svObject. Can be empty in SNV mode. 
+			svData: (numpy array) array with the SVs and their information. chr1, s1, e1, chr2, s2, e2, cancerType, sampleName, svObject.
 		"""
 		
 		#1. Get TADs from the TAD file, and then map TADs to genes (left/right TAD).
@@ -55,74 +43,6 @@ class NeighborhoodDefiner:
 		tadData = InputParser().getTADsFromFile(tadFile)
 
 		print("original number of svs:", svData.shape)
-			
-			
-			# filteredSvData = []
-			# types = []
-			# for sv in svData:
-			# 	if sv[8].svType == "del" or sv[8].svType == "invers" or sv[8].svType == "tandem_dup": #only do the threshold thing for dels, invers and dups
-			# 		tadSubset = tadData[tadData[:,0] == sv[0]]
-			#
-			# 		startMatches = sv[1] < tadSubset[:,1]
-			# 		endMatches = sv[5] > tadSubset[:,2]
-			#
-			# 		allMatches = startMatches * endMatches
-			# 		overlappedTads = tadSubset[allMatches]
-			# 		if len(overlappedTads) > 2:
-			# 			continue
-			# 		filteredSvData.append(sv)
-			# 	else:
-			# 		filteredSvData.append(sv)
-			# 	types.append(sv[8].svType)
-			#
-			# print np.unique(types)
-			# svData = np.array(filteredSvData, dtype="object")
-			# print "number of svs: ", svData.shape
-			#
-			# #temporarily write to a file
-			# testOut = "unshuffledSVs.txt"
-			# header = "chr1\ts1\te1\to1\tchr2\ts2\te2\to2\tsource\tsample_name\tsv_type\tcancer_type\n"
-			# 
-			# with open(testOut, 'w') as outF:
-			# 	outF.write(header)
-			# 	for sv in svData:
-			# 		line = sv[0] + "\t" + str(sv[1]) + "\t" + str(sv[2]) + "\t" + sv[8].o1 + "\t" + sv[3] + "\t" + str(sv[4]) + "\t" + str(sv[5]) + "\t" + sv[8].o2 + "\t-\t" + sv[8].sampleName + "\t" + sv[8].svType + "\t" + sv[8].cancerType + "\n"
-			# 		outF.write(line)
-			# exit()
-
-			#Plot the number of SVs that start or end in a TAD
-			# svCount = []
-			# for sv in svData:
-			#
-			# 	tadChrSubset = tadData[tadData[:,0] == sv[0]]
-			#
-			# 	#Number of TADs that are overlapped by an SV
-			# 	startMatches = sv[1] < tadChrSubset[:,2]
-			# 	endMatches = sv[5] > tadChrSubset[:,1]
-			# 	
-			# 	tadMatches = tadChrSubset[startMatches * endMatches]
-			# 	#
-			# 	# startMatches = (sv[1] > tadChrSubset[:,1]) * (sv[1] < tadChrSubset[:,2])
-			# 	# endMatches = (sv[5] > tadChrSubset[:,1]) * (sv[5] < tadChrSubset[:,2])
-			# 	#
-			# 	# tadMatches = tadChrSubset[startMatches + endMatches]
-			# 	
-			# 	# if tadMatches.shape[0] not in svCount:
-			# 	# 	svCount[tadMatches.shape[0]] = 0
-			# 	# svCount[tadMatches.shape[0]] += 1
-			# 	#
-			# 	if tadMatches.shape[0] < 50:
-			# 		svCount.append(tadMatches.shape[0])
-			# 
-			# print svCount
-			# 
-			# import matplotlib.pyplot as plt
-			# plt.hist(svCount)
-			# #plt.bar(svCount.keys(), svCount.values())
-			# plt.show()
-			# exit()
-				
-			
 
 		if settings.general['shuffleTads'] == True:
 			#Shuffle the TADs. Assign random genomic positions to the TADs, but keep the same length.
@@ -132,56 +52,19 @@ class NeighborhoodDefiner:
 		print("mapping TADs to genes")
 		self.mapTADsToGenes(genes[:,3], tadData)
 
-		#For every SV, find the TADs on the left and right
 		
-		#Compute how large this window is in total and report that (sum left TAD + right TAD for translocations)
-		# windowSizes = []
-		# for sv in svData:
-		#
-		# 	tadChr1Subset = tadData[tadData[:,0] == sv[0]]
-		# 	tadChr2Subset = tadData[tadData[:,0] == sv[3]]
-		# 
-		# 	#Get the TAD that is overlapped by the left part of the SV
-		# 	leftTad = tadChr1Subset[(tadChr1Subset[:,1] <= sv[1]) * (tadChr1Subset[:,2] >= sv[1])]
-		# 	rightTad = tadChr2Subset[(tadChr2Subset[:,1] <= sv[4]) * (tadChr2Subset[:,2] >= sv[4])]
-		#
-		# 	if len(leftTad) < 1 or len(rightTad) < 1:
-		# 		continue
-		# 	
-		# 	leftTad = leftTad[0]
-		# 	rightTad = rightTad[0]
-		#
-		# 	if leftTad[3] == rightTad[3]:
-		# 		continue
-		# 	
-		# 	leftTadSize = leftTad[2] - leftTad[1]
-		# 	rightTadSize = rightTad[2] - rightTad[1]
-		#
-		# 	windowSizes.append(leftTadSize + rightTadSize)
-		#
-		#
-		# print windowSizes
-		# import matplotlib.pyplot as plt
-		#
-		# plt.hist(windowSizes)
-		# plt.show()
-		# exit()
-		
-		
-		#2. Get eQTLs from the eQTL file, and map eQTLs to genes. 
-			
+		#2. Get eQTLs from the eQTL file, and map eQTLs to TADs. 			
 		eQTLFile = settings.files['eQTLFile']
 		print("getting eQTLs")
 		eQTLData = InputParser().getEQTLsFromFile(eQTLFile, genes[:,3], self)
-
+		#map the regulatory elements to the TADs so that we can later on when looking at disrupted TADs easily find which elements are affected.
 		tadData = self.mapElementsToTads(eQTLData, tadData)
-
-		#Map the elements to the TADs, and map the genes to the TADs. 
 		
+		#map the genes to TADs. These are all the gene objects that we can then access when looking at disrupted TADs. 
 		tadData = self.mapGenesToTads(genes, tadData) 
 		
 		#3. Get enhancers
-		
+
 		print("getting enhancers")
 		enhancerData = InputParser().getEnhancersFromFile(settings.files['enhancerFile'], genes[:,3], self)
 		#Add the enhancers to TADs & genes as well	
@@ -263,19 +146,31 @@ class NeighborhoodDefiner:
 		tadData = self.mapCTCFStrengthToTads(ctcfData, tadData)
 		
 		
-		#3. Map SVs to all neighborhood elements
+		#3. Determine the effect of the SVs on the neighborhood/regulator set
 		print("Mapping SVs to the neighborhood")
 		self.mapSVsToNeighborhood(genes, svData, tadData)
 			
 	def mapCTCFStrengthToTads(self, ctcfData, tadData):
+		"""
+			Function to determine the strength of a TAD boundary. Is not used anymore in later predictions.
+
+			There are 2 ways to look at TAD boundary strength:
+			1. The maximum strength of the CTCF sites within a window around the TAD boundary
+			2. The number of CTCF sites in a window around the TAD boundary
+
+			ctcfData (numpy array): CTCF data as parsed by InputParser
+			tadData (numpt array); TAD data as parsed by InputParser
+
+			return: tadData (np array), input TAD data, but then with the CTCF strengths mapped to them
+		"""
 		
 		#for each tad, check which ctcf site is overlapping the boundaries
 		for tad in tadData:
 			
 			ctcfChrSubset = ctcfData[ctcfData[:,0] == tad[0]]
-			
+
 			# annotate by number of CTCF sites around boundary
-			#100kb according to nature paper should be enough
+			#100kb according to PCAWG 2020 TAD nature paper should be enough
 			window = 100000
 
 			startMatches = ctcfChrSubset[(ctcfChrSubset[:,2] >= tad[1]-window) * (ctcfChrSubset[:,1] <= tad[1]+window)]
@@ -312,18 +207,17 @@ class NeighborhoodDefiner:
 		"""
 			Adds the left and right TAD to each gene object.
 			
-			TO DO:
+			DEPRECATED:
 			- This function may be deprecated, I don't really use it anymore in the code but leave it here in case it is useful at a later point. 
 			
 		"""
-		print(tadData)
 		#For each gene, check which TADs are on the correct chromosome.
 		
 		#Then see which ones are directly on the left and directly on the right of the gene.
 		previousChr = None
 		for gene in genes:
 			
-			
+
 			
 			#1. Make a subset of TADs on the right chromosome. There should be only 1 chromosome
 			
@@ -365,40 +259,6 @@ class NeighborhoodDefiner:
 			else:
 				gene.setRightTAD(None)
 
-		
-	def mapElementsToGenes(self, element, geneDict, geneSymbol):
-		"""
-			Map the right gene object to the eQTL object.
-			
-			element (object): Element object to which we add the gene that the element regulates.
-			geneDict (dictionary): Dictionary with gene names and gene objects in the values.
-			geneSymbol (string): Name of the gene that we want to map the element to
-		
-		"""
-		
-		geneDict[geneSymbol].addElement(element)
-		#element.addGene(geneDict[geneSymbol])
-		
-	def mapInteractionsToGenes(self, genes, interactionData):
-		"""
-			Take Hi-C interactions as input (see getInteractionsFromFile for the format) and link these to the causal genes.
-			
-			TO DO:
-			- Deprecated function, may be removed or re-added later. 
-		
-		"""
-		
-		#1. For each gene, find the non-coding regions that have an interaction with this gene. 
-		
-		previousChr = None
-		for gene in genes:
-			
-			#Get the interactions bby the name of the gene
-			interactionsSubset = interactionData[interactionData[:,3] == gene.name,5] #get the objects
-			
-			#add interaction objects to the genes
-			gene.setInteractions(interactionsSubset)
-	
 	def mapGenesToTads(self, genes, tadData):
 		"""
 			For computing effects of disruptions on genes, it is convenient to know which genes are located in which TADs.
@@ -459,10 +319,13 @@ class NeighborhoodDefiner:
 	
 	def mapElementsToTads(self, elementData, tadData):
 		"""
-			Determine which eQTL interactions take place within which TAD.
-			eQTL interactions will be mapped to TAD objects.
-			
-			elementData: (numpy array) array with elements. chr, start, end, ElementObject
+			Determine which element interactions take place within which TAD.
+			element interactions will be mapped to TAD objects.
+
+			elementData: (numpy array) array with elements. chr, start, end, geneObject, strength
+
+			return:
+			tadData (numpy array): array with TAD information (from InputParser), updated with elements mapped to the TADs.
 			
 		"""
 		
@@ -472,9 +335,9 @@ class NeighborhoodDefiner:
 		for tad in tadData:
 			if tad[0] != previousChromosome:
 				previousChromosome = tad[0]
-				elementChrSubset = elementData[np.where(elementData[:,0] == tad[0])] #Get all elements that are on this chromosome. All eQTLs are CIS, so intrachromosomal is fine for now
+				elementChrSubset = elementData[np.where(elementData[:,0] == tad[0])] #Get all elements that are on this chromosome. All elements are CIS, so intrachromosomal is fine for now
 
-			#Find the eQTLs where the start and end of the eQTL are within the start and end of the TAD. 
+			#Find the element where the start and end of the element are within the start and end of the TAD. 
 			startMatches = elementChrSubset[:,1] >= tad[1]
 			endMatches = elementChrSubset[:,2] <= tad[2]
 			
@@ -486,188 +349,62 @@ class NeighborhoodDefiner:
 				
 				continue
 			else:
-				
-				#tad[3].addElements(matchingElements[:,3]) #Add the elements objects to the TAD objects.
+
 				tad[3].addElements(matchingElements) #Add the elements objects to the TAD objects.
-			
+
 		return tadData		
 	
 	def mapInteractionsToTads(self, interactionsByTad, tadData):
 		"""
+			Function to specifically map Hi-C interactions to the TADs. Hi-C interactions have 2 sides, each of which is considered a separate regulatory element that can be
+			gained or lost.
+
+			interactionsByTad: for each interaction side, we have pre-mapped it to the TAD that it takes place in (see preprocessing.sh). Use that here for a quick mapping.
+			tadData (numpy array): array with TAD information (from InputParser)
+
+			return:
+			array with TAD information (from InputParser), updated with elements mapped to the TADs.
 			
 		"""
 		
-		hicOut = "../../data/hic/hic.bed"
-		with open(hicOut, 'w') as outF:
-			
-			print("mapping to tads")
-			uniqueElements = dict()
-			for tadStr in interactionsByTad:
-				
-				#1. Get the right TAD object
-				splitTadStr = tadStr.split("_")
-				
-				
-				tadChrMatch = tadData[:,0] == splitTadStr[0]
-				tadStartMatch = tadData[:,1] == int(splitTadStr[1])
-				tadEndMatch = tadData[:,2] == int(splitTadStr[2])
-				
-				matchingTad = tadData[tadChrMatch * tadStartMatch * tadEndMatch]
-				
-				if len(matchingTad) < 1: #This should not happen, but it does anyway? 
-					continue
-				
-				matchingTad = matchingTad[0]
-				
-				#Assign the interactions to this TAD.
-				#matchingTad[3].addElements(interactionsByTad[tadStr])
-				interactionLines = []
-				binSize = 5000
-				
-				for lineInd in range(0, len(interactionsByTad[tadStr])-1):
-					line = interactionsByTad[tadStr][lineInd]
-					# el = Element(splitTadStr[0], int(line), int(line)+binSize)
-					# el.type = "hic"
-					element = [splitTadStr[0], int(line), int(line)+binSize, "hic", None, None] #None because it is not associated with any gene
-					interactionLines.append(element)
-					outF.write(splitTadStr[0] + "\t" + str(line) + "\t" + str(int(line)+binSize) + "\n")
-											
-					#interactionLines.append([line, "hic"])
-				# 	if line != "":
-				# 		elementStr = splitTadStr[0] + "_" + str(line) + "_" + str(int(line)+binSize)
-				# 		#if elementStr not in uniqueElements:
-				# 		uniqueElements[elementStr] = [splitTadStr[0], int(line), int(line)+binSize]
-				# 			#Add this element
-				# 		#elementObject = Element(splitTadStr[0], int(line), int(line)+binSize)
-				# 		#elementObject.type = "hic"
-				# 		#matchingTad[3].addElements([elementObject])
-				# 
-				#matchingTad[3].addElements(np.array(interactionLines, dtype="object"))
-				matchingTad[3].addElements(interactionLines)
+		print("mapping to tads")
+		uniqueElements = dict()
+		for tadStr in interactionsByTad:
+
+			#1. Get the right TAD object that this interaction bin is in. 
+			splitTadStr = tadStr.split("_")
+
+			tadChrMatch = tadData[:,0] == splitTadStr[0]
+			tadStartMatch = tadData[:,1] == int(splitTadStr[1])
+			tadEndMatch = tadData[:,2] == int(splitTadStr[2])
+
+			matchingTad = tadData[tadChrMatch * tadStartMatch * tadEndMatch]
+
+			if len(matchingTad) < 1: #Sometimes the interaction are outside TADs
+				continue
+
+			matchingTad = matchingTad[0] #assume that there is 1 TAD the bin falls into. We have 1 start coordinate for the interaction, so we assume that it is that one that is within the right TAD.
+			#Assign the interactions to this TAD.
+			interactionLines = []
+			binSize = 5000 #should be a setting to work with other Hi-C data than we currently use.
+
+			for lineInd in range(0, len(interactionsByTad[tadStr])-1):
+				line = interactionsByTad[tadStr][lineInd]
+				element = [splitTadStr[0], int(line), int(line)+binSize, "hic", None, None] #add the bin size to indicate the start/end of the interaction to use for the element. 
+				interactionLines.append(element)
+
+			#Assign the interactions to this TAD.
+			matchingTad[3].addElements(interactionLines)
 		
 		return tadData 
 		
-	def determineGainedInteractions(self, svData, tadData):
-		"""
-			Determine for each SV what the TADs are that the SV ends in on the left or the right. Determine which elements are gained as a result of a deletion and assign these to the genes in the respective TADs. 
-			
-			svData: (numpy array) array with the SVs and their information. chr1, s1, e1, chr2, s2, e2, cancerType, sampleName, svObject.
-			tadData: (numpy array) array with the TADs and their information. chr, start, end, tadObject
-			
-			TO DO:
-			- Move function to derivative TAD function
-			
-		"""
-		
-		#Loop through all SVs and see which ones have overlap with any TAD.
-		#The SVs are sorted per cancer type, so taking chromosome subsets may not gain as much speed
-
-		for sv in svData:
-			
-			#Only focus on deletions
-			typeMatch = re.search("del", sv[8].svType, re.IGNORECASE)
-			if typeMatch is None:
-				continue
-			
-			##Here we need to take translocations into account as well.
-			#If the SV is intrachromosomal, we should find the left TAD by chr1, s1 and the right TAD by e2.
-			#if the SV is interchromosomal, we should find the left TAD by chr1, s1 and the right TAD by chr2 and e2. 
-			#We may slightly overshoot TADs if there is a difference in the start and end coordinates, but this may do for now.
-
-			if sv[0] == sv[3]: #intrachromosomal
-				leftTadChr = sv[0]
-				svStart = sv[1] #s1
-				svEnd = sv[5] #e2
-				
-				#Now search for the matches on the left and right TAD by these coordinates
-				#First get the right chromosome subset
-				tadChromosomeSubset = tadData[np.where(tadData[:,0] == leftTadChr)]
-				
-				#The problem here is that SVs that are entirely within one TAD are also counted, which should not happen.
-				#The SV should end in the left and right TAD, but not be the same TAD. 
-				
-				#First find all matches overlapping the right side of the TAD
-				startMatches = svStart > tadChromosomeSubset[:,1]
-				endMatches = svStart <= tadChromosomeSubset[:,2]
-				allStartMatches = startMatches * endMatches
-				
-				
-				#Then find the matches overlapping the left side of the TAD
-				startMatches = svEnd < tadChromosomeSubset[:,2]
-				endMatches = svEnd >= tadChromosomeSubset[:,1]
-				allEndMatches = startMatches * endMatches
-				
-				#Every TAD that is matched for both the start and end should be excluded
-				allMatches = np.logical_xor(allStartMatches, allEndMatches)
-				
-				overlappingTADsRight = tadChromosomeSubset[allStartMatches]
-				overlappingTADsLeft = tadChromosomeSubset[allEndMatches]
-				
-				#Both ends should be in a TAD for this approach to work
-				if overlappingTADsRight.shape[0] < 1:
-					continue
-				if overlappingTADsLeft.shape[0] < 1:
-					continue
-
-				#Make the total subset
-				#overlappingTads = np.concatenate((overlappingTADsLeft, overlappingTADsRight), axis=0)
-				overlappingTads = tadChromosomeSubset[allMatches]
-
-				
-				if overlappingTads.shape[0] < 1:
-					continue
-			else:
-				continue
-			
-			#For the overlapping TADs, we can get the TAD on the right and the TAD on the left.
-			#The SV could end on the boundary and then the desired result is not in our match set, so we skip these for now.
-			
-			#Get the TADs on the far left and far right of the SV.
-			#These are the TADs that are still in tact.
-			#We get the eQTL interactions that are in these two TADs (have been pre-mapped to the TAD that these take place in)
-			#Then we find the genes that are present within the TAD (has also been pre-mapped to the TAD)
-			#To each gene in one TAD, we add the number of gained interactions equal to the number of eQTL interactions in the other TAD.
-				
-			farLeftTad = overlappingTads[0] #This list is sorted
-			farRightTad = overlappingTads[overlappingTads.shape[0]-1,:]
-
-			
-			#The genes in the far left TAD, only in the part that is not overlapped by the deletion, gain the elements that are not overlapped by the deletion
-			#in the far right tad.
-			remainingLeftGenes = farLeftTad[3].getGenesByRange(farLeftTad[1], sv[1])
-			remainingLeftElements = farLeftTad[3].getElementsByRange(farLeftTad[1], sv[1])
-			
-			remainingRightGenes = farLeftTad[3].getGenesByRange(sv[5], farRightTad[2])
-			remainingRightElements = farLeftTad[3].getElementsByRange(sv[5], farRightTad[2])
-			
-			for gene in remainingLeftGenes:
-				
-				if len(remainingRightElements) > 0:
-					gene.addGainedElements(remainingRightElements, sv[7])
-					gene.addGainedElementsSVs(remainingRightElements, sv[0] + "_" + str(sv[1]) + "_" + str(sv[2]) + "_" + sv[3] + "_" + str(sv[4]) + "_" + str(sv[5]) + "_" + sv[8].sampleName)
-					
-			
-			for gene in remainingRightGenes:
-
-				if len(remainingLeftElements) > 0:	
-					gene.addGainedElements(remainingLeftElements, sv[7])
-					gene.addGainedElementsSVs(remainingLeftElements, sv[0] + "_" + str(sv[1]) + "_" + str(sv[2]) + "_" + sv[3] + "_" + str(sv[4]) + "_" + str(sv[5]) + "_" + sv[8].sampleName)
-		
-		return 0
-		
-		
 	def mapSVsToNeighborhood(self, genes, svData, tadData):
 		"""
-			Take as input gene objects with the neighborhood pre-set, and search through the SVs to find which SVs overlap the genes, TADs and eQTLs in the gene neighborhood
-		
-			The TADs are also parsed as input, because when we compute gained interactions we search through other TADs that are on the other end of the SV breakpoint. This is the TAD from which we can
-			expect interactions in our current TAD. 
-		
-			!!!!!! This function will need to be properly split into multiple functions for the different data types.
-			TODO:
-			- Split into multiple functions
-			Move to derivative TAD maker for deletions as well. Here we now only look at losses, and gains are in a separate function. This should be moved to the derivative TAD class and do everything for all SVs at once. 
-			- Move the gained interactions outside of the left/right TAD check. See comments below. 
+			Take as input gene objects with all regulatory elements mapped to them that could potentially be disrupted, and search through the SVs to find which SVs overlap the genes,
+			and what the changes to the regulatory set are as a result of the SVs.
+
+			First looks at 'coding' effects; what are the SVs that directly overlap genes? This is output to a file, but we don't use it anymore anywhere.
+			Then, it calls the DerivativeTADMaker, which looks at each SV and the TADs that these disrupt, and then calculate gains and losses for each gene.
 		
 			genes: (numpy array) array with the genes and their information. chr, start, end, geneObject
 			svData: (numpy array) array with the SVs and their information. chr1, s1, e1, chr2, s2, e2, cancerType, sampleName, svObject.
@@ -698,9 +435,7 @@ class NeighborhoodDefiner:
 					gene.SVs[svEntry] = 1
 				
 			else: #interchromosomal SV
-				
-				
-				
+
 				geneChr1Subset = genes[sv[0] == genes[:,0]]
 				#Find all genes overlapped by this SV. 
 				startMatches = sv[1] <= geneChr1Subset[:,2]
@@ -725,175 +460,5 @@ class NeighborhoodDefiner:
 		
 		print("Done mapping SVs")
 		
-		
-		#dirty solution here now, exclude the SVs.
-		
-		filteredSVs = []
-		for sv in svData:
-			svStr = sv[0] + "_" + str(sv[1]) + "_" + str(sv[2]) + "_" + sv[3] + "_" + str(sv[4]) + "_" + str(sv[5]) + "_" + sv[8].sampleName
-			#if svEntry not in excludedSVs:
-			#	filteredSVs.append(sv)
-			#if svEntry in excludedSVs:
-			#	filteredSVs.append(sv)
-			
-			filteredSVs.append(sv)
-
-		filteredSVs = np.array(filteredSVs, dtype='object')
-		
 		#filteredSVs = svData
-		DerivativeTADMaker(filteredSVs, genes, tadData)
-		
-		
-		#Specific for deletions, this will need to be part of the derivative TAD maker later on
-		#if settings.general['gainOfInteractions'] == True:
-		#	self.determineGainedInteractions(filteredSVs, tadData)
-		
-	def mapSNVsToNeighborhood(self, genes, snvDir):
-		
-		geneMap = dict() #know which gene object to add to by name
-		for geneInd in range(0, genes.shape[0]):
-			gene = genes[geneInd]
-			geneName = gene[3].name
-			geneMap[geneName] = geneInd
-		
-		
-		if settings.general['source'] == 'TCGA':
-			
-			#go through the snv dir, and make a note per gene if it has an SNV in that patient.
-
-			allFiles = [f for f in listdir(snvDir) if isfile(join(snvDir, f))]
-			
-			for currentFile in allFiles:
-				
-				if currentFile == "MANIFEST.txt":
-					continue
-				splitFileName = currentFile.split(".")
-				patientID = splitFileName[0]
-				splitPatientID = patientID.split("-")
-				shortPatientID = 'brca' + splitPatientID[2]
-			
-				#Load the contents of the file
-				with open(snvDir + "/" + currentFile, 'r') as inF:
-					lineCount = 0
-					for line in inF:
-						line = line.strip() #remove newlines
-						if lineCount < 1: #only read the line if it is not a header line
-							lineCount += 1
-							continue
-			
-						splitLine = line.split("\t")
-						geneName = splitLine[0]
-						
-						if splitLine[8] == 'Silent':
-							continue
-						
-						if geneName not in geneMap:
-							continue
-						geneInd = geneMap[geneName]
-						geneObj = genes[geneInd,3]
-						geneObj.addSNV(shortPatientID)
-		if settings.general['source'] == 'HMF':
-			
-			#Make a map from ENSG identifiers to our gene names
-			geneNameConversionFile = settings.files['geneNameConversionFile']
-			
-			geneNameConversionMap = dict()
-			with open(geneNameConversionFile, 'r') as inF:
-				
-				for line in inF:
-					
-					line = line.strip()
-					splitLine = line.split("\t")
-					ensgId = splitLine[3]
-					splitEnsgId = ensgId.split('.') #we only keep everything before the dot
-					geneName = splitLine[4]
-					geneNameConversionMap[splitEnsgId[0]] = geneName
-
-			#search through the SNVs and link these to genes.
-			vcfs = glob.glob(snvDir + '/**/*.somatic.vcf.gz', recursive=True)
-		
-			variantsList = []
-			addedVariants = [] #check if based on pairs no duplicates are added. 
-			
-			for vcf in vcfs:
-				
-				
-				#get the samplename from the vcf
-				sampleName = re.search('.*\/([A-Z\d]+)\.', vcf).group(1)
-				
-				#open the .gz file
-				with gzip.open(vcf, 'rb') as inF:
-					
-					for line in inF:
-						line = line.strip().decode('utf-8')
-	
-						if re.search('^#', line): #skip header
-							continue
-						
-						#skip the SV if it did not pass.
-						splitLine = line.split("\t")
-						filterInfo = splitLine[6]
-						if filterInfo != 'PASS':
-							continue
-				
-						#print(line)
-						
-						#Check if this SNV has any affiliation with a gene. This means that in the info field, a gene is mentioned somewhere. That is, there is an ENSG identifier.
-						infoField = splitLine[7]
-						
-						geneSearch = re.search('(ENSG\d+)', infoField)
-						if geneSearch:
-							geneMatch = re.search('(ENSG\d+)', infoField).group(1)
-							#skip genes for which we do not know the name
-							if geneMatch not in geneNameConversionMap:
-								continue
-							geneName = geneNameConversionMap[geneMatch]
-							
-							if geneName not in geneMap:
-								continue
-							
-							geneInd = geneMap[geneName]
-							geneObj = genes[geneInd,3]
-							geneObj.addSNV(sampleName)
-	
-	
-	def mapCNVsToNeighborhood(self, genes, cnvDir):
-		
-		geneMap = dict() #know which gene object to add to by name
-		for geneInd in range(0, genes.shape[0]):
-			gene = genes[geneInd]
-			geneName = gene[3].name
-			geneMap[geneName] = geneInd
-		
-		if settings.general['source'] == 'HMF':
-			
-			tsvs = glob.glob(cnvDir + '/**/*.gene.tsv', recursive=True)
-			
-			for tsv in tsvs:
-				
-				#get the samplename from the vcf
-				sampleName = re.search('.*\/([A-Z\d]+)\.', tsv).group(1)
-				
-				#open the .gz file
-				with open(tsv, 'r') as inF:
-					
-					lineCount = 0
-					for line in inF:
-		
-						if lineCount < 1: #skip header
-							lineCount += 1
-							continue
-			
-						splitLine = line.split("\t")
-						
-						gene = splitLine[3]
-						
-						if float(splitLine[5]) > 1.7 and float(splitLine[5]) < 2.3: #these are not CNVs
-							continue
-						
-						if gene not in geneMap:
-							continue
-						
-						geneInd = geneMap[gene]
-						geneObj = genes[geneInd,3]
-						geneObj.addCNV(sampleName)
+		DerivativeTADMaker(svData, genes, tadData)

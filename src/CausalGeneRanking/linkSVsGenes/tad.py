@@ -13,7 +13,6 @@ class TAD:
 		self.start = start
 		self.end = end
 		self.SVs = None
-		self.SNVs = None
 		self.elements = []
 		self.elementsStr = dict()
 		self.genes = []
@@ -22,32 +21,27 @@ class TAD:
 		self.startStrengthSignal = '0'
 		self.endStrengthSignal = '0'
 		
-	def setSVs(self, SVs): #All SVs that overlap with this TAD boundary (left or right depending on the gene. Is that safe?)
+	def setSVs(self, SVs): #All SVs that overlap with this TAD
 		
 		self.SVs = SVs
 	
-	def setSNVs(self, SNVs):
-		
-		self.SNVs = SNVs
-		
-	def setElements(self, elements): #All genomic elements found inside this TAD
+	def setElements(self, elements): #All regulatory elements found inside this TAD
 		self.elements = elements
 	
-	def setElementsStr(self, elements):
+	def setElementsStr(self, elements): #str version to quickly match elements in the TAD
 		for element in elements:
 			elementStr = element[0] + "_" + str(element[1]) + "_" + str(element[2]) + "_" + str(element[3]) + "_" + str(element[4])
 			self.elementsStr[elementStr] = 0
-			
-	
-	def addElements(self, elements):
+				
+	def addElements(self, elements): #add nwe elements to the TAD
 		self.elementsStr = dict()
 		for element in elements:
 			self.elements.append(list(element))
 		
-	def addGene(self, gene): #Function to add genes that are within the TAD
+	def addGene(self, gene): #Function to add genes that are within the TAD, one-by-one
 		self.genes.append(gene)
 		
-	def setGenes(self, genes):
+	def setGenes(self, genes): #add genes to the TAD
 		self.genes = genes
 	
 	#Get all genomic elements within this TAD given a specific range within the TAD
@@ -55,7 +49,6 @@ class TAD:
 		
 		elementsInRange = []
 		for element in self.elements:
-			#if element[1] >= start and element[2] <= end or element[2] <= end and element[1] >= start:
 			if element[2] >= start and element[1] <= end:
 				elementsInRange.append(element)
 

@@ -1,8 +1,7 @@
 """
 	Class intended to read all files that are provided to the program.
-	There will be functions to:
+	There are functions to:
 	- Read SV files
-	- Read SNV files
 	- Read gene files
 	- Read all the individual data types (e.g. eQTLs, enhancers, Hi-C data)
 	
@@ -13,9 +12,7 @@ from __future__ import absolute_import
 from __future__ import print_function
 from gene import Gene
 from sv import SV
-# from snv import SNV
 from tad import TAD
-from element import Element
 import numpy as np
 from random import randint
 import glob
@@ -24,19 +21,19 @@ import settings
 
 class InputParser:
 	
-	def getSVsFromFile(self, svFile, typeFilter): #excluded SVs no longer used here!!!
+	def getSVsFromFile(self, svFile, typeFilter):
 		"""
-			Parse the SV data from the SV input file.
+			Parse the SV data from the SV input file, specific for PCAWG/TCGA/germline data.
 			
 			svFile: (string) location of the SV file to read
-			typeFilter: (string) meant to filter by which types of SVs to include in the model, but does not work. 
+			typeFilter: (string) meant to filter by which types of SVs to include in the model, is not used anymore.
 			
 			return
 			regions: (numpy array) array with the SVs and their information. chr1, s1, e1, chr2, s2, e2, cancerType, sampleName, svObject.
 		"""
 		
 		variantsList = []
-		
+
 		with open(svFile, 'r') as f:
 			
 			lineCount = 0
@@ -68,7 +65,7 @@ class InputParser:
 				
 				cancerType = splitLine[cancerTypeIndex]
 				sampleName = splitLine[sampleNameIndex]
-				
+
 				
 				
 				svTypeIndex = header.index("sv_type")
@@ -83,7 +80,7 @@ class InputParser:
 						splitLine[e2Index] = int(splitLine[e1Index])
 				else:
 					if splitLine[chr2Index] == 'NaN':
-						continue # This line does not have correct chromosome 2 information (should we be skipping it?)
+						continue # This line does not have correct chromosome 2 information so we don't know what this is
 				
 				s1 = int(splitLine[s1Index])
 				e1 = int(float(splitLine[e1Index]))
@@ -116,6 +113,7 @@ class InputParser:
 					s1 = e1
 					e1 = tmpS1
 
+				#For TCGA/germline/PCAWG the SV naming is always different, so map everything back here to 1 format. 
 				if svType == 'del':
 					svType = 'DEL'
 				elif svType == 'tandem_dup':
@@ -125,6 +123,14 @@ class InputParser:
 				elif svType == 'transl_inter':
 					svType = 'ITX'
 				elif svType == 'INV':
+					svType = 'INV'
+
+				#germline
+				if svType == 'deletion':
+					svType = 'DEL'
+				elif svType == 'duplication':
+					svType = 'DUP'
+				elif svType == 'inversion':
 					svType = 'INV'
 
 				#also for pcawg data
@@ -141,41 +147,25 @@ class InputParser:
 
 				else:
 					print(svType)
-					continue
+					continue #unmatched SV type
 	
 				if list(chr1)[0] == "c": #add the chr notation only when it is not already there
 					svObject = SV(chr1, s1, e1, o1, chr2, s2, e2, o2, sampleName, cancerType, svType)
-					
-					#Check if this SV needs to be exluded
-					svStr = chr1 + "_" + str(s1) + "_" + str(e1) + "_" + chr2 + "_" + str(s2) + "_" + str(e2) + "_" + sampleName + '_' + svType
-					# if svStr not in excludedSVs:
-					# 	continue
-
 					variantsList.append([chr1, s1, e1, chr2, s2, e2, cancerType, sampleName, svObject])
 					
 				else:
 					svObject = SV('chr' + chr1, s1, e1, o1, 'chr' + chr2, s2, e2, o2, sampleName, cancerType, svType)
-					
-					#Check if this SV needs to be exluded
-					svStr = 'chr' + chr1 + "_" + str(s1) + "_" + str(e1) + "_" + 'chr' + chr2 + "_" + str(s2) + "_" + str(e2) + "_" + sampleName + '_' + svType
-
-					# if svStr not in excludedSVs:
-					# 	continue
-
 					variantsList.append(['chr' + chr1, s1, e1, 'chr' + chr2, s2, e2, cancerType, sampleName, svObject])
-				#chr 1, start, end, chr2, start2, end2
-				
-				
+
 			
 		regions = np.array(variantsList, dtype='object')
 		return regions
 	
 	def getSVsFromFile_hmf(self, svDir): 
 		"""
-			Parse the SV data from the SV input file.
+			Parse the SV data from the SV input file, specific for HMF
 			
-			svFile: (string) location of the SV file to read
-			typeFilter: (string) meant to filter by which types of SVs to include in the model, but does not work. 
+			svDir: (string) location of the SV vcf files to read
 			
 			return
 			regions: (numpy array) array with the SVs and their information. chr1, s1, e1, chr2, s2, e2, cancerType, sampleName, svObject.
@@ -308,49 +298,15 @@ class InputParser:
 					variantsList.append([finalChr1, s1, e1, finalChr2, s2, e2, settings.general['cancerType'], sampleName, svObject])
 					addedVariants.append(svStr)
 
-				#Get the required information for this SV:
-				
-				#chr1, s1, e1, o1, chr2, s2, e2, o2, samplename, cancer type, svType
-	
 		svs = np.array(variantsList, dtype='object')
-		#output these to a file so that we can load these elsewhere when needed
-
 
 		return svs
-		#np.savetxt('hmf_svs.txt', svs, fmt='%s', delimiter='\t')
-		
-		# print(np.unique(svs[:,7]).shape)
-		# 
-		# svTypes = dict()
-		# patientDistr = dict()
-		# for sv in svs:
-		# 	
-		# 	if sv[8].svType not in svTypes:
-		# 		svTypes[sv[8].svType] = 0
-		# 	svTypes[sv[8].svType] += 1
-		# 	
-		# 	if sv[7] not in patientDistr:
-		# 		patientDistr[sv[7]] = 0
-		# 	patientDistr[sv[7]] += 1
-		# 	
-		# print(svTypes)
-		# print(patientDistr)
-		# import matplotlib.pyplot as plt
-		# plt.hist(list(patientDistr.values()))
-		# plt.show()
-		# 	
-		# exit()
-		
 
-	#What do we want from the SNV file?
-	#chromosome (combined with position in 'position' field)
-	#position
-	#cancer type (ID_tumour or Primary site) 
-	#sample name (ID_SAMPLE)
 	def getSNVsFromFile(self, snvFile):
 		"""
-			TO DO:
-			- Re-add SNVs to the model and fully document
+			DEPRECATED
+
+			Used to read SNV data from the TCGA. No longer used in the model at this stage.
 		
 		"""
 		snvList = []
@@ -388,8 +344,6 @@ class InputParser:
 				cancerType = splitLine[cancerTypeIndex]
 				sampleName = splitLine[sampleNameIndex]
 				
-				#snvObject = SNV(chromosome, start, end, sampleName, cancerType)
-				#snvList.append([chromosome, start, end, sampleName, cancerType, snvObject])
 				snvList.append([chromosome, int(start), int(end), None, None, None, sampleName, cancerType]) #Add None because in the end we wish to treat variants the same way, but since objects take up memory it needs to be in a NP array but requires to be int he same column
 				
 		regions = np.array(snvList, dtype="object")
@@ -550,7 +504,15 @@ class InputParser:
 		return np.array(sortedTads)
 	
 	def getCTCFSitesFromFile(self, ctcfFile):
-		
+		"""
+			Read the CTCF sites from the provided CTCF file.
+
+			ctcfFile: (string) location of the CTCF file on disk
+
+			return:
+			ctcfSites: (numpy array) array with the CTCF sites and their information. chr, start, end, elementType, object reference (unused), strength (peak intensity)
+
+		"""
 		ctcfSites = []
 		with open(ctcfFile, 'r') as f:
 			
@@ -566,24 +528,22 @@ class InputParser:
 				
 				ctcf = [splitLine[0], int(splitLine[1]), int(splitLine[2]), "ctcf", None, float(splitLine[4])]
 
-				ctcfSites.append(ctcf) #Keep the eQTL information raw as well for quick overlapping. 
-		
+				ctcfSites.append(ctcf) 
+
 		
 		return np.array(ctcfSites, dtype='object')
-		
-		
 
 	#Reading eQTL file
 	def getEQTLsFromFile(self, eQTLFile, genes, neighborhoodDefiner):
 		"""
 			Read the eQTLs from the file.
-			
+
 			eQTLFile: (string) Location of the eQTL file on disk.
 			genes: (numpy array) array with the genes and their information. chr, start, end, geneObject
-			neighborhoodDefiner: (object) neighborhoodDefiner class. Used to assign the elements to genes to determine losses later on. 
+			neighborhoodDefiner: (object) neighborhoodDefiner class. Used to assign the elements to genes to determine losses later on.
 			
 			return
-			eQTLs: (numpy array) array with eQTL elements. chr, start, end, ElementObject
+			eQTLs: (numpy array) array with eQTL elements. chr, start, end, elementType, gene object, strength (None for eQTLs)
 			
 		"""
 		#Filter the eQTLs that do not have a match
@@ -617,17 +577,14 @@ class InputParser:
 					chrName = "chr" + splitLine[0]
 				else:
 					chrName = splitLine[0]
-				# eQTLObject = Element(chrName, int(splitLine[1]), int(splitLine[2])) #chr, start, end
-				# eQTLObject.type = 'eQTL' #set the correct type
-				# #The mapping information is in the file, so we can already do it here
-				#This function belongs more to the neighborhood definer, so we use the function from there. 
-				#neighborhoodDefiner.mapElementsToGenes(eQTLObject, geneDict, splitLine[3])
+				
+				
 				eQTL = [chrName, int(splitLine[1]), int(splitLine[2]), "eQTL", splitLine[3], None]
+				#This function belongs more to the neighborhood definer, so we use the function from there.
+				#We use it because eQTLs, enhancers and promoters are linked to genes in the data, so a loss is only a loss if it was linked to the gene originally. 
 				neighborhoodDefiner.mapElementsToGenes(eQTL, geneDict, splitLine[3])
 
-				#eQTLs.append([chrName, int(splitLine[1]), int(splitLine[2]), eQTLObject, "eQTL"]) #Keep the eQTL information raw as well for quick overlapping.
-				eQTLs.append(eQTL) #Keep the eQTL information raw as well for quick overlapping. 
-		
+				eQTLs.append(eQTL) #Keep the eQTL information in numpy array instead of objects for quick overlapping. 
 		
 		return np.array(eQTLs, dtype='object')
 	
@@ -640,7 +597,7 @@ class InputParser:
 			neighborhoodDefiner: (object) neighborhoodDefiner class. Used to assign the elements to genes to determine losses later on. 
 			
 			return
-			enhancers: (numpy array) array with enhancer elements. chr, start, end, ElementObject
+			enhancers: (numpy array) array with enhancer elements. chr, start, end, gene object, strength
 		
 		"""
 		
@@ -666,7 +623,6 @@ class InputParser:
 				
 				interaction = splitLine[0]
 				splitInteraction = interaction.split(",") #first part is the enhancer, 2nd part the gene
-				#splitInteraction = interaction.split("_")
 				
 				enhancerInfo = splitInteraction[0]
 				splitEnhancerInfo = enhancerInfo.split(":")
@@ -681,7 +637,7 @@ class InputParser:
 				start = int(splitPosInfo[0])
 				end = int(splitPosInfo[1])
 				
-				score = float(splitInteraction[2])
+				score = float(splitInteraction[2]) #score is here the enhancer confidence. 
 				
 				#Get the gene name
 				splitGeneInfo = splitInteraction[1].split("$")
@@ -692,35 +648,11 @@ class InputParser:
 					continue
 				
 				
-				# elementObject = Element(chrName, start, end)
-				# elementObject.type = "enhancer"
-				
-				#The mapping information is in the file, so we can already do it here
-				
-						
 				element = [chrName, start, end, "enhancer", geneName, score]
+				#Map enhancers to the genes that these are linked to in the data. 
 				neighborhoodDefiner.mapElementsToGenes(element, geneDict, geneName)
 				enhancers.append(element)
 		
-		
-		return np.array(enhancers, dtype='object')
-		
-		#unlinked enhancers for the time being
-		enhancers = []
-		with open(enhancerFile, 'r') as f:
-			
-			lineCount = 0
-			for line in f:
-				if lineCount < 1:
-					lineCount += 1
-					continue
-				
-				line = line.strip()
-				splitLine = line.split("\t")
-				
-				
-				element = [splitLine[0], int(splitLine[1]), int(splitLine[2]), 'enhancer', None]
-				enhancers.append(element)
 		
 		return np.array(enhancers, dtype='object')
 	
@@ -733,7 +665,7 @@ class InputParser:
 			neighborhoodDefiner: (object) neighborhoodDefiner class. Used to assign the elements to genes to determine losses later on. 
 			
 			return
-			promoters: (numpy array) array with promoter elements. chr, start, end, ElementObject
+			promoters: (numpy array) array with promoter elements. chr, start, end, gene object, strength (None)
 		"""
 		
 		geneDict = dict()
@@ -741,11 +673,11 @@ class InputParser:
 		for gene in genes:
 			if gene not in geneDict:
 				geneDict[gene.name] = gene
-		
-		
+
+
 		promoters = []
 		with open(promoterFile, 'r') as f:
-			
+
 			lineCount = 0
 			for line in f:
 				if lineCount < 1:
@@ -754,7 +686,7 @@ class InputParser:
 				
 				line = line.strip()
 				splitLine = line.split("\t")
-				
+
 				#Format of file:
 				#chr		start	end	geneName_\d
 				
@@ -772,18 +704,14 @@ class InputParser:
 				splitGeneName = geneName.split("_")
 				finalGeneName = splitGeneName[0] #only get the part before the underscore
 				
-				if finalGeneName not in geneDict:
+				if finalGeneName not in geneDict: #if this gene is not in our causal/non-causal gene list, we can skip it
 					continue
 				
 				
-				# elementObject = Element(chrName, start, end)
-				# elementObject.type = "promoter"
-				
-				#The mapping information is in the file, so we can already do it here
-				
 				promoter = [chrName, start, end, "promoter", finalGeneName, None]
+				#Map promoters to the genes that these belong to. 
 				neighborhoodDefiner.mapElementsToGenes(promoter, geneDict, finalGeneName)
-				promoters.append(promoter) #Keep the eQTL information raw as well for quick overlapping. 
+				promoters.append(promoter)  
 		
 		return np.array(promoters, dtype='object')	
 
@@ -795,7 +723,7 @@ class InputParser:
 			
 			
 			return
-			cpgIslands: (numpy array) array with CpG elements. chr, start, end, ElementObject
+			cpgIslands: (numpy array) array with CpG elements. chr, start, end, geneObject (None), strength (None)
 		"""
 		
 		cpgIslands = []
@@ -821,11 +749,8 @@ class InputParser:
 				start = int(splitLine[2])
 				end = int(splitLine[3])
 				
-				# elementObject = Element(chrName, start, end)
-				# elementObject.type = "cpg"
-				
 				cpgIsland = [chrName, start, end, "cpg", None, None] #None because it is not associated with a gene
-				cpgIslands.append(cpgIsland) #Keep the eQTL information raw as well for quick overlapping. 
+				cpgIslands.append(cpgIsland) 
 		
 		return np.array(cpgIslands, dtype='object')	
 
@@ -835,9 +760,8 @@ class InputParser:
 			
 			tfFile: (string) Location of the transcription factor file on disk.
 			
-			
 			return
-			tfs: (numpy array) array with TF elements. chr, start, end, ElementObject
+			tfs: (numpy array) array with TF elements. chr, start, end, geneObject (None), strength (None)
 		"""
 		
 		tfs = []
@@ -863,17 +787,13 @@ class InputParser:
 				start = int(splitLine[1])
 				end = int(splitLine[2])
 				
-				# elementObject = Element(chrName, start, end)
-				# elementObject.type = "tf"
-				# 
-
 				tfs.append([chrName, start, end, "tf", None, None])
 		
 		return np.array(tfs, dtype='object')	
 
 	def getHiCInteractionsFromFile(self, interactionsFile):
 		"""
-			Read the Hi-C interactions from the file. To speed this up, the interactions file should already be linked to TADs to skip an additional step in the tool.
+			Read the Hi-C interactions from the file. To speed this up, the interactions file should already be linked to TADs to skip an additional step in the tool. (see preprocessing.sh)
 			
 			interactionsFile: (string) Location of the Hi-C interactions file on disk.
 
@@ -901,14 +821,12 @@ class InputParser:
 	
 	def getHistoneMarksFromFile(self, histoneFile, histoneType):
 		"""
-			Read the histone marks from the file. The histone marks are across multiple files in the same format, so we provide the type of histone as well
-			to assign it to the Element object as type. 
+			Read the histone marks from the file. The histone marks are across multiple files in the same format, so we provide the type of histone as well. 
 			
 			histoneFile: (string) Location of the histone marks file on disk.
 			
-			
 			return
-			histoneMarks: (numpy array) array with histone mark elements. chr, start, end, ElementObject
+			histoneMarks: (numpy array) array with histone mark elements. chr, start, end, geneObject (None), strength (peak intensity)
 		"""
 		histoneMarks = []
 		with open(histoneFile, 'r') as f:
@@ -945,7 +863,7 @@ class InputParser:
 			dnaseIFile: (string) Location of the DNAse I file on disk.
 
 			return
-			dnaseISites: (numpy array) array with DNAse I sites elements. chr, start, end, ElementObject
+			dnaseISites: (numpy array) array with DNAse I sites elements. chr, start, end, geneObject (None), strength (peak intensity)
 		"""
 		
 		dnaseISites = []
@@ -977,7 +895,14 @@ class InputParser:
 		return np.array(dnaseISites, dtype='object')	
 	
 	def getChromHmmFromFile(self, chromHmmFile):
-		
+		"""
+			Read the ChromHMM states from the file.
+
+			chromHmmFile: (string) Location of the chromHMM file on disk.
+
+			return
+			chromHmmSites: (numpy array) array with chromHmm states elements. chr, start, end, geneObject (None), strength (None)
+		"""
 		
 		chromHmmSites = []
 		with open(chromHmmFile, 'r') as f:
@@ -1001,6 +926,14 @@ class InputParser:
 		return np.array(chromHmmSites, dtype='object')
 
 	def getRnaPolFromFile(self, rnaPolFile):
+		"""
+			Read the RNA pol II sites from the file.
+
+			rnaPolFile: (string) Location of the RNA pol II sites file on disk.
+
+			return
+			rnaPolSites: (numpy array) array with RNA pol elements. chr, start, end, geneObject (None), strength (peak intensity)
+		"""
 
 		rnaPolSites = []
 		with open(rnaPolFile, 'r') as f:
@@ -1009,10 +942,10 @@ class InputParser:
 				if lineCount < 1:
 					lineCount += 1
 					continue
-				
+
 				line = line.strip()
 				splitLine = line.split("\t")
-				
+
 				chrName = splitLine[0]
 				start = int(splitLine[1])
 				end = int(splitLine[2])
@@ -1023,6 +956,14 @@ class InputParser:
 		return np.array(rnaPolSites, dtype='object')
 
 	def getSuperEnhancersFromFile(self, superEnhancerFile):
+		"""
+			Read the super enhancers from the file.
+
+			superEnhancerFile: (string) Location of the super enhancers file on disk.
+
+			return
+			superEnhancers: (numpy array) array with RNA pol elements. chr, start, end, geneObject (None), strength (None)
+		"""
 	
 		superEnhancers = []
 		with open(superEnhancerFile, 'r') as f:
@@ -1034,90 +975,3 @@ class InputParser:
 				superEnhancers.append([splitLine[0], int(splitLine[1]), int(splitLine[2]), 'superEnhancer', None, None])					
 		
 		return np.array(superEnhancers, dtype="object")
-
-	def getMethylationFromFile(self, methylationFile, genes):
-		"""
-			Add the methylation information of the genes to the sv-gene pair altered elements for the given genes. This will be used in the MIL feature vector. 
-		"""
-		
-		#get a list of the genes that have altered elements. These are the ones that we need to get from the methylation file
-		affectedGenes = []
-		for gene in genes:
-			if len(gene[3].alteredElements) > 0:
-				affectedGenes.append([gene[3].name, gene[3]])
-		affectedGenes = np.array(affectedGenes, dtype='object')
-		
-		methylation = dict()
-		patients = dict() #make a lookup for patients, so that we can easily calculate the line number at which the beta value for that patient/gene pair is located. 
-		with open(methylationFile, 'r') as f:
-			lineCount = 0
-			for line in f:
-				
-				line = line.strip()
-				splitLine = line.split("\t")
-				if lineCount < 1:
-					patientsList = splitLine[1:] #skip hybridization ref
-					for patientInd in range(0, len(patientsList)):
-						splitPatientName = patientsList[patientInd].split("-")
-						patientID = 'brca' + splitPatientName[2] #we need a way around this later, because now it is specific for brca... due to the bad naming in the SV file.
-						if patientID not in patients: #make sure to keep this unique, and always start with the first position of that patient in the line for later lookup.
-							patients[patientID] = patientInd + 1 # +1 to avoid the hybrid ref position
-					
-					lineCount += 1
-					continue
-				if lineCount < 2:
-					lineCount += 1
-					continue
-		
-				#this information is repeated across the entire line.
-				geneName = splitLine[2]
-				if geneName not in methylation:
-					methylation[geneName] = [] #only take the first patient as an example
-				methylation[geneName].append(splitLine[1])
-				
-				
-				if geneName not in affectedGenes[:,0]:
-					continue #skip this line if the gene is not affected
-				
-				#get the affected gene.
-				affectedGene = affectedGenes[affectedGenes[:,0] == geneName][0][1]
-				
-				#get the index of the patients that affect this gene.
-				for sv in affectedGene.alteredElements:
-					splitSV = sv.split("_")
-					patientID = splitSV[6]
-					#use the lookup to determine the first position in this line that we find data for this patient
-					if patientID not in patients: #some patients appear to not have methylation data
-						betaValue = 0
-					else:
-						patientLineInd = patients[patientID]
-						
-						#then the beta value should be the first entry. Gene is the second, then the chromosome, then the coordinates of the methylation. 
-						betaValue = splitLine[patientLineInd]
-					
-						if betaValue == 'NA':
-							betaValue = 0 #for now
-					
-					#Add the beta value to the altered elements
-					for element in affectedGene.alteredElements[sv]:
-						affectedGene.alteredElements[sv][element] += [float(betaValue)]
-
-				# 
-				# #there are 4 values per patient
-				# #skipping the hybrid ref, we can start at pos 1
-				# lineInd = 1
-				# for patientInd in range(0, len(patients)):
-				# 	patient = patients[patientInd]
-				# 	#encode as: chromosome, coordinate, beta value, locus name, patient
-				# 	#print([splitLine[lineInd+2], splitLine[lineInd+3], splitLine[lineInd], splitLine[lineInd+1], patient])
-				# 	#methylation.append(['chr' + splitLine[lineInd+2], int(splitLine[lineInd+3]), splitLine[lineInd], splitLine[lineInd+1], patient])
-				# 	if splitLine[lineInd+1] not in methylation:
-				# 		methylation[splitLine[lineInd+1]] = []
-				# 	methylation[splitLine[lineInd+1]].append(splitLine[lineInd])
-				# 	
-				# 	lineInd += 4
-		for gene in methylation:
-			if len(methylation[gene]) > 1:
-				print(gene, methylation[gene])
-		exit()		
-		#return np.array(methylation, dtype='object')

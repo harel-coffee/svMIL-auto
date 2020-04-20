@@ -1,6 +1,10 @@
 """
 	
-	First make a plot of just the expression in TADs for which we have a non-coding SV disrupting the boundary
+	For each TAD, determine if these are disrupted by ANY SV.
+	If yes, get all the genes in those TADs, and compute the z-score for those genes from the patient with the SV to all patients without any SV disrupting the boundary
+	Then filter out the genes in both this set and the null distribution that have SNVs, CNVs or coding SVs, because that effect is likely not from the SV.
+
+	We also report p-values, but those are not used elsewhere anymore.
 
 """
 import sys
@@ -44,14 +48,12 @@ nonCausalGenes = InputParser().readNonCausalGeneFile(settings.files['nonCausalGe
 
 #Combine the genes into one set.
 allGenes = np.concatenate((causalGenes, nonCausalGenes), axis=0)
-#allGenes = causalGenes
 
 genes = []
 for gene in allGenes:
 	genes.append([gene[0], gene[1], gene[2], gene[3].name])
 
 genes = np.array(genes, dtype='object')
-
 
 #also use a map for the gene names
 geneNameConversionMap = dict()
@@ -70,11 +72,7 @@ with open(geneNameConversionFile, 'r') as inF:
 		geneName = splitLine[4]
 		geneNameConversionMap[splitEnsgId[0]] = geneName
 
-#For each patient and gene, find the TAD that the gene is in. If the TAD is in the disrupted patients list, add the gene expression to the disrupted set.
-#Otherwise, add the gene expression to the non-disrutped set.
-
 #get the gene expression
-
 expressionData = []
 samples = []
 with open(expressionFile, 'r') as inF:
@@ -98,7 +96,7 @@ with open(expressionFile, 'r') as inF:
 			if fullGeneName not in geneNameConversionMap:
 				continue
 			geneName = geneNameConversionMap[fullGeneName] #get the gene name rather than the ENSG ID
-		elif settings.general['source'] == 'PCAWG':
+		elif settings.general['source'] == 'PCAWG': #parse the gene name correctly
 
 			splitGeneName = fullGeneName.split('.')
 			if splitGeneName[0] not in geneNameConversionMap:
@@ -130,45 +128,9 @@ elif settings.general['source'] == 'TCGA' or settings.general['source'] == 'PCAW
 else:
 	print('Other data sources not supported')
 	exit(1)
+	
 #fix this
 filteredSVs = svData
-#
-# metadataFile = '../../data/svs/icgc_metadata.tsv'
-#
-# nameMap = dict()
-# with open(metadataFile, 'r') as inF:
-#
-# 	header = dict()
-# 	lineCount = 0
-# 	for line in inF:
-# 		line = line.strip()
-# 		splitLine = line.split('\t')
-# 		if lineCount < 1:
-#
-# 			for colInd in range(0, len(splitLine)):
-# 				header[splitLine[colInd]] = colInd
-#
-# 			lineCount += 1
-# 			continue
-#
-# 		#only get the ones with the right study that we selected in the settings
-# 		if settings.general['cancerType'] == 'OV':
-# 			if splitLine[header['study']] != 'Ovarian Cancer - AU':
-# 				continue
-#
-# 		if header['matched_wgs_aliquot_id'] < len(splitLine):
-# 			wgsName = splitLine[header['matched_wgs_aliquot_id']]
-# 			rnaName = splitLine[header['aliquot_id']]
-#
-# 			nameMap[wgsName] = rnaName
-#
-# for sv in svData:
-#
-# 	sampleName = sv[7]
-# 	if sampleName in nameMap:
-# 		print(sampleName)
-# exit()
-
 
 
 #Get the TADs.
@@ -297,51 +259,20 @@ print('disrupting SVs: ', len(disruptingSVs))
 print('per type: ', typeDistribution)
 
 
+#Shuffle expression if requested
 if randomize == 'True':
-	#to shuffle across patients, first transpose, the shuffle, then transpose back.
-	#print(expressionData)
+
 	genes = expressionData[:,0]
 	expression = expressionData[:,1:]
 	np.random.shuffle(expression)
 
-	# shuffledExpression = []
-	# for row in range(0, expression.shape[0]):
-	# 	shuffled = np.random.shuffle(expression[row])
-	# 	shuffledExpression.append(expression)
-	#
-	# shuffledExpression = np.array(shuffledExpression)
 	shuffledExpressionData = np.empty(expressionData.shape, dtype='object')
 	shuffledExpressionData[:,0] = genes
 	shuffledExpressionData[:,1:] = expression
 
-	# print(shuffledExpressionData)
-	# 
-	# exit()
-	
-	# expressionT = expression.T
-	# print(expressionT)
-	# print(expressionT.shape)
-	# np.random.shuffle(expressionT)
-	# print(expressionT)
-	# print(expressionT.shape)
-	# shuffledExpression = expressionT.T
-	# print(shuffledExpression)
-	# print(shuffledExpression.shape)
-	#
-	# shuffledExpressionData = np.empty(expressionData.shape, dtype='object')
-	# shuffledExpressionData[:,0] = genes
-	# shuffledExpressionData[:,1:] = shuffledExpression
-	#
-	# print(samples)
-	# print(shuffledExpressionData)
-	
 	expressionData = shuffledExpressionData
 
-
-
-
-
-
+#get all the mutation information for each patient, so that we can easily filter out mutated genes
 mutDir = outDir + '/patientGeneMutationPairs/'
 snvPatients = np.load(mutDir + 'snvPatients.npy', allow_pickle=True, encoding='latin1').item()
 
@@ -382,7 +313,7 @@ if settings.general['source'] == 'TCGA':
 	samples = fixedSamples
 
 #tcga and pcawg data is an identifier hell, so map things back here that apparently have no mutations...
-#maybe I missed them but it is hard to tell when nothing maps to each other...
+#maybe I missed them earlier on but it is hard to tell when nothing maps to each other...
 if settings.general['source'] == 'TCGA' or settings.general['source'] == 'PCAWG':
 	for sample in samples:
 		if sample not in snvPatients:
@@ -412,7 +343,7 @@ for gene in allGenes:
 	if gene[3].name not in nonDisruptedPairs:
 		nonDisruptedPairs[gene[3].name] = dict()
 
-#for each gene, label the genes that overlap multiple TADs.
+#for each gene, remove the genes that overlap multiple TADs. we dno't know which TAD these belong to.
 filteredGenes = []
 for gene in allGenes:
 	
@@ -428,7 +359,6 @@ for gene in allGenes:
 	filteredGenes.append(gene)
 
 filteredGenes = np.array(filteredGenes, dtype='object')
-
 
 #for the non-disrupted, the patient does not matter, so keep all patient just in 1 array.
 
@@ -495,10 +425,6 @@ for tad in tadDisruptions:
 				positivePatients.append(patient)
 				svTypes.append(sv[1][8].svType)
 			
-			#if this patient has multiple SVs disrupting this TAD, we do not know which one is causing an effect.
-			#so we skip that TAD for this patient
-			# if len(patientCount[patient]) > 1 and 'DUP' in patientCount[patient]:
-			# 	continue
 			
 			#we filter genes in the TAD based on the SV type.
 			if svType == 'DEL':
@@ -567,8 +493,6 @@ for tad in tadDisruptions:
 				
 				nonDisruptedPairs[gene[3].name][patient] = float(geneExpr[patientInd])
 				
-	#if len(otherSVs) > 0 and len(positivePatients) == 0:
-	#	continue #so for this TAD, if it is not affected by e.g. a deletion, but it is by another SV type, then it should not be listed as specific for DEL. 
 	tadPositiveAndNegativeSet.append([tad, positivePatients, negativePatients, svTypes])
 	tadInd += 1
 
@@ -621,7 +545,6 @@ for patient in disruptedPairs:
 		scorePairs.append(patient + '_' + gene)
 		
 #Go through the patients and compute the ranking of the z-scores inside the list.
-
 
 for gene in zScoresPerGene:
 	

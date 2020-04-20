@@ -1,3 +1,14 @@
+"""
+	Generate files with dictionaries where each patient has a list of genes that are affected by a certain mutation type.
+	We use this to filter out genes that are not affected just by the non-coding SV, but also by other stuff.
+
+	Split by: SNVs, CNV amplifications (> 2.3), CNV deletions ( < 1.7), (coding) SV deletions, SV duplications, SV inversions, SV translocations.
+
+	This works with HMF data, PCAWG data and TCGA data.
+
+"""
+
+
 import sys
 import numpy as np
 import os
@@ -5,6 +16,7 @@ from os import listdir
 from os.path import isfile, join
 import glob
 import re
+import gzip
 path = sys.argv[1]
 sys.path.insert(1, path)
 sys.path.insert(1, 'linkSVsGenes/')
@@ -14,8 +26,6 @@ import settings
 
 outDir = sys.argv[2]
 
-
-#Get a list of all genes * patients that have mutations.
 
 #Get the CNVs per gene
 def getPatientsWithCNVGeneBased_hmf(cnvDir):
@@ -63,9 +73,8 @@ def getPatientsWithCNVGeneBased_hmf(cnvDir):
 	return cnvPatientsAmp, cnvPatientsDel
 
 #Get the SNVs per gene
-
 def getPatientsWithSNVs_hmf(snvDir):
-	import gzip
+
 	#search through the SNVs and link these to genes.
 	vcfs = glob.glob(snvDir + '/**/*.somatic.vcf.gz', recursive=True)
 
@@ -112,6 +121,7 @@ def getPatientsWithSNVs_hmf(snvDir):
 def getPatientsWithSVs_hmf(svDir, allGenes):
 
 	#Get all parsed and annotated SV type files from the main dir
+	#use all genes because there is no gene in the file, so by overlap we determine which genes are affected by the SVs. 
 
 	vcfs = glob.glob(svDir + '/**/*.svTypes.passed', recursive=True)
 
@@ -258,8 +268,8 @@ def getPatientsWithSVs_hmf(svDir, allGenes):
 
 	return svPatientsDel, svPatientsDup, svPatientsInv, svPatientsItx
 
-#functions for TCGA mutations
 def getPatientsWithSVs_tcga(svFile, allGenes):
+	#use all genes because there is no gene in the file, so by overlap we determine which genes are affected by the SVs. 
 	
 	#load the svs
 	svData = InputParser().getSVsFromFile(svFile, '')
@@ -355,7 +365,7 @@ def getPatientsWithSNVs_tcga(snvDir):
 				splitLine = line.split("\t")
 				geneName = splitLine[0]
 
-				if splitLine[8] == 'Silent':
+				if splitLine[8] == 'Silent': #skip the ones with no effect
 					continue
 
 				snvPatients[shortPatientID].append(geneName)
@@ -363,6 +373,7 @@ def getPatientsWithSNVs_tcga(snvDir):
 	return snvPatients
 
 def getMetadataPCAWG(metadataFile):
+	#get the metadata file to extract the mapping from wgs to rna-seq identifiers
 
 	nameMap = dict()
 	with open(metadataFile, 'r') as inF:
@@ -394,6 +405,8 @@ def getMetadataPCAWG(metadataFile):
 	return nameMap
 
 def getPatientsWithSNVs_pcawg(snvDir, allGenes, nameMap):
+	#use nameMap to map the WGS identifiers to the rna-seq identifiers
+	#use all genes because there is no gene in the file, so by overlap we determine which genes are affected by the SNVs. 
 
 	import gzip
 	#search through the SNVs and link these to genes.
@@ -456,6 +469,7 @@ def getPatientsWithSNVs_pcawg(snvDir, allGenes, nameMap):
 	return patientsWithSNVs
 
 def getPatientsWithCNVGeneBased_pcawg(cnvFile, nameMap):
+	#use nameMap to map the WGS identifiers to the rna-seq identifiers
 
 	cnvPatientsDel = dict()
 	cnvPatientsAmp = dict()
@@ -505,19 +519,21 @@ nonCausalGenes = InputParser().readNonCausalGeneFile(settings.files['nonCausalGe
 #Combine the genes into one set.
 allGenes = np.concatenate((causalGenes, nonCausalGenes), axis=0)
 
-#cnvPatientsAmp, cnvPatientsDel = getPatientsWithCNVGeneBased_hmf(sys.argv[1])
-#snvPatients = getPatientsWithSNVs_hmf(sys.argv[1])
-#svPatientsDel, svPatientsDup, svPatientsInv, svPatientsItx = getPatientsWithSVs_hmf(sys.argv[1], allGenes)
-
-# svPatientsDel, svPatientsDup, svPatientsInv, svPatientsItx = getPatientsWithSVs_tcga(settings.files['svFile'], allGenes)
-# cnvPatientsAmp = dict()
-# cnvPatientsDel = dict()
-# snvPatients = getPatientsWithSNVs_tcga(settings.files['snvDir'])
-
-nameMap = getMetadataPCAWG(settings.files['metaDataFile'])
-snvPatients = getPatientsWithSNVs_pcawg(settings.files['snvDir'], allGenes, nameMap)
-cnvPatientsAmp, cnvPatientsDel = getPatientsWithCNVGeneBased_pcawg(settings.files['cnvFile'], nameMap)
-svPatientsDel, svPatientsDup, svPatientsInv, svPatientsItx = getPatientsWithSVs_tcga(settings.files['svFile'], allGenes)
+#get the right data based on the data input source.
+if settings.general['source'] == 'HMF':
+	cnvPatientsAmp, cnvPatientsDel = getPatientsWithCNVGeneBased_hmf(settings.files['cnvDir'])
+	snvPatients = getPatientsWithSNVs_hmf(settings.files['snvDir'])
+	svPatientsDel, svPatientsDup, svPatientsInv, svPatientsItx = getPatientsWithSVs_hmf(settings.files['svDir'], allGenes)
+elif settings.general['source'] == 'TCGA':
+	svPatientsDel, svPatientsDup, svPatientsInv, svPatientsItx = getPatientsWithSVs_tcga(settings.files['svFile'], allGenes)
+	cnvPatientsAmp = dict() #not available for TCGA. Only SNP6 arrays but there is no copy number or purity, so hard to interpret.
+	cnvPatientsDel = dict()
+	snvPatients = getPatientsWithSNVs_tcga(settings.files['snvDir'])
+elif settings.general['source'] == 'PCAWG':
+	nameMap = getMetadataPCAWG(settings.files['metaDataFile'])
+	snvPatients = getPatientsWithSNVs_pcawg(settings.files['snvDir'], allGenes, nameMap)
+	cnvPatientsAmp, cnvPatientsDel = getPatientsWithCNVGeneBased_pcawg(settings.files['cnvFile'], nameMap)
+	svPatientsDel, svPatientsDup, svPatientsInv, svPatientsItx = getPatientsWithSVs_tcga(settings.files['svFile'], allGenes)
 
 
 finalOutDir = outDir + '/patientGeneMutationPairs/'

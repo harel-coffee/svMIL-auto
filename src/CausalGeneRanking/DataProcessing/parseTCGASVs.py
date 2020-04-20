@@ -2,6 +2,8 @@ import sys
 path = sys.argv[1]
 sys.path.insert(1, path)
 
+###Get the TCGA SVs and parse them to an easy to read format.
+
 import settings
 
 inFile = sys.argv[2]
@@ -25,6 +27,7 @@ with open(outFile, 'w') as outF:
 			
 			#depending on the cancer type, parse to a different sample name format
 			#to match with the expression data file
+			#Add more if necessary.
 			if settings.general['cancerType'] == 'luad':
 
 				splitSampleName = sampleName.split('-')

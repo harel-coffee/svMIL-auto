@@ -6,7 +6,7 @@ import settings
 
 class Gene:
 	"""
-		Class to describe a gene. Holds all other information related to the neighborhood of the gene as well, like the TADs, eQTLs and SVs.
+		Class to describe a gene. Holds all other information related to the neighborhood of the gene as well, like the TADs, regulatory elements and SVs affecting the gene.
 	"""
 	def __init__(self, name, chromosome, start, end):
 		
@@ -20,7 +20,7 @@ class Gene:
 		self.leftTAD = None
 		self.rightTAD = None
 		self.elements = []
-		self.gainedElements = dict()
+		self.gainedElements = dict() #gained elements per sample
 		self.lostElements = dict()
 		self.lostElementsSVs = dict() #lost elements per SV, not per sample
 		self.gainedElementsSVs = dict()
@@ -38,8 +38,8 @@ class Gene:
 		
 		self.leftTAD = leftTAD
 		self.rightTAD = rightTAD
-	
-	#I'm not sure if the left and right TADs are really used anymore, needs to be checked
+
+	#Left/right TADs are not used anymore, but this would be the TADs on the left/right of the gene, especially for those that are in multiple TADs.
 	def setLeftTAD(self, leftTAD):
 		self.leftTAD = leftTAD
 		
@@ -55,24 +55,13 @@ class Gene:
 		
 		self.SVs = SVs
 		
-	def setSNVs(self, SNVs):
-		self.SNVs = SNVs
-		
-	def addSNV(self, sample):
-		if sample not in self.SNVs:
-			self.SNVs.append(sample)
-	
-	def addCNV(self, sample):
-		if sample not in self.CNVs:
-			self.CNVs.append(sample)
-	
 	def addElement(self, element):
 		self.elements.append(element)
 		
-	def setGainedElements(self, gainedElements, sample):
-		self.gainedElements[sample] = gainedElements #keep the gained eQTLs separate per patient to later do mutual exclusivity.
+	def setGainedElements(self, gainedElements, sample): #set the gained elements per sample. 
+		self.gainedElements[sample] = gainedElements
 		
-	def addGainedElements(self, gainedElements, sample):
+	def addGainedElements(self, gainedElements, sample): #add elements one by one. 
 		
 		if len(gainedElements) > 0:
 			if sample not in self.gainedElements:
@@ -85,7 +74,8 @@ class Gene:
 				self.gainedElements[sample][gainedElement[3]] = 0
 			self.gainedElements[sample][gainedElement[3]] += 1
 
-		
+
+	#this is what we use in the gene-SV pair output file. The provided SV (object) causes this gene to gain these elements.
 	def addGainedElementsSVs(self, gainedElements, sv):
 		
 		if len(gainedElements) > 0:
@@ -101,17 +91,20 @@ class Gene:
 			self.gainedElementsSVs[sv][gainedElement[3]] += 1
 		
 		
-		self.addAlteredElements(gainedElements, sv, 'gain')
-		self.addGainedElementsStrengthsSVs(gainedElements, sv)
-	
+		self.addAlteredElements(gainedElements, sv, 'gain') #add to bags
+		self.addGainedElementsStrengthsSVs(gainedElements, sv) #get the strengths of the elements that are gained
+
+	#Add the strengths of the gained elements. Because there could be multiple, take the max
+	#This was only intended for the SV-gene pairs .txt output file, but the strentghs are there not used anymore.
+	#For MIL the strengths are implemented differently! (see addAlteredElements)
 	def addGainedElementsStrengthsSVs(self, gainedElements, sv):
 		
 		#for each element type, get the strongest one, and keep it as a feature.
 		if len(gainedElements) > 0:
 			if sv not in self.gainedElementsStrengthsSVs:
 				self.gainedElementsStrengthsSVs[sv] = dict()
-			
-		#list for each type what the max value is so far
+
+		#Find the element with the maximum strength for this element type. 
 		strengthList = dict()
 		for gainedElement in gainedElements:
 			
@@ -131,8 +124,6 @@ class Gene:
 		
 		#Have a dictionary where we count the number of elements of a specific type that are lost per sample.
 		#This is much faster than storing the actual elements that are lost, and we do not use that information in the ranking, so it can be discarded here.
-	
-
 		for lostElement in lostElements:
 			if lostElement[3] in self.elementsNotLinkedToGenes:
 				if lostElement[3] not in self.lostElements[sample]:
@@ -149,26 +140,13 @@ class Gene:
 	
 	def addLostElementsSVs(self, lostElements, sv):
 		
-		# if sv == 'chr4_2479727_2479727_chr4_15029494_15029494_CPCT02080047T_0_0_0_0_INV':
-		# 	print('sv')
-		# 	print(self.name)
-		# 	for element in lostElements:
-		# 		if element[3] == 'enhancer':
-		# 			print(element)
-		# 
 		if len(lostElements) > 0:
 			if sv not in self.lostElementsSVs:
 				self.lostElementsSVs[sv] = dict()
-		
+
 		#Have a dictionary where we count the number of elements of a specific type that are lost per sample.
 		#This is much faster than storing the actual elements that are lost, and we do not use that information in the ranking, so it can be discarded here.
-		
-		
 		for lostElement in lostElements:
-			
-			#if lostElement[3] == 'enhancer' and self.name == 'CPEB2':
-			#	print(sv)
-				
 			
 			if lostElement[3] in self.elementsNotLinkedToGenes:
 				if lostElement[3] not in self.lostElementsSVs[sv]:
@@ -181,20 +159,23 @@ class Gene:
 						self.lostElementsSVs[sv][lostElement[3]] = 0
 					self.lostElementsSVs[sv][lostElement[3]] +=1
 		
-		self.addAlteredElements(lostElements, sv, 'loss')
+		self.addAlteredElements(lostElements, sv, 'loss') #for MIL, add lost elements to the bags. 
 		self.addLostElementsStrengthsSVs(lostElements, sv)
 	
+	#Add the strengths of the lost elements. Because there could be multiple, take the max
+	#This was only intended for the SV-gene pairs .txt output file, but the strentghs are there not used anymore.
+	#For MIL the strengths are implemented differently! (see addAlteredElements)
 	def addLostElementsStrengthsSVs(self, lostElements, sv):
 		
 		#for each element type, get the strongest one, and keep it as a feature.
 		if len(lostElements) > 0:
 			if sv not in self.lostElementsStrengthsSVs:
 				self.lostElementsStrengthsSVs[sv] = dict()
-			
+
 		#list for each type what the max value is so far
 		strengthList = dict()
 		for lostElement in lostElements:
-			
+
 			if lostElement[3] in self.strengthElements:
 				
 				
@@ -207,14 +188,21 @@ class Gene:
 			
 	def addAlteredElements(self, elements, sv, alterationType):
 		"""
-			For this gene, make a dictionary where we can look up by SV which elements were altered by that SV for this gene.
-			The values for this element are the feature vector that we will use to describe that element. 
+			This is where we get what we need to set up MIL.
+			This gene is affected by the provided SV, and gains or loses the provided element (alterationType specifies which).
+			
+			To gather this information, for this gene, the altered elements are added to a dictionary. The keys are first the SVs that disrupt the gene.
+			Then, within that, there is a dictionary per element (str format), which then holds the features of the gains and losses (instances).
+
+			Later on, we go through this gene, and make bags for each SV affecting this gene (SV-gene pair as bag label).
+
+			elements (list): list of all regulatory element disrupted by the SV for this gene
+			sv (str): str format of the SV that affects this gene (see DerivativeTADMaker for format)
+			alterationType (str): either 'gain' or 'loss'.
+			
 		"""
 		
-		#allowedElements = ['enhancer']
-		#allowedElements = ['superEnhancer']
-		allowedElements = ['enhancer', 'promoter', 'eQTL', 'superEnhancer']
-		#allowedElements = ['enhancer', 'eQTL', 'superEnhancer']
+		allowedElements = ['enhancer', 'eQTL', 'superEnhancer']
 
 		if len(elements) > 0:
 			if sv not in self.alteredElements:
@@ -229,8 +217,6 @@ class Gene:
 		strengthElements = ['enhancer', 'ctcf', 'rnaPol', 'h3k9me3', 'h3k4me3', 'h3k27ac', 'h3k27me3', 'h3k4me1', 'h3k36me3']
 		for element in elements:
 
-			#if element[3] in ['h3k27ac', 'h3k4me1']:
-			#if element[3] in ['h3k27ac', 'h3k4me1', 'CTCF', 'CTCF+Enhancer', 'Enhancer', 'Heterochromatin', 'Repeat', 'Repressed', 'Transcribed', 'dnaseI', 'rnaPol']:
 			if element[3] in annotationElements:
 				methylationMarks.append(element)
 		
@@ -286,18 +272,15 @@ class Gene:
 			
 			if lossGains[0] == 0 and lossGains[1] == 0:
 				continue #this pair ended up with a bad loss, so we need to skip it then if it also has no gains. 
-			
-			#confidence score of the enhancer
-			#enhScore = [element[5]]
-			
+
 			#distance of gene to element
+			###this distance is a very bad feature, so it is not added. the performance drops a lot
 			startStartDist = np.abs(element[1] - self.start)
 			startEndDist = np.abs(element[1] - self.end)
 			endStartDist = np.abs(element[2] - self.start)
 			endEndDist = np.abs(element[2] - self.end)
 			
 			minDist = np.min([startStartDist, startEndDist, endStartDist, endEndDist])
-			###this distance is a very bad feature, so it is not added. the performance drops a lot
 			
 			#promoters are too noisy, are omitted from the model.
 			enhancerType = 0
@@ -323,16 +306,4 @@ class Gene:
 
 			#if we get here, we passed all checks and there is a valid gain OR loss
 			if elementStr not in self.alteredElements[sv]:
-				#self.alteredElements[sv][elementStr] = lossGains + elementMethylation + enhScore
-				
-				#self.alteredElements[sv][elementStr] = lossGains + elementMethylation + elementStrength + [enhancerType, promoterType, eQTLType, superEnhancerType]
 				self.alteredElements[sv][elementStr] = lossGains + elementMethylation + elementStrength + [enhancerType, eQTLType, superEnhancerType]
-
-				#self.alteredElements[sv][elementStr] = lossGains
-		#something with methylation for the affected genes only
-		#first make sure that all elements are gathered, then afterwards, add the methylation specifically for each of them. 
-		#methylationData = InputParser().getMethylationFromFile('../../data/methylation/BRCA.methylation__humanmethylation450__jhu_usc_edu__Level_3__within_bioassay_data_set_function__data.data.txt')
-		
-		
-		
-		

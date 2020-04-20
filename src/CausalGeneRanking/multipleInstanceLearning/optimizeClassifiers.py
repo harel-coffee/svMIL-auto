@@ -1,3 +1,9 @@
+"""
+	Optimization of the RF classifier for MIL.
+	Because doing this takes a long time, we optimize directly on te similarity matrix using 3X CV.
+	This is not the best solution, but still improves accuracy quite a bit.
+"""
+
 import numpy as np
 import sys
 from sklearn.model_selection import train_test_split

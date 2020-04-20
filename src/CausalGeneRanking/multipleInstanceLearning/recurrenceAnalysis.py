@@ -1,10 +1,10 @@
 """
-
 	This script serves to do recurrence analysis on the sv-gene pairs identified
 	
-	The following information is useful to report on:
-	- In the positive SV-gene pairs, how many are recurrently found across patients?
-	- What is the distribution of recurrent genes across SV types?
+	We do the following things:
+	1. From the top 100 of each SV type (so top 400), which genes are there? Which are the top 15 most recurrent?
+	2. For these genes, also check which other mutations are found in these genes in different patients.
+	3. Then also check which genes are recurrent if we ignore the top 100, and just look across all positive SV-gne pairs.
 
 """
 
@@ -15,6 +15,9 @@ from scipy import stats
 from statsmodels.sandbox.stats.multicomp import multipletests
 import matplotlib.pyplot as plt
 import os
+
+import matplotlib
+matplotlib.use('Agg')
 
 outDir = sys.argv[1]
 
@@ -219,7 +222,6 @@ plt.xticks(range(0, recurrenceMatrix.shape[1]), list(uniquePatients.keys()), rot
 #plt.grid()
 plt.tight_layout()
 plt.savefig(finalOutDir + '/recurrence_top400.svg')
-plt.show()
 plt.clf()
 
 #Next, we are interested in patients with alternative mutations.
@@ -305,12 +307,11 @@ for gene in sortedGenes[0:15]:
 plt.ylim(0,ymax+1)
 plt.tight_layout()
 plt.savefig(finalOutDir + '/recurrence_bars.svg')
-plt.show()
 plt.clf()
 
 
 ###Also make the full recurrence plot for all patients.
-#this is quick and dirty
+#this is quick and dirty, should have been a re-usable function.
 #load the sv-gene pairs
 
 topPairs = dict()
@@ -493,7 +494,6 @@ plt.xticks(range(0, recurrenceMatrix.shape[1]), list(uniquePatients.keys()), rot
 #plt.grid()
 plt.tight_layout()
 plt.savefig(finalOutDirFullFigure + '/recurrence_allPatients.svg')
-plt.show()
 plt.clf()
 
 exit()

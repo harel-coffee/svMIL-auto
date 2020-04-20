@@ -1,5 +1,5 @@
 """
-	Normalize the bags prior to classification.
+	Normalize the bags prior to classification. All feature values are scaled between 0 and 1 across all instances (positive and negative).
 
 """
 
@@ -72,8 +72,6 @@ for pair in bagDict:
 bagDict = normalizedBagDict
 
 #save to a file to prevent heavy computing load
-# with open(finalOutDir + '/normalizedBags.pkl', 'wb') as handle:
-# 		pkl.dump(bagDict, handle, protocol=pkl.HIGHEST_PROTOCOL)
 with open(outDir + '/linkedSVGenePairs/normalizedBags.pkl', 'wb') as handle:
 		pkl.dump(bagDict, handle, protocol=pkl.HIGHEST_PROTOCOL)		
 		

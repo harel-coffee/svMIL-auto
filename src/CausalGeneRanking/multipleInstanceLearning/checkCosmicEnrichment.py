@@ -49,6 +49,7 @@ def getCancerGeneEnrichment(outDir, leaveOneOutDataFolder, allGenes, cosmicGeneN
 	patientsWithCorrectCosmic = dict()
 	patientsWithCorrectCosmicRandom = dict() #store per shuffled iteration.
 	cosmicPairs = []
+	totalCosmicGenes = 0
 	for svType in svTypes:
 
 
@@ -100,6 +101,12 @@ def getCancerGeneEnrichment(outDir, leaveOneOutDataFolder, allGenes, cosmicGeneN
 					bagPairLabels = np.load(dataFile, encoding='latin1', allow_pickle=True)
 
 			for labelInd in range(0, len(bagPairLabels)):
+				pairLabel = bagPairLabels[labelInd]
+				splitLabel = pairLabel.split('_')
+
+				if bagLabelsTest[labelInd] == 1:
+					if splitLabel[0] in cosmicGeneNames:
+						totalCosmicGenes += 1
 
 				if bagLabelsTest[labelInd] == 1 and perPatientPredictions[patient][labelInd] == 1:
 					pairLabel = bagPairLabels[labelInd]
@@ -145,11 +152,15 @@ def getCancerGeneEnrichment(outDir, leaveOneOutDataFolder, allGenes, cosmicGeneN
 							patientsWithCorrectCosmicRandom[randIteration][splitLabel[7]] += 1
 
 
+		#do this check here, because it is not implemented in the lopoCV properly and takes time to re-run.
 		tpr = totalTP / (totalTP + totalFN)
 		fpr = totalFP / (totalTN + totalFP)
 		print(svType)
 		print('tpr', tpr)
 		print('fpr', fpr)
+
+	print(totalCosmicGenes) #how many cosmic genes were linked to positive SV-gene pairs in total?
+
 
 	patientCount = len(patientsWithCorrectCosmic)
 	patientCountNegative = []
@@ -221,7 +232,4 @@ for pair in cosmicPairs:
 	if splitPair[0] in svPatientsItx[splitPair[1]]:
 		print('sv itx')
 		
-		
-	#get the ones with no mut
-	#if svType == 'DEL':
 

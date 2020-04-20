@@ -1,15 +1,9 @@
 """
 	The goal of this class is to take a set of SVs as input, and then for each of these determine what the derivate TADs are on the part of the genome that they disrupt.
-	In the derivative TADs, we re-assign gains and losses of genomic elements to the genes that are affected when the derivative TADs are made. 
+	In the derivative TADs, we assign gains and losses of genomic elements to the genes that are affected when the derivative TADs are made.
 	
-	For duplications, inversions, and (intra & interchromosomal) translocations.
+	For deletions, duplications, inversions, and (intra & interchromosomal) translocations.
 	
-	TO DO:
-	- Make sure that the effects of SVs are not counted more than once. Currently, since translocations and e.g. inversions are considered separately, we do not consider effects caused by e.g. first a translocation, and then an inversion
-	that will un-do the gains/losses of the translocation.
-	- finish documentation
-
-
 """
 
 from __future__ import absolute_import
@@ -33,45 +27,39 @@ class DerivativeTADMaker:
 	def linkSVEffectsToGenes(self, svData, genes, tadData):
 		
 		"""
-			For every SV, determine the type. If this is an inversion or duplication, we only need this particular SV.
-			If the SV is a translocation, we collect a set of SVs that 'work together'. Based on a window around their start/end positions.
-			For the collected SV or SVs, we first make derivative TADs. 
+			For every SV, determine the type.
+			For the collected SV or SVs, we first make derivative TADs, specific for each SV type.
 			Then after these derivative TADs have been made, we go through the genes that are present within these new TADs, and add the newly gained or remove newly lost genomic elements for these genes.
 			
 			genes: (numpy array) array with the genes and their information. chr, start, end, geneObject
 			svData: (numpy array) array with the SVs and their information. chr1, s1, e1, chr2, s2, e2, cancerType, sampleName, svObject.
 			tadData: (numpy array) array with the TADs and their information. chr, start, end, tadObject
 			
-			
 		"""
 		print("Linking SV effects to genes")
 		invCount = 0
 		dupCount = 0
 		delCount = 0
-		
+
 		#Inversions
 		print('Checking inversions')
 		for sv in svData:
-			
-			svStr = sv[0] + "_" + str(sv[1]) + "_" + str(sv[2]) + "_" + sv[3] + "_" + str(sv[4]) + "_" + str(sv[5]) + "_" + sv[8].sampleName
 			
 			typeMatch = re.search("inv", sv[8].svType, re.IGNORECASE)
 			
 			if typeMatch is not None:
 				
 				
-				self.determineDerivativeTADs(sv, tadData, "inv")
+				self.determineDerivativeTADs(sv, tadData, "inv") #make derivative TADs specific for this SV type
 				invCount += 1
-				#print("inversion count: ", invCount)
+				#print("inversion count: ", invCount) #could use to check progress
 		
 		
 		
 		#Duplications
 		print('Checking duplications')
 		for sv in svData:
-			
-			
-			
+
 			typeMatch = re.search("dup", sv[8].svType, re.IGNORECASE)
 			if typeMatch is not None:
 				
@@ -89,12 +77,13 @@ class DerivativeTADMaker:
 				delCount += 1
 				#print("deletion count: ", delCount)		
 			
-		#For the translocations separately
+		#For the translocations separately	
 		# 1. For each SV, determine which TAD the SVs are in
 		print("matching TADs with translocations")
 		tadsPerSV = self.matchTADsWithTranslocations(svData, tadData)
 		
-		#2. Group the SVs that form a 'chain' and have at least 1 TAD in overlap
+		#2. Groups are not used anymore, used to group TADs as 'chains' to determine their collective effect, but now we only look at each breakpoint individually, to model the effect we would see in
+		#the clinic, in case 1 translocation is found. 
 		print("making SV groups")
 		svGroups = self.defineGroupsOfTranslocations(tadsPerSV)
 		
@@ -110,19 +99,15 @@ class DerivativeTADMaker:
 	
 	def defineGroupsOfTranslocations(self, tadsPerSV):
 		"""
-			Loop through the SVs and determine which SVs form a 'chain' and affect the same TADs.
-			For every SV, we first get the TAD that it ends in and that the next SV in the group starts in. If this is true, we group them together on the 'chain'. 
-			
-			TO DO:
-			- Make sure that the SVs affecting only 1 position are also captured
-			
+			This was originally meant to group translocations together, based on their 'collective' effect.
+			Now it just gets the SV, and attaches the TADs that it disrupts to it.
+
 			tadsPerSV: (dictionary) the keys of this dictionary are an SV object, the values are lists with the TADs that are affected by this SV. Output from matchTADsWithTranslocations()
 			
 			return
-			svGroups: (dictionary) the keys are the first SV object that is part of the chain of SVs. The values are the SV objects that are part of this group. 
+			svGroups: (numpy array) the samples and for each of those which translocations are part of that sample.
 		"""
-		
-		#For every TAD, if there is more than 1 SV in this TAD, ignore these SVs.
+
 		svsPerTad = dict()
 		for sv in tadsPerSV:
 			if tadsPerSV[sv][0][0][3] not in svsPerTad:
@@ -137,13 +122,6 @@ class DerivativeTADMaker:
 			sv = svsPerTad[tad][0]
 			filteredSVs[sv] = tadsPerSV[sv]
 			
-			### for 1 SV per tad
-			#if len(svsPerTad[tad]) == 1:
-			#	sv = svsPerTad[tad][0]
-				
-			#	filteredSVs[sv] = tadsPerSV[sv]
-		
-		#exit()
 		sampleGroups = dict()
 		svGroups = dict()
 		samples = []
@@ -164,7 +142,6 @@ class DerivativeTADMaker:
 			svGroups.append(groupList)
 				
 		#sort by sample name
-		
 		samples = np.array(samples)
 		svGroups = np.array(svGroups)
 		sortedInd = np.argsort(samples)
@@ -176,7 +153,7 @@ class DerivativeTADMaker:
 		"""
 			For every SV, find the TAD that it ends in on the left and on the right. This can be the same TAD.
 			
-			svData: (numpy array) array with the SVs and their information. chr1, s1, e1, chr2, s2, e2, cancerType, sampleName, svObject. Can be empty in SNV mode.
+			svData: (numpy array) array with the SVs and their information. chr1, s1, e1, chr2, s2, e2, cancerType, sampleName, svObject.
 			tadData: (numpy array) array with the TADs and their information. chr, start, end, tadObject
 			
 			return:
@@ -242,321 +219,43 @@ class DerivativeTADMaker:
 			Given an SV or a set of SVs, depending on the type of SVs, we compute how the affected region of the genome will look after the SV.
 			We then make a set of new TAD objects that are located next to each other, and update all elements that are now inside these new/affected TADs. 
 		
-			svData: (numpy array) array with the SVs and their information. chr1, s1, e1, chr2, s2, e2, cancerType, sampleName, svObject. Can be empty in SNV mode.
+			svData: (numpy array) array with the SVs and their information. chr1, s1, e1, chr2, s2, e2, cancerType, sampleName, svObject. 
 			tadData: (numpy array) array with the TADs and their information. chr, start, end, tadObject
 			svType: (string) type of SV that we should determine the derivative TAD for. Either del, inv, dup or trans.
 			
 		
 		"""
-	
-		#1. Get all TADs that are affected by the SV.
-		#2. String all TADs together in their new formation
-			#- Inversion: only 2 TADs need to be re-modeled. Make new objects for both. Assign to the first all elements until the SV start, and everything from the TAD boundary to the SV end. Vice versa for the other TAD. 
-			#- Duplication: Get all TADs that are covered by the duplication. Keep the elements left and right of the boundary within duplication separate. Start from the left TAD. This remains the same. Get the TAD on the right side
-			#  of the duplication.
-			#  Get all the TAD boundaries covered by the duplication. Place them in order. The genomic positions should be correct. So within the right TAD, we take the insert position. We attach everything within the duplication to that.
-			#  Also make sure that all elements are added to the derivative TADs correctly.
-		
-		
-		#Make some dummy TADs and SVs for testing
-		# 
-		# # tad1 = ["chr1", 1, 100, TAD("chr1", 1, 100)]
-		# # tad2 = ["chr1", 101, 200, TAD("chr1", 101, 200)]
-		# # tad3 = ["chr1", 201, 300, TAD("chr1", 201, 300)]
-		# # 
-		# # tadData = np.array([tad1, tad2, tad3], dtype="object")
-		# 
-		# #tad1 = ["chr1", 1, 200, TAD("chr1", 1, 200)]
-		# #tadData = np.array([tad1], dtype="object")
-		# 
-		# 
-		# tad1 = ["chr1", 100, 300, TAD("chr1", 100, 300)]
-		# tadData = np.array([tad1], dtype="object")
-		
-		# svData = ["chr1", 50, 50, "chr1", 250, 250, "dummy", "protective against cancer yay", SV("chr1", 50, 50, "chr1", 250, 250, "dummy", "protective against cancer yay", "duplication")]
-		# 
-		# tad1 = ["chr1", 1, 100, TAD("chr1", 1, 100)]
-		# tad3 = ["chr1", 200, 300, TAD("chr1", 20, 300)]
-		# 
-		# tadData = np.array([tad1, tad3], dtype="object")
-		# 
-		# svData = ["chr1", 60, 60, "chr1", 210, 210, "dummy", "protective against cancer yay", SV("chr1", 60, 60, "chr1", 210, 210, "dummy", "protective against cancer yay", "inversion")]
-		# 
-		#
-		
-		## translocation cases to test:
-		#1. 1 translocation involving 2 TADs
-		#2. 2 translocations involving 3 TADs
-		#3. 3 translocations involving 3 TADs, where the 3rd translocation is in the same TAD as the 2nd
-		#4. 
-		
-		#Try a very simple translocation that affects only 2 TADs.
-		
-		# tad1 = ["chr1", 100, 300, TAD("chr1", 100, 300)]
-		# tad2 = ["chr1", 500, 700, TAD("chr1", 500, 700)]
-		# 
-		# sv1 = ["chr1", 110, 120, "chr1", 550, 600, "sample1", "cancerTypeA", SV("chr1", 110, 120, "+", "chr1", 550, 600, "-", "sample1", "cancerTypeA", "intraChromosomal")]
-		# sv2 = ["chr1", 110, 120, "chr1", 550, 600, "sample1", "cancerTypeA", SV("chr1", 110, 120, "-", "chr1", 550, 600, "+", "sample1", "cancerTypeA", "intraChromosomal")]
-		# svGroups = dict()
-		# tadsPerSV = dict()
-		# svGroups[sv1[8]] = [sv1[8], sv2[8]]
-		# tadsPerSV[sv1[8]] = [[tad1], [tad2]]
-		# tadsPerSV[sv2[8]] = [[tad1], [tad2]]
-		# svData = [svGroups, tadsPerSV]
-		# 
-		# #Assign test genes and eQTLs to the TADs
-		# #A gains eQTLB. A loses eQTL A. 
-		# geneA = Gene("A", "chr1", 100, 105)
-		# geneB = Gene("B", "chr1", 580, 590)
-		# eQTLA = EQTL("chr1", 128, 128)
-		# eQTLB = EQTL("chr1", 591, 592)
-		# tad1[3].genes = [geneA]
-		# tad1[3].eQTLInteractions = [eQTLA]
-		# tad2[3].genes = [geneB]
-		# tad2[3].eQTLInteractions = [eQTLB]
-		# geneA.eQTLs = [eQTLA]
-		# geneB.eQTLs = [eQTLB]
-		
-		
-		#Interchromosomal case
-		# tad1 = ["chr1", 100, 300, TAD("chr1", 100, 300)]
-		# tad2 = ["chr2", 500, 700, TAD("chr2", 500, 700)]
-		# 
-		# sv1 = ["chr1", 110, 120, "chr2", 550, 600, "sample1", "cancerTypeA", SV("chr1", 110, 120, "+", "chr2", 550, 600, "-", "sample1", "cancerTypeA", "intraChromosomal")]
-		# sv2 = ["chr1", 110, 120, "chr2", 550, 600, "sample1", "cancerTypeA", SV("chr1", 110, 120, "-", "chr2", 550, 600, "+", "sample1", "cancerTypeA", "intraChromosomal")]
-		# svGroups = dict()
-		# tadsPerSV = dict()
-		# svGroups[sv1[8]] = [sv1[8], sv2[8]]
-		# tadsPerSV[sv1[8]] = [[tad1], [tad2]]
-		# tadsPerSV[sv2[8]] = [[tad1], [tad2]]
-		# svData = [svGroups, tadsPerSV]
-		# 
-		# #Assign test genes and eQTLs to the TADs
-		# #A gains eQTLB. A loses eQTL A. 
-		# geneA = Gene("A", "chr1", 100, 105)
-		# geneB = Gene("B", "chr2", 580, 590)
-		# eQTLA = EQTL("chr1", 128, 128)
-		# eQTLB = EQTL("chr2", 591, 592)
-		# tad1[3].genes = [geneA]
-		# tad1[3].eQTLInteractions = [eQTLA]
-		# tad2[3].genes = [geneB]
-		# tad2[3].eQTLInteractions = [eQTLB]
-		# geneA.eQTLs = [eQTLA]
-		# geneB.eQTLs = [eQTLB]
-		
-		#Case where one end remains open. B gains A, A loses A. 
-		# tad1 = ["chr1", 100, 300, TAD("chr1", 100, 300)]
-		# tad2 = ["chr2", 500, 700, TAD("chr2", 500, 700)]
-		# 
-		# sv1 = ["chr1", 110, 120, "chr2", 550, 600, "sample1", "cancerTypeA", SV("chr1", 110, 120, "-", "chr2", 550, 600, "+", "sample1", "cancerTypeA", "intraChromosomal")]
-		# svGroups = dict()
-		# tadsPerSV = dict()
-		# svGroups[sv1[8]] = [sv1[8]]
-		# tadsPerSV[sv1[8]] = [[tad1], [tad2]]
-		# svData = [svGroups, tadsPerSV]
-		# 
-		# #Assign test genes and eQTLs to the TADs
-		# #A gains eQTLB. A loses eQTL A. 
-		# geneA = Gene("A", "chr1", 100, 105)
-		# geneB = Gene("B", "chr2", 580, 590)
-		# eQTLA = EQTL("chr1", 128, 128)
-		# eQTLB = EQTL("chr2", 591, 592)
-		# tad1[3].genes = [geneA]
-		# tad1[3].eQTLInteractions = [eQTLA]
-		# tad2[3].genes = [geneB]
-		# tad2[3].eQTLInteractions = [eQTLB]
-		# geneA.eQTLs = [eQTLA]
-		# geneB.eQTLs = [eQTLB]
-		# 
-		# Case where the DNA is inverted when re-joining the translocations. Gene A gains eQTL B and loses eQTL A. Gene B does not lose eQTL B but does not gain anything. 
-		# tad1 = ["chr1", 100, 300, TAD("chr1", 100, 300)]
-		# tad2 = ["chr2", 500, 700, TAD("chr2", 500, 700)]
-		# 
-		# sv1 = ["chr1", 110, 120, "chr2", 550, 600, "sample1", "cancerTypeA", SV("chr1", 110, 120, "+", "chr2", 550, 600, "+", "sample1", "cancerTypeA", "intraChromosomal")]
-		# sv2 = ["chr1", 110, 120, "chr2", 550, 600, "sample1", "cancerTypeA", SV("chr1", 110, 120, "-", "chr2", 550, 600, "-", "sample1", "cancerTypeA", "intraChromosomal")]
-		# svGroups = dict()
-		# tadsPerSV = dict()
-		# svGroups[sv1[8]] = [sv1[8], sv2[8]]
-		# tadsPerSV[sv1[8]] = [[tad1], [tad2]]
-		# tadsPerSV[sv2[8]] = [[tad1], [tad2]]
-		# svData = [svGroups, tadsPerSV]
-		# 
-		# #Assign test genes and eQTLs to the TADs
-		# #A gains eQTLB. A loses eQTL A. 
-		# geneA = Gene("A", "chr1", 100, 105)
-		# geneB = Gene("B", "chr2", 580, 590)
-		# eQTLA = EQTL("chr1", 128, 128)
-		# eQTLB = EQTL("chr2", 591, 592)
-		# tad1[3].genes = [geneA]
-		# tad1[3].eQTLInteractions = [eQTLA]
-		# tad2[3].genes = [geneB]
-		# tad2[3].eQTLInteractions = [eQTLB]
-		# geneA.eQTLs = [eQTLA]
-		# geneB.eQTLs = [eQTLB]
-		
-		#Case where only the right 2 parts are joined and inverted, the other ends remain open
-		#Nothing happens in eQTL gains/losses
-		# tad1 = ["chr1", 100, 300, TAD("chr1", 100, 300)]
-		# tad2 = ["chr2", 500, 700, TAD("chr2", 500, 700)]
-		# 
-		# sv1 = ["chr1", 110, 120, "chr2", 550, 600, "sample1", "cancerTypeA", SV("chr1", 110, 120, "-", "chr2", 550, 600, "-", "sample1", "cancerTypeA", "intraChromosomal")]
-		# 
-		# svGroups = dict()
-		# tadsPerSV = dict()
-		# svGroups[sv1[8]] = [sv1[8]]
-		# tadsPerSV[sv1[8]] = [[tad1], [tad2]]
-		# svData = [svGroups, tadsPerSV]
-		# 
-		# #Assign test genes and eQTLs to the TADs
-		# #A gains eQTLB. A loses eQTL A. 
-		# geneA = Gene("A", "chr1", 100, 105)
-		# geneB = Gene("B", "chr2", 580, 590)
-		# eQTLA = EQTL("chr1", 128, 128)
-		# eQTLB = EQTL("chr2", 591, 592)
-		# tad1[3].genes = [geneA]
-		# tad1[3].eQTLInteractions = [eQTLA]
-		# tad2[3].genes = [geneB]
-		# tad2[3].eQTLInteractions = [eQTLB]
-		# geneA.eQTLs = [eQTLA]
-		# geneB.eQTLs = [eQTLB]
-		# 
-		
-		
-		
-		# 2 translocations involving 3 TADs
-		# tad1 = ["chr1", 100, 300, TAD("chr1", 100, 300)]
-		# tad2 = ["chr1", 500, 700, TAD("chr1", 500, 700)]
-		# tad3 = ["chr1", 800, 900, TAD("chr1", 800, 900)]
-		# 
-		# sv1 = ["chr1", 110, 120, "chr1", 550, 600, "sample1", "cancerTypeA", SV("chr1", 110, 120, "+", "chr1", 550, 600, "-", "sample1", "cancerTypeA", "intraChromosomal")]
-		# sv2 = ["chr1", 650, 670, "chr1", 820, 830, "sample1", "cancerTypeA", SV("chr1", 650, 660, "+", "chr1", 820, 830, "-", "sample1", "cancerTypeA", "intraChromosomal")]
-		# svGroups = dict()
-		# tadsPerSV = dict()
-		# svGroups[sv1[8]] = [sv1[8], sv2[8]]
-		# tadsPerSV[sv1[8]] = [[tad1], [tad2]]
-		# tadsPerSV[sv2[8]] = [[tad2], [tad3]]
-		# svData = [svGroups, tadsPerSV]
-		# 
-		# #TAD A and C have a gene before the SV.
-		# #Tad B has 2 eQTLs on either side of the breakpoint. The first will be gained by gene A, the second by gene C. 
-		# geneA = Gene("A", "chr1", 100, 105)
-		# geneC = Gene("C", "chr1", 840, 845)
-		# eQTLA = EQTL("chr1", 601, 601)
-		# eQTLB = EQTL("chr1", 680, 680)
-		# tad1[3].genes = [geneA]
-		# tad3[3].genes = [geneC]
-		# tad2[3].eQTLInteractions = [eQTLA, eQTLB]
-		# 
-		
-		
-		# # 2 translocations involving 3 TADs, where the 2nd translocation is in the same TAD as the 2nd
-		# A loses eQTL A and gains eQTL B
-		# tad1 = ["chr1", 100, 300, TAD("chr1", 100, 300)]
-		# tad2 = ["chr1", 500, 700, TAD("chr1", 500, 700)]
-		# tad3 = ["chr1", 800, 900, TAD("chr1", 800, 900)]
-		# 
-		# sv1 = ["chr1", 110, 120, "chr1", 550, 600, "sample1", "cancerTypeA", SV("chr1", 110, 120, "+", "chr1", 550, 600, "-", "sample1", "cancerTypeA", "intraChromosomal")]
-		# sv2 = ["chr1", 130, 140, "chr1", 820, 830, "sample1", "cancerTypeA", SV("chr1", 130, 140, "+", "chr1", 820, 830, "-", "sample1", "cancerTypeA", "intraChromosomal")]
-		# svGroups = dict()
-		# tadsPerSV = dict()
-		# svGroups[sv1[8]] = [sv1[8], sv2[8]]
-		# tadsPerSV[sv1[8]] = [[tad1], [tad2]]
-		# tadsPerSV[sv2[8]] = [[tad1], [tad3]]
-		# svData = [svGroups, tadsPerSV]
-		# 
-		# geneA = Gene("A", "chr1", 100, 105)
-		# eQTLB = EQTL("chr1", 610, 610)
-		# tad1[3].genes = [geneA]
-		# tad2[3].eQTLInteractions = [eQTLB]
-		
-		
-		# # # 2 translocations involving 3 TADs, where the 2nd translocation is in the same TAD as the 2nd
-		#Here in the remaining part, the gene of TAD B can get into contact with the eQTL in TAD C
-		# tad1 = ["chr1", 100, 300, TAD("chr1", 100, 300)]
-		# tad2 = ["chr1", 500, 700, TAD("chr1", 500, 700)]
-		# tad3 = ["chr1", 800, 900, TAD("chr1", 800, 900)]
-		# 
-		# sv1 = ["chr1", 110, 120, "chr1", 550, 600, "sample1", "cancerTypeA", SV("chr1", 110, 120, "+", "chr1", 550, 600, "-", "sample1", "cancerTypeA", "intraChromosomal")]
-		# sv2 = ["chr1", 640, 640, "chr1", 820, 830, "sample1", "cancerTypeA", SV("chr1", 640, 640, "-", "chr1", 820, 830, "+", "sample1", "cancerTypeA", "intraChromosomal")]
-		# svGroups = dict()
-		# tadsPerSV = dict()
-		# svGroups[sv1[8]] = [sv1[8], sv2[8]]
-		# tadsPerSV[sv1[8]] = [[tad1], [tad2]]
-		# tadsPerSV[sv2[8]] = [[tad1], [tad3]]
-		# svData = [svGroups, tadsPerSV]
-		# 
-		# geneB = Gene("B", "chr1", 650, 660)
-		# eQTLC = EQTL("chr1", 810, 810)
-		# tad2[3].genes = [geneB]
-		# tad3[3].eQTLInteractions = [eQTLC]
-		
-		
-		# 2 translocations involving 2 TADs, but the 2nd translocation ends before the first translocation
-		# tad1 = ["chr1", 100, 300, TAD("chr1", 100, 300)]
-		# tad2 = ["chr2", 500, 700, TAD("chr2", 500, 700)]
-		# 
-		# sv1 = ["chr1", 110, 120, "chr2", 550, 600, "sample1", "cancerTypeA", SV("chr1", 110, 120, "+", "chr2", 550, 600, "-", "sample1", "cancerTypeA", "intraChromosomal")]
-		# sv2 = ["chr1", 130, 140, "chr2", 510, 520, "sample1", "cancerTypeA", SV("chr1", 130, 140, "+", "chr2", 510, 520, "-", "sample1", "cancerTypeA", "intraChromosomal")]
-		# svGroups = dict()
-		# tadsPerSV = dict()
-		# svGroups[sv1[8]] = [sv1[8], sv2[8]]
-		# tadsPerSV[sv1[8]] = [[tad1], [tad2]]
-		# tadsPerSV[sv2[8]] = [[tad1], [tad2]]
-		# svData = [svGroups, tadsPerSV]
-		
-		
-		# VCF example case with 3 translocations
-		
-		# tad1 = ["chr2", 320000, 322000, TAD("chr2", 320000, 322000)]
-		# tad2 = ["chr13", 123400, 123500, TAD("chr13", 123400, 123500)]
-		# tad3 = ["chr17", 198900, 199000, TAD("chr17", 198900, 199000)]
-		# 
-		# sv1 = ["chr2", 321681, 321681, "chr17", 198982, 198982, "sample1", "cancerTypeA", SV("chr2", 321681, 321681, "+", "chr17", 198982, 198982, "+", "sample1", "cancerTypeA", "intraChromosomal")]
-		# sv2 = ["chr2", 321681, 321681, "chr13", 123456, 123456, "sample1", "cancerTypeA", SV("chr2", 321681, 321681, "-", "chr13", 123456, 123456, "+", "sample1", "cancerTypeA", "intraChromosomal")]
-		# sv3 = ["chr13", 123456, 123456, "chr17", 198982, 198982, "sample1", "cancerTypeA", SV("chr13", 123456, 123456, "-", "chr17", 198982, 198982, "-", "sample1", "cancerTypeA", "intraChromosomal")]
-		# 
-		# svGroups = dict()
-		# tadsPerSV = dict()
-		# svGroups[sv1[8]] = [sv1[8], sv2[8], sv3[8]]
-		# tadsPerSV[sv1[8]] = [[tad1], [tad3]]
-		# tadsPerSV[sv2[8]] = [[tad1], [tad2]]
-		# tadsPerSV[sv3[8]] = [[tad2], [tad3]]
-		# svData = [svGroups, tadsPerSV]
-		
-		
-		
-		
+
 		### TRANSLOCATIONS ###
 		if svType == "trans":
 			
 			svGroups = svData[0]
 			tadsPerSV = svData[1]
 			
-			#1. For each group of SVs, determine a derivative genome
-			#1.1 Keep a list of elements that are gained/lost for each translocation individually
-			#1.2 For the next translocation, update that list again. If there are elements that are now lost, remove them from the list
+			#1. For each translocation, determine by orientation how the TADs are disrupted
+			#2. Collect the affected genes and elements
+			#3. Set the gains and losses correctly for the genes. 
 			
 			updatedTadPos = dict() #keep the TADs and the new start/ends after 
-			seenSVs = 0
-			for group in svGroups:
-				print(group[0].sampleName)
+			for group in svGroups: #This is not a group but just a sample now
+				
 				
 				gains = dict()
 				losses = dict()
 				
-				for sv in group:
+				for sv in group: #for each SV of the sample
 					
 					leftTad = tadsPerSV[sv][0][0][3]
 					rightTad = tadsPerSV[sv][1][0][3]
 						
 					
 					#These are the scenarios that we need to incorporate for translocations:
-					#For +-, genes in the left side of chr1 gain eQTLs from the right side of chr2, and vice versa. 
-					#For -+, genes in the left side of chr2 gain eQTLs from the right side of chr1, and vice versa. 
-					#For ++, genes in the left side of chr1 gain eQTLs from the inverted left side of chr2, so starting from the breakpoint until the TAD start. Vice versa for the genes in the other part. 
-					#For --, genes in the right side of chr1 gain eQTLs from the inverted right side of chr2, so starting from the breakpoint until the TAD end. Vice versa for the genes in the other part.
+					#For +-, genes in the left side of chr1 gain elements from the right side of chr2, and vice versa. 
+					#For -+, genes in the left side of chr2 gain elements from the right side of chr1, and vice versa. 
+					#For ++, genes in the left side of chr1 gain elements from the inverted left side of chr2, so starting from the breakpoint until the TAD start. Vice versa for the genes in the other part. 
+					#For --, genes in the right side of chr1 gain elements from the inverted right side of chr2, so starting from the breakpoint until the TAD end. Vice versa for the genes in the other part.
 
-					if sv.o1 == "+" and sv.o2 == "-": #These are the same scenarios, but with the cases above we have already determined the correct TADs. 
+					if sv.o1 == "+" and sv.o2 == "-": 
 						
 						#2. Get the elements on the left of the breakpoint and the right of the breakpoint
 						leftSideElements = leftTad.getElementsByRange(leftTad.start, sv.s1)
@@ -648,15 +347,14 @@ class DerivativeTADMaker:
 					
 						gene.addGainedElements(leftSideElements, sv.sampleName)
 						gene.addGainedElementsSVs(leftSideElements, svStr)
-					seenSVs += 1
-			print(seenSVs)
+
 			
 		### DELETIONS ###
 		if svType == "del":
 			
 			#1. For every SV, determine the TADs that it occurs in.
 			#2. Collect all elements within the SV region of these TADs
-			#3. Assign the elements as lost for these genes (ignore if the gene itself is also deleted for now, that could be a different feature). If the elements were linked to genes and are lost, or if these are TAD-wide, is determined
+			#3. Assign the elements as lost for these genes (ignore genes that are deleted themselves). If the elements were linked to genes and are lost, or if these are TAD-wide, is determined
 			#by the gene object itself. 
 			
 			#Determine all overlapping TADs.
@@ -669,14 +367,14 @@ class DerivativeTADMaker:
 			endMatches = svData[5] >= tadChrSubset[:,1]
 			
 			tadMatches = tadChrSubset[startMatches * endMatches]
-			
+
 			if tadMatches.shape[0] < 2: #no matches, or overlapping just 1 TAD. 
 				return
 
 			#Get the leftmost and rightmost TADs
 			farLeftTad = tadMatches[0] #This list is sorted
 			farRightTad = tadMatches[tadMatches.shape[0]-1]
-			
+
 			#The genes in the far left TAD, only in the part that is not overlapped by the deletion, gain the elements that are not overlapped by the deletion
 			#in the far right tad.
 			remainingLeftGenes = farLeftTad[3].getGenesByRange(farLeftTad[1], svData[1])
@@ -691,16 +389,6 @@ class DerivativeTADMaker:
 			deletedRightGenes = farRightTad[3].getGenesByRange(farRightTad[1], svData[5])
 			deletedRightElements = farRightTad[3].getElementsByRange(farRightTad[1], svData[5])
 			
-			# if svData[0] + "_" + str(svData[1]) + "_" + str(svData[2]) + "_" + svData[3] + "_" + str(svData[4]) + "_" + str(svData[5]) + "_" + svData[8].sampleName + "_" + svData[8].svType == "chr1_61871997_61871997_chr1_64954506_64954506_brcaA0DG_del":
-			# 	print(farLeftTad)
-			# 	print(farRightTad)
-			# 	print(svData)
-			# 	print(remainingRightGenes)
-			# 	for gene in remainingRightGenes:
-			# 		print(gene.name)
-			# 	#print(remainingLeftElements)
-			# 	exit()
-			
 			#for the losses, the remaining genes in the left lose the lost left elements
 			#for the gains, the remaining genes in the left gain the remaining elements on the right.
 			svStr = svData[0] + "_" + str(svData[1]) + "_" + str(svData[2]) + "_" + svData[3] + "_" + str(svData[4]) + "_" + str(svData[5]) + "_" + svData[8].sampleName + "_" + str(farLeftTad[3].startStrength) + '_' + str(farLeftTad[3].endStrength) + '_' + str(farRightTad[3].startStrength) + '_' + str(farRightTad[3].endStrength) + '_' + svData[8].svType + '_'  + str(farLeftTad[3].startStrengthSignal) + '_' + str(farLeftTad[3].endStrengthSignal) + '_' + str(farRightTad[3].startStrengthSignal) + '_' + str(farRightTad[3].endStrengthSignal)
@@ -711,6 +399,7 @@ class DerivativeTADMaker:
 					gene.addGainedElements(remainingRightElements, svData[8].sampleName)
 					gene.addGainedElementsSVs(remainingRightElements, svStr)
 
+				####Have removed losses, because these are not as a result of the TAD disruption!!! Simply because they are removed by the deletion. 
 				#gene.addLostElements(deletedLeftElements, svData[8].sampleName)
 				#gene.addLostElementsSVs(deletedLeftElements, svData[0] + "_" + str(svData[1]) + "_" + str(svData[2]) + "_" + svData[3] + "_" + str(svData[4]) + "_" + str(svData[5]) + "_" + svData[8].sampleName + "_" + svData[8].svType)
 				
@@ -720,47 +409,15 @@ class DerivativeTADMaker:
 					gene.addGainedElements(remainingLeftElements, svData[8].sampleName)
 					gene.addGainedElementsSVs(remainingLeftElements, svStr)
 			
+				####Have removed losses, because these are not as a result of the TAD disruption!!! Simply because they are removed by the deletion. 
 				#gene.addLostElements(deletedRightElements, svData[8].sampleName)
 				#gene.addLostElementsSVs(deletedRightElements, svData[0] + "_" + str(svData[1]) + "_" + str(svData[2]) + "_" + svData[3] + "_" + str(svData[4]) + "_" + str(svData[5]) + "_" + svData[8].sampleName + "_" + svData[8].svType)
-				
 			
-				
-			
-			# for tad in tadMatches:
-			# 	
-			# 	#For now skip the SVs that are entirely within the TAD
-			# 	if svData[1] > tad[1] and svData[5] < tad[2]:
-			# 		continue
-			# 	
-			# 	lostElements = []
-			# 	remainingGenes = []
-			# 	if svData[1] > tad[1] or svData[5] < tad[2]: #if the SV overlaps the TAD entirely, this will never be true.
-			# 		
-			# 		#re-do this, but then for gains and losses at the same time. 
-			# 		
-			# 		#get the genes in the left TAD and the right TAD.
-			# 		#get the gens in the deletion on the left, and the ones on the right in the deletion. 
-			# 		
-			# 		
-			# 		#Determine which part of the TAD is disrupted by the SV
-			# 		if svData[1] > tad[1] and svData[5] > tad[2]: #If the SV starts after the TAD start, but the TAD ends before the SV end, the SV is in the leftmost TAD.
-			# 			lostElements = tad[3].getElementsByRange(svData[1], tad[2]) #Elements in the deletion
-			# 			remainingGenes = tad[3].getGenesByRange(tad[1], svData[1])
-			# 			
-			# 		if svData[5] > tad[1] and svData[5] < tad[2]: #If the SV ends after the start of the TAD, and also ends before the end of the TAD, the SV is in the rightmost TAD.
-			# 			lostElements = tad[3].getElementsByRange(tad[1], svData[5])
-			# 			remainingGenes = tad[3].getGenesByRange(svData[5], tad[2])
-			# 	# else: #do not do this, if the deletion covers the entire TAD, it also removes the gene itself, so that is not intersting as a 'loss' 
-			# 	# 	lostElements = tad[3].elements
-			# 	for gene in remainingGenes:
-			# 		gene.addLostElements(lostElements, svData[8].sampleName)
-			# 		gene.addLostElementsSVs(lostElements, svData[0] + "_" + str(svData[1]) + "_" + str(svData[2]) + "_" + svData[3] + "_" + str(svData[4]) + "_" + str(svData[5]) + "_" + svData[8].sampleName + "_" + svData[8].svType)
-			# 		
 		
 		### INVERSION ###
 		if svType == "inv":
 			
-			#1. Get the two TADs at the start and end of the inversions (these may be genomic bins)
+			#1. Get the two TADs at the start and end of the inversions
 			
 			tadChrSubsetInd = svData[0] == tadData[:,0]
 			tadChrSubset = tadData[tadChrSubsetInd]
@@ -818,7 +475,6 @@ class DerivativeTADMaker:
 				unaffectedGenesRight = rightMostTad[3].getGenesByRange(svData[5], rightMostTad[2])
 				
 			#Assigning the gains and losses to the genes is independent of the type of inversion
-			#print "Copying genes and elements after SV"		
 			#All genes that were originally in the left TAD (outisde of the inversion) will gain elements of the right side of the inversion
 			#All unaffected genes on the left will lose the eQTLs that are in the left side of the inversion
 			svStr = svData[0] + "_" + str(svData[1]) + "_" + str(svData[2]) + "_" + svData[3] + "_" + str(svData[4]) + "_" + str(svData[5]) + "_" + svData[8].sampleName + "_" + str(leftMostTad[3].startStrength) + '_' + str(leftMostTad[3].endStrength) + '_' + str(rightMostTad[3].startStrength) + '_' + str(rightMostTad[3].endStrength) + '_' + svData[8].svType  + "_" + str(leftMostTad[3].startStrengthSignal) + '_' + str(leftMostTad[3].endStrengthSignal) + '_' + str(rightMostTad[3].startStrengthSignal) + '_' + str(rightMostTad[3].endStrengthSignal)

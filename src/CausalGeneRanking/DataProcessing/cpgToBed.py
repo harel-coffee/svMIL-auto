@@ -1,6 +1,11 @@
 import sys
 import re
 
+"""
+	Get the input cpg file, and parse it to a bed file.
+
+"""
+
 cpgFile = sys.argv[1]
 outFile = sys.argv[2]
 

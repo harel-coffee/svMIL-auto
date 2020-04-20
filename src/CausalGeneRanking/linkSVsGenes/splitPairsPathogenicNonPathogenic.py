@@ -1,12 +1,20 @@
-## Read the rule-based SV-gene pairs and split into pathogenic & non-pathogenic pairs based on z-scores
+
+"""
+	Script to read the rule-based SV-gene pairs and split these into pathogenic & non-pathogenic pairs based on the z-scores.
+
+	We use this mainly for plotting fig 2e.
+
+"""
 
 import sys
 import numpy as np
 
 outDir = sys.argv[1]
 
+#get the pairs identified with the rules, and the z-scores
 svGenePairs = np.loadtxt(outDir + '/linkedSVGenePairs/nonCoding_geneSVPairs.txt_', dtype='object')
-degPairs = np.loadtxt(outDir + '/tadDisruptionsZScores/zScores.txt', dtype='object')
+zScores = np.loadtxt(outDir + '/tadDisruptionsZScores/zScores.txt', dtype='object')
+
 
 #also load the mutation pairs.
 #In the current zScore setup, some genes will be affected by an overlapping duplication AND CNV AMP,
@@ -32,11 +40,11 @@ for pair in svGenePairs:
 	splitPair = pair[0].split('_')
 	shortPair = splitPair[7] + '_' + splitPair[0]
 
-	if shortPair in degPairs[:,0]:
+	if shortPair in zScores[:,0]:
 
-		degPairInfo = degPairs[degPairs[:,0] == shortPair][0]
+		zPairInfo = zScores[zScores[:,0] == shortPair][0]
 
-		if float(degPairInfo[5]) > 1.5 or float(degPairInfo[5]) < -1.5:
+		if float(zPairInfo[5]) > 1.5 or float(zPairInfo[5]) < -1.5:
 
 			#only add to the positive set if there is no CNV amp without duplication.
 			if splitPair[0] in cnvPatientsAmp[splitPair[7]] and shortPair + '_DUP' not in splitSVGenePairs:

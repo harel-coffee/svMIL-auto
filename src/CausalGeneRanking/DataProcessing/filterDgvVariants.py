@@ -1,5 +1,9 @@
 import sys
 import numpy as np
+np.random.seed(785)
+
+###Filter the DGV variants to the same number as the HMF SVs.
+#Do not subselect for type, since this distribution represents the true case in the germline variants and could be meaningful.
 
 #1. Get the total number of samples and choose 89 of these at random
 
@@ -17,7 +21,7 @@ with open(sys.argv[1], 'r') as inF:
 			lineCount += 1
 			continue
 		
-		if len(splitLine) == header['samples']: #if there are no samples associated to this variant (which is weird tbh???)
+		if len(splitLine) == header['samples']: #if there are no samples associated to this variant
 			continue
 	
 		samples = splitLine[header['samples']]
@@ -27,9 +31,6 @@ with open(sys.argv[1], 'r') as inF:
 		for sample in splitSamples:
 			if sample not in uniqueSamples:
 				uniqueSamples.append(sample)
-
-print uniqueSamples		
-print len(uniqueSamples)
 
 sampleSubset = np.random.choice(uniqueSamples, 89, replace=False)
 
@@ -54,27 +55,25 @@ with open(sys.argv[1], 'r') as inF:
 			splitSamples = samples.split(",")
 			
 			for sample in splitSamples:
-				if sample in sampleSubset:
 					
-					chr1 = splitLine[1]
-					s1 = splitLine[2]
-					e1 = splitLine[3]
-					
-					o1 = "+"
-					o2 = "-"
-					
-					source = "dgv"
-					sample_name = sample
-					sv_type = splitLine[5]
-					cancer_type = "germline"
-					
-					subsetSVs.append([chr1, s1, e1, o1, chr1, s1, e1, o2, source, sample_name, sv_type, cancer_type])
+				chr1 = splitLine[1]
+				s1 = splitLine[2]
+				e1 = splitLine[3]
 
-print len(subsetSVs)
+				o1 = "+"
+				o2 = "-"
+
+				source = "dgv"
+				sample_name = sample
+				sv_type = splitLine[5]
+				cancer_type = "germline"
+
+				subsetSVs.append([chr1, s1, e1, o1, chr1, s1, e1, o2, source, sample_name, sv_type, cancer_type])
 
 #Subsample within the SV subset to get a similar number of SVs as for the somatic case
 
-somaticSvNum = 17649
+somaticSvNum = 73293
+np.random.seed(785)
 subsetLines = np.random.choice(range(0, len(subsetSVs)), somaticSvNum, replace=False)
 
 subsampledSVs = []
@@ -92,8 +91,6 @@ with open(sys.argv[2], 'w') as outF:
 			
 		lineCount += 1
 			
-print len(subsampledSVs)	
-
 
 
 

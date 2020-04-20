@@ -1,7 +1,7 @@
 """
 	Make versions of the HMF vcfs that SVScore and VEP can read
 
-	- remove non-pass, add end, replace svtype
+	Do: remove non-pass, add end, replace svtype
 
 """
 

@@ -24,12 +24,15 @@ if $run; then
 	inFile='../../data/eQTLs/GTEx_Analysis_v7.metasoft.txt'
 	geneLookupFile='../../data/genes/ensemblGenesHg19'
 
-	breastOutFile='../../data/eQTLs/breast_eQTLs.bed'
-	python "$runFolder/filterEQTLs.py" "$inFile" "$geneLookupFile" "$breastOutFile" "breast"
+	breastOutFolder='../../data/eQTLs/breast/'
+	python "$runFolder/filterEQTLs.py" "$inFile" "$geneLookupFile" "$breastOutFolder" "breast"
 
 	#repeat for ovary and liver
-	breastOutFile='../../data/eQTLs/ovarian_eQTLs.bed'
-	python "$runFolder/filterEQTLs.py" "$inFile" "$geneLookupFile" "$breastOutFile" "ovarian"
+	ovarianOutFolder='../../data/eQTLs/ov/'
+	python "$runFolder/filterEQTLs.py" "$inFile" "$geneLookupFile" "$ovarianOutFolder" "ovarian"
+
+	liverOutFolder='../../data/eQTLs/liver/'
+	python "$runFolder/filterEQTLs.py" "$inFile" "$geneLookupFile" "$liverOutFolder" "liver"
 
 fi
 
@@ -59,7 +62,7 @@ if $run; then
 fi
 
 ### PARSE GERMLINE VARIANTS ###
-run=false
+run=true
 
 #Requires download of germline variants. See svs/readme.txt
 

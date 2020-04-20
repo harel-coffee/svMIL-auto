@@ -1,16 +1,22 @@
 """
 	The goal of this script is to read the multi-tissue eQTLs from GTEx and filter it by genes that are known to be causal.
-	The ENSEMBL IDs first need to be mapped to gene names, and then linked back to the causal gene file.
+	The ENSEMBL IDs first need to be mapped to gene names
 
 """
 
 import sys
 import numpy as np
+import os
 
 eQTLFile = sys.argv[1]
 geneListFile = sys.argv[2]
-filteredEQTLFile = sys.argv[3]
+outDir = sys.argv[3]
 tissue = sys.argv[4]
+
+if not os.path.exists(outDir):
+   os.makedirs(outDir)
+
+filteredEQTLFile = outDir + '/' + tissue + '_eQTLs.bed'
 
 #1. Read ensembl gene list and make lookup for causal genes only
 
@@ -52,10 +58,7 @@ def filterEQTLs(eQTLFile, ensemblIDLookup, filteredEQTLFile):
 					splitHeader = line.split("\t")
 					for col in range(0, len(splitHeader)):
 						header[splitHeader[col]] = col #keep lookup for specific columns
-						
-					#newHeader = "chromosome\tstart\tend\tgene"
-					#outFile.write(newHeader)
-					#outFile.write("\n")
+
 					lineCount += 1
 					continue
 				
@@ -68,6 +71,8 @@ def filterEQTLs(eQTLFile, ensemblIDLookup, filteredEQTLFile):
 					tissueInd = header['pval_Breast_Mammary_Tissue']
 				elif tissue == 'ovarian':
 					tissueInd = header['pval_Ovary']
+				elif tissue == 'liver':
+					tissueInd = header['pval_Liver']
 				
 				if splitLine[tissueInd] == 'NA':
 					continue

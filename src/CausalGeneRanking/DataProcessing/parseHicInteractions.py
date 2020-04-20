@@ -1,8 +1,7 @@
 """
 	Goal: read the thresholded Hi-C interactions and write these to a singular file with interactions
 	
-	1. Filter for interactions that start/end within one TAD.
-	2. Filter for interactions that take place with a bin containing a gene
+	1. Get only interactions that start/end within one TAD.
 	
 """
 
@@ -52,7 +51,7 @@ with open(relationsFile, 'w') as relationsOut:
 					else:	
 						end = "chr" + str(chr2) + "_" + splitLine[1]
 					if start == end:
-						continue #avoid adding self-loops to the database, these are not useful for now
+						continue #avoid adding self-loops, these are not useful for now
 						
 
 					relationsOut.write(start + "\t" + end + "\n")

@@ -1,5 +1,6 @@
 """
-	Check the output of VEP for each SV, and assign a score.
+	Check the output of VEP for each SV, and check which are predicted correctly as pathogenic.
+	modifier is viewed as non-pathogenic, high and moderate scores are pathogenic.
 
 """
 

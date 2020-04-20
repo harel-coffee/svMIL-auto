@@ -151,7 +151,7 @@ for pair in positivePairs:
 
 
 #Collect all the scores per SV type, and then select the ones that are likely pathogenic.
-#in the paper they use the top 10% and 90 percentile.
+#in the paper they use the top 10% and 90 percentile. we use 90th percentile.
 
 svTypes = ['DEL', 'DUP', 'INV', 'BND']
 
@@ -203,6 +203,3 @@ for svType in svTypes:
 	print('tpr', tpr)
 	print('fpr', fpr)
 
-
-
-#Then get the true positive SV pairs, and compute TPR/FPR

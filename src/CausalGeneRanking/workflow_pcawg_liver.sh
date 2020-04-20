@@ -52,7 +52,7 @@ fi
 
 
 ### (REQUIRED) PART 2 - LINK SVS TO GENES ###
-run=true #Only skip this step if all output has already been generated!
+run=false #Only skip this step if all output has already been generated!
 
 if $run; then
 	runFolder='./linkSVsGenes/'
@@ -62,7 +62,7 @@ if $run; then
 fi
 
 ### (REQUIRED) PART 3 - IDENTIFY PATHOGENIC SV-GENE PAIRS ###
-run=true
+run=false
 
 if $run; then
 	runFolder='./tadDisruptionsZScores/'
@@ -88,7 +88,7 @@ if $run; then
 	runFolder='./multipleInstanceLearning/'
 
 	#first normalize the bags
-	python "$runFolder/normalizeBags.py" "$outputFolder"
+	#python "$runFolder/normalizeBags.py" "$outputFolder"
 
 	#then generate the similarity matrices for all SVs
 	python "$runFolder/generateSimilarityMatrices.py" "$outputFolder" "False" "True" "False" "False" "False"
@@ -96,7 +96,7 @@ if $run; then
 fi
 
 ### FIGURE 3 - MIL PERFORMANCE CURVES PER SV TYPE, PER-PATIENT CV ###
-run=true
+run=false
 
 if $run; then
 	runFolder='./multipleInstanceLearning/'

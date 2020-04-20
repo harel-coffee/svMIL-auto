@@ -1,6 +1,6 @@
 """
 
-	Make the polar plots showing the feature importances.
+	Make the polar plots showing the feature importances. (figure 4)
 	This script can output the plots for the COSMIC, non-COSMIC, and all instance case.
 
 	Based on a parameter, we can select to only output the plot from pre-made plotting data,
@@ -72,7 +72,7 @@ if gainLossName != 'loss':
 	
 else:
 	svTypes = ['INV', 'ITX']
-svType = np.array(svTypes)
+
 usedSVTypes = [] #use this to later determine which colors need to be used in the plot in case we skip an sv type, e.g.
 #for cosmic when translocations are not linked to any cosmic gene.
 
@@ -82,7 +82,6 @@ if cosmicName != 'all':
 	cosmicGeneNames = []
 	for gene in cosmicGenes:
 		cosmicGeneNames.append(gene[3].name)
-
 
 if generatePlottingData == "True":
 	adjustedPValues = dict()
@@ -97,9 +96,7 @@ if generatePlottingData == "True":
 			clf = RandomForestClassifier(random_state=785, n_estimators= 600, min_samples_split=5, min_samples_leaf=1, max_features='auto', max_depth=80, bootstrap=True)
 			title = 'deletions'
 		elif svType == 'DUP':
-			#classifier = RandomForestClassifier(n_estimators= 600, min_samples_split=2, min_samples_leaf=2, max_features='sqrt', max_depth=110, bootstrap=False)
 			clf = RandomForestClassifier(random_state=785, n_estimators= 600, min_samples_split=5, min_samples_leaf=1, max_features='auto', max_depth=80, bootstrap=True)
-			#classifier = RandomForestClassifier(n_estimators= 1200, min_samples_split=2, min_samples_leaf=4, max_features='sqrt', max_depth=70, bootstrap=False)
 			title = 'duplications'
 		elif svType == 'INV':
 			clf = RandomForestClassifier(random_state=785, n_estimators= 200, min_samples_split=5, min_samples_leaf=4, max_features='auto', max_depth=10, bootstrap=True)
@@ -119,8 +116,6 @@ if generatePlottingData == "True":
 		bagPairLabels = np.load(dataPath + '/bagPairLabels_' + svType + '.npy', encoding='latin1', allow_pickle=True)
 		bagMap = np.load(dataPath + '/bagMap_' + svType + '.npy', encoding='latin1', allow_pickle=True).item()
 		filteredFeatures = np.loadtxt(dataPath + '/lowVarianceIdx_' + svType + '.txt')
-
-		print(filteredFeatures)
 
 		#train the classifier on the full dataset
 		clf.fit(similarityMatrix, bagLabels)
@@ -295,6 +290,7 @@ if generatePlottingData == "True":
 		#pAdjusted = np.delete(pAdjusted, 31)
 
 		print(pAdjusted)
+		continue
 		#exit()
 
 		allFeatureZScores[svType] = featureZScores
@@ -306,7 +302,7 @@ if generatePlottingData == "True":
 	np.save(tmpOutDir + '/' + outFilePrefix + 'featureZScores.npy', allFeatureZScores)
 	np.save(tmpOutDir + '/' + outFilePrefix + 'adjustedPValues.npy', adjustedPValues)
 
-if outputTop1000FeatureImportance == 'True':
+if outputTop1000FeatureImportance == 'True': #if we just want the feature importance plots of fig S3, don't bother with the figure 4/S4 plots
 	exit()
 #load the data and make the polar plots
 #use the parameters to determine which plot to make
@@ -352,8 +348,8 @@ for svType in usedSVTypes:
 	pAdjusted = adjustedPValues[svType]
 
 	directionalAdjustedP = -np.log(pAdjusted) * np.sign(allFeatureZScores[svType])
-
-	directionalAdjustedP += np.abs(overallMin) + 50
+	#normalize between 0 and 1
+	directionalAdjustedP = (directionalAdjustedP - overallMin) / (overallMax - overallMin)
 
 	if len(np.where(pAdjusted == 1)) > 0:
 		zeroOffsetInd = np.where(pAdjusted == 1)[0][0]
@@ -364,8 +360,14 @@ for svType in usedSVTypes:
 
 border = zeroOffset
 
-signBorderTop = -np.log(0.05) + zeroOffset
+#for the borders, also normalize between 0 and 1
+signBorderTop = (((-np.log(0.05) - overallMin) / (overallMax-overallMin)))
 signBorderBottom = border - (signBorderTop - border)
+
+print(signBorderTop)
+print(signBorderBottom)
+print(border)
+
 
 blockSize = 360 / len(directionalAdjustedP)
 xRange = np.arange(0, 360, blockSize)
@@ -396,10 +398,15 @@ for svType in usedSVTypes:
 		colors.append(allColors[3])
 		offset.append(allOffset[3])
 
+import math
 ind = 0
 for svType in usedSVTypes:
 	print('area')
-	area = 2 * (1 + (-np.log(adjustedPValues[svType])))
+	if cosmicName == 'cosmic':
+		area = 10 * (1 + (-np.log(adjustedPValues[svType])))
+	else:
+		area = 1 * (1 + (-np.log(adjustedPValues[svType])))
+
 	print(area)
 	ax.scatter(centers+offset[ind], scaledP[svType], color=colors[ind], alpha=0.6, s=area)
 	ind += 1
@@ -407,6 +414,7 @@ for svType in usedSVTypes:
 ax.set_xticks(centers)
 ax.set_xticklabels(xlabels, fontsize=5)
 
+ax.set_ylim(-0.5, 1.2) 
 ax.set_yticklabels(['p < 0.05'])
 ax.set_yticks([signBorderBottom, border, signBorderTop])
 gridlines = ax.yaxis.get_gridlines()
@@ -418,6 +426,7 @@ gridlines[2].set_color("red")
 gridlines[2].set_linewidth(0.5)
 gridlines[2].set_linestyle('--')
 
-ax.set_rorigin(-200)
-ax.set_theta_zero_location('N', offset=10)
+#ax.set_rorigin(-200)
+#ax.set_theta_zero_location('N', offset=10)
+ax.set_theta_zero_location('N')
 plt.savefig(finalOutDir + '/' + outFilePrefix + 'featureImportances.svg')

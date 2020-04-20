@@ -1,12 +1,3 @@
-#!/usr/bin/env python
-
-######### Documentation #########
-
-__author__ = "Marleen Nieboer"
-__credits__ = []
-__maintainer__ = "Marleen Nieboer"
-__email__ = "m.m.nieboer@umcutrecht.nl"
-__status__ = "Development"
 
 """
 	The purpose of this script is to filter the HiC data given a defined threshold. Every interaction with a measured interaction count above the defined threshold will be written

@@ -1,8 +1,8 @@
 """
-	Similar to TF, make a file with Hi-C interactions for every TAD.
+	Make a file with Hi-C interactions for every TAD. Each side of the interaction is considered a separate regulatory element that can be gained or lost.
 	
 	1. Filter for all interactions that do not take place entirely within a TAD
-	2. Check how many interactions are with known genes. 
+	2. Write these interactions per TAD to a file.
 
 """
 
@@ -65,7 +65,7 @@ with open(hiCFile, 'r') as inF:
 			continue
 		matchingTad2 = tadChrSubset[matchingPos][0]
 		
-		#Only consider interactions that are within the same TAD.
+		#Only consider interactions that are within the same TAD. We assume that interactions always take place within TADs, so otherwise this doesn't fit with our data.
 		
 		if matchingTad1[0] == matchingTad2[0] and matchingTad1[1] == matchingTad2[1] and matchingTad1[2] == matchingTad2[2]:
 			tadStr = matchingTad1[0] + "_" + str(matchingTad1[1]) + "_" + str(matchingTad1[2])
@@ -74,21 +74,6 @@ with open(hiCFile, 'r') as inF:
 			tadInteractions[tadStr].append(region1Pos)
 			tadInteractions[tadStr].append(region2Pos)
 		lineCount += 1
-# #Get some statistics
-# print "Number of TADs with interactions: ", len(tadInteractions)
-#
-# maxInt = 0
-# minInt = float("inf")
-# totalInteractions = 0
-# for tad in tadInteractions:
-# 	if len(tadInteractions[tad]) > maxInt:
-# 		maxInt = len(tadInteractions[tad])
-# 	if len(tadInteractions[tad]) < minInt:
-# 		minInt = len(tadInteractions[tad])
-# 	totalInteractions += len(tadInteractions[tad])
-#
-# avgInt = totalInteractions / float(len(tadInteractions))
-
 
 #Write the Hi-c interaction indices to a file grouped by TADs
 with open(outFile, 'w') as outF:

@@ -1,4 +1,6 @@
 """
+	Makes fig S1.
+
 	For each SV, determine if it starts or ends in a TAD.
 	For these TADs, count how many genes are in that TAD.
 	Make a plot where we show the number of SVs vs the number of genes that these disrupt

@@ -14,6 +14,6 @@ class SV:
 		self.sampleName = sampleName
 		self.cancerType = cancerType
 		self.svType = svType
-		self.o1 = o1
+		self.o1 = o1 #orientations
 		self.o2 = o2
 	

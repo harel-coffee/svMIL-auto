@@ -1,5 +1,8 @@
 """
-	Get the feature values of the coding & non-coding SVs, and see if these can be separated using PCA.
+	Make figure 2e
+
+	Gets all the gains and losses for the pathogenic SVs, non-pathogenic SVs, germline SVs, and random SVs, and plots which are significant in the
+	pathogenic group compared to the others.
 """
 
 import sys
@@ -15,16 +18,29 @@ import seaborn as sns
 from matplotlib.colors import ListedColormap
 from statsmodels.sandbox.stats.multicomp import multipletests
 
-#re-write for having all SVs in the same plot
-### 4 separate plots, but gains and losses in one
+import matplotlib
+matplotlib.use('Agg')
 
-def plotSignificances(significances, label, title, dataType, minScale, maxScale, finalOutDir):
+def plotSignificances(significances, label, title, dataType, finalOutDir):
+	"""
+		Plot the heatmaps of fig 2e.
 
+		significances (dictionary): keys are the SV types, contains a list where ind 0 are the losses, 1 the gains.
+		label (str): unused
+		title (str): title that the plot will get in the output file.
+		dataType (str): if germline, we will not plot anything for translocations, since these are not present in germline.
+		finalOutDir (str): the final output directory that the plot will be written to.
 
-	#plot heatmap instead.
-	#make a matrix of features by SV types. First test with gains only
+	"""
+
+	#plot heatmap
+	#make a matrix of features by SV types.
 	significanceMatrix = np.zeros([len(significances['DEL'][1])*2, len(significances)])
 	plotInd = [0]*len(significances['DEL'][1])
+
+	#below this we call it 'very' significant.
+	signCutoff = 1e-5
+
 	for svTypeInd in range(0, len(significances)):
 		svType = list(significances.keys())[svTypeInd]
 
@@ -36,54 +52,46 @@ def plotSignificances(significances, label, title, dataType, minScale, maxScale,
 		for sign in range(0, len(lossSignificances)):
 
 			if lossSignificances[sign] < 0.05:
-				#significanceMatrix[lossInd, svTypeInd] = -1
-				significanceMatrix[lossInd, svTypeInd] = (np.log(lossSignificances[sign]) - minScale) / (maxScale - minScale)
 
-				#significanceMatrix[lossInd, svTypeInd] = np.log(lossSignificances[sign]) #keep losses negative
+				if lossSignificances[sign] < signCutoff:
+					significanceMatrix[lossInd, svTypeInd] = -2
+				else:
+					significanceMatrix[lossInd, svTypeInd] = -1
+				
 			else:
 				significanceMatrix[lossInd, svTypeInd] = 0
 
 			plotInd[sign] = lossInd+1
-			#plotInd[sign] = lossInd+1
 			lossInd += 2
 
 
 			if gainSignificances[sign] < 0.05:
-				#significanceMatrix[gainInd, svTypeInd] = 1
-				significanceMatrix[gainInd, svTypeInd] = (-1) * (np.log(gainSignificances[sign]) - minScale) / (maxScale - minScale)
-				# print((np.log(gainSignificances[sign]) - minScale) / (maxScale - minScale))
-				# print(maxScale - minScale)
-				# print(gainSignificances[sign])
-				# print(np.log(gainSignificances[sign]))
-				# print(minScale)
-				# print(maxScale)
-				# exit()
 
-				#significanceMatrix[gainInd, svTypeInd] = (-1) * np.log(gainSignificances[sign]) #gains positive
+				if gainSignificances[sign] < signCutoff:
+					significanceMatrix[gainInd, svTypeInd] = 2
+				else:
+					significanceMatrix[gainInd, svTypeInd] = 1
+
+				
 			else:
 				significanceMatrix[gainInd, svTypeInd] = 0
 
 			gainInd += 2
-
-	print(significanceMatrix)
-
-	print(plotInd)
+	
 
 	fig =plt.figure(figsize=(15,10))
 	if dataType != 'germline':
 		data = pd.DataFrame(significanceMatrix)
 		#plot heat map
 		g=sns.heatmap(data.T,annot=False,square=True, linewidths=0.5,
-					  cmap='coolwarm', vmin=-1, vmax=1,
-					  #cmap=ListedColormap(['#0055d4ff', '#b3b3b3ff', '#c83737ff']),
+					  cmap=ListedColormap(['#0055d4ff', '#0055d47d', '#f7f6f6ff', '#c8373780', '#c83737ff']),
 					  yticklabels=['Deletions', 'Duplications', 'Inversions', 'Translocations'])
 
 
 	else:
 		data = pd.DataFrame(significanceMatrix[:,0:3]) #exclude translocations, these are not there for germline.
 		g=sns.heatmap(data.T,annot=False,square=True, linewidths=0.5,
-					  #cmap=ListedColormap(['#0055d4ff', '#b3b3b3ff', '#c83737ff']),
-					  cmap='coolwarm', vmin=-1, vmax=1,
+					  cmap=ListedColormap(['#0055d4ff', '#0055d47d', '#f7f6f6ff', '#c8373780', '#c83737ff']),
 					  yticklabels=['Deletions', 'Duplications', 'Inversions'])
 
 	g.set_yticklabels(g.get_yticklabels(), horizontalalignment='right',fontsize='small')
@@ -91,73 +99,83 @@ def plotSignificances(significances, label, title, dataType, minScale, maxScale,
 													  'h3k27ac', 'h3k27me3', 'h3k4me1', 'h3k36me3','DNAseI', 'RNA pol II', 'chromHMM CTCF', 'chromHMM CTCF+enhancer',
 													  'chromHMM CTCF+promoter', 'chromHMM enhancer', 'chromHMM heterochromatin', 'chromHMM poised promoter',
 													  'chromHMM promoter', 'chromHMM repeat', 'chromHMM repressed', 'chromHMM transcribed', 'Super enhancer', 'CTCF'], rotation=45, horizontalalignment='right')
-	#plt.xticks([0.5,1.5,2.5,3.5], ['Deletions', 'Duplications', 'Inversions', 'Translocations'], rotation=45)
 
 	plt.tight_layout()
 
 	plt.savefig(finalOutDir + '/' + title + '.svg')
-	plt.show()
+	
 
 
-def getSignificance(features, shuffledFeatures, rangeA, rangeB):
+def getSignificance(features, negativeFeatures, rangeA, rangeB):
+	"""
+		For each feature (gain/loss), get the significance compared to the negative group.
+
+		features (numpy array): all the features for the positive group
+		negativeFeatures (numpy array): all the features for the negative group
+		rangeA (int): start from this feature
+		rangeB (int): until this feature
+
+		return:
+		pAdjusted (numpy array): bonferroni adjusted p-values.
+
+	"""
 
 	#for each loss feature, check if more/less than by random chance.
-	lossSignificances = []
+
+	significances = []
 	for i in range(rangeA, rangeB):
 
-		degLosses = len(np.where(features[:,i] == '1.0')[0])
-		degNoLosses = len(np.where(features[:,i] == '0.0')[0])
+		pathogenic = len(np.where(features[:,i] == '1.0')[0])
+		pathogenicNo = len(np.where(features[:,i] == '0.0')[0])
 
-		shuffledLosses = len(np.where(shuffledFeatures[:,i] == '1.0')[0])
-		shuffledNoLosses = len(np.where(shuffledFeatures[:,i] == '0.0')[0])
+		negative = len(np.where(negativeFeatures[:,i] == '1.0')[0])
+		negativeNo = len(np.where(negativeFeatures[:,i] == '0.0')[0])
 
-
-		if degLosses == 0 or degNoLosses == 0 or shuffledLosses == 0 or shuffledNoLosses == 0:
-			lossSignificances.append(1)
+		if pathogenic == 0 or pathogenicNo == 0 or negative == 0 or negativeNo == 0:
+			significances.append(1)
 			continue
 
-		obs = np.array([[degLosses, degNoLosses], [shuffledLosses, shuffledNoLosses]])
+		obs = np.array([[pathogenic, pathogenicNo], [negative, negativeNo]])
 
 		result = chi2_contingency(obs)
 		p = result[1]
 
-		lossSignificances.append(p)
+		significances.append(p)
 
 	#do MTC
-	reject, pAdjusted, _, _ = multipletests(lossSignificances, method='bonferroni')
+	reject, pAdjusted, _, _ = multipletests(significances, method='bonferroni')
 
 
 	return pAdjusted
 
 outDir = sys.argv[1]
-finalOutDir = outDir + '/featureComparisonHeatmap/'
+finalOutDir = outDir + '/figure2/'
 
 if not os.path.exists(finalOutDir):
 	os.makedirs(finalOutDir)
 
-#The truth data, DEG pairs
-degData = np.loadtxt(outDir + '/linkedSVGenePairs/nonCoding_geneSVPairs.txt_pathogenicPairsFeatures.txt', dtype='object')
-
-nonDegData = np.loadtxt(outDir + '/linkedSVGenePairs/nonCoding_geneSVPairs.txt_nonPathogenicPairsFeatures.txt', dtype='object')
+#get the gains and losses for each group
+pathogenicData = np.loadtxt(outDir + '/linkedSVGenePairs/nonCoding_geneSVPairs.txt_pathogenicPairsFeatures.txt', dtype='object')
+nonPathogenicData = np.loadtxt(outDir + '/linkedSVGenePairs/nonCoding_geneSVPairs.txt_nonPathogenicPairsFeatures.txt', dtype='object')
 germlineData = np.loadtxt(outDir + '/linkedSVGenePairs/germline/nonCoding_geneSVPairs.txt_', dtype='object')
 shuffledData = np.loadtxt(outDir + '/linkedSVGenePairs/random/nonCoding_geneSVPairs.txt_0', dtype='object')
 
 svTypes = ['DEL', 'DUP', 'INV', 'ITX']
-perTypeResults = dict()
-perTypeResultsGL = dict()
-perTypeResultsS = dict()
+perTypeResults = dict() #pathogenic to non-pathogenic
+perTypeResultsGL = dict() #pathogenic to germline
+perTypeResultsS = dict() #pathogenic to shuffled
 for svType in svTypes:
 
-	nonDEGs = []
+	nonPathogenics = []
 
-	for degPair in nonDegData:
+	for pair in nonPathogenicData:
 
-		sv = degPair[0].split("_")
+		sv = pair[0].split("_")
 		if svType != '':
 			typeMatch = re.search(svType, sv[12], re.IGNORECASE)
 			if typeMatch is None:
 				continue
-		nonDEGs.append(degPair)
+		nonPathogenics.append(pair)
 
 	germlinePairs = []
 	for pair in germlineData:
@@ -180,10 +198,10 @@ for svType in svTypes:
 				continue
 		shuffledPairs.append(pair)
 
-	degs = []
-	for degPair in degData:
+	pathogenics = []
+	for pair in pathogenicData:
 
-		sv = degPair[0].split("_")
+		sv = pair[0].split("_")
 
 		if svType != '':
 			typeMatch = re.match(svType, sv[12], re.IGNORECASE)
@@ -192,32 +210,36 @@ for svType in svTypes:
 
 
 
-		degs.append(degPair)
+		pathogenics.append(pair)
 
-	degs = np.array(degs)
-	nonDEGs = np.array(nonDEGs)
+	pathogenics = np.array(pathogenics)
+	nonPathogenics = np.array(nonPathogenics)
 	germlinePairs = np.array(germlinePairs)
 	shuffledPairs = np.array(shuffledPairs)
 
-	unAnnotatedDEGs = []
-	for degPair in degs:
+	unAnnotatedPathogenics = []
+	for pair in pathogenics:
 
-		features = degPair[1:]
+		features = pair[1:]
 
-		unAnnotatedDEGs.append(features)
+		unAnnotatedPathogenics.append(features)
 
-	unAnnotatedDEGs = np.array(unAnnotatedDEGs)
+	unAnnotatedPathogenics = np.array(unAnnotatedPathogenics)
 
+	#Get all the significances.
+	#for losses, these are between 0 and 26, while gains are 26 to 52.
+	#set values to 2 by default, so that when there are no losses (e.g. duplications and deletions),
+	#we can easily distinguish between not-significant and simply not checked.
 	lossSignificancesTmp = [2]*26
 
 	if svType == 'INV':
-		lossSignificances = getSignificance(unAnnotatedDEGs, nonDEGs[:,1:], 0, 26)
-		lossSignificancesGL = getSignificance(unAnnotatedDEGs, germlinePairs[:,1:], 0, 26)
-		lossSignificancesS = getSignificance(unAnnotatedDEGs, shuffledPairs[:,1:], 0, 26)
+		lossSignificances = getSignificance(unAnnotatedPathogenics, nonPathogenics[:,1:], 0, 26)
+		lossSignificancesGL = getSignificance(unAnnotatedPathogenics, germlinePairs[:,1:], 0, 26)
+		lossSignificancesS = getSignificance(unAnnotatedPathogenics, shuffledPairs[:,1:], 0, 26)
 	elif svType == 'ITX':
-		lossSignificances = getSignificance(unAnnotatedDEGs, nonDEGs[:,1:], 0, 26)
+		lossSignificances = getSignificance(unAnnotatedPathogenics, nonPathogenics[:,1:], 0, 26)
 		lossSignificancesGL = lossSignificancesTmp
-		lossSignificancesS = getSignificance(unAnnotatedDEGs, shuffledPairs[:,1:], 0, 26)
+		lossSignificancesS = getSignificance(unAnnotatedPathogenics, shuffledPairs[:,1:], 0, 26)
 	else:
 		lossSignificances = lossSignificancesTmp
 		lossSignificancesGL = lossSignificancesTmp
@@ -227,62 +249,26 @@ for svType in svTypes:
 	gainSignificancesTmp = [2]*26
 
 	if svType == 'ITX':
-		gainSignificances = getSignificance(unAnnotatedDEGs, nonDEGs[:,1:], 26, 52)
+		gainSignificances = getSignificance(unAnnotatedPathogenics, nonPathogenics[:,1:], 26, 52)
 		gainSignificancesGL = gainSignificancesTmp
-		gainSignificancesS = getSignificance(unAnnotatedDEGs, shuffledPairs[:,1:], 26, 52)
+		gainSignificancesS = getSignificance(unAnnotatedPathogenics, shuffledPairs[:,1:], 26, 52)
 	elif svType == 'DUP':
-		gainSignificances = getSignificance(unAnnotatedDEGs, nonDEGs[:,1:], 26, 52)
+		gainSignificances = getSignificance(unAnnotatedPathogenics, nonPathogenics[:,1:], 26, 52)
 		gainSignificancesGL = gainSignificancesTmp
-		gainSignificancesS = getSignificance(unAnnotatedDEGs, shuffledPairs[:,1:], 26, 52)
+		gainSignificancesS = getSignificance(unAnnotatedPathogenics, shuffledPairs[:,1:], 26, 52)
 	else:
 
-		gainSignificances = getSignificance(unAnnotatedDEGs, nonDEGs[:,1:], 26, 52)
-		gainSignificancesGL = getSignificance(unAnnotatedDEGs, germlinePairs[:,1:], 26, 52)
-		gainSignificancesS = getSignificance(unAnnotatedDEGs, shuffledPairs[:,1:], 26, 52)
-
-	#MTC on results
-
+		gainSignificances = getSignificance(unAnnotatedPathogenics, nonPathogenics[:,1:], 26, 52)
+		gainSignificancesGL = getSignificance(unAnnotatedPathogenics, germlinePairs[:,1:], 26, 52)
+		gainSignificancesS = getSignificance(unAnnotatedPathogenics, shuffledPairs[:,1:], 26, 52)
 
 	#collect results per SV type
 	perTypeResults[svType] = [lossSignificances, gainSignificances]
 	perTypeResultsGL[svType] = [lossSignificancesGL, gainSignificancesGL]
 	perTypeResultsS[svType] = [lossSignificancesS, gainSignificancesS]
 
-#Normalize the p-values so that the scale is the same between plots
-def getMinMaxScale(results, svTypes):
-	minScale = float('inf') #the lowest log(p-value) for the losses
-	maxScale = float('inf') #the lowest log(p-value) for the gains
-
-	for svType in svTypes:
-
-		losses, gains = results[svType]
-
-		for loss in losses:
-			if loss < 0.05:
-				if np.log(loss) < minScale:
-					minScale = np.log(loss)
-
-		for gain in gains:
-			if gain < 0.05:
-				if np.log(gain) < maxScale:
-					maxScale = np.log(gain)
-
-	return minScale, maxScale
-
-pnMin, pnMax = getMinMaxScale(perTypeResults, svTypes)
-pglMin, pglMax = getMinMaxScale(perTypeResultsGL, svTypes)
-psMin, psMax = getMinMaxScale(perTypeResultsS, svTypes)
-
-minScale = min(pnMin, pglMin, psMin)
-maxScale = min(pnMax, pglMax, psMax)
-
-#anchor around 0 so that non-significant is shown as grey.
-# if maxScale < minScale:
-# 	minScale = maxScale
-# else:
-# 	maxScale = minScale
 
 #plot for each SV type
-plotSignificances(perTypeResults, 'Positive pairs vs. negative pairs', 'gains_losses_pos_neg', 'somatic', minScale, maxScale, finalOutDir)
-plotSignificances(perTypeResultsGL, 'Positive pairs vs. negative pairs', 'gains_losses_pos_gl', 'germline', minScale, maxScale, finalOutDir)
-plotSignificances(perTypeResultsS, 'Positive pairs vs. negative pairs', 'gains_losses_pos_s', 'random', minScale, maxScale, finalOutDir)
+plotSignificances(perTypeResults, 'Positive pairs vs. negative pairs', 'fig2e_gains_losses_pos_neg', 'somatic',finalOutDir)
+plotSignificances(perTypeResultsGL, 'Positive pairs vs. negative pairs', 'fig2e_gains_losses_pos_gl', 'germline', finalOutDir)
+plotSignificances(perTypeResultsS, 'Positive pairs vs. negative pairs', 'fig2e_gains_losses_pos_s', 'random', finalOutDir)
