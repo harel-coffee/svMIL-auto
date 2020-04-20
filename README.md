@@ -1,32 +1,40 @@
-# Causal gene-based ranking
+# svMIL: predicting the pathogenic effect of somatic structural variants through multiple instance learning
 
-This branch is intended for the code where we rank known causal genes by how likely these were causal for a specific set of SVs and/or SNVs from cancer patients. An idea of the causal SVs and SNVs can then be obtained from the highest ranked genes. 
+# How to use: setting up the data
 
-The currently included datasets are TADs and eQTLs. Hi-C interactions were tested but do not work at the moment. 
- 
+For the HMF data, SVs, SNVs, CNVs and RNA-seq data needs to be requested.
 
-In the settings file the required file paths can be specified. 
+To run for the PCAWG data, make sure all datasets are properly downloaded. Some files are provided, but some will need to be downloaded as they are too large. The data folders that are incomplete and need to be downloaded are:
 
-# How to use
+- data/cnvs
+- data/expression
+- data/snvs
+- data/svs
 
-All code specific for the causal gene based ranking is in the folder CausalGeneRanking. 
+Instructions are found in the readme.txt in the respective folders.
 
-The starting script is runRankingWithPermutations.sh. This script does not require any parameters. If run on the HPC, it will first score all causal genes for causality and then repeat the process 1000 times with SVs and/or SNVs permuted across the genome. 
+For the regulatory data, everything is provided except for the HiC data, as these files are too large. Follow the steps in data/hic/readme.txt to download this data.
 
-If these scripts are done, the computePValuesPerGene.py script can be run to do the actual ranking of the genes. As parameters the script requires the output folder containing the scores for the normal run and
-1000 permutations (folder name chosen at random for the time being, within the RankedGenes folder), and the number of permutations that were run (+1 because there is currently still a bug :)). So:
+All sources of the other files are also listed in the readme.txt files if these need to be re-downloaded.
 
-computePValuesPerGene.py RankedGenes/"outputFolderNameChosenAtRandom" 1000 
+# How to use: preprocessing
 
-The output is a list of all causal genes that have significant p-values in as much layers as possible.
+Except for Hi-C data, the provided data are already pre-processed. In the script src/preprocess.sh, steps are listed that are required to process the Hi-C data. Here, the processing steps for all
+the other data is also listed, if needed.
 
-To test without all permutations and just doing the initial scoring of genes, run:
+# How to use: generating all paper figures
 
-main.py "runName" N
+The script src/workflow.sh lists all steps that need to be executed to produces all figures in order. These steps are specific for the HMF breast cancer data.
+The scripts src/workflow_pcawg_liver.sh and src/workflow_pcawg_ov.sh are specific for running on the PCAWG ovarian and liver datasets.
 
-For example,
+# Requirements
 
-main.py ABC N
+All code was tested using:
+- Python 3.7.3
+- Numpy 1.16.4
+- Scipy 1.3.0
+- Scikit-learn 0.22.2.postl
+- Matplotlib 3.1.0
+- Statsmodels 0.10.0
 
-will run the code without permutations (N for no) and will write the output to folder ABC within the RankedGenes folder. 
 
