@@ -31,7 +31,7 @@ settingsFolder='./settings/settings_HMF_BRCA/'
 
 #Create a folder in which all output for this data will be stored
 #Different steps will create their own intermediate folders in here
-outputFolder='output/HMF_BRCA_test'
+outputFolder='output/HMF_BRCA_test2'
 
 ### (REQUIRED) PART 2 - LINK SVS TO GENES ###
 run=false #Only skip this step if all output has already been generated!
@@ -55,22 +55,22 @@ if $run; then
 
 	#identify which TADs are disrupted in these patients, and compute the
 	#z-scores of the genes in these TADs. Filter out genes with coding mutations.
-	#python "$runFolder/computeZScoresDisruptedTads.py" "$settingsFolder" "$outputFolder" "False"
+	python "$runFolder/computeZScoresDisruptedTads.py" "$settingsFolder" "$outputFolder" "False"
 	
 	#split the SV-gene pairs into pathogenic/non-pathogenic, which we use later on.
 	runFolder='./linkSVsGenes/'
-	python "$runFolder/splitPairsPathogenicNonPathogenic.py" "$outputFolder"
+	#python "$runFolder/splitPairsPathogenicNonPathogenic.py" "$outputFolder"
 	
 fi
 
 ### PART 4 - SETTING UP FOR MULTIPLE INSTANCE LEARNING ###
-run=false #these steps only need to be done when outputting anything related to multiple instance learning
+run=true #these steps only need to be done when outputting anything related to multiple instance learning
 
 if $run; then
 	runFolder='./multipleInstanceLearning/'
 
 	#first normalize the bags
-	python "$runFolder/normalizeBags.py" "$outputFolder"
+	#python "$runFolder/normalizeBags.py" "$outputFolder"
 
 	#then generate the similarity matrices for all SVs
 	python "$runFolder/generateSimilarityMatrices.py" "$outputFolder" "False" "True" "False" "False" "False"
@@ -94,7 +94,7 @@ if $run; then
 	#python "$runFolder/plotDisruptedTadZScores.py" "$outputFolder" "$settingsFolder" "False" "False" "False" "True" "all"
 
 	#and for COSMIC genes, no rules (PANEL B)
-	python "$runFolder/plotDisruptedTadZScores.py" "$outputFolder" "$settingsFolder" "False" "True" "False" "False" "all"
+	#python "$runFolder/plotDisruptedTadZScores.py" "$outputFolder" "$settingsFolder" "False" "True" "False" "False" "all"
 
 fi
 
@@ -122,7 +122,7 @@ if $run; then
 fi
 
 ### FIGURE 3 - 3A: MIL PERFORMANCE CURVES PER SV TYPE, PER-PATIENT CV ###
-run=false
+run=true
 
 if $run; then
 	runFolder='./multipleInstanceLearning/'
@@ -134,7 +134,7 @@ fi
 
 ### FIGURE 3 - 3B-C: MIL PCAWG results ###
 
-#Run respective workflows for PCAWG data.
+#Run respective workflows for PCAWG data: workflow_pcawg_ov.sh and workflow_pcawg_liver.sh
 
 ### FIGURE 3 - 3D: METHOD COMPARISON PRE-PROCESSING ###
 run=false

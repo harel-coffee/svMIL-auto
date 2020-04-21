@@ -21,11 +21,11 @@ fprsDEL = [0.20, 0.56, 0.2, 0.09]
 tprsDUP = [0.58, 0.45, 0.08, 0.03]
 fprsDUP = [0.31, 0.46, 0.46, 0.08]
 
-tprsINV = [0.67, 0.38, 0, 0.007]
-fprsINV = [0.32, 0.37, 0, 0.03]
+tprsINV = [0.60, 0.38, 0, 0.007]
+fprsINV = [0.25, 0.37, 0, 0.03]
 
-tprsITX = [0.59, 0.47, 0, 0]
-fprsITX = [0.29, 0.43, 0, 0.02]
+tprsITX = [0.62, 0.47, 0, 0]
+fprsITX = [0.30, 0.43, 0, 0.02]
 
 #make the scatter plot
 plt.scatter(fprsDEL, tprsDEL, marker='.', facecolor=methodColors, edgecolor=methodColors)

@@ -259,6 +259,18 @@ class NeighborhoodDefiner:
 			else:
 				gene.setRightTAD(None)
 
+	def mapElementsToGenes(self, element, geneDict, geneSymbol):
+		"""
+			Map the right gene object to the eQTL object.
+
+			element (np array): element to be added to the gene
+			geneDict (dictionary): Dictionary with gene names and gene objects in the values.
+			geneSymbol (string): Name of the gene that we want to map the element to
+
+		"""
+
+		geneDict[geneSymbol].addElement(element)
+
 	def mapGenesToTads(self, genes, tadData):
 		"""
 			For computing effects of disruptions on genes, it is convenient to know which genes are located in which TADs.

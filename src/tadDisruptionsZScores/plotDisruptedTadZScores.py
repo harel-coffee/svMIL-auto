@@ -834,22 +834,22 @@ if elementType != 'False':
 	outFilePrefix += elementType
 	outFilePrefix += '_'
 #get the z-scores per bin
-for svType in svTypes:
-
-	#get the right zScore file here depending on if we shuffle or not
-	if randomExpression == 'False':
-		zScores = np.loadtxt('output/HMF_BRCA/tadDisruptionsZScores/zScores.txt', dtype='object')
-	else:
-		zScores = np.loadtxt('output/HMF_BRCA/tadDisruptionsZScores/zScores_random.txt', dtype='object')
-	binScores = getBinScores(zScores, rules, cosmic, expressionCutoff, randomExpression, svType, elementType)
-
-	allData = []
-
-	for binInd in range(0, len(binScores)):
-		allData.append(binScores[binInd])
-
-	np.save(tmpOutDir + '/' + outFilePrefix + svType + '.npy', allData)
-
+# for svType in svTypes:
+#
+# 	#get the right zScore file here depending on if we shuffle or not
+# 	if randomExpression == 'False':
+# 		zScores = np.loadtxt('output/HMF_BRCA/tadDisruptionsZScores/zScores.txt', dtype='object')
+# 	else:
+# 		zScores = np.loadtxt('output/HMF_BRCA/tadDisruptionsZScores/zScores_random.txt', dtype='object')
+# 	binScores = getBinScores(zScores, rules, cosmic, expressionCutoff, randomExpression, svType, elementType)
+#
+# 	allData = []
+#
+# 	for binInd in range(0, len(binScores)):
+# 		allData.append(binScores[binInd])
+#
+# 	np.save(tmpOutDir + '/' + outFilePrefix + svType + '.npy', allData)
+#
 
 ###combined figures
 #make plots with the median per bin, and show the percentiles as error bars. 
@@ -909,11 +909,8 @@ for svType in svTypes:
 	plt.errorbar(np.arange(0, len(medianData)), medianData, yerr=[lowerQuantiles, upperQuantiles], color=colors[typeInd], capsize=5, alpha=0.3)
 
 #adapt y axis to show the disruptions better
-if rules == 'True' and elementType == 'se':
-	plt.ylim([-3,16])
-else:
-	plt.ylim([-2,6])
+plt.ylim([-3,16])
+
 plt.xticks([])
 plt.savefig(finalOutDir + '/' + outFilePrefix + '.svg')
-plt.show()
 exit()

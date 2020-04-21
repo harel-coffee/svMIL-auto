@@ -30,6 +30,7 @@ leaveBagsOut = sys.argv[5] #random bags in each CV fold
 fullDataset = sys.argv[6] #generate sim matrix for the whole dataset.
 
 svTypes = ['DEL', 'DUP', 'INV', 'ITX']
+svTypes = ['DUP']
 
 outDir = sys.argv[1]
 finalOutDir = outDir + '/multipleInstanceLearning/similarityMatrices/'
@@ -769,6 +770,7 @@ for svType in svTypes:
 
 		elif featureElimination == 'False' and leaveOnePatientOut == 'True': ### leave-one-patient-out CV setting
 
+			random.seed(785)
 			#first, get the bags and labels per patient
 			perPatientPositiveBags = dict()
 			for bagInd in range(0, positiveBags.shape[0]):
@@ -805,6 +807,9 @@ for svType in svTypes:
 				perPatientNegativeBags[patientId]['bags'].append(negativeBags[bagInd])
 				perPatientNegativeBags[patientId]['pairLabels'].append(bagPairLabel)
 	
+			print(len(perPatientPositiveBags))
+			print(len(perPatientNegativeBags))
+
 			#for each patient, randomly subsample as many negative bags as there are positives
 			perPatientBags = dict()
 			skippedPatients = 0
@@ -833,7 +838,8 @@ for svType in svTypes:
 					sampleCount = patientNegativeBags.shape[0]
 
 					randomInd = random.sample(range(0, patientNegativeBags.shape[0]), sampleCount)
-
+					print(patient)
+					print(randomInd)
 					randomNegativeBags = patientNegativeBags[randomInd]
 					randomNegativeBagPairLabels = patientNegativeBagLabels[randomInd]
 
@@ -853,7 +859,8 @@ for svType in svTypes:
 					sampleCount = len(perPatientPositiveBags[patient]['bags'])
 
 					randomInd = random.sample(range(0, patientNegativeBags.shape[0]), sampleCount)
-
+					print(patient)
+					print(randomInd)
 					randomNegativeBags = patientNegativeBags[randomInd]
 					randomNegativeBagPairLabels = patientNegativeBagLabels[randomInd]
 

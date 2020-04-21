@@ -13,7 +13,6 @@ import numpy as np
 from tad import TAD
 from sv import SV
 from gene import Gene
-from element import Element
 from six.moves import range
 
 class DerivativeTADMaker:

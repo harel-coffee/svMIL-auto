@@ -33,6 +33,7 @@ leaveBagsOut = sys.argv[5] #random bags in each CV fold
 randomLabels = sys.argv[6] #running CV with randomized labels, only implemented for lopoCV
 
 svTypes = ['DEL', 'DUP', 'INV', 'ITX']
+svTypes = ['DUP']
 
 outDir = sys.argv[1]
 
@@ -288,6 +289,10 @@ def leaveOnePatientOutCV(leaveOneOutDataFolder, classifier, svType, plotOutputFi
 	fig, ax = plt.subplots()
 	ind = 0
 	predictions = dict()
+	totalTP = 0
+	totalFP = 0
+	totalTN = 0
+	totalFN = 0
 	for patient in patientFiles:
 
 		for dataFile in patientFiles[patient]:
@@ -311,6 +316,17 @@ def leaveOnePatientOutCV(leaveOneOutDataFolder, classifier, svType, plotOutputFi
 		#output the predictions to a file for the COSMIC analysis
 		preds = classifier.predict(similarityMatrixTest)
 		predictions[patient] = preds
+
+		#check fpr/tpr
+		for labelInd in range(0, len(bagLabelsTest)):
+			if bagLabelsTest[labelInd] == 1 and predictions[patient][labelInd] == 1:
+				totalTP += 1
+			elif bagLabelsTest[labelInd] == 0 and predictions[patient][labelInd] == 1:
+				totalFP += 1
+			elif bagLabelsTest[labelInd] == 1 and predictions[patient][labelInd] == 0:
+				totalFN += 1
+			else:
+				totalTN += 1
 		
 
 		viz = plot_roc_curve(classifier, similarityMatrixTest, bagLabelsTest,
@@ -323,6 +339,10 @@ def leaveOnePatientOutCV(leaveOneOutDataFolder, classifier, svType, plotOutputFi
 		print('auc: ', np.mean(viz.roc_auc))
 
 	print(np.mean(aucs))
+	tpr = totalTP / (totalTP + totalFN)
+	fpr = totalFP / (totalTN + totalFP)
+	print('tpr', tpr)
+	print('fpr', fpr)
 	
 	#make the CV plot, just plot the mean
 	fig, ax = plt.subplots()
