@@ -1,6 +1,6 @@
-### PREPROCESSING OF REGULATORY INFORMATION ###
+### PREPROCESSING OF REGULATORY INFORMATION AND INPUT DATA###
 
-# Some regulatory data files need to be parsed to work properly as input to the tool.
+# Some regulatory data files and other files need to be parsed to work properly as input to the tool.
 
 
 ### PARSE CPG ISLANDS ###
@@ -78,11 +78,19 @@ fi
 ### TMM NORMALIZATION ###
 run=false
 
-#Requires download of germline variants. See svs/readme.txt
-
 if $run; then
 	runFolder='./DataProcessing'
 	
 	Rscript "$runFolder/normalizeEdgeR.R"
+
+fi
+
+### ANNOTATE HMF SVS WITH SV TYPES ###
+run=false
+
+if $run; then
+	runFolder='./DataProcessing'
+
+	Rscript "$runFolder/simple-event-annotation.R"
 
 fi
