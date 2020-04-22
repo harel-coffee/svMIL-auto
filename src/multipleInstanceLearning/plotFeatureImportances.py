@@ -29,7 +29,7 @@ import matplotlib
 matplotlib.use('Agg')
 
 outDir = sys.argv[1]
-generatePlottingData = sys.argv[2]
+generatePlottingData = sys.argv[2] #should we just make the plotting data, and not the plots themselves? (normalization purposes)
 gainLoss = sys.argv[3] #ALL, GAIN, LOSS
 cosmic = sys.argv[4] #ALL, COSMIC, NONCOSMIC
 outputTop1000FeatureImportance = sys.argv[6]
@@ -290,7 +290,6 @@ if generatePlottingData == "True":
 		#pAdjusted = np.delete(pAdjusted, 31)
 
 		print(pAdjusted)
-		continue
 		#exit()
 
 		allFeatureZScores[svType] = featureZScores
@@ -302,11 +301,13 @@ if generatePlottingData == "True":
 	np.save(tmpOutDir + '/' + outFilePrefix + 'featureZScores.npy', allFeatureZScores)
 	np.save(tmpOutDir + '/' + outFilePrefix + 'adjustedPValues.npy', adjustedPValues)
 
+if generatePlottingData == 'True':
+	exit()
+
 if outputTop1000FeatureImportance == 'True': #if we just want the feature importance plots of fig S3, don't bother with the figure 4/S4 plots
 	exit()
 #load the data and make the polar plots
 #use the parameters to determine which plot to make
-
 ### ALWAYS load the right ALL set here of gains/losses to normalize properly
 allSet = tmpOutDir + '/' + '/all_' + cosmicName + '_'
 
@@ -326,9 +327,13 @@ xlabels = ['cpg', 'tf', 'hic', 'ctcf', 'dnaseI', 'h3k9me3', 'h3k4me3', 'h3k27ac'
 overallMin = float('inf')
 overallMax = 0
 zeroOffset = 0
-for svType in usedSVTypes:
+for svType in svTypes:
+
+	if svType not in adjustedPValues:
+		continue
 
 	pAdjusted = adjustedPValues[svType]
+	print('all:', pAdjusted)
 
 	directionalAdjustedP = -np.log(pAdjusted) * np.sign(allFeatureZScores[svType])
 
@@ -337,19 +342,70 @@ for svType in usedSVTypes:
 	if np.max(directionalAdjustedP) > overallMax:
 		overallMax = np.max(directionalAdjustedP)
 
+#for the cosmic set, this normalization goes wrong for losses, since there are lower p-values in the cosmic loss set than in the ALL set.
+#so we also check for the min/max in those sets specifically to make it work.
+#this would actually need to be done for the other sets as well, to make the normalization alwys work for these types of situations!!!
+#make sure to always provide the plotting = false parameter so that these can still run automatically, and the plots are only made afterwards.
+if cosmicName == 'cosmic':
+
+	tmpOutFilePrefix = 'gain' + '_' + cosmicName + '_'
+
+	allFeatureZScores = np.load(tmpOutDir + '/' + tmpOutFilePrefix + 'featureZScores.npy', allow_pickle=True, encoding='latin1').item()
+	adjustedPValues = np.load(tmpOutDir + '/' + tmpOutFilePrefix + 'adjustedPValues.npy', allow_pickle=True, encoding='latin1').item()
+
+	for svType in svTypes:
+		if svType not in adjustedPValues:
+			continue
+
+		pAdjusted = adjustedPValues[svType]
+		print('all:', pAdjusted)
+
+		directionalAdjustedP = -np.log(pAdjusted) * np.sign(allFeatureZScores[svType])
+
+		if np.min(directionalAdjustedP) < overallMin:
+			overallMin = np.min(directionalAdjustedP)
+		if np.max(directionalAdjustedP) > overallMax:
+			overallMax = np.max(directionalAdjustedP)
+
+	tmpOutFilePrefix = 'loss' + '_' + cosmicName + '_'
+
+	allFeatureZScores = np.load(tmpOutDir + '/' + tmpOutFilePrefix + 'featureZScores.npy', allow_pickle=True, encoding='latin1').item()
+	adjustedPValues = np.load(tmpOutDir + '/' + tmpOutFilePrefix + 'adjustedPValues.npy', allow_pickle=True, encoding='latin1').item()
+
+	for svType in svTypes:
+		
+		if svType not in adjustedPValues:
+			continue
+
+		pAdjusted = adjustedPValues[svType]
+		print('all:', pAdjusted)
+
+		directionalAdjustedP = -np.log(pAdjusted) * np.sign(allFeatureZScores[svType])
+
+		if np.min(directionalAdjustedP) < overallMin:
+			overallMin = np.min(directionalAdjustedP)
+		if np.max(directionalAdjustedP) > overallMax:
+			overallMax = np.max(directionalAdjustedP)
 
 allFeatureZScores = np.load(tmpOutDir + '/' + outFilePrefix + 'featureZScores.npy', allow_pickle=True, encoding='latin1').item()
 adjustedPValues = np.load(tmpOutDir + '/' + outFilePrefix + 'adjustedPValues.npy', allow_pickle=True, encoding='latin1').item()
-
+print('p-vals: ', adjustedPValues)
+print(overallMin, overallMax)
 scaledP = dict()
 
-for svType in usedSVTypes:
-
+usedSVTypes = []
+for svType in svTypes:
+	
+	if svType not in adjustedPValues:
+		continue
+	usedSVTypes.append(svType)
 	pAdjusted = adjustedPValues[svType]
 
 	directionalAdjustedP = -np.log(pAdjusted) * np.sign(allFeatureZScores[svType])
+	print('before: ', directionalAdjustedP)
 	#normalize between 0 and 1
 	directionalAdjustedP = (directionalAdjustedP - overallMin) / (overallMax - overallMin)
+	print('after:', directionalAdjustedP)
 
 	if len(np.where(pAdjusted == 1)) > 0:
 		zeroOffsetInd = np.where(pAdjusted == 1)[0][0]
@@ -357,7 +413,7 @@ for svType in usedSVTypes:
 		zeroOffset = directionalAdjustedP[zeroOffsetInd]
 
 	scaledP[svType] = directionalAdjustedP
-
+print(scaledP)
 border = zeroOffset
 
 #for the borders, also normalize between 0 and 1

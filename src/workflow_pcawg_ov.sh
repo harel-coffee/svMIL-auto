@@ -2,8 +2,6 @@
 #$ -V
 #$ -S /bin/bash
 #$ -cwd
-#$ -m as
-#$ -M m.m.nieboer@umcutrecht.nl
 #$ -l h_vmem=16G
 #$ -l h_rt=24:00:00
 #$ -e workflow_ov_err
@@ -11,7 +9,7 @@
 
 ### INSTRUCTIONS ###
 
-#	This script intends to show the workflow used to generate all figures in the paper.
+#	This script intends to show the workflow used to generate all figures in the paper related to the PCAWG OVARIAN dataset.
 
 #	The workflow is listed in order. 'Required' indicates a step that is needed to generate
 #	output that is used in all figures. Only skip this steps if you have already generated
@@ -20,10 +18,7 @@
 #	If you want to skip a part of the workflow, change the 'False' to 'True' for each figure.
 
 #	Memory requirements vary per workflow step and based on your dataset size.
-#	For the HMF data, at least 16 GB of memory is required to generate the bags for MIL.
-
-#	Each step has its own .sh file that can be used to run this step on the cluster, which
-#	is named by the step it executes.
+#	For the HMF data, at least 16 GB of memory is required to load the bags for MIL in memory.
 
 
 ### (REQUIRED) PART 1 - DATA AND PATHS ###
@@ -38,12 +33,12 @@ outputFolder='output/PCAWG_OV'
 
 
 #First process the PCAWG SVs
-run=false
+run=true
 
 if $run; then
 	runFolder='./DataProcessing/'
 	inputFolder='../../data/svs/icgc/open/'
-	metadataFile='../../data/svs/icgc_metadata.tsv'
+	metadataFile='../../data/svs/icgc_metadata.tsv' #this is also in the settings so could have been used from there
 	outFile='../../data/svs/ov_pcawg_parsed.txt'
 
 	#Process the PCAWG SVs into a file specific for ovarian.
@@ -52,7 +47,7 @@ if $run; then
 fi
 
 ### (REQUIRED) PART 2 - LINK SVS TO GENES ###
-run=false #Only skip this step if all output has already been generated!
+run=true #Only skip this step if all output has already been generated!
 
 if $run; then
 	runFolder='./linkSVsGenes/'
@@ -62,14 +57,14 @@ if $run; then
 fi
 
 ### (REQUIRED) PART 3 - IDENTIFY PATHOGENIC SV-GENE PAIRS ###
-run=false
+run=true
 
 if $run; then
 	runFolder='./tadDisruptionsZScores/'
 
 	#first link mutations to patients. These are required to quickly check which patients
 	#have which mutations in which genes
-	#python "$runFolder/determinePatientGeneMutationPairs.py" "$settingsFolder" "$outputFolder"
+	python "$runFolder/determinePatientGeneMutationPairs.py" "$settingsFolder" "$outputFolder"
 
 	#identify which TADs are disrupted in these patients, and compute the
 	#z-scores of the genes in these TADs. Filter out genes with coding mutations.
@@ -81,13 +76,13 @@ if $run; then
 fi
 
 ### PART 4 - SETTING UP FOR MULTIPLE INSTANCE LEARNING ###
-run=true #these steps only need to be done when outputting anything related to multiple instance learning
+run=false #these steps only need to be done when outputting anything related to multiple instance learning
 
 if $run; then
 	runFolder='./multipleInstanceLearning/'
 
 	#first normalize the bags
-	#python "$runFolder/normalizeBags.py" "$outputFolder"
+	python "$runFolder/normalizeBags.py" "$outputFolder"
 
 	#then generate the similarity matrices for all SVs
 	python "$runFolder/generateSimilarityMatrices.py" "$outputFolder" "False" "True" "False" "False" "False"

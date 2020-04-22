@@ -35,7 +35,7 @@ nonCausalGenes = InputParser().readNonCausalGeneFile(settings.files['nonCausalGe
 allGenes = np.concatenate((cosmicGenes, nonCausalGenes), axis=0)
 
 bcGeneNames = []
-bcGenesFile = '../../data/genes/breastCancerCausalGenes.txt' #make setting
+bcGenesFile = '../data/genes/breastCancerCausalGenes.txt' #make setting
 with open(bcGenesFile, 'r') as inF:
 
 	for line in inF:
@@ -152,14 +152,14 @@ def getCancerGeneEnrichment(outDir, leaveOneOutDataFolder, allGenes, cosmicGeneN
 							patientsWithCorrectCosmicRandom[randIteration][splitLabel[7]] += 1
 
 
-		#do this check here, because it is not implemented in the lopoCV properly and takes time to re-run.
+		#do this check here, to make sure that it is the same as for the lopoCV.
 		tpr = totalTP / (totalTP + totalFN)
 		fpr = totalFP / (totalTN + totalFP)
 		print(svType)
 		print('tpr', tpr)
 		print('fpr', fpr)
 
-	print(totalCosmicGenes) #how many cosmic genes were linked to positive SV-gene pairs in total?
+	print('total number of cosmic genes: ', totalCosmicGenes) #how many cosmic genes were linked to positive SV-gene pairs in total?
 
 
 	patientCount = len(patientsWithCorrectCosmic)
@@ -184,10 +184,8 @@ def getCancerGeneEnrichment(outDir, leaveOneOutDataFolder, allGenes, cosmicGeneN
 	z = patientCount - np.mean(patientCountNegative) / np.std(patientCountNegative)
 	pValue = stats.norm.sf(abs(z))*2
 
-	print(np.mean(patientCountNegative))
-	print(np.std(patientCountNegative))
-	print(z)
-	print(pValue)
+	
+	print('p: ', pValue)
 
 	return cosmicPairs
 
@@ -208,7 +206,7 @@ svPatientsItx = np.load(mutDir + 'svPatientsItx.npy', allow_pickle=True, encodin
 cnvPatientsDel = np.load(mutDir + 'cnvPatientsDel.npy', allow_pickle=True, encoding='latin1').item()
 cnvPatientsAmp = np.load(mutDir + 'cnvPatientsAmp.npy', allow_pickle=True, encoding='latin1').item()
 
-
+print('patients with other mutations: ')
 noMutPairs = []
 for pair in cosmicPairs:
 	

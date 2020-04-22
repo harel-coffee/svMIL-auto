@@ -33,7 +33,6 @@ leaveBagsOut = sys.argv[5] #random bags in each CV fold
 randomLabels = sys.argv[6] #running CV with randomized labels, only implemented for lopoCV
 
 svTypes = ['DEL', 'DUP', 'INV', 'ITX']
-svTypes = ['DUP']
 
 outDir = sys.argv[1]
 

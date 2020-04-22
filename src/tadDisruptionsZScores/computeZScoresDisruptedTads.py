@@ -130,9 +130,6 @@ else:
 	exit(1)
 	
 #fix this
-genomicShuffler = GenomicShuffler()
-#Shuffle the variants
-svData = genomicShuffler.shuffleSVs(svData)
 filteredSVs = svData
 
 
@@ -260,7 +257,6 @@ for tad in tadDisruptions:
 
 print('disrupting SVs: ', len(disruptingSVs))
 print('per type: ', typeDistribution)
-exit()
 
 #Shuffle expression if requested
 if randomize == 'True':

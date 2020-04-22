@@ -282,14 +282,19 @@ for pair in allPairs:
 		elif svType == 'ITX':
 			sortedGenes[sortedGeneInd, 19] += 1
 
-print(sortedGenes[0:15,:])
+print(sortedGenesTop[0:15,:])
 
 #show these data in a bar plot.
 #for each type of mutation, add to the stacked bar chart.
 #fig,ax = plt.subplots()
 geneInd = 0
 ymax = 0
-for gene in sortedGenes[0:15]:
+for gene in sortedGenes:
+
+	if gene[0] not in sortedGenesTop[0:15,0]:
+		continue
+	print(gene)
+
 
 	plt.bar(geneInd, gene[5], color='#ffcc00ff')
 	plt.bar(geneInd, gene[6], bottom=gene[5], color='#9955ffff')
@@ -308,7 +313,7 @@ plt.ylim(0,ymax+1)
 plt.tight_layout()
 plt.savefig(finalOutDir + '/recurrence_bars.svg')
 plt.clf()
-
+exit()
 
 ###Also make the full recurrence plot for all patients.
 #this is quick and dirty, should have been a re-usable function.

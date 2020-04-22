@@ -30,7 +30,6 @@ leaveBagsOut = sys.argv[5] #random bags in each CV fold
 fullDataset = sys.argv[6] #generate sim matrix for the whole dataset.
 
 svTypes = ['DEL', 'DUP', 'INV', 'ITX']
-svTypes = ['DUP']
 
 outDir = sys.argv[1]
 finalOutDir = outDir + '/multipleInstanceLearning/similarityMatrices/'
@@ -304,6 +303,7 @@ for svType in svTypes:
 
 	#subsample negative to the same number of positives. 
 	if leaveOnePatientOut == 'False':
+		random.seed(785) #somehow the global setting doesn't work in the second loop? so set it here.
 		
 		#subsample the negative set to the same number of positives.
 		negativeBagsSubsampled = np.random.choice(negativeBags, positiveBags.shape[0])
