@@ -9,6 +9,7 @@ from os import listdir
 from os.path import isfile, join
 import glob
 import gzip
+import sys
 
 from tad import TAD
 from sv import SV
@@ -38,6 +39,7 @@ class NeighborhoodDefiner:
 		tadData = []
 
 		tadFile = settings.files['tadFile']
+
 
 		print("Getting TADs")
 		tadData = InputParser().getTADsFromFile(tadFile)

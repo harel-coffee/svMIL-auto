@@ -469,8 +469,14 @@ class InputParser:
 			
 		"""
 		
+		#If CRDs are provided, read those instead and treat them as TADs.
+		if settings.general['crd'] == True:
+			print('Reading CRDs instead of TADs and using them as if they were TADs')
+			sortedTads = self.getCRDsFromFile(tadFile)
+			return sortedTads
+
 		
-		#Read the gene list data into a list
+		#Read the TAD data into a list
 		tadData = []
 		with open(tadFile, "r") as f:
 			lineCount = 0
@@ -480,29 +486,74 @@ class InputParser:
 					continue
 				line = line.strip()
 				splitLine = line.split("\t")
-				
-				
+
+
 				TADObject = TAD(splitLine[0], int(splitLine[1]), int(splitLine[2]))
-				
+
 				#chr, start, end
 				tadData.append([splitLine[0], int(splitLine[1]), int(splitLine[2]), TADObject])
-		
+
 		#Also convert the other dataset to numpy
 		tadData = np.array(tadData, dtype='object')
-		
+
 		#Make sure to sort the tads oer chromosome
 		sortedTads = []
 		chroms = np.unique(tadData[:,0])
 		for chromosome in chroms:
 			tadSubset = tadData[tadData[:,0] == chromosome]
-			
+
 			sortedSubset = tadSubset[tadSubset[:,1].argsort()]
 			for tad in sortedSubset:
-			
+
 				sortedTads.append(tad)
-			
+
 		return np.array(sortedTads)
-	
+
+	def getCRDsFromFile(self, crdFile):
+		"""
+			Get the CRDs from the provided CRD file. CRDs are similar to TADs, so we
+			use them as if they were TADs.
+
+			crdFile: (string) location of the crd file on disk
+
+			return:
+			sortedCRDs: (numpy array) array with the CRDs and their information. Sorted by chromosome & start position. chr, start, end, tadObject
+
+		"""
+
+		crdData = []
+		with open(crdFile, "r") as f:
+			for line in f:
+				line = line.strip()
+				splitLine = line.split("\t")
+
+				#check for TRUE/FALSE to see if the entry is labeled as CRD
+				crdLabel = splitLine[7]
+
+				if crdLabel == 'FALSE':
+					continue
+				
+				TADObject = TAD(splitLine[0], int(splitLine[1]), int(splitLine[2]))
+				
+				#chr, start, end
+				crdData.append([splitLine[0], int(splitLine[1]), int(splitLine[2]), TADObject])
+		
+		#Also convert the other dataset to numpy
+		crdData = np.array(crdData, dtype='object')
+		
+		#Make sure to sort the tads oer chromosome
+		sortedCRDs = []
+		chroms = np.unique(crdData[:,0])
+		for chromosome in chroms:
+			crdSubset = crdData[crdData[:,0] == chromosome]
+
+			sortedSubset = crdSubset[crdSubset[:,1].argsort()]
+			for crd in sortedSubset:
+
+				sortedCRDs.append(crd)
+			
+		return np.array(sortedCRDs)
+
 	def getCTCFSitesFromFile(self, ctcfFile):
 		"""
 			Read the CTCF sites from the provided CTCF file.
