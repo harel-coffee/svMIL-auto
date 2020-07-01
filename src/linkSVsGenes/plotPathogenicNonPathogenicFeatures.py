@@ -160,6 +160,7 @@ nonPathogenicData = np.loadtxt(outDir + '/linkedSVGenePairs/nonCoding_geneSVPair
 germlineData = np.loadtxt(outDir + '/linkedSVGenePairs/germline/nonCoding_geneSVPairs.txt_', dtype='object')
 shuffledData = np.loadtxt(outDir + '/linkedSVGenePairs/random/nonCoding_geneSVPairs.txt_0', dtype='object')
 
+
 svTypes = ['DEL', 'DUP', 'INV', 'ITX']
 perTypeResults = dict() #pathogenic to non-pathogenic
 perTypeResultsGL = dict() #pathogenic to germline
@@ -187,6 +188,7 @@ for svType in svTypes:
 			if typeMatch is None:
 				continue
 		germlinePairs.append(pair)
+		
 
 	shuffledPairs = []
 	for pair in shuffledData:

@@ -12,4 +12,8 @@ Germline SVs:
 
 Processing steps are also in preprocessing.sh
 
+These are the 'old' germline SVs from DGV that we used:
 GRCh37_hg19_variants_2020-02-25_filtered.txt.txt: processed from http://dgv.tcag.ca/dgv/docs/GRCh37_hg19_variants_2020-02-25.txt using filterDgvVariants.py
+
+These are the new germline SVs from gnomAD that are now in the latest paper version:
+GRCh37_hg19_variants_2020-02-25_filtered.txt: processed from https://storage.googleapis.com/gnomad-public/papers/2019-sv/gnomad_v2.1_sv.sites.bed.gz using filterGnomadVariants.py

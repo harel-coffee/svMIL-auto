@@ -34,7 +34,7 @@ class NeighborhoodDefiner:
 			genes: (numpy array) array with the genes and their information. chr, start, end, geneObject
 			svData: (numpy array) array with the SVs and their information. chr1, s1, e1, chr2, s2, e2, cancerType, sampleName, svObject.
 		"""
-		
+
 		#1. Get TADs from the TAD file, and then map TADs to genes (left/right TAD).
 		tadData = []
 

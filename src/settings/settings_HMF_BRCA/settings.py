@@ -36,5 +36,6 @@ general = dict(
 	
 	source = 'HMF',
 	cancerType = 'BRCA', #used to annotate the SVs, but is not required.
-	shuffleTads = False #Should TAD positions be shuffled
+	shuffleTads = False, #Should TAD positions be shuffled
+	crd = False
 )

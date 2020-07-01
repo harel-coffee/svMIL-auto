@@ -126,7 +126,7 @@ class InputParser:
 					svType = 'INV'
 
 				#germline
-				if svType == 'deletion':
+				elif svType == 'deletion':
 					svType = 'DEL'
 				elif svType == 'duplication':
 					svType = 'DUP'

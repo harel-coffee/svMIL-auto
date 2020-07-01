@@ -37,6 +37,7 @@ general = dict(
 
 	source = 'PCAWG',
 	cancerType = 'OV',
-	shuffleTads = False #Should TAD positions be shuffled
+	shuffleTads = False, #Should TAD positions be shuffled
+	crd = False
 )
 

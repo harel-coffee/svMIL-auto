@@ -35,6 +35,7 @@ general = dict(
 
 	source = 'TCGA',
 	cancerType = 'BRCA',
-	shuffleTads = False #Should TAD positions be shuffled
+	shuffleTads = False, #Should TAD positions be shuffled
+	crd = False
 )
 
