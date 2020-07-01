@@ -69,9 +69,9 @@ run=true
 if $run; then
 	runFolder='./DataProcessing'
 	inFile='../../data/svs/GRCh37_hg19_variants_2020-02-25.txt'
-	outFile='../../data/cpg/cpg2.bed'
+	outFile='../../data/svs/GRCh37_hg19_variants_2020-02-25_filtered.txt'
 
-	python "$runFolder/cpgToBed.py" "$inFile" "$outFile"
+	python "$runFolder/filterDgvVariants.py" "$inFile" "$outFile"
 
 fi
 
