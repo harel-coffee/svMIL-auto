@@ -5,36 +5,7 @@ np.random.seed(785)
 ###Filter the DGV variants to the same number as the HMF SVs.
 #Do not subselect for type, since this distribution represents the true case in the germline variants and could be meaningful.
 
-#1. Get the total number of samples and choose 89 of these at random
-
-uniqueSamples = []
-header = dict()
-with open(sys.argv[1], 'r') as inF:
-	lineCount = 0
-	for line in inF:
-		line = line.strip()
-		splitLine = line.split("\t")
-		if lineCount < 1:
-			
-			for entryInd in range(0, len(splitLine)):
-				header[splitLine[entryInd]] = entryInd
-			lineCount += 1
-			continue
-		
-		if len(splitLine) == header['samples']: #if there are no samples associated to this variant
-			continue
-	
-		samples = splitLine[header['samples']]
-		
-		splitSamples = samples.split(",")
-		
-		for sample in splitSamples:
-			if sample not in uniqueSamples:
-				uniqueSamples.append(sample)
-
-sampleSubset = np.random.choice(uniqueSamples, 89, replace=False)
-
-#2. Collect all SVs from these samples, check if the number is about equal to the somatic SVs
+#Collect all SVs from these samples, check if the number is about equal to the somatic SVs
 subsetSVs = []
 with open(sys.argv[1], 'r') as inF:
 	lineCount = 0
