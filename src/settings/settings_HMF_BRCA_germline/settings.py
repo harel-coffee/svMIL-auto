@@ -1,6 +1,6 @@
 files = dict(
 
-	svFile = '../data/svs/GRCh37_hg19_variants_2020-02-25_filtered.txt', #germline SV test
+	svFile = '../data/svs/gnomad_v2.1_sv.sites_filtered_01072020.bed', #germline SV test
 	causalGenesFile = '../data/genes/CCGC.tsv', #file with all causal genes from cosmic.
 	nonCausalGenesFile = '../data/genes/hg19_proteinCodingGenes.bed', #file with all protein-coding genes.
 	promoterFile = '../data/promoters/epdnew_hg38ToHg19_9vC8m.bed', #File with promoters in human, not cell-specific

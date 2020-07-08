@@ -5,7 +5,7 @@
 #set 'false' to 'true' to run a specific block.
 
 ### PARSE CPG ISLANDS ###
-run=false
+run=true
 
 if $run; then
 	runFolder='./DataProcessing'
@@ -18,7 +18,7 @@ fi
 
 ### PARSE EQTLS ###
 #This requires download of GTEx_Analysis_v7.metasoft.txt.gz. See eQTLs/readme.txt.
-run=false
+run=true
 
 if $run; then
 	runFolder='./DataProcessing'
@@ -38,7 +38,7 @@ if $run; then
 fi
 
 ### PARSE HIC DATA ###
-run=false
+run=true
 
 #Requires download of 5kb resolution intrachromosomal interactions. See hic/readme.txt
 
@@ -63,8 +63,19 @@ if $run; then
 fi
 
 ### PARSE GERMLINE VARIANTS ###
-run=false
+#Parse gnomAD variants. See svs/readme.txt
+run=true
+if $run; then
+	runFolder='./DataProcessing'
+	inFile='../data/svs/gnomad_v2.1_sv.sites.bed'
+	outFile='../data/svs/gnomad_v2.1_sv.sites_filtered_01072020.bed'
 
+	python "$runFolder/filterGnomadVariants.py" "$inFile" "$outFile"
+
+fi
+
+#Alternative to use DGV variants.
+run=false
 #Requires download of germline DGV variants. See svs/readme.txt
 
 if $run; then
@@ -76,19 +87,9 @@ if $run; then
 
 fi
 
-#Alternative to parse gnomAD variants instead of DGV variants. See svs/readme.txt
-run=true
-if $run; then
-	runFolder='./DataProcessing'
-	inFile='../data/svs/gnomad_v2.1_sv.sites.bed'
-	outFile='../data/svs/gnomad_v2.1_sv.sites_filtered_01072020.bed'
-
-	python "$runFolder/filterGnomadVariants.py" "$inFile" "$outFile"
-
-fi
 
 ### TMM NORMALIZATION ###
-run=false
+run=true
 
 if $run; then
 	runFolder='./DataProcessing'
@@ -98,7 +99,7 @@ if $run; then
 fi
 
 ### ANNOTATE HMF SVS WITH SV TYPES ###
-run=false
+run=true
 
 if $run; then
 	runFolder='./DataProcessing'
