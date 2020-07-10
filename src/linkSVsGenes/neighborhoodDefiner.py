@@ -55,13 +55,13 @@ class NeighborhoodDefiner:
 		self.mapTADsToGenes(genes[:,3], tadData)
 
 		
-		#2. Get eQTLs from the eQTL file, and map eQTLs to TADs. 			
+		# #2. Get eQTLs from the eQTL file, and map eQTLs to TADs.
 		eQTLFile = settings.files['eQTLFile']
 		print("getting eQTLs")
 		eQTLData = InputParser().getEQTLsFromFile(eQTLFile, genes[:,3], self)
 		#map the regulatory elements to the TADs so that we can later on when looking at disrupted TADs easily find which elements are affected.
 		tadData = self.mapElementsToTads(eQTLData, tadData)
-		
+
 		#map the genes to TADs. These are all the gene objects that we can then access when looking at disrupted TADs. 
 		tadData = self.mapGenesToTads(genes, tadData) 
 		
@@ -91,43 +91,49 @@ class NeighborhoodDefiner:
 		print("Getting transcription factors")
 
 		tfData = InputParser().getTranscriptionFactorsFromFile(settings.files['tfFile'])
-	
+
 		#Add the CpG sites to the TADs
 		tadData = self.mapElementsToTads(tfData, tadData)
-		
-		
+
+
 		#7. Get Hi-C data
-		print("Getting Hi-C data")
-		hicData = InputParser().getHiCInteractionsFromFile(settings.files['hicFile'])
-			
-		#Map the interactions to TADs as elements
-		tadData = self.mapInteractionsToTads(hicData, tadData)
-		
+		# print("Getting Hi-C data")
+		# hicData = InputParser().getHiCInteractionsFromFile(settings.files['hicFile'])
+		#
+		# #Map the interactions to TADs as elements
+		# tadData = self.mapInteractionsToTads(hicData, tadData)
+
 		#8. Get histone marks
-		
+
 		print("Getting histone marks")
 		files = [settings.files['h3k9me3'], settings.files['h3k4me3'], settings.files['h3k27ac'], settings.files['h3k27me3'],
 					settings.files['h3k4me1'], settings.files['h3k36me3']]
 		types = ['h3k9me3', 'h3k4me3', 'h3k27ac', 'h3k27me3', 'h3k4me1', 'h3k36me3']
+
+		#only use the types that matter
+		files = [settings.files['h3k4me3'], settings.files['h3k27ac'], settings.files['h3k27me3'],
+					settings.files['h3k4me1']]
+		types = ['h3k4me3', 'h3k27ac', 'h3k27me3', 'h3k4me1']
+
 		for histoneFileInd in range(0, len(files)):
 			histoneData = InputParser().getHistoneMarksFromFile(files[histoneFileInd], types[histoneFileInd])
-			
+
 			#map the histone marks to the TADs
 			tadData = self.mapElementsToTads(histoneData, tadData)
-		
+
 		#9. Get DNAse I hypersensitivty sites
 		print("Getting DNAse I hypersensitivity sites")
-			
+
 		dnaseIData = InputParser().getDNAseIFromFile(settings.files['dnaseIFile'])
-			
+
 		tadData = self.mapElementsToTads(dnaseIData, tadData)
-		
+
 		#10. get chromHMM states
 		print("Getting chromHMM states")
 		chromHmmData = InputParser().getChromHmmFromFile(settings.files['chromHmmFile'])
-			
+
 		tadData = self.mapElementsToTads(chromHmmData, tadData)
-		
+
 		#11. get RNAPolII peaks
 		print("Getting rnaPol binding sites")
 		rnaPolData = InputParser().getRnaPolFromFile(settings.files['rnaPolFile'])

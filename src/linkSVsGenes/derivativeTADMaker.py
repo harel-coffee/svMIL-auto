@@ -40,6 +40,9 @@ class DerivativeTADMaker:
 		dupCount = 0
 		delCount = 0
 
+		import time
+		startTime = time.time() #Keep run time of the program
+
 		#Inversions
 		print('Checking inversions')
 		for sv in svData:
@@ -47,12 +50,15 @@ class DerivativeTADMaker:
 			typeMatch = re.search("inv", sv[8].svType, re.IGNORECASE)
 			
 			if typeMatch is not None:
-				
-				
+
+
 				self.determineDerivativeTADs(sv, tadData, "inv") #make derivative TADs specific for this SV type
 				invCount += 1
 				#print("inversion count: ", invCount) #could use to check progress
 		
+		endTime = time.time()
+		print("The program took ", endTime-startTime, " for inv")
+		#exit()
 		
 		
 		#Duplications

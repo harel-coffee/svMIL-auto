@@ -179,6 +179,10 @@ class InputParser:
 		addedVariants = [] #check if based on pairs no duplicates are added. 
 		count = 0
 		for vcf in vcfs:
+			# count += 1
+			# if count > 3:
+			# 	continue
+
 			print(vcf)
 			
 			#get the samplename from the vcf
