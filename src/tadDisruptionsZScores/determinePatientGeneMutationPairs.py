@@ -75,6 +75,19 @@ def getPatientsWithCNVGeneBased_hmf(cnvDir):
 #Get the SNVs per gene
 def getPatientsWithSNVs_hmf(snvDir):
 
+	geneNameConversionMap = dict()
+	geneNameConversionFile = settings.files['geneNameConversionFile']
+	with open(geneNameConversionFile, 'r') as inF:
+
+		for line in inF:
+			line = line.strip()
+			splitLine = line.split("\t")
+			ensgId = splitLine[3]
+			splitEnsgId = ensgId.split('.') #we only keep everything before the dot
+
+			geneName = splitLine[4]
+			geneNameConversionMap[splitEnsgId[0]] = geneName
+
 	#search through the SNVs and link these to genes.
 	vcfs = glob.glob(snvDir + '/**/*.somatic.vcf.gz', recursive=True)
 
