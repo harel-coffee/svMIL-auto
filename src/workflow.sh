@@ -15,7 +15,7 @@
 #	output that is used in all figures. Only skip this steps if you have already generated
 #	the data, and want to re-use that in a figure.
 
-#	If you want to skip a part of the workflow, change the 'false' to 'true' for each step.
+#	If you want to skip a part of the workflow, change the 'true' to 'false' for each step.
 
 #	Memory requirements vary per workflow step and based on your dataset size.
 #	For the HMF data, at least 16 GB of memory is required to load the bags for MIL in memory.
@@ -82,6 +82,7 @@ if $run; then
 	runFolder='./tadDisruptionsZScores/'
 
 	#make sure to also have random z-scores ready.
+	python "$runFolder/main.py" "random" "True" "0" "$settingsFolder" "$outputFolder"
 
 	#run with super enhancers (PANEL B), and shuffled expression (PANEL C)
 	python "$runFolder/plotDisruptedTadZScores.py" "$outputFolder" "$settingsFolder" "True" "False" "False" "False" "se"
