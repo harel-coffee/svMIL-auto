@@ -239,7 +239,7 @@ def getBinScores(zScores, rules, cosmic, expressionCutoff, randomExpression, svT
 
 
 	#always get the rules so that we can do the filter out genes overlapped by CNV amplifications that are not affected by non-coding duplications. 
-	ruleBasedCombinations = np.loadtxt('output/HMF_BRCA/linkedSVGenePairs/nonCoding_geneSVPairs.txt_', dtype='object')
+	ruleBasedCombinations = np.loadtxt(sys.argv[1] + '/linkedSVGenePairs/nonCoding_geneSVPairs.txt_', dtype='object')
 	ruleBasedPairs = []
 	ruleBasedPairsSVs = []
 	for combination in ruleBasedCombinations:
@@ -269,10 +269,10 @@ def getBinScores(zScores, rules, cosmic, expressionCutoff, randomExpression, svT
 			ruleBasedPairs.append(splitPair[0] + '_' + splitPair[7])
 
 	#Collect all patients with mutations, easier in the adjacent TAds to just filter all patienst with ANY mutations witout having to go through all types individually.
-	mutDir = 'output/HMF_BRCA/patientGeneMutationPairs/'
-	svPatients = np.load(mutDir + 'svPatients.npy', allow_pickle=True, encoding='latin1').item()
+	mutDir = sys.argv[1] + '/patientGeneMutationPairs/'
+	#svPatients = np.load(mutDir + 'svPatients.npy', allow_pickle=True, encoding='latin1').item()
 	snvPatients = np.load(mutDir + 'snvPatients.npy', allow_pickle=True, encoding='latin1').item()
-	cnvPatients = np.load(mutDir + 'cnvPatients.npy', allow_pickle=True, encoding='latin1').item()
+	#cnvPatients = np.load(mutDir + 'cnvPatients.npy', allow_pickle=True, encoding='latin1').item()
 	svPatientsDel = np.load(mutDir + 'svPatientsDel.npy', allow_pickle=True, encoding='latin1').item()
 	svPatientsDup = np.load(mutDir + 'svPatientsDup.npy', allow_pickle=True, encoding='latin1').item()
 	svPatientsInv = np.load(mutDir + 'svPatientsInv.npy', allow_pickle=True, encoding='latin1').item()
@@ -554,7 +554,7 @@ def getBinScores(zScores, rules, cosmic, expressionCutoff, randomExpression, svT
 	#Get all TADs that are affected by SVs (positive) and that are not (negative)
 	affectedCount = 0
 	tadPositiveAndNegativeSet = []
-	with open('output/HMF_BRCA/tadDisruptionsZScores/tadPositiveAndNegativeSet.txt', 'r') as inF:
+	with open(sys.argv[1] + '/tadDisruptionsZScores/tadPositiveAndNegativeSet.txt', 'r') as inF:
 		for line in inF:
 
 			splitLine = line.split('\t')
@@ -645,7 +645,7 @@ def getBinScores(zScores, rules, cosmic, expressionCutoff, randomExpression, svT
 							continue
 
 						#exclude this gene if it overlaps a mutation
-						if geneName in svPatients[samples[sample]] or geneName in snvPatients[samples[sample]] or geneName in cnvPatients[samples[sample]]:
+						if geneName in svPatientsDel[samples[sample]] or geneName in svPatientsDup[samples[sample]] or geneName in svPatientsInv[samples[sample]] or geneName in svPatientsItx[samples[sample]] or geneName in snvPatients[samples[sample]] or geneName in cnvPatientsAmp[samples[sample]] or geneName in cnvPatientsDel[samples[sample]]:
 
 							continue
 
@@ -655,7 +655,7 @@ def getBinScores(zScores, rules, cosmic, expressionCutoff, randomExpression, svT
 					elif samples[sample] in leftNegativeSet:
 
 						#exclude this gene if it overlaps a mutation
-						if geneName in svPatients[samples[sample]] or geneName in snvPatients[samples[sample]] or geneName in cnvPatients[samples[sample]]:
+						if geneName in svPatientsDel[samples[sample]] or geneName in svPatientsDup[samples[sample]] or geneName in svPatientsInv[samples[sample]] or geneName in svPatientsItx[samples[sample]] or geneName in snvPatients[samples[sample]] or geneName in cnvPatientsAmp[samples[sample]] or geneName in cnvPatientsDel[samples[sample]]:
 
 							continue
 
@@ -752,7 +752,7 @@ def getBinScores(zScores, rules, cosmic, expressionCutoff, randomExpression, svT
 							continue
 
 						#exclude this gene if it overlaps a mutation
-						if geneName in svPatients[samples[sample]] or geneName in snvPatients[samples[sample]] or geneName in cnvPatients[samples[sample]]:
+						if geneName in svPatientsDel[samples[sample]] or geneName in svPatientsDup[samples[sample]] or geneName in svPatientsInv[samples[sample]] or geneName in svPatientsItx[samples[sample]] or geneName in snvPatients[samples[sample]] or geneName in cnvPatientsAmp[samples[sample]] or geneName in cnvPatientsDel[samples[sample]]:
 							continue
 
 						positiveSampleInd.append(sample)
@@ -761,7 +761,8 @@ def getBinScores(zScores, rules, cosmic, expressionCutoff, randomExpression, svT
 					elif samples[sample] in rightNegativeSet:
 
 						#exclude this gene if it overlaps a mutation
-						if geneName in svPatients[samples[sample]] or geneName in snvPatients[samples[sample]] or geneName in cnvPatients[samples[sample]]:
+						if geneName in svPatientsDel[samples[sample]] or geneName in svPatientsDup[samples[sample]] or geneName in svPatientsInv[samples[sample]] or geneName in svPatientsItx[samples[sample]] or geneName in snvPatients[samples[sample]] or geneName in cnvPatientsAmp[samples[sample]] or geneName in cnvPatientsDel[samples[sample]]:
+						#if geneName in svPatients[samples[sample]] or geneName in snvPatients[samples[sample]] or geneName in cnvPatients[samples[sample]]:
 							continue
 
 						negativeExpr.append(filteredExpressionData[samples[sample]][geneName])
@@ -795,6 +796,7 @@ def getBinScores(zScores, rules, cosmic, expressionCutoff, randomExpression, svT
 
 
 svTypes = ['DEL', 'DUP', 'INV', 'ITX']
+#svTypes = ['DUP', 'INV', 'ITX']
 
 outDir = sys.argv[1]
 rules = sys.argv[3] #apply rules yes/no
@@ -834,22 +836,22 @@ if elementType != 'False':
 	outFilePrefix += elementType
 	outFilePrefix += '_'
 #get the z-scores per bin
-# for svType in svTypes:
-#
-# 	#get the right zScore file here depending on if we shuffle or not
-# 	if randomExpression == 'False':
-# 		zScores = np.loadtxt('output/HMF_BRCA/tadDisruptionsZScores/zScores.txt', dtype='object')
-# 	else:
-# 		zScores = np.loadtxt('output/HMF_BRCA/tadDisruptionsZScores/zScores_random.txt', dtype='object')
-# 	binScores = getBinScores(zScores, rules, cosmic, expressionCutoff, randomExpression, svType, elementType)
-#
-# 	allData = []
-#
-# 	for binInd in range(0, len(binScores)):
-# 		allData.append(binScores[binInd])
-#
-# 	np.save(tmpOutDir + '/' + outFilePrefix + svType + '.npy', allData)
-#
+for svType in svTypes:
+
+	#get the right zScore file here depending on if we shuffle or not
+	if randomExpression == 'False':
+		zScores = np.loadtxt(outDir + '/tadDisruptionsZScores/zScores.txt', dtype='object')
+	else:
+		zScores = np.loadtxt(outDir + '/tadDisruptionsZScores/zScores_random.txt', dtype='object')
+	binScores = getBinScores(zScores, rules, cosmic, expressionCutoff, randomExpression, svType, elementType)
+
+	allData = []
+
+	for binInd in range(0, len(binScores)):
+		allData.append(binScores[binInd])
+
+	np.save(tmpOutDir + '/' + outFilePrefix + svType + '.npy', allData)
+
 
 ###combined figures
 #make plots with the median per bin, and show the percentiles as error bars. 
