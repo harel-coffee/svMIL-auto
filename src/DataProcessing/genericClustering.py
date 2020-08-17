@@ -7,10 +7,10 @@ import sys
 import numpy as np
 
 #read file
-dataFile = 'ENCFF154XFN_H3K27ac.bed'
-dataFile = 'ENCFF065TIH_H3K4me3.bed'
-#dataFile = 'ENCFF291WFP_H3K27me3.bed'
-#dataFile = 'ENCFF336DDM_H3K4me1.bed'
+dataFile = '../../data/histones/hmec/ENCFF154XFN_H3K27ac.bed'
+dataFile = '../../data/histones/hmec/ENCFF065TIH_H3K4me3.bed'
+dataFile = '../../data/histones/hmec/ENCFF291WFP_H3K27me3.bed'
+dataFile = '../../data/histones/hmec/ENCFF336DDM_H3K4me1.bed'
 #dataFile = 'tf_experimentallyValidated.bed'
 data = np.loadtxt(dataFile, dtype='object')
 
@@ -28,7 +28,7 @@ for mark in data:
 		continue
 	mappedChr = chrMap[mark[0]]
 
-	mappedData.append([mappedChr, int(mark[1]), int(mark[2])])
+	mappedData.append([mappedChr, int(mark[1]), int(mark[2]), mark[3], mark[4]])
 
 mappedData = np.array(mappedData)
 
@@ -36,7 +36,7 @@ sortedData = mappedData[np.lexsort((mappedData[:,1], mappedData[:,0]))]
 data = sortedData
 
 import pandas as pd
-df = pd.DataFrame(mappedData, columns=['chr', 'start', 'end'])
+df = pd.DataFrame(mappedData, columns=['chr', 'start', 'end', '.', 'signal'])
 
 df = df.sort_values(['chr', 'start', 'end'])
 
@@ -54,7 +54,7 @@ for mark in data:
 	else:
 		chrNotation = 'chr' + str(mark[0])
 
-	chrData.append([chrNotation, mark[1], mark[2]])
+	chrData.append([chrNotation, mark[1], mark[2], mark[3], mark[4]])
 
 chrData = np.array(chrData, dtype='object')
 
@@ -67,17 +67,17 @@ for markInd in range(0, data.shape[0]):
 
 	#if this is the first eQTL, it is always the start of a cluster.
 	if markInd == 0:
-		currentCluster.append([mark[0], mark[1], mark[2]])
+		currentCluster.append([mark[0], mark[1], mark[2], mark[3], mark[4]])
 	else:
 		#otherwise, check if the distance to the previous is within the window size.
 		previousMark = data[markInd-1,:]
 		
 		if float(mark[1]) - float(previousMark[1]) <= windowSize and previousMark[0] == mark[0]:
-			currentCluster.append([mark[0], mark[1], mark[2]])
+			currentCluster.append([mark[0], mark[1], mark[2], mark[3], mark[4]])
 		else:
 			clusters.append(currentCluster)
 			currentCluster = []
-			currentCluster.append([mark[0], mark[1], mark[2]])
+			currentCluster.append([mark[0], mark[1], mark[2], mark[3], mark[4]])
 
 
 #remaining eQTLs
@@ -96,14 +96,17 @@ with open(clusterFile, 'w') as outF:
 		clusterStart = 0
 		clusterEnd = 0
 		markInd = 0
+		avgSignal = 0
 		for mark in cluster:
 			if markInd == 0:
 				clusterStart = mark[1]
 				markInd += 1
 			clusterEnd = mark[2]
+			avgSignal += int(mark[4])
 
 		chrom = cluster[0][0]
+		avgSignal = int(avgSignal / len(cluster))
 
-		clusterLine = chrom + '\t' + str(clusterStart) + '\t' + str(clusterEnd) + '\n'
+		clusterLine = chrom + '\t' + str(clusterStart) + '\t' + str(clusterEnd) + '\t.\t' + str(avgSignal) + '\n'
 		outF.write(clusterLine)
 

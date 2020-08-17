@@ -5,7 +5,7 @@
 #set 'false' to 'true' to run a specific block.
 
 ### PARSE CPG ISLANDS ###
-run=true
+run=false
 
 if $run; then
 	runFolder='./DataProcessing'
@@ -18,7 +18,7 @@ fi
 
 ### PARSE EQTLS ###
 #This requires download of GTEx_Analysis_v7.metasoft.txt.gz. See eQTLs/readme.txt.
-run=true
+run=false
 
 if $run; then
 	runFolder='./DataProcessing'
@@ -38,7 +38,7 @@ if $run; then
 fi
 
 ### PARSE HIC DATA ###
-run=true
+run=false
 
 #Requires download of 5kb resolution intrachromosomal interactions. See hic/readme.txt
 
@@ -64,7 +64,7 @@ fi
 
 ### PARSE GERMLINE VARIANTS ###
 #Parse gnomAD variants. See svs/readme.txt
-run=true
+run=false
 if $run; then
 	runFolder='./DataProcessing'
 	inFile='../data/svs/gnomad_v2.1_sv.sites.bed'
@@ -89,7 +89,7 @@ fi
 
 
 ### TMM NORMALIZATION ###
-run=true
+run=false
 
 if $run; then
 	runFolder='./DataProcessing'
@@ -98,8 +98,36 @@ if $run; then
 
 fi
 
-### ANNOTATE HMF SVS WITH SV TYPES ###
+### PROCESS GTEX DATA ###
+
+
+### BATCH CORRECTION AND TMM NORMALIZATION OF BRCA AND GTEX EXPRESSION ###
 run=true
+
+if $run; then
+	runFolder='./DataProcessing'
+	gtexExpression='../data/expression/GTEx_Analysis_2016-01-15_v7_RNASeQCv1.1.8_gene_reads.gct'
+	gtexMetaData='../data/expression/GTEx_v7_Annotations_SampleAttributesDS.txt'
+	brcaExpressionFolder='/hpc/compgen/users/mnieboer/data/gtexPipeline/gtex/gtex_output/read_counts/' #this needs to be made
+	
+	#merge the BRCA read counts into one file, same format as the GTEx expression
+	combinedReadCountsBRCAFile='../data/expression/combinedReadCountsBRCA.txt'
+	#python "$runFolder/combineReadCountsBRCA.py" "$brcaExpressionFolder" "$combinedReadCountsBRCAFile"
+	
+	#### !needs proper output folder provided to write to
+	#python "$runFolder/mergeBRCAGTEx.py" "$gtexExpression" "$gtexMetaData" "$combinedReadCountsBRCAFile" 
+	
+	#Then perform batch correction and TMM normalization
+	### !also provide locations and output folders
+	module load R/3.2.2
+	Rscript "$runFolder/normalizeBRCAGTEx.R"
+	
+fi
+
+
+
+### ANNOTATE HMF SVS WITH SV TYPES ###
+run=false
 
 if $run; then
 	runFolder='./DataProcessing'
