@@ -93,9 +93,12 @@ with open(expressionFile, 'r') as inF:
 		fullGeneName = splitLine[0]
 		if settings.general['source'] == 'HMF':
 
-			if fullGeneName not in geneNameConversionMap:
-				continue
-			geneName = geneNameConversionMap[fullGeneName] #get the gene name rather than the ENSG ID
+			if settings.general['geneENSG'] == True:
+				if fullGeneName not in geneNameConversionMap:
+					continue
+				geneName = geneNameConversionMap[fullGeneName] #get the gene name rather than the ENSG ID
+			else:
+				geneName = fullGeneName
 		elif settings.general['source'] == 'PCAWG': #parse the gene name correctly
 
 			splitGeneName = fullGeneName.split('.')
@@ -116,6 +119,37 @@ with open(expressionFile, 'r') as inF:
 		expressionData.append(fixedData)
 
 expressionData = np.array(expressionData, dtype="object")
+
+#use a setting for if we want to run using GTEx as a control, or using the non-affected TADs.
+#if using GTEx, split up the expression here into 2 matrices.
+if settings.general['gtexControl'] == True:
+	
+	print('using GTEx as normal control')
+	gtexExpressionFile = settings.files['gtexExpressionFile']
+	
+	#read the expression (better if there was a function specific for this)
+	gtexExpressionData = []
+	with open(gtexExpressionFile, 'r') as inF:
+		lineCount = 0
+		for line in inF:
+			line = line.strip()
+			if lineCount == 0:
+				lineCount += 1
+				continue
+			splitLine = line.split("\t")
+			fullGeneName = splitLine[0]
+			
+			geneName = fullGeneName
+			data = splitLine[1:len(splitLine)]
+	
+			fixedData = [geneName]
+			fixedData += data
+	
+			gtexExpressionData.append(fixedData)
+	
+	gtexExpressionData = np.array(gtexExpressionData, dtype="object")
+	
+	
 
 
 #Get all SVs
@@ -444,7 +478,7 @@ for tad in tadDisruptions:
 				#because the CNV amp may overlap with the dup, ignore that one too. 
 				if gene[3].name in svPatientsDel[patient] or gene[3].name in svPatientsInv[patient] or \
 				gene[3].name in svPatientsItx[patient] or gene[3].name in cnvPatientsDel[patient] or \
-				gene[3].name in snvPatients[patient]:
+				gene[3].name in snvPatients[patient] or gene[3].name in cnvPatientsAmp[patient]:
 					continue
 				
 			elif svType == 'INV':
@@ -521,11 +555,19 @@ for patient in disruptedPairs:
 		negExprPatients = nonDisruptedPairs[gene]
 		
 		
+		##if we work with GTEx as normal controls, read the negative expression from that matrix instead.
 		negExpr = []
-		for negPatient in negExprPatients:
+		if settings.general['gtexControl'] == True:
 			
-			negExpr.append(negExprPatients[negPatient])
-		
+			gtexExpressionForGene = gtexExpressionData[gtexExpressionData[:,0] == gene][0]
+			negExpr = [float(i) for i in gtexExpressionForGene[1:]] #skip the gene name and convert to float
+			
+		else:	
+			
+			for negPatient in negExprPatients:
+				
+				negExpr.append(negExprPatients[negPatient])
+			
 		if np.std(negExpr) == 0:
 			continue
 
@@ -577,10 +619,14 @@ for pValueInd in range(0, len(pValues[:,1])):
 signPatients = np.array(signPatients, dtype='object')
 
 print(signPatients.shape)
+prefix = ''
+if settings.general['gtexControl'] == True:
+	suffix = '_gtex'
+
 if randomize == 'True':
-	np.savetxt(specificOutDir + '/zScores_random.txt', signPatients, fmt='%s', delimiter='\t')
+	np.savetxt(specificOutDir + '/zScores' + prefix + '_random.txt', signPatients, fmt='%s', delimiter='\t')
 else:
-	np.savetxt(specificOutDir + '/zScores.txt', signPatients, fmt='%s', delimiter='\t')
+	np.savetxt(specificOutDir + '/zScores' + prefix + '.txt', signPatients, fmt='%s', delimiter='\t')
 
 
 
