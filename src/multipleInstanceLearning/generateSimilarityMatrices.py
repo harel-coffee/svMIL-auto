@@ -12,6 +12,7 @@
 
 """
 
+
 import sys
 import os
 import numpy as np
@@ -23,6 +24,11 @@ np.random.seed(785)
 import matplotlib
 matplotlib.use('Agg')
 
+path = sys.argv[7]
+sys.path.insert(1, path)
+
+import settings
+
 featureElimination = sys.argv[2]
 leaveOnePatientOut = sys.argv[3] #make the similarity matrices for each left out patient
 leaveOneChromosomeOut = sys.argv[4] #1 chromosome at a time in the test set
@@ -30,6 +36,7 @@ leaveBagsOut = sys.argv[5] #random bags in each CV fold
 fullDataset = sys.argv[6] #generate sim matrix for the whole dataset.
 
 svTypes = ['DEL', 'DUP', 'INV', 'ITX']
+svTypes = ['DUP', 'INV']
 
 outDir = sys.argv[1]
 finalOutDir = outDir + '/multipleInstanceLearning/similarityMatrices/'
@@ -202,6 +209,7 @@ for svType in svTypes:
 
 					dupMatch = splitPair[0] + '_' + splitPair[7] + '_DUP'
 
+					#if splitPair[0] in cnvPatientsAmp[splitPair[7]]:
 					if splitPair[0] in cnvPatientsAmp[splitPair[7]] and dupMatch not in splitSVGenePairs:
 						negativeBags.append(instances)
 						negativeBagPairNames.append(pair)
@@ -292,6 +300,24 @@ for svType in svTypes:
 
 	positiveBags = np.array(newPositiveBags)
 	negativeBags = np.array(newNegativeBags)
+	
+	print(positiveBags.shape)
+	
+	#subsample the positive bags if there are too many
+	threshold = int(settings.general['bagThreshold'])
+	if positiveBags.shape[0] > threshold:
+		
+		random.seed(785)
+			
+		#subsample the positive set to the threshold
+		positiveBagsSubsampled = np.random.choice(positiveBags, threshold)
+	
+		positiveBagsSubsampleInd = np.random.choice(np.arange(positiveBags.shape[0]), threshold)
+		positiveBagsSubsampled = positiveBags[positiveBagsSubsampleInd]
+
+		positiveBags = positiveBagsSubsampled
+	
+	
 
 	print('Number of positive bags: ', positiveBags.shape)
 	print('Number of negative bags: ', negativeBags.shape)
