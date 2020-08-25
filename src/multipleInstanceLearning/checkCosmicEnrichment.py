@@ -22,6 +22,7 @@ from inputParser import InputParser
 outDir = sys.argv[1]
 
 svTypes = ['DEL', 'DUP', 'INV', 'ITX']
+svTypes = ['DEL']
 
 #get the cosmic genes
 cosmicGenes = InputParser().readCausalGeneFile(settings.files['causalGenesFile'])

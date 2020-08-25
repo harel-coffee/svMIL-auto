@@ -1,9 +1,14 @@
 import sys
 import numpy as np
+import glob
+
+
+eQTLFile = glob.glob(sys.argv[1] + '*')[0]
+
 
 
 #read eQTL file
-eQTLData = np.loadtxt('breast_eQTLs.bed', dtype='object')
+eQTLData = np.loadtxt(eQTLFile, dtype='object')
 
 #group the eQTLs by genes to make it easier to access them.
 perGeneEQTLs = dict()
@@ -65,7 +70,7 @@ for gene in perGeneEQTLs:
 	geneCount += 1
 	
 #write clusters to a new file
-clusterFile = 'clusters_test.txt'
+clusterFile = eQTLFile + '_clustered.bed'
 with open(clusterFile, 'w') as outF:
 	for gene in clusters:
 

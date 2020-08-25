@@ -71,8 +71,8 @@ def filterEQTLs(eQTLFile, ensemblIDLookup, filteredEQTLFile):
 					tissueInd = header['pval_Breast_Mammary_Tissue']
 				elif tissue == 'ovarian':
 					tissueInd = header['pval_Ovary']
-				elif tissue == 'liver':
-					tissueInd = header['pval_Liver']
+				elif tissue == 'blood':
+					tissueInd = header['pval_Whole_Blood']
 				
 				if splitLine[tissueInd] == 'NA':
 					continue

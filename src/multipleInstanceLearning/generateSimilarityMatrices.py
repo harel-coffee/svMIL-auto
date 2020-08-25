@@ -36,7 +36,7 @@ leaveBagsOut = sys.argv[5] #random bags in each CV fold
 fullDataset = sys.argv[6] #generate sim matrix for the whole dataset.
 
 svTypes = ['DEL', 'DUP', 'INV', 'ITX']
-svTypes = ['DUP', 'INV']
+svTypes = ['DUP', 'INV', 'ITX']
 
 outDir = sys.argv[1]
 finalOutDir = outDir + '/multipleInstanceLearning/similarityMatrices/'
@@ -209,8 +209,8 @@ for svType in svTypes:
 
 					dupMatch = splitPair[0] + '_' + splitPair[7] + '_DUP'
 
-					#if splitPair[0] in cnvPatientsAmp[splitPair[7]]:
-					if splitPair[0] in cnvPatientsAmp[splitPair[7]] and dupMatch not in splitSVGenePairs:
+					if splitPair[0] in cnvPatientsAmp[splitPair[7]]:
+					#if splitPair[0] in cnvPatientsAmp[splitPair[7]] and dupMatch not in splitSVGenePairs:
 						negativeBags.append(instances)
 						negativeBagPairNames.append(pair)
 
@@ -349,6 +349,7 @@ for svType in svTypes:
 
 		#merge the bags so that we can easily get to 1 similarity matrix and do all-to-all computations
 		bags = np.concatenate((positiveBags, negativeBagsSubsampled))
+
 		#assign bag labels
 		bagLabels = np.array([1]*positiveBags.shape[0] + [0]*negativeBagsSubsampled.shape[0])
 	else:
@@ -372,6 +373,9 @@ for svType in svTypes:
 
 	#also output the instances for later
 	np.save(finalOutDir + '/instances_' + svType + '.npy', instances)
+	
+	#and save the bags.
+	np.save(finalOutDir + '/bags_' + svType + '.npy', bags)
 
 	#Make an index where we can lookup at which position the instances are in the concatenated bag array.
 	reverseBagMap = dict() #lookup instance by bag index
