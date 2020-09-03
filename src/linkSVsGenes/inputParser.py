@@ -18,8 +18,189 @@ from random import randint
 import glob
 import re
 import settings
+import gzip
 
 class InputParser:
+	
+	def readSVFile_pcawg(self, svFile, sampleName):
+		
+		addedVariants = [] # keep track of already read SVs to avoid duplicates
+		variantsList = [] #all final variants in the file
+		#open the .gz file
+		with gzip.open(svFile, 'rb') as inF:
+			
+			for line in inF:
+				line = line.strip().decode('utf-8')
+
+				if re.search('^#', line): #skip header
+					continue
+				
+				#skip the SV if it did not pass.
+				splitLine = line.split("\t")
+				
+				filterInfo = splitLine[6]
+				if filterInfo != 'PASS':
+					continue
+				
+				chr1 = splitLine[0]
+				pos1 = int(splitLine[1])
+				pos2Info = splitLine[4]
+				
+				#match the end position and orientation. if there is no orientation info, this is an insertion, which we can skip.
+				if not re.search(':', pos2Info):
+					continue
+
+				if re.match('[A-Z]*\[.*\:\d+\[$', pos2Info):
+					o1 = '+'
+					o2 = '-'
+				elif re.match('[A-Z]*\].*\:\d+\]$', pos2Info):
+					o1 = '-'
+					o2 = '+'
+				elif re.match('^\].*\:\d+\][A-Z]*', pos2Info):
+					o1 = '+'
+					o2 = '+'
+				elif re.match('^\[.*\:\d+\[[A-Z]*', pos2Info):
+					o1 = '-'
+					o2 = '-'
+				else:
+					print('unmatched: ', pos2Info)
+					print(line)
+					exit()
+				
+				#get the chr2 information
+				chr2 = re.search('[\[\]]+(.*):(\d+).*', pos2Info).group(1)
+				pos2 = int(re.search('.*\:(\d+).*', pos2Info).group(1))
+				
+				infoField = splitLine[7]
+				splitInfoField = infoField.split(";")
+				svType = ''
+				for field in splitInfoField:
+					
+					splitField = field.split("=")
+					if splitField[0] == 'SVCLASS':
+						
+						if re.search('DEL', splitField[1]):
+							svType = 'DEL'
+						elif re.search('DUP', splitField[1]):
+							svType = 'DUP'
+						elif re.search('INV', splitField[1]):
+							svType = 'INV'
+						elif re.search('TRA', splitField[1]):
+							svType = 'ITX'
+						else:
+							print('unknown: ', field)
+							exit()
+
+				#skip SV types that we do not consider
+				if svType not in ['DEL', 'DUP', 'ITX', 'INV']:
+					continue
+				
+				#default positions
+				s1 = pos1
+				e1 = pos1
+				s2 = pos2
+				e2 = pos2
+				orderedChr1 = chr1
+				orderedChr2 = chr2
+				
+				#switch chromosomes if necessary
+				if chr1 != chr2:
+					if chr1 == 'Y' and chr2 == 'X':
+						orderedChr1 = chr2
+						orderedChr2 = chr1
+					if (chr1 == 'X' or chr1 == 'Y' or chr1 == 'MT') and (chr2 != 'X' and chr2 != 'Y' and chr2 != 'MT'):
+						orderedChr1 = chr2
+						orderedChr2 = chr1
+					if (chr1 != 'X' and chr1 != 'Y' and chr1 != 'MT') and (chr2 != 'X' and chr2 != 'Y' and chr2 != 'MT'):
+						if int(chr1) > int(chr2):
+							orderedChr1 = chr2
+							orderedChr2 = chr1
+					if (chr1 in ['X', 'Y', 'MT']) and (chr2 in ['X', 'Y', 'MT']): #order these as well
+						if chr1 == 'Y' and chr2 == 'X':
+							orderedChr1 = chr2
+							orderedChr2 = chr1
+						if chr1 == 'MT' and chr2 in ['X', 'Y']:
+							orderedChr1 = chr2
+							orderedChr2 = chr1
+
+					
+					#always switch the coordinates as well if chromosomes are switched.
+					if orderedChr1 == chr2:
+						s1 = pos2
+						e1 = pos2
+						s2  = pos1
+						e2 = pos1	
+				
+				else: #if the chr are the same but the positions are reversed, change these as well. 
+					if pos2 < pos1:
+						s1 = pos2
+						e1 = pos2
+						s2  = pos1
+						e2 = pos1	
+
+				finalChr1 = 'chr' + orderedChr1
+				finalChr2 = 'chr' + orderedChr2
+				svObject = SV(finalChr1, s1, e1, o1, finalChr2, s2, e2, o2, sampleName, settings.general['cancerType'], svType)
+				
+				#check if this SV is already added. That may happen with the pair IDs. 
+				svStr = finalChr1 + "_" + str(s1) + "_" + str(e1) + "_" + finalChr2 + "_" + str(s2) + "_" + str(e2) + "_" + sampleName
+				
+				
+				
+				if svStr in addedVariants:
+					continue
+
+				variantsList.append([finalChr1, s1, e1, finalChr2, s2, e2, settings.general['cancerType'], sampleName, svObject])
+				addedVariants.append(svStr)
+		#svs = np.array(variantsList, dtype='object')
+		return variantsList
+	
+	def getSVsFromFile_pcawg(self, svDir):
+		
+		#get the cancer type from the settings
+		cancerType = settings.general['cancerType']
+		#read in the metadata file and get the right file identifiers
+		metadataFile = settings.files['pcawgMetadata']
+		
+		#save the IDs of the patients with this cancer type
+		cancerTypeIds = dict()
+		with open(metadataFile, 'r') as inF:
+			
+			for line in inF:
+				
+				if re.search(cancerType, line):
+					splitLine = line.split('\t')
+					sampleId = splitLine[1]
+					cancerTypeIds[sampleId] = 0
+					
+		
+		#Then read the SV files for the right cancer type
+		allSVs = []
+		count = 0
+		for sampleId in cancerTypeIds:
+			count += 1
+			if count > 5:
+				continue
+			
+			#use glob to find the right file
+			matchedFiles = glob.glob(svDir + '/' + sampleId + '*sv.vcf.gz')
+			
+			#if we don't have SVs for this sample, skip it. 
+			if len(matchedFiles) < 1:
+				print(sampleId)
+				continue
+			
+			#there should be just 1 file
+			sampleSVFile = matchedFiles[0]
+			
+			#read in the SVs from this file
+			sampleSVs = self.readSVFile_pcawg(sampleSVFile, sampleId)
+			allSVs = allSVs + sampleSVs
+			
+		allSVs = np.array(allSVs, dtype='object')
+		
+		return allSVs
+	
 	
 	def getSVsFromFile(self, svFile, typeFilter):
 		"""

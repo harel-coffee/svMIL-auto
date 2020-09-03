@@ -6,18 +6,20 @@
 #SBATCH --mail-type=FAIL
 #SBATCH --mail-user=m.m.nieboer@umcutrecht.nl
 
-#1. Step 1: preparing everything to get the HMF_BRCA training data in place
+#Step 1: initialize
+#Set the cancer type that we want to run the pipeline for
+cancerType='BRCA'
 
 #Load in a settings file with the paths to the data that all code will be run on.
-## path here
-settingsFolder='./settings/settings_HMF_BRCA/'
+settingsFolder="./settings/settings_$cancerType/"
 
 #Create a folder in which all output for this data will be stored
 #Different steps will create their own intermediate folders in here
-outputFolder='output/HMF_BRCA'
+outputFolder="output/$cancerType"
+
 
 ### (REQUIRED) PART 2 - LINK SVS TO GENES ###
-run=false #Only skip this step if all output has already been generated!
+run=true #Only skip this step if all output has already been generated!
 
 if $run; then
 	runFolder='./linkSVsGenes/'
@@ -114,7 +116,7 @@ if $run; then
 
 	#identify which TADs are disrupted in these patients, and compute the
 	#z-scores of the genes in these TADs. Filter out genes with coding mutations.
-	python "$runFolder/computeZScoresDisruptedTads.py" "$settingsFolder" "$outputFolder" "False"
+	#python "$runFolder/computeZScoresDisruptedTads.py" "$settingsFolder" "$outputFolder" "False"
 
 	#split the SV-gene pairs into pathogenic/non-pathogenic, which we use later on.
 	runFolder='./linkSVsGenes/'
@@ -136,7 +138,7 @@ if $run; then
 fi
 
 #run lopoCV and get the predictions
-run=true #these steps only need to be done when outputting anything related to multiple instance learning
+run=false #these steps only need to be done when outputting anything related to multiple instance learning
 
 if $run; then
 	runFolder='./multipleInstanceLearning/'
@@ -146,13 +148,23 @@ if $run; then
 
 fi
 
-run=true
+run=false
 
 if $run; then
 	runFolder='./multipleInstanceLearning/'
 
 	#test the classifier and output the MIL curves
 	python "$runFolder/runMILClassifier.py" "$outputFolder" "False" "True" "False" "False" "False"
+
+fi
+
+#clean up lopoCV matrices
+run=false
+
+if $run; then
+
+	echo "$outputFolder/multipleInstanceLearning/similarityMatrix/leaveOnePatientOut/*"
+	#rm "$outputFolder/multipleInstanceLearning/similarityMatrix/leaveOnePatientOut/*"
 
 fi
 
