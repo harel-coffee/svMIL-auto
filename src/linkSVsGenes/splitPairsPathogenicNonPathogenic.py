@@ -47,6 +47,7 @@ for pair in svGenePairs:
 		if float(zPairInfo[5]) > 1.5 or float(zPairInfo[5]) < -1.5:
 
 			#only add to the positive set if there is no CNV amp without duplication.
+			#if splitPair[0] in cnvPatientsAmp[splitPair[7]]:
 			if splitPair[0] in cnvPatientsAmp[splitPair[7]] and shortPair + '_DUP' not in splitSVGenePairs:
 				negativePairsFeatures.append(features)
 			else:

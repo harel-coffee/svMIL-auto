@@ -1,11 +1,10 @@
 #!/bin/bash
-#$ -V
-#$ -S /bin/bash
-#$ -cwd
-#$ -l h_vmem=16G
-#$ -l h_rt=24:00:00
-#$ -e workflow_err
-#$ -o workflow_out
+#SBATCH --mem=32G
+#SBATCH --time=24:00:00
+#SBATCH -o workflow.out
+#SBATCH -e workflow.err
+#SBATCH --mail-type=FAIL
+#SBATCH --mail-user=m.m.nieboer@umcutrecht.nl
 
 ### INSTRUCTIONS ###
 
@@ -25,11 +24,11 @@
 
 #Load in a settings file with the paths to the data that all code will be run on.
 ## path here
-settingsFolder='./settings/settings_HMF_BRCA/'
+settingsFolder='./settings/settings_HMF_BRCA_generic/'
 
 #Create a folder in which all output for this data will be stored
 #Different steps will create their own intermediate folders in here
-outputFolder='output/HMF_BRCA'
+outputFolder='output/HMF_BRCA_generic'
 
 ### (REQUIRED) PART 2 - LINK SVS TO GENES ###
 run=true #Only skip this step if all output has already been generated!
@@ -62,7 +61,7 @@ if $run; then
 fi
 
 ### PART 4 - SETTING UP FOR MULTIPLE INSTANCE LEARNING ###
-run=false #these steps only need to be done when outputting anything related to multiple instance learning
+run=true #these steps only need to be done when outputting anything related to multiple instance learning
 
 if $run; then
 	runFolder='./multipleInstanceLearning/'
@@ -71,7 +70,7 @@ if $run; then
 	python "$runFolder/normalizeBags.py" "$outputFolder"
 
 	#then generate the similarity matrices for all SVs
-	python "$runFolder/generateSimilarityMatrices.py" "$outputFolder" "False" "True" "False" "False" "False"
+	python "$runFolder/generateSimilarityMatrices.py" "$outputFolder" "False" "True" "False" "False" "False" "$settingsFolder"
 
 fi
 
@@ -85,11 +84,11 @@ if $run; then
 
 	#run with super enhancers (PANEL B), and shuffled expression (PANEL C)
 	python "$runFolder/plotDisruptedTadZScores.py" "$outputFolder" "$settingsFolder" "True" "False" "False" "False" "se"
-	python "$runFolder/plotDisruptedTadZScores.py" "$outputFolder" "$settingsFolder" "True" "False" "False" "True" "se"
+	#python "$runFolder/plotDisruptedTadZScores.py" "$outputFolder" "$settingsFolder" "True" "False" "False" "True" "se"
 
 	#and run for all genes, no rules (PANEL A)
 	python "$runFolder/plotDisruptedTadZScores.py" "$outputFolder" "$settingsFolder" "False" "False" "False" "False" "all"
-	python "$runFolder/plotDisruptedTadZScores.py" "$outputFolder" "$settingsFolder" "False" "False" "False" "True" "all"
+	#python "$runFolder/plotDisruptedTadZScores.py" "$outputFolder" "$settingsFolder" "False" "False" "False" "True" "all"
 
 	
 fi
@@ -118,7 +117,7 @@ if $run; then
 fi
 
 ### FIGURE 3 - 3A: MIL PERFORMANCE CURVES PER SV TYPE, PER-PATIENT CV ###
-run=false
+run=true
 
 if $run; then
 	runFolder='./multipleInstanceLearning/'
@@ -178,38 +177,38 @@ fi
 
 
 ### FIGURE 4 - FEATURE IMPORTANCE AND RECURRENCE ###
-run=false
+run=true
 
 if $run; then
 	runFolder='./multipleInstanceLearning/'
 
 	#first output the full similarity matrix to train the classifier on the whole dataset.
-	python "$runFolder/generateSimilarityMatrices.py" "$outputFolder" "False" "False" "False" "False" "True"
+	python "$runFolder/generateSimilarityMatrices.py" "$outputFolder" "False" "False" "False" "False" "True" "$settingsFolder"
 
 	#Generate the plotting data, and plot the feature importances for ALL instances,
 	#don't split into gains/losses yet. We need these for normalization.
 	#First we make just the plotting data. We make the actual plots themselves later, which is important
 	#for figure S4 later on to normalize properly.
-	python "$runFolder/plotFeatureImportances.py" "$outputFolder" "True" "ALL" "ALL" "$settingsFolder" "False"
-
-	#plot for GAINS only
-	python "$runFolder/plotFeatureImportances.py" "$outputFolder" "True" "GAIN" "ALL" "$settingsFolder" "False"
-
-	#plot for LOSSES only
-	python "$runFolder/plotFeatureImportances.py" "$outputFolder" "True" "LOSS" "ALL" "$settingsFolder" "False"
-
-	#make the actual plots
-	python "$runFolder/plotFeatureImportances.py" "$outputFolder" "False" "ALL" "ALL" "$settingsFolder" "False"
-
-	#plot for GAINS only
-	python "$runFolder/plotFeatureImportances.py" "$outputFolder" "False" "GAIN" "ALL" "$settingsFolder" "False"
-
-	#plot for LOSSES only
-	python "$runFolder/plotFeatureImportances.py" "$outputFolder" "False" "LOSS" "ALL" "$settingsFolder" "False"
-
-	#Recurrence figure
-	#This depends on the pair labels from the ALL feature importance run.
-	python "$runFolder/recurrenceAnalysis.py" "$outputFolder"
+	#python "$runFolder/plotFeatureImportances.py" "$outputFolder" "True" "ALL" "ALL" "$settingsFolder" "False"
+	#
+	##plot for GAINS only
+	#python "$runFolder/plotFeatureImportances.py" "$outputFolder" "True" "GAIN" "ALL" "$settingsFolder" "False"
+	#
+	##plot for LOSSES only
+	#python "$runFolder/plotFeatureImportances.py" "$outputFolder" "True" "LOSS" "ALL" "$settingsFolder" "False"
+	#
+	##make the actual plots
+	#python "$runFolder/plotFeatureImportances.py" "$outputFolder" "False" "ALL" "ALL" "$settingsFolder" "False"
+	#
+	##plot for GAINS only
+	#python "$runFolder/plotFeatureImportances.py" "$outputFolder" "False" "GAIN" "ALL" "$settingsFolder" "False"
+	#
+	##plot for LOSSES only
+	#python "$runFolder/plotFeatureImportances.py" "$outputFolder" "False" "LOSS" "ALL" "$settingsFolder" "False"
+	#
+	##Recurrence figure
+	##This depends on the pair labels from the ALL feature importance run.
+	#python "$runFolder/recurrenceAnalysis.py" "$outputFolder"
 
 fi
 
@@ -259,7 +258,7 @@ if $run; then
 fi
 
 ### SUPPLEMENTARY FIGURE 4 - FEATURE IMPORTANCES SPECIFIC FOR COSMIC GENES ###
-run=true
+run=false
 
 if $run; then
 	runFolder='./multipleInstanceLearning/'

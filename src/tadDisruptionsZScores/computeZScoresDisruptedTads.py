@@ -72,6 +72,55 @@ with open(geneNameConversionFile, 'r') as inF:
 		geneName = splitLine[4]
 		geneNameConversionMap[splitEnsgId[0]] = geneName
 
+#Get all SVs
+if settings.general['source'] == 'HMF':
+	svDir = settings.files['svDir']
+	svData = InputParser().getSVsFromFile_hmf(svDir)
+elif settings.general['source'] == 'PCAWG':
+	svDir = settings.files['svDir']
+	svData = InputParser().getSVsFromFile_pcawg(svDir)
+
+else:
+	print('Other data sources not supported')
+	exit(1)
+
+#fix this
+filteredSVs = svData
+
+#if we have TCGA expression data to link with PCAWG, the samples need to be mapped to those IDs.
+#read the metadata file from icgc
+def getMetadataICGC(metadataFile):
+	#get the metadata file to extract the mapping from wgs to rna-seq identifiers
+
+	nameMap = dict()
+	with open(metadataFile, 'r') as inF:
+
+		header = dict()
+		lineCount = 0
+		for line in inF:
+			line = line.strip()
+			splitLine = line.split('\t')
+			if lineCount < 1:
+
+				for colInd in range(0, len(splitLine)):
+					header[splitLine[colInd]] = colInd
+
+				lineCount += 1
+				continue
+
+			#tcga_sample_uuid is the name we have in the SV directory
+			#sample_id is the one at TCGA in the expression data.
+			if header['tcga_sample_uuid'] < len(splitLine):
+				wgsName = splitLine[header['tcga_sample_uuid']]
+				expressionName = splitLine[header['sample_id']]
+
+				nameMap[expressionName] = wgsName
+
+	return nameMap
+
+nameMap = getMetadataICGC(settings.files['metadataICGC'])
+
+
 #get the gene expression
 expressionData = []
 samples = []
@@ -80,9 +129,28 @@ with open(expressionFile, 'r') as inF:
 	for line in inF:
 		line = line.strip()
 		if lineCount == 0:
-			if settings.general['source'] == 'PCAWG':
+
+			if settings.general['expressionSource'] == 'PCAWG':
 				samples += line.split("\t")
-				samples[0] = '' #replace this 'feature' thing
+				samples[0] = '' #replace the 'feature'
+			elif settings.general['expressionSource'] == 'TCGA' and settings.general['source'] == 'PCAWG':
+
+				#in this case, map the expression identifiers to the PCAWG WGS identifiers
+				tcgaSampleNames = line.split('\t')
+				tcgaSampleNames[0] = '' #replace the hybrid ref
+				
+				#re-name them to their wgs names only if present
+				#we later filter out the columns that do not have WGS. 
+				for sample in tcgaSampleNames:
+					wgsName = sample
+					if sample in nameMap:
+						#and only add it if we have SV data for it, otherwise we will never know
+						#if the sample is truly negative or not
+						if nameMap[sample] in filteredSVs[:,7]:
+							wgsName = nameMap[sample]
+					samples.append(wgsName)
+						
+
 			else:
 				samples = ['']
 				samples += line.split("\t")
@@ -91,7 +159,9 @@ with open(expressionFile, 'r') as inF:
 			continue
 		splitLine = line.split("\t")
 		fullGeneName = splitLine[0]
-		if settings.general['source'] == 'HMF':
+
+		lineCount += 1
+		if settings.general['expressionSource'] == 'HMF':
 
 			if settings.general['geneENSG'] == True:
 				if fullGeneName not in geneNameConversionMap:
@@ -99,7 +169,7 @@ with open(expressionFile, 'r') as inF:
 				geneName = geneNameConversionMap[fullGeneName] #get the gene name rather than the ENSG ID
 			else:
 				geneName = fullGeneName
-		elif settings.general['source'] == 'PCAWG': #parse the gene name correctly
+		elif settings.general['expressionSource'] == 'PCAWG': #parse the gene name correctly
 
 			splitGeneName = fullGeneName.split('.')
 			if splitGeneName[0] not in geneNameConversionMap:
@@ -119,6 +189,19 @@ with open(expressionFile, 'r') as inF:
 		expressionData.append(fixedData)
 
 expressionData = np.array(expressionData, dtype="object")
+
+#if we have TCGA-PCAWG mapped data, we need to remove the columns that we have no WGS for,
+#because we cannot say if these are truly negative samples.
+columnsToRemove = []
+filteredSamples = []
+for sampleCol in range(0, len(samples)):
+	if re.search('TCGA', samples[sampleCol]):
+		columnsToRemove.append(sampleCol)
+	else:
+		filteredSamples.append(samples[sampleCol])
+
+expressionData = np.delete(expressionData, columnsToRemove, axis=1)
+samples = filteredSamples
 
 #use a setting for if we want to run using GTEx as a control, or using the non-affected TADs.
 #if using GTEx, split up the expression here into 2 matrices.
@@ -148,23 +231,7 @@ if settings.general['gtexControl'] == True:
 			gtexExpressionData.append(fixedData)
 	
 	gtexExpressionData = np.array(gtexExpressionData, dtype="object")
-	
-	
 
-
-#Get all SVs
-if settings.general['source'] == 'HMF':
-	svDir = settings.files['svDir']
-	svData = InputParser().getSVsFromFile_hmf(svDir)
-elif settings.general['source'] == 'TCGA' or settings.general['source'] == 'PCAWG':
-	svData = InputParser().getSVsFromFile(settings.files['svFile'], '')
-
-else:
-	print('Other data sources not supported')
-	exit(1)
-	
-#fix this
-filteredSVs = svData
 
 
 #Get the TADs.
@@ -478,7 +545,8 @@ for tad in tadDisruptions:
 				#because the CNV amp may overlap with the dup, ignore that one too. 
 				if gene[3].name in svPatientsDel[patient] or gene[3].name in svPatientsInv[patient] or \
 				gene[3].name in svPatientsItx[patient] or gene[3].name in cnvPatientsDel[patient] or \
-				gene[3].name in snvPatients[patient] or gene[3].name in cnvPatientsAmp[patient]:
+				gene[3].name in snvPatients[patient]:
+				#gene[3].name in snvPatients[patient] or gene[3].name in cnvPatientsAmp[patient]:
 					continue
 				
 			elif svType == 'INV':
@@ -561,6 +629,10 @@ for patient in disruptedPairs:
 			
 			gtexExpressionForGene = gtexExpressionData[gtexExpressionData[:,0] == gene][0]
 			negExpr = [float(i) for i in gtexExpressionForGene[1:]] #skip the gene name and convert to float
+
+			for negPatient in negExprPatients:
+
+				negExpr.append(negExprPatients[negPatient])
 			
 		else:	
 			

@@ -178,9 +178,6 @@ class InputParser:
 		allSVs = []
 		count = 0
 		for sampleId in cancerTypeIds:
-			count += 1
-			if count > 5:
-				continue
 			
 			#use glob to find the right file
 			matchedFiles = glob.glob(svDir + '/' + sampleId + '*sv.vcf.gz')

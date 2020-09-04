@@ -35,6 +35,10 @@ if $run; then
 	liverOutFolder='../data/eQTLs/liver/'
 	python "$runFolder/filterEQTLs.py" "$inFile" "$geneLookupFile" "$liverOutFolder" "liver"
 
+	liverOutFolder='../data/eQTLs/gm12878/'
+	python "$runFolder/filterEQTLs.py" "$inFile" "$geneLookupFile" "$liverOutFolder" "blood"
+
+
 fi
 
 ### PARSE HIC DATA ###

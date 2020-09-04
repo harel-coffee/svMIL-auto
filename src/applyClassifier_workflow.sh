@@ -19,7 +19,7 @@ outputFolder="output/$cancerType"
 
 
 ### (REQUIRED) PART 2 - LINK SVS TO GENES ###
-run=true #Only skip this step if all output has already been generated!
+run=false #Only skip this step if all output has already been generated!
 
 if $run; then
 	runFolder='./linkSVsGenes/'
@@ -48,15 +48,44 @@ if $run; then
 
 fi
 
-###  ###
-run=false
+### PART 4 - SETTING UP FOR MULTIPLE INSTANCE LEARNING ###
+run=true #these steps only need to be done when outputting anything related to multiple instance learning
 
 if $run; then
 	runFolder='./multipleInstanceLearning/'
 
-	#first output the full similarity matrix to train the classifier on the whole dataset.
-	python "$runFolder/generateSimilarityMatrices.py" "$outputFolder" "False" "False" "False" "False" "True" "$settingsFolder"
+	#first normalize the bags
+	python "$runFolder/normalizeBags.py" "$outputFolder"
+
+	#then generate the similarity matrices for all SVs
+	python "$runFolder/generateSimilarityMatrices.py" "$outputFolder" "False" "True" "False" "False" "False" "$settingsFolder"
+
 fi
+
+### FIGURE 3 - 3A: MIL PERFORMANCE CURVES PER SV TYPE, PER-PATIENT CV ###
+run=true
+
+if $run; then
+	runFolder='./multipleInstanceLearning/'
+
+	#test the classifier and output the MIL curves
+	python "$runFolder/runMILClassifier.py" "$outputFolder" "False" "True" "False" "False" "False"
+
+fi
+
+#clean up lopoCV matrices
+run=false
+
+if $run; then
+
+	echo "$outputFolder/multipleInstanceLearning/similarityMatrix/leaveOnePatientOut/*"
+	#rm "$outputFolder/multipleInstanceLearning/similarityMatrix/leaveOnePatientOut/*"
+
+fi
+
+
+##############################
+
 
 #2. Step 2: preparing everything for PCAWG OV
 
@@ -130,11 +159,10 @@ run=false
 if $run; then
 	runFolder='./multipleInstanceLearning/'
 	
-	#first normalize the bags
-	#python "$runFolder/normalizeBags.py" "$outputFolder"
+	
 
 	#first output the full similarity matrix to train the classifier on the whole dataset.
-	python "$runFolder/generateSimilarityMatrices.py" "$outputFolder" "False" "False" "False" "False" "True" "$settingsFolder"
+	#python "$runFolder/generateSimilarityMatrices.py" "$outputFolder" "False" "False" "False" "False" "True" "$settingsFolder"
 fi
 
 #run lopoCV and get the predictions
