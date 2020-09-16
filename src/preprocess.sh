@@ -18,7 +18,7 @@ fi
 
 ### PARSE EQTLS ###
 #This requires download of GTEx_Analysis_v7.metasoft.txt.gz. See eQTLs/readme.txt.
-run=false
+run=true
 
 if $run; then
 	runFolder='./DataProcessing'
@@ -106,7 +106,7 @@ fi
 
 
 ### BATCH CORRECTION AND TMM NORMALIZATION OF BRCA AND GTEX EXPRESSION ###
-run=true
+run=false
 
 if $run; then
 	runFolder='./DataProcessing'
@@ -138,4 +138,19 @@ if $run; then
 
 	Rscript "$runFolder/simple-event-annotation.R"
 
+fi
+
+
+### pre-process CNVs of TCGA ###
+run=false
+
+if $run; then
+	runFolder='./DataProcessing'
+
+	### TO DO:
+	# -define out file
+	# - make this run on all files, not specific to 1 cancer type
+	# - maybe move it into the other pipeline to make it specific for the cancer type
+
+	python "$runFolder/preprocessCNVs.py" "$settingsFolder" "$outFile"
 fi

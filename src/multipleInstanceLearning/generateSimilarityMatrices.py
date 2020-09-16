@@ -36,7 +36,7 @@ leaveBagsOut = sys.argv[5] #random bags in each CV fold
 fullDataset = sys.argv[6] #generate sim matrix for the whole dataset.
 
 svTypes = ['DEL', 'DUP', 'INV', 'ITX']
-svTypes = ['DUP', 'INV', 'ITX']
+svTypes = ['DEL', 'DUP', 'INV']
 
 outDir = sys.argv[1]
 finalOutDir = outDir + '/multipleInstanceLearning/similarityMatrices/'
@@ -209,8 +209,8 @@ for svType in svTypes:
 
 					dupMatch = splitPair[0] + '_' + splitPair[7] + '_DUP'
 
-					if splitPair[0] in cnvPatientsAmp[splitPair[7]]:
-					#if splitPair[0] in cnvPatientsAmp[splitPair[7]] and dupMatch not in splitSVGenePairs:
+					#if splitPair[0] in cnvPatientsAmp[splitPair[7]]:
+					if splitPair[0] in cnvPatientsAmp[splitPair[7]] and dupMatch not in splitSVGenePairs:
 						negativeBags.append(instances)
 						negativeBagPairNames.append(pair)
 
@@ -328,54 +328,72 @@ for svType in svTypes:
 		continue
 
 	#subsample negative to the same number of positives. 
-	if leaveOnePatientOut == 'False':
-		random.seed(785) #somehow the global setting doesn't work in the second loop? so set it here.
-		
-		#subsample the negative set to the same number of positives.
-		negativeBagsSubsampled = np.random.choice(negativeBags, positiveBags.shape[0])
 
-		negativeBagsSubsampleInd = np.random.choice(np.arange(negativeBags.shape[0]), positiveBags.shape[0])
-		negativeBagsSubsampled = negativeBags[negativeBagsSubsampleInd]
+	random.seed(785) #somehow the global setting doesn't work in the second loop? so set it here.
 
-		negativeBagPairNamesSubsampled = negativeBagPairNames[negativeBagsSubsampleInd]
+	#subsample the negative set to the same number of positives.
+	negativeBagsSubsampled = np.random.choice(negativeBags, positiveBags.shape[0])
 
-		posInstances = np.vstack(positiveBags)
-		negInstances = np.vstack(negativeBagsSubsampled)
+	negativeBagsSubsampleInd = np.random.choice(np.arange(negativeBags.shape[0]), positiveBags.shape[0])
+	negativeBagsSubsampled = negativeBags[negativeBagsSubsampleInd]
 
-		bagPairLabels = np.concatenate((positiveBagPairNames, negativeBagPairNamesSubsampled))
+	negativeBagPairNamesSubsampled = negativeBagPairNames[negativeBagsSubsampleInd]
 
-		#save the bag pair labels for later
-		np.save(finalOutDir + '/bagPairLabels_' + svType + '.npy', bagPairLabels)
+	#posInstances = np.vstack(positiveBags)
+	#negInstances = np.vstack(negativeBagsSubsampled)
 
-		#merge the bags so that we can easily get to 1 similarity matrix and do all-to-all computations
-		bags = np.concatenate((positiveBags, negativeBagsSubsampled))
+	bagPairLabelsSubsampled = np.concatenate((positiveBagPairNames, negativeBagPairNamesSubsampled))
 
-		#assign bag labels
-		bagLabels = np.array([1]*positiveBags.shape[0] + [0]*negativeBagsSubsampled.shape[0])
-	else:
-		#in case of leave-one-patient out, we subsample later on
-		bagPairLabels = np.concatenate((positiveBagPairNames, negativeBagPairNames))
+	#save the bag pair labels for later
+	np.save(finalOutDir + '/bagPairLabelsSubsampled_' + svType + '.npy', bagPairLabelsSubsampled)
 
-		#save the bag pair labels for later
-		np.save(finalOutDir + '/bagPairLabelsNotSubsampled_' + svType + '.npy', bagPairLabels)
+	#merge the bags so that we can easily get to 1 similarity matrix and do all-to-all computations
+	bagsSubsampled = np.concatenate((positiveBags, negativeBagsSubsampled))
 
-		#merge the bags so that we can easily get to 1 similarity matrix and do all-to-all computations
-		bags = np.concatenate((positiveBags, negativeBags))
-		#assign bag labels
-		bagLabels = np.array([1]*positiveBags.shape[0] + [0]*negativeBags.shape[0])
+	#assign bag labels
+	bagLabelsSubsampled = np.array([1]*positiveBags.shape[0] + [0]*negativeBagsSubsampled.shape[0])
+
+	np.save(finalOutDir + '/bagLabelsSubsampled_' + svType + '.npy', bagLabelsSubsampled)
+
+	#stack the instances in the bags so that we can easily compute bag-instance distances
+	instancesSubsampled = np.vstack(bagsSubsampled)
+
+	#also output the instances for later
+	np.save(finalOutDir + '/instancesSubsampled_' + svType + '.npy', instancesSubsampled)
+
+	#and save the bags.
+	np.save(finalOutDir + '/bagsSubsampled_' + svType + '.npy', bagsSubsampled)
 
 
-	#output the bag labels which we can later read with the matrices
-	np.save(finalOutDir + '/bagLabels_' + svType + '.npy', bagLabels)
+	#in case of leave-one-patient out, we subsample later on
+	bagPairLabels = np.concatenate((positiveBagPairNames, negativeBagPairNames))
+
+	#save the bag pair labels for later
+	np.save(finalOutDir + '/bagPairLabelsNotSubsampled_' + svType + '.npy', bagPairLabels)
+
+	#merge the bags so that we can easily get to 1 similarity matrix and do all-to-all computations
+	bags = np.concatenate((positiveBags, negativeBags))
+	#assign bag labels
+	bagLabels = np.array([1]*positiveBags.shape[0] + [0]*negativeBags.shape[0])
+
+	np.save(finalOutDir + '/bagLabelsNotSubsampled_' + svType + '.npy', bagLabels)
 
 	#stack the instances in the bags so that we can easily compute bag-instance distances
 	instances = np.vstack(bags)
 
 	#also output the instances for later
-	np.save(finalOutDir + '/instances_' + svType + '.npy', instances)
-	
+	np.save(finalOutDir + '/instancesNotSubsampled_' + svType + '.npy', instances)
+
 	#and save the bags.
-	np.save(finalOutDir + '/bags_' + svType + '.npy', bags)
+	np.save(finalOutDir + '/bagsNotSubsampled_' + svType + '.npy', bags)
+
+	if leaveOnePatientOut == 'False':
+		bags = bagsSubsampled
+		instances = instancesSubsampled
+		bagPairLabels = bagPairLabelsSubsampled
+		bagLabels = bagLabelsSubsampled
+		
+
 
 	#Make an index where we can lookup at which position the instances are in the concatenated bag array.
 	reverseBagMap = dict() #lookup instance by bag index

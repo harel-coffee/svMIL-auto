@@ -1,6 +1,6 @@
 #!/bin/bash
 #SBATCH --mem=32G
-#SBATCH --time=05:00:00
+#SBATCH --time=30:00:00
 #SBATCH -o workflow.out
 #SBATCH -e workflow.err
 #SBATCH --mail-type=FAIL
@@ -36,7 +36,7 @@ if $run; then
 
 	#first link mutations to patients. These are required to quickly check which patients
 	#have which mutations in which genes
-	#python "$runFolder/determinePatientGeneMutationPairs.py" "$settingsFolder" "$outputFolder"
+	python "$runFolder/determinePatientGeneMutationPairs.py" "$settingsFolder" "$outputFolder"
 
 	#identify which TADs are disrupted in these patients, and compute the
 	#z-scores of the genes in these TADs. Filter out genes with coding mutations.
@@ -55,7 +55,7 @@ if $run; then
 	runFolder='./multipleInstanceLearning/'
 
 	#first normalize the bags
-	python "$runFolder/normalizeBags.py" "$outputFolder"
+	#python "$runFolder/normalizeBags.py" "$outputFolder"
 
 	#then generate the similarity matrices for all SVs
 	python "$runFolder/generateSimilarityMatrices.py" "$outputFolder" "False" "True" "False" "False" "False" "$settingsFolder"
@@ -78,8 +78,8 @@ run=false
 
 if $run; then
 
-	echo "$outputFolder/multipleInstanceLearning/similarityMatrix/leaveOnePatientOut/*"
-	#rm "$outputFolder/multipleInstanceLearning/similarityMatrix/leaveOnePatientOut/*"
+	#echo "$outputFolder/multipleInstanceLearning/similarityMatrix/leaveOnePatientOut/*"
+	rm "$outputFolder/multipleInstanceLearning/similarityMatrix/leaveOnePatientOut/similarityMatrix*"
 
 fi
 
@@ -158,8 +158,8 @@ run=false
 
 if $run; then
 	runFolder='./multipleInstanceLearning/'
-	
-	
+
+
 
 	#first output the full similarity matrix to train the classifier on the whole dataset.
 	#python "$runFolder/generateSimilarityMatrices.py" "$outputFolder" "False" "False" "False" "False" "True" "$settingsFolder"

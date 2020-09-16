@@ -119,8 +119,8 @@ for svType in svTypes:
 
 	dataPath = outDir + '/multipleInstanceLearning/similarityMatrices/'
 	similarityMatrix = np.load(dataPath + '/similarityMatrix_' + svType + '.npy', encoding='latin1', allow_pickle=True)
-	bagLabelsTrain = np.load(dataPath + '/bagLabels_' + svType + '.npy', encoding='latin1', allow_pickle=True)
-	trainInstances = np.load(dataPath + '/instances_' + svType + '.npy', encoding='latin1', allow_pickle=True)
+	bagLabelsTrain = np.load(dataPath + '/bagLabelsSubsampled_' + svType + '.npy', encoding='latin1', allow_pickle=True)
+	trainInstances = np.load(dataPath + '/instancesSubsampled_' + svType + '.npy', encoding='latin1', allow_pickle=True)
 
 	#train the classifier on the full dataset
 	clf.fit(similarityMatrix, bagLabelsTrain)
@@ -129,22 +129,23 @@ for svType in svTypes:
 	#load the PCAWG OV data
 	dataPath = outDirPCAWG + '/multipleInstanceLearning/similarityMatrices/'
 	#load the bags
-	bags = np.load(dataPath + '/bags_' + svType + '.npy', encoding='latin1', allow_pickle=True)
-	bagLabelsTest = np.load(dataPath + '/bagLabels_' + svType + '.npy', encoding='latin1', allow_pickle=True)
-	instances = np.load(dataPath + '/instances_' + svType + '.npy', encoding='latin1', allow_pickle=True)
-	bagPairLabels = np.load(dataPath + '/bagPairLabels_' + svType + '.npy', encoding='latin1', allow_pickle=True)
+	bags = np.load(dataPath + '/bagsNotSubsampled_' + svType + '.npy', encoding='latin1', allow_pickle=True)
+	bagLabelsTest = np.load(dataPath + '/bagLabelsNotSubsampled_' + svType + '.npy', encoding='latin1', allow_pickle=True)
+	instances = np.load(dataPath + '/instancesNotSubsampled_' + svType + '.npy', encoding='latin1', allow_pickle=True)
+	bagPairLabels = np.load(dataPath + '/bagPairLabelsNotSubsampled_' + svType + '.npy', encoding='latin1', allow_pickle=True)
 
 	import random
 	#random.shuffle(bagLabelsTest)
 
 	#generate test similarity matrix
 	similarityMatrixTest = getSimilarityMatrixTest(bags, trainInstances, [])
-	
+
 	#test classifier.
 	print('Classifier performance on PCAWG: ', clf.score(similarityMatrixTest, bagLabelsTest))
+	proba = clf.predict_proba(similarityMatrixTest)
 	predictions = clf.predict(similarityMatrixTest)
 
-	average_precision = average_precision_score(bagLabelsTest, predictions)
+	average_precision = average_precision_score(bagLabelsTest, proba[:,1])
 	print(average_precision)
 	
 	tn, fp, fn, tp = confusion_matrix(bagLabelsTest, predictions).ravel()
@@ -155,7 +156,7 @@ for svType in svTypes:
 		
 		prediction = predictions[predictionInd]
 		
-		if prediction == 1:
+		if prediction == 1 and bagLabelsTest[predictionInd] == 1:
 			
 			label = bagPairLabels[predictionInd]
 			gene = label.split('_')[0]

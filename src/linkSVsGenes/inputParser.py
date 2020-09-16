@@ -181,20 +181,43 @@ class InputParser:
 			
 			#use glob to find the right file
 			matchedFiles = glob.glob(svDir + '/' + sampleId + '*sv.vcf.gz')
-			
+
 			#if we don't have SVs for this sample, skip it. 
 			if len(matchedFiles) < 1:
-				print(sampleId)
+				print('Skipping ', sampleId, ' which has no SVs')
+				continue
+
+			#### here check if we have CNVs and SNVs for this sample. If these are not there,
+			#we cannot say anything about the causality of SVs of this patient, so it is
+			#better to skip it.
+			cnvDir = settings.files['cnvDir']
+			snvDir = settings.files['snvDir']
+			matchedSNVFiles = glob.glob(snvDir + '/' + sampleId + '*.somatic.snv_mnv')
+			matchedCNVFiles = glob.glob(cnvDir + '/' + sampleId + '*copyNumberEstimation*.somatic.cnv.vcf.gz')
+
+			### also, not all CNVs are in the PCAWg directory, so use the ones from TCGA
+			#where necessary. So we check for samples in there too.
+			tcgaCNVFile = settings.files['tcgaCNVFile']
+			tcgaCNVs = np.loadtxt(tcgaCNVFile, dtype='object')
+
+			if len(matchedSNVFiles) < 1:
+				print('Skipping ', sampleId, ' due to missing SNVs')
+				continue
+
+			if len(matchedCNVFiles) < 1 and sampleId not in tcgaCNVs[:,0]:
+				print('Skipping ', sampleId, ' due to missing CNVs')
 				continue
 			
 			#there should be just 1 file
 			sampleSVFile = matchedFiles[0]
+			print('Parsing SVs for file: ', sampleSVFile)
 			
 			#read in the SVs from this file
 			sampleSVs = self.readSVFile_pcawg(sampleSVFile, sampleId)
 			allSVs = allSVs + sampleSVs
 			
 		allSVs = np.array(allSVs, dtype='object')
+		print(allSVs.shape)
 		
 		return allSVs
 	

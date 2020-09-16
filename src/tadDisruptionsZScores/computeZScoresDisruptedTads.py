@@ -119,7 +119,7 @@ def getMetadataICGC(metadataFile):
 	return nameMap
 
 nameMap = getMetadataICGC(settings.files['metadataICGC'])
-
+print(len(np.unique(filteredSVs[:,7])))
 
 #get the gene expression
 expressionData = []
@@ -147,7 +147,11 @@ with open(expressionFile, 'r') as inF:
 						#and only add it if we have SV data for it, otherwise we will never know
 						#if the sample is truly negative or not
 						if nameMap[sample] in filteredSVs[:,7]:
+							print('sample ', sample, ' has expression and SVs')
 							wgsName = nameMap[sample]
+						# else:
+						# 	wgsName = nameMap[sample]
+						# 	print('sample ', wgsName, ' does not have SVs')
 					samples.append(wgsName)
 						
 
@@ -189,6 +193,8 @@ with open(expressionFile, 'r') as inF:
 		expressionData.append(fixedData)
 
 expressionData = np.array(expressionData, dtype="object")
+exit()
+print(samples)
 
 #if we have TCGA-PCAWG mapped data, we need to remove the columns that we have no WGS for,
 #because we cannot say if these are truly negative samples.
@@ -202,6 +208,9 @@ for sampleCol in range(0, len(samples)):
 
 expressionData = np.delete(expressionData, columnsToRemove, axis=1)
 samples = filteredSamples
+
+print(samples)
+exit()
 
 #use a setting for if we want to run using GTEx as a control, or using the non-affected TADs.
 #if using GTEx, split up the expression here into 2 matrices.
@@ -518,6 +527,7 @@ for tad in tadDisruptions:
 			patient = sv[0]
 			
 			if patient not in samples:
+				print(patient, 'not in samples')
 				continue
 			patientInd = samples.index(patient)
 			

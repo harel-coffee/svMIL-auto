@@ -497,7 +497,7 @@ def getPatientsWithSNVs_pcawg(snvDir, allGenes):
 
 	return patientsWithSNVs
 
-def getPatientsWithCNVGeneBased_pcawg(cnvDir, allGenes):
+def getPatientsWithCNVGeneBased_pcawg(cnvDir, tcgaCNVFile, allGenes):
 	#use nameMap to map the WGS identifiers to the rna-seq identifiers
 
 	#get the cancer type from the settings
@@ -579,6 +579,45 @@ def getPatientsWithCNVGeneBased_pcawg(cnvDir, allGenes):
 						cnvPatientsAmp[sampleId].append(geneName)
 					elif cn < 2:
 						cnvPatientsDel[sampleId].append(geneName)
+
+	#then repeat for the TCGA CNV data to combine it with the PCAWG files.
+	tcgaCNVs = np.loadtxt(tcgaCNVFile, dtype='object')
+	
+	lineCount = 0
+	for cnv in tcgaCNVs:
+
+		if lineCount < 1: #skip header
+			lineCount += 1
+			continue
+
+		cn = float(cnv[5])
+		sampleId = cnv[0]
+
+		if sampleId not in cnvPatientsAmp:
+			cnvPatientsAmp[sampleId] = []
+		if sampleId not in cnvPatientsDel:
+			cnvPatientsDel[sampleId] = []
+
+		if cn > 2.3 or cn < 1.7:
+
+			#link it to the gene it is in
+			geneChrSubset = allGenes[allGenes[:,0] == cnv[1]]
+			cnvStart = int(cnv[2])
+			cnvEnd = int(cnv[3])
+
+			geneMatch = geneChrSubset[(geneChrSubset[:,1] <= cnvEnd) * (geneChrSubset[:,2] >= cnvStart)]
+
+			if len(geneMatch) < 1:
+				continue
+
+			for gene in geneMatch:
+				geneName = gene[3].name
+
+				if cn > 2:
+					cnvPatientsAmp[sampleId].append(geneName)
+				elif cn < 2:
+					cnvPatientsDel[sampleId].append(geneName)
+
 
 	return cnvPatientsAmp, cnvPatientsDel
 		
@@ -807,8 +846,8 @@ elif settings.general['source'] == 'TCGA':
 elif settings.general['source'] == 'PCAWG':
 	#nameMap = getMetadataPCAWG(settings.files['metaDataFile'])
 	#snvPatients = getPatientsWithSNVs_pcawg(settings.files['snvDir'], allGenes)
-	#cnvPatientsAmp, cnvPatientsDel = getPatientsWithCNVGeneBased_pcawg(settings.files['cnvDir'], allGenes)
-	svPatientsDel, svPatientsDup, svPatientsInv, svPatientsItx = getPatientsWithSVs_pcawg(settings.files['svDir'], allGenes)
+	cnvPatientsAmp, cnvPatientsDel = getPatientsWithCNVGeneBased_pcawg(settings.files['cnvDir'], settings.files['tcgaCNVFile'], allGenes)
+	#svPatientsDel, svPatientsDup, svPatientsInv, svPatientsItx = getPatientsWithSVs_pcawg(settings.files['svDir'], allGenes)
 
 
 finalOutDir = outDir + '/patientGeneMutationPairs/'
@@ -816,10 +855,10 @@ finalOutDir = outDir + '/patientGeneMutationPairs/'
 if not os.path.exists(finalOutDir):
 	os.makedirs(finalOutDir)
 
-np.save(finalOutDir + 'svPatientsDel.npy', svPatientsDel)
-np.save(finalOutDir + 'svPatientsDup.npy', svPatientsDup)
-np.save(finalOutDir + 'svPatientsInv.npy', svPatientsInv)
-np.save(finalOutDir + 'svPatientsItx.npy', svPatientsItx)
+#np.save(finalOutDir + 'svPatientsDel.npy', svPatientsDel)
+#np.save(finalOutDir + 'svPatientsDup.npy', svPatientsDup)
+#np.save(finalOutDir + 'svPatientsInv.npy', svPatientsInv)
+#np.save(finalOutDir + 'svPatientsItx.npy', svPatientsItx)
 np.save(finalOutDir + 'cnvPatientsDel.npy', cnvPatientsDel)
 np.save(finalOutDir + 'cnvPatientsAmp.npy', cnvPatientsAmp)
-np.save(finalOutDir + 'snvPatients.npy', snvPatients)
+#np.save(finalOutDir + 'snvPatients.npy', snvPatients)
