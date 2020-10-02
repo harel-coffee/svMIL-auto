@@ -106,9 +106,9 @@ class NeighborhoodDefiner:
 		#8. Get histone marks
 
 		print("Getting histone marks")
-		files = [settings.files['h3k9me3'], settings.files['h3k4me3'], settings.files['h3k27ac'], settings.files['h3k27me3'],
-					settings.files['h3k4me1'], settings.files['h3k36me3']]
-		types = ['h3k9me3', 'h3k4me3', 'h3k27ac', 'h3k27me3', 'h3k4me1', 'h3k36me3']
+		# files = [settings.files['h3k9me3'], settings.files['h3k4me3'], settings.files['h3k27ac'], settings.files['h3k27me3'],
+		# 			settings.files['h3k4me1'], settings.files['h3k36me3']]
+		# types = ['h3k9me3', 'h3k4me3', 'h3k27ac', 'h3k27me3', 'h3k4me1', 'h3k36me3']
 
 		#only use the types that matter
 		files = [settings.files['h3k4me3'], settings.files['h3k27ac'], settings.files['h3k27me3'],

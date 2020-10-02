@@ -155,10 +155,8 @@ class InputParser:
 		#svs = np.array(variantsList, dtype='object')
 		return variantsList
 	
-	def getSVsFromFile_pcawg(self, svDir):
-		
-		#get the cancer type from the settings
-		cancerType = settings.general['cancerType']
+	def getSVsFromFile_pcawg(self, svDir, cancerType):
+
 		#read in the metadata file and get the right file identifiers
 		metadataFile = settings.files['pcawgMetadata']
 		
@@ -218,6 +216,7 @@ class InputParser:
 			
 		allSVs = np.array(allSVs, dtype='object')
 		print(allSVs.shape)
+		print(len(np.unique(allSVs[:,7])))
 		
 		return allSVs
 	
@@ -568,7 +567,6 @@ class InputParser:
 			
 		cosmicGenes = [] 
 		with open(causalGeneFile, 'r') as geneFile:
-			
 			lineCount = 0
 			header = []
 			for line in geneFile:
@@ -579,7 +577,7 @@ class InputParser:
 					header = splitLine
 					lineCount += 1
 					continue
-					
+
 				#Obtain the gene name and gene position
 				
 				geneSymbolInd = header.index('Gene Symbol')
@@ -587,12 +585,12 @@ class InputParser:
 				
 				geneSymbol = splitLine[geneSymbolInd]
 				genePosition = splitLine[genePositionInd]
-				
+
 				#Split the gene position into chr, start and end
-				
+
 				colonSplitPosition = genePosition.split(":")
 				dashSplitPosition = colonSplitPosition[1].split("-")
-				
+
 				chromosome = colonSplitPosition[0]
 				start = dashSplitPosition[0].replace('"',"") #apparently there are some problems with the data, sometimes there are random quotes in there
 				end = dashSplitPosition[1].replace('"', "")
@@ -600,10 +598,19 @@ class InputParser:
 				if start == '' or end == '':
 					continue
 				
+				#also get the cancer types
+				somaticCancerTypesInd = header.index('Tumour Types(Somatic)')
+				germlineCancerTypesInd = header.index('Tumour Types(Germline)')
+				
+				somaticCancerTypes = splitLine[somaticCancerTypesInd]
+				germlineCancerTypes = splitLine[germlineCancerTypesInd]
+
+				allCancerTypes = somaticCancerTypes + germlineCancerTypes
+				
 				gene = Gene(geneSymbol, "chr" + chromosome, int(start), int(end)) #Keep in objects for easy access of properties related to the neighborhood of the gene
 				gene.cosmic = 1
-				cosmicGenes.append(["chr" + chromosome, int(start), int(end), gene])
-				
+				cosmicGenes.append(["chr" + chromosome, int(start), int(end), gene, allCancerTypes])
+
 		#Sort the genes
 		cosmicGenes = np.array(cosmicGenes, dtype='object')
 		
@@ -655,7 +662,7 @@ class InputParser:
 				
 				if geneID not in causalGeneDict:
 				
-					nonCausalGeneList.append([chrom, int(start), int(end), geneObj])
+					nonCausalGeneList.append([chrom, int(start), int(end), geneObj, None]) #none is there to match with the cosmic gene format
 				
 		nonCausalGenes = np.array(nonCausalGeneList, dtype="object")
 	

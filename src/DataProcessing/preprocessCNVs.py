@@ -13,6 +13,10 @@ import settings
 
 #get this from the settings
 cnvFile = '../data/cnvs/brca/BRCA.snp__genome_wide_snp_6__broad_mit_edu__Level_3__segmented_scna_minus_germline_cnv_hg19__seg.seg.txt'
+cnvFile = '../data/cnvs/luad/LUAD.snp__genome_wide_snp_6__broad_mit_edu__Level_3__segmented_scna_minus_germline_cnv_hg19__seg.seg.txt'
+cnvFile = '../data/cnvs/coad/COAD.snp__genome_wide_snp_6__broad_mit_edu__Level_3__segmented_scna_minus_germline_cnv_hg19__seg.seg.txt'
+cnvFile = '../data/cnvs/ov/OV.snp__genome_wide_snp_6__broad_mit_edu__Level_3__segmented_scna_minus_germline_cnv_hg19__seg.seg.txt'
+cnvFile = '../data/cnvs/lihc/LIHC.snp__genome_wide_snp_6__broad_mit_edu__Level_3__segmented_scna_minus_germline_cnv_hg19__seg.seg.txt'
 
 #read the icgc metadata file to get the WGS name for this sample
 #if we have TCGA expression data to link with PCAWG, the samples need to be mapped to those IDs.
@@ -72,7 +76,6 @@ with open(cnvFile, 'r') as inF:
 		if newSampleName not in nameMap:
 			continue
 
-		print('found: ', newSampleName)
 		convertedSampleName = nameMap[newSampleName]
 		
 		segMean = float(splitLine[len(splitLine)-1])

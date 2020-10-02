@@ -64,7 +64,9 @@ if settings.general['source'] == 'PCAWG':
 
 	print("Reading SV data PCAWG")
 	svDir = settings.files['svDir']
-	svData = InputParser().getSVsFromFile_pcawg(svDir)
+	#get the cancer type from the settings
+	cancerType = settings.general['cancerType']
+	svData = InputParser().getSVsFromFile_pcawg(svDir, cancerType)
 if settings.general['source'] == 'HMF':
 	print("Reading SV data")
 	svDir = settings.files['svDir']
