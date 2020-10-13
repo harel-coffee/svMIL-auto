@@ -8,7 +8,7 @@
 
 #Step 1: initialize
 #Set the cancer type that we want to run the pipeline for
-cancerType='BRCA'
+cancerType='OV'
 
 #Load in a settings file with the paths to the data that all code will be run on.
 settingsFolder="./settings/settings_$cancerType/"
@@ -19,7 +19,7 @@ outputFolder="output/$cancerType"
 
 
 ### (REQUIRED) PART 2 - LINK SVS TO GENES ###
-run=false #Only skip this step if all output has already been generated!
+run=true #Only skip this step if all output has already been generated!
 
 if $run; then
 	runFolder='./linkSVsGenes/'
@@ -36,7 +36,7 @@ if $run; then
 
 	#first link mutations to patients. These are required to quickly check which patients
 	#have which mutations in which genes
-	#python "$runFolder/determinePatientGeneMutationPairs.py" "$settingsFolder" "$outputFolder"
+	python "$runFolder/determinePatientGeneMutationPairs.py" "$settingsFolder" "$outputFolder"
 
 	#identify which TADs are disrupted in these patients, and compute the
 	#z-scores of the genes in these TADs. Filter out genes with coding mutations.
@@ -44,12 +44,12 @@ if $run; then
 
 	#split the SV-gene pairs into pathogenic/non-pathogenic, which we use later on.
 	runFolder='./linkSVsGenes/'
-	#python "$runFolder/splitPairsPathogenicNonPathogenic.py" "$outputFolder"
+	python "$runFolder/splitPairsPathogenicNonPathogenic.py" "$outputFolder"
 
 fi
 
 ### PART 4 - SETTING UP FOR MULTIPLE INSTANCE LEARNING ###
-run=false #these steps only need to be done when outputting anything related to multiple instance learning
+run=true #these steps only need to be done when outputting anything related to multiple instance learning
 
 if $run; then
 	runFolder='./multipleInstanceLearning/'
@@ -63,7 +63,7 @@ if $run; then
 fi
 
 ### FIGURE 3 - 3A: MIL PERFORMANCE CURVES PER SV TYPE, PER-PATIENT CV ###
-run=false
+run=true
 
 if $run; then
 	runFolder='./multipleInstanceLearning/'
@@ -74,7 +74,7 @@ if $run; then
 fi
 
 #clean up lopoCV matrices
-run=false
+run=true
 
 if $run; then
 

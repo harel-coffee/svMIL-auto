@@ -78,7 +78,7 @@ if settings.general['source'] == 'HMF':
 	svData = InputParser().getSVsFromFile_hmf(svDir)
 elif settings.general['source'] == 'PCAWG':
 	svDir = settings.files['svDir']
-	svData = InputParser().getSVsFromFile_pcawg(svDir)
+	svData = InputParser().getSVsFromFile_pcawg(svDir, settings.general['cancerType'])
 
 else:
 	print('Other data sources not supported')
@@ -111,10 +111,15 @@ def getMetadataICGC(metadataFile):
 			#tcga_sample_uuid is the name we have in the SV directory
 			#sample_id is the one at TCGA in the expression data.
 			if header['tcga_sample_uuid'] < len(splitLine):
+
 				wgsName = splitLine[header['tcga_sample_uuid']]
 				expressionName = splitLine[header['sample_id']]
-
-				nameMap[expressionName] = wgsName
+				
+				#we need the first part of the TCGA ID only, because sometimes a different portion of the tumor is used and then the IDs don't match
+				splitExpressionName = expressionName.split('-')
+				shortExpressionName = '-'.join(splitExpressionName[0:4])
+				
+				nameMap[shortExpressionName] = wgsName
 
 	return nameMap
 
@@ -139,20 +144,36 @@ with open(expressionFile, 'r') as inF:
 				tcgaSampleNames = line.split('\t')
 				tcgaSampleNames[0] = '' #replace the hybrid ref
 				
+				
+				
 				#re-name them to their wgs names only if present
 				#we later filter out the columns that do not have WGS. 
 				for sample in tcgaSampleNames:
-					wgsName = sample
-					if sample in nameMap:
+					#split the tcga sample names into short format here as well for matching
+					splitSampleName = sample.split('-')
+					shortSampleName = '-'.join(splitSampleName[0:4])
+					
+					if shortSampleName in nameMap:
 						#and only add it if we have SV data for it, otherwise we will never know
 						#if the sample is truly negative or not
-						if nameMap[sample] in filteredSVs[:,7]:
-							print('sample ', sample, ' has expression and SVs')
-							wgsName = nameMap[sample]
-						# else:
-						# 	wgsName = nameMap[sample]
-						# 	print('sample ', wgsName, ' does not have SVs')
-					samples.append(wgsName)
+						
+						if nameMap[shortSampleName] in filteredSVs[:,7]:
+							
+							wgsName = nameMap[shortSampleName]
+							
+							#skip matching for normal samples, we want expression for the tumor. 
+							splitSample = shortSampleName.split('-')
+							tumorNormalId = splitSample[3]
+							tumorNormalIdNumber = int(tumorNormalId[0:2]) #only the first 2 numbers are relevant
+							if tumorNormalIdNumber > 10:
+								print('skipping normal', wgsName, shortSampleName)
+								continue
+							samples.append(wgsName)
+								
+						#else:
+						#	wgsName = nameMap[sample]
+						#	print('sample ', wgsName, ' does not have SVs')
+					#samples.append(wgsName)
 						
 
 			else:
@@ -193,9 +214,10 @@ with open(expressionFile, 'r') as inF:
 		expressionData.append(fixedData)
 
 expressionData = np.array(expressionData, dtype="object")
-exit()
-print(samples)
 
+print(samples)
+print(len(samples))
+print('418e916b-7a4e-4fab-8616-15dcec4d79f8' in samples)
 #if we have TCGA-PCAWG mapped data, we need to remove the columns that we have no WGS for,
 #because we cannot say if these are truly negative samples.
 columnsToRemove = []
@@ -208,8 +230,66 @@ for sampleCol in range(0, len(samples)):
 
 expressionData = np.delete(expressionData, columnsToRemove, axis=1)
 samples = filteredSamples
-
 print(samples)
+print('sample num after filtering: ', len(samples))
+print('418e916b-7a4e-4fab-8616-15dcec4d79f8' in samples)
+exit()
+
+
+metadataFile = settings.files['metadataICGC']
+
+metadata = []
+header = dict()
+with open(metadataFile, 'r') as inF:
+	
+	lineCount = 0
+	for line in inF:
+		splitLine = line.split('\t')
+		if lineCount < 1:
+			for col in range(0, len(splitLine)):
+				
+				header[splitLine[col]] = col
+			lineCount += 1
+		
+		cohort = splitLine[header['project_code']]
+		sampleId = splitLine[header['sample_id']]
+		tcgaId = splitLine[header['tcga_sample_uuid']]
+		
+		metadata.append([cohort, sampleId, tcgaId])
+		
+metadata = np.array(metadata, dtype='object')
+
+metadataCount = 0
+for sample in metadata:
+	
+	if sample[0] != 'BRCA-US':
+		continue
+	
+	metadataCount += 1
+	
+	if sample[2] in samples:
+		#print('found sample ', sample)
+		continue
+	else:
+		print('missing sample: ', sample)
+		
+print(metadataCount)
+exit()
+
+
+for sample in samples:
+
+	metadataMatch = np.where(metadata[:,2] == sample)[0]
+	print(np.where(metadata[:,2] == sample))
+	print(metadata[metadataMatch,:])
+	
+
+		
+	
+	
+	
+
+np.savetxt('id_test.txt', samples, fmt='%s')
 exit()
 
 #use a setting for if we want to run using GTEx as a control, or using the non-affected TADs.

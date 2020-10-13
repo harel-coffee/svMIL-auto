@@ -18,25 +18,28 @@ fi
 
 ### PARSE EQTLS ###
 #This requires download of GTEx_Analysis_v7.metasoft.txt.gz. See eQTLs/readme.txt.
-run=true
+run=false
 
 if $run; then
 	runFolder='./DataProcessing'
 	inFile='../data/eQTLs/GTEx_Analysis_v7.metasoft.txt'
 	geneLookupFile='../data/genes/ensemblGenesHg19'
 
-	breastOutFolder='../data/eQTLs/breast/'
-	python "$runFolder/filterEQTLs.py" "$inFile" "$geneLookupFile" "$breastOutFolder" "breast"
+	#breastOutFolder='../data/eQTLs/breast/'
+	#python "$runFolder/filterEQTLs.py" "$inFile" "$geneLookupFile" "$breastOutFolder" "breast"
+	#
+	##repeat for ovary and liver
+	#ovarianOutFolder='../data/eQTLs/ov/'
+	#python "$runFolder/filterEQTLs.py" "$inFile" "$geneLookupFile" "$ovarianOutFolder" "ovarian"
+	#
+	#liverOutFolder='../data/eQTLs/liver/'
+	#python "$runFolder/filterEQTLs.py" "$inFile" "$geneLookupFile" "$liverOutFolder" "liver"
 
-	#repeat for ovary and liver
-	ovarianOutFolder='../data/eQTLs/ov/'
-	python "$runFolder/filterEQTLs.py" "$inFile" "$geneLookupFile" "$ovarianOutFolder" "ovarian"
+	#liverOutFolder='../data/eQTLs/luad/'
+	#python "$runFolder/filterEQTLs.py" "$inFile" "$geneLookupFile" "$liverOutFolder" "lung"
 
-	liverOutFolder='../data/eQTLs/liver/'
-	python "$runFolder/filterEQTLs.py" "$inFile" "$geneLookupFile" "$liverOutFolder" "liver"
-
-	liverOutFolder='../data/eQTLs/gm12878/'
-	python "$runFolder/filterEQTLs.py" "$inFile" "$geneLookupFile" "$liverOutFolder" "blood"
+	liverOutFolder='../data/eQTLs/coad/'
+	python "$runFolder/filterEQTLs.py" "$inFile" "$geneLookupFile" "$liverOutFolder" "colon"
 
 
 fi
@@ -140,6 +143,29 @@ if $run; then
 
 fi
 
+run=true
+if $run; then
+	runFolder='./DataProcessing/'
+	type='lihc'
+
+	#Cluster histones
+	python "$runFolder/genericClustering.py" "../data/histones/$type/"
+
+	#Cluster DNASe
+	#python "$runFolder/genericClustering.py" "../data/dnase/$type/"
+
+	#cluster RNA pol
+	#python "$runFolder/genericClustering.py" "../data/rnapol/$type/"
+
+	#Cluster CTCF
+	#python "$runFolder/genericClustering.py" "../data/ctcf/$type/"
+
+	#cluster eQTLs
+	python "$runFolder/eQTLClustering.py" "../data/eQTLs/$type/"
+
+
+fi
+
 
 ### pre-process CNVs of TCGA ###
 run=false
@@ -151,6 +177,7 @@ if $run; then
 	# -define out file
 	# - make this run on all files, not specific to 1 cancer type
 	# - maybe move it into the other pipeline to make it specific for the cancer type
+	
 
 	python "$runFolder/preprocessCNVs.py" "$settingsFolder" "$outFile"
 fi

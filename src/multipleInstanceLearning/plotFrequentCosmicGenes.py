@@ -11,6 +11,8 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 import os.path
 import pandas as pd
+from scipy import stats
+from statsmodels.sandbox.stats.multicomp import multipletests
 path = sys.argv[1]
 sys.path.insert(1, path)
 sys.path.insert(1, 'linkSVsGenes/')
@@ -202,10 +204,9 @@ class DriverPlotter:
 
 	def getCodingFrequency(self, gene, mutationPairs, codingFrequency):
 		
-		
 		for patient in mutationPairs:
 			if gene in mutationPairs[patient]:
-				codingFrequency += 1
+				codingFrequency[patient] = 0
 				
 		return codingFrequency
 
@@ -241,13 +242,14 @@ class DriverPlotter:
 		patientCounts = dict()
 		
 		#aside from normal codng events, also sample random genes to compare to
-		iterationCount = 100
+		iterationCount = 1
 		#get all genes to sample from
 		causalGenes = InputParser().readCausalGeneFile(settings.files['causalGenesFile'])
 		nonCausalGenes = InputParser().readNonCausalGeneFile(settings.files['nonCausalGenesFile'], causalGenes) #In the same format as the causal genes.
 		
 		#Combine the genes into one set.
 		allGenes = np.concatenate((causalGenes, nonCausalGenes), axis=0)
+		allGenes = nonCausalGenes
 		randomCodingFrequency = dict()
 		
 		for cancerTypeInd in range(0, len(allCosmicPairs)):
@@ -277,14 +279,16 @@ class DriverPlotter:
 				if gene not in codingFrequency:
 					codingFrequency[cancerType][gene] = 0
 	
+				codingPatients = dict()
+				codingPatients = self.getCodingFrequency(gene, snvPatients, codingPatients)
+				# codingPatients = self.getCodingFrequency(gene, cnvPatientsAmp, codingPatients)
+				# codingPatients = self.getCodingFrequency(gene, cnvPatientsDel, codingPatients)
+				# codingPatients = self.getCodingFrequency(gene, svPatientsDel, codingPatients)
+				# codingPatients = self.getCodingFrequency(gene, svPatientsDup, codingPatients)
+				# codingPatients = self.getCodingFrequency(gene, svPatientsInv, codingPatients)
+				# codingPatients = self.getCodingFrequency(gene, svPatientsItx, codingPatients)
 				
-				codingFrequency[cancerType][gene] = self.getCodingFrequency(gene, snvPatients, codingFrequency[cancerType][gene])
-				codingFrequency[cancerType][gene] = self.getCodingFrequency(gene, cnvPatientsAmp, codingFrequency[cancerType][gene])
-				codingFrequency[cancerType][gene] = self.getCodingFrequency(gene, cnvPatientsDel, codingFrequency[cancerType][gene])
-				codingFrequency[cancerType][gene] = self.getCodingFrequency(gene, svPatientsDel, codingFrequency[cancerType][gene])
-				codingFrequency[cancerType][gene] = self.getCodingFrequency(gene, svPatientsDup, codingFrequency[cancerType][gene])
-				codingFrequency[cancerType][gene] = self.getCodingFrequency(gene, svPatientsInv, codingFrequency[cancerType][gene])
-				codingFrequency[cancerType][gene] = self.getCodingFrequency(gene, svPatientsItx, codingFrequency[cancerType][gene])
+				codingFrequency[cancerType][gene] = len(codingPatients)
 				
 			#normalize the coding frequencies by the sample count with pathogenic SVs
 			#for gene in codingFrequency[cancerType]:
@@ -299,33 +303,69 @@ class DriverPlotter:
 				randomGenes = np.random.choice(allGenes[:,3], driverCount)
 
 				for gene in randomGenes:
+					
+					print(gene.name)
 				
 					
-					geneCodingFrequency = 0
+					geneCodingFrequency = dict()
 					
 					
 					
 					#get the coding events for these genes
 					geneCodingFrequency = self.getCodingFrequency(gene.name, snvPatients, geneCodingFrequency)
-					geneCodingFrequency = self.getCodingFrequency(gene.name, cnvPatientsAmp, geneCodingFrequency)
-					geneCodingFrequency = self.getCodingFrequency(gene.name, cnvPatientsDel, geneCodingFrequency)
-					geneCodingFrequency = self.getCodingFrequency(gene.name, svPatientsDel, geneCodingFrequency)
-					geneCodingFrequency = self.getCodingFrequency(gene.name, svPatientsDup, geneCodingFrequency)
-					geneCodingFrequency = self.getCodingFrequency(gene.name, svPatientsInv, geneCodingFrequency)
-					geneCodingFrequency = self.getCodingFrequency(gene.name, svPatientsItx, geneCodingFrequency)
+					# geneCodingFrequency = self.getCodingFrequency(gene.name, cnvPatientsAmp, geneCodingFrequency)
+					# geneCodingFrequency = self.getCodingFrequency(gene.name, cnvPatientsDel, geneCodingFrequency)
+					# geneCodingFrequency = self.getCodingFrequency(gene.name, svPatientsDel, geneCodingFrequency)
+					# geneCodingFrequency = self.getCodingFrequency(gene.name, svPatientsDup, geneCodingFrequency)
+					# geneCodingFrequency = self.getCodingFrequency(gene.name, svPatientsInv, geneCodingFrequency)
+					# geneCodingFrequency = self.getCodingFrequency(gene.name, svPatientsItx, geneCodingFrequency)
 					
-					randomCodingFrequency[cancerType].append(geneCodingFrequency)
+					if len(geneCodingFrequency) == 0:
+						print('missing gene: ', gene.name)
+						continue #skip for now because these mess up the statistics
+					
+					randomCodingFrequency[cancerType].append(len(geneCodingFrequency))
 		
 			break
+		print(codingFrequency)
+		print(randomCodingFrequency)
+		print(np.mean(randomCodingFrequency['BRCA']))
 		
+		pValues = dict()
 		for cancerType in codingFrequency:
+			pValues[cancerType] = []
 			
+			uncorrectedPValues = []
 			for gene in codingFrequency[cancerType]:
 				print(gene)
 				print(codingFrequency[cancerType][gene], np.mean(randomCodingFrequency[cancerType]))
 				z = (codingFrequency[cancerType][gene] - np.mean(randomCodingFrequency[cancerType])) / np.std(randomCodingFrequency[cancerType])
 				print(z)
+				pValue = stats.norm.sf(abs(z))
+				print(pValue)
+				uncorrectedPValues.append([gene, z, pValue])
+				
+			#do mtc
+			uncorrectedPValues = np.array(uncorrectedPValues, dtype = 'object')
+
+			reject, pAdjusted, _, _ = multipletests(uncorrectedPValues[:,2], method='bonferroni') #fdr_bh or bonferroni
+			
+			print(reject)
+			print(pAdjusted)
 			exit()
+
+			signPatients = []
+			for pValueInd in range(0, len(uncorrectedPValues[:,2])):
+				
+				if reject[pValueInd] == True and uncorrectedPValues[pValueInd, 1] > 0:
+			
+					signPatients.append([uncorrectedPValues[pValueInd][0], uncorrectedPValues[pValueInd][1], pAdjusted[pValueInd]])
+					
+			signPatients = np.array(signPatients, dtype='object')
+			pValues[cancerType] = signPatients
+		
+		print(pValues)
+		exit()
 		
 		print(cancerTypesIndex)
 		print(cosmicGenesIndex)
@@ -481,7 +521,6 @@ class DriverPlotter:
 						splitLabel = pairLabel.split('_')
 
 						if splitLabel[0] in cosmicGeneNames:
-							print(splitLabel[0])
 							cosmicPairs.append(splitLabel[0] + '_' + splitLabel[7] + '_' + svType)
 
 

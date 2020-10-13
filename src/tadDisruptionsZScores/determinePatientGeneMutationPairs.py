@@ -845,9 +845,9 @@ elif settings.general['source'] == 'TCGA':
 	snvPatients = getPatientsWithSNVs_tcga(settings.files['snvDir'])
 elif settings.general['source'] == 'PCAWG':
 	#nameMap = getMetadataPCAWG(settings.files['metaDataFile'])
-	#snvPatients = getPatientsWithSNVs_pcawg(settings.files['snvDir'], allGenes)
+	snvPatients = getPatientsWithSNVs_pcawg(settings.files['snvDir'], allGenes)
 	cnvPatientsAmp, cnvPatientsDel = getPatientsWithCNVGeneBased_pcawg(settings.files['cnvDir'], settings.files['tcgaCNVFile'], allGenes)
-	#svPatientsDel, svPatientsDup, svPatientsInv, svPatientsItx = getPatientsWithSVs_pcawg(settings.files['svDir'], allGenes)
+	svPatientsDel, svPatientsDup, svPatientsInv, svPatientsItx = getPatientsWithSVs_pcawg(settings.files['svDir'], allGenes)
 
 
 finalOutDir = outDir + '/patientGeneMutationPairs/'
@@ -855,10 +855,10 @@ finalOutDir = outDir + '/patientGeneMutationPairs/'
 if not os.path.exists(finalOutDir):
 	os.makedirs(finalOutDir)
 
-#np.save(finalOutDir + 'svPatientsDel.npy', svPatientsDel)
-#np.save(finalOutDir + 'svPatientsDup.npy', svPatientsDup)
-#np.save(finalOutDir + 'svPatientsInv.npy', svPatientsInv)
-#np.save(finalOutDir + 'svPatientsItx.npy', svPatientsItx)
+np.save(finalOutDir + 'svPatientsDel.npy', svPatientsDel)
+np.save(finalOutDir + 'svPatientsDup.npy', svPatientsDup)
+np.save(finalOutDir + 'svPatientsInv.npy', svPatientsInv)
+np.save(finalOutDir + 'svPatientsItx.npy', svPatientsItx)
 np.save(finalOutDir + 'cnvPatientsDel.npy', cnvPatientsDel)
 np.save(finalOutDir + 'cnvPatientsAmp.npy', cnvPatientsAmp)
-#np.save(finalOutDir + 'snvPatients.npy', snvPatients)
+np.save(finalOutDir + 'snvPatients.npy', snvPatients)
