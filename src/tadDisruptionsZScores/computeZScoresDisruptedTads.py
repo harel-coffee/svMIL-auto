@@ -75,7 +75,7 @@ with open(geneNameConversionFile, 'r') as inF:
 #Get all SVs
 if settings.general['source'] == 'HMF':
 	svDir = settings.files['svDir']
-	svData = InputParser().getSVsFromFile_hmf(svDir)
+	svData = InputParser().getSVs_hmf(svDir, settings.general['cancerType'])
 elif settings.general['source'] == 'PCAWG':
 	svDir = settings.files['svDir']
 	svData = InputParser().getSVsFromFile_pcawg(svDir, settings.general['cancerType'])
@@ -87,44 +87,16 @@ else:
 #fix this
 filteredSVs = svData
 
-#if we have TCGA expression data to link with PCAWG, the samples need to be mapped to those IDs.
-#read the metadata file from icgc
-def getMetadataICGC(metadataFile):
-	#get the metadata file to extract the mapping from wgs to rna-seq identifiers
-
-	nameMap = dict()
-	with open(metadataFile, 'r') as inF:
-
-		header = dict()
-		lineCount = 0
-		for line in inF:
-			line = line.strip()
-			splitLine = line.split('\t')
-			if lineCount < 1:
-
-				for colInd in range(0, len(splitLine)):
-					header[splitLine[colInd]] = colInd
-
-				lineCount += 1
-				continue
-
-			#tcga_sample_uuid is the name we have in the SV directory
-			#sample_id is the one at TCGA in the expression data.
-			if header['tcga_sample_uuid'] < len(splitLine):
-
-				wgsName = splitLine[header['tcga_sample_uuid']]
-				expressionName = splitLine[header['sample_id']]
-				
-				#we need the first part of the TCGA ID only, because sometimes a different portion of the tumor is used and then the IDs don't match
-				splitExpressionName = expressionName.split('-')
-				shortExpressionName = '-'.join(splitExpressionName[0:4])
-				
-				nameMap[shortExpressionName] = wgsName
-
-	return nameMap
-
-nameMap = getMetadataICGC(settings.files['metadataICGC'])
 print(len(np.unique(filteredSVs[:,7])))
+
+#Step 1: extract the expression data only for the patients for which we have SVs.
+
+#Step 2: combine the expression data
+
+#Step 3: export the expression data and run an R script to obtain the normalized TMM values
+
+#Step 4: re-load the normalized data and remove the temporary file
+
 
 #get the gene expression
 expressionData = []

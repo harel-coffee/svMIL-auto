@@ -70,7 +70,8 @@ if settings.general['source'] == 'PCAWG':
 if settings.general['source'] == 'HMF':
 	print("Reading SV data")
 	svDir = settings.files['svDir']
-	svData = InputParser().getSVsFromFile_hmf(svDir)
+	cancerType = settings.general['cancerType']
+	svData = InputParser().getSVs_hmf(svDir, cancerType)
 print(svData) #check if the SVs are read in correctly
 
 #Check the SV distribution
