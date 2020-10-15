@@ -63,6 +63,10 @@ def leaveOneChromosomeOutCV(leaveChromosomeOutDataFolder, classifier, svType, pl
 	else:
 		allFiles = glob.glob(leaveChromosomeOutDataFolder + '*_' + svType + '_*_' + str(featureInd) + '.npy')
 
+	#skip if there are no similarity matrices of this type, e.g. no SVs of that type
+	if len(allFiles) < 1:
+		return
+
 	chromosomeFiles = dict()
 	for dataFile in allFiles:
 
@@ -97,6 +101,7 @@ def leaveOneChromosomeOutCV(leaveChromosomeOutDataFolder, classifier, svType, pl
 				bagLabelsTrain = np.load(dataFile, encoding='latin1', allow_pickle=True)
 			if re.search('bagLabelsTest', dataFile):
 				bagLabelsTest = np.load(dataFile, encoding='latin1', allow_pickle=True)
+
 
 		#then train the classifier
 		classifier.fit(similarityMatrixTrain, bagLabelsTrain)
@@ -269,6 +274,10 @@ def leaveOnePatientOutCV(leaveOneOutDataFolder, classifier, svType, plotOutputFi
 
 	#first get the names of all patients
 	allFiles = glob.glob(leaveOneOutDataFolder + '*_[0-9]*' + svType + '.npy')
+	
+	#skip if there are no similarity matrices of this type, e.g. no SVs of that type
+	if len(allFiles) < 1:
+		return
 
 	patientFiles = dict()
 	for dataFile in allFiles:

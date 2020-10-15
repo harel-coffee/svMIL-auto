@@ -13,6 +13,7 @@ import os.path
 import pandas as pd
 from scipy import stats
 from statsmodels.sandbox.stats.multicomp import multipletests
+import gzip
 path = sys.argv[1]
 sys.path.insert(1, path)
 sys.path.insert(1, 'linkSVsGenes/')
@@ -23,23 +24,30 @@ from inputParser import InputParser
 class DriverPlotter:
 
 	#the cancer types to show the results for
-	cancerTypes = ['BRCA', 'PCAWG_OV', 'LUAD', 'LIHC', 'COAD']
+	cancerTypes = ['HMF_Breast', 'HMF_Ovary', 'HMF_Lung', 'HMF_Liver', 'HMF_Colorectal']
+	cancerTypes = ['HMF_Colorectal']
+
 	#use names to search for the tissue in the cosmic cancer type list
-	cancerTypeNames = {'BRCA': 'breast', 'PCAWG_OV': 'ovarian', 'LUAD': 'lung',
-					   'LIHC': 'liver', 'COAD': 'colorectal'}
+	cancerTypeNames = {'HMF_Breast': 'breast', 'HMF_Ovary': 'ovarian', 'HMF_Lung': 'lung',
+					   'HMF_Liver': 'liver', 'HMF_Colorectal': 'colorectal'}
 	outDirPrefix = 'output/'
 	svTypes = ['DEL', 'DUP', 'INV', 'ITX']
 
 	def plotCosmicFrequencyScatter(self):
 
 		correctPairsPerCancerType = dict()
+		pathogenicSNVCounts = dict()
 		for cancerType in self.cancerTypes:
 			cosmicGeneNames, cosmicGeneCancerTypes = self.getCosmicGenes()
 			correctCosmicPairs = self.getCorrectlyPredictedCosmicPairs(cancerType, cosmicGeneNames)
 			correctPairsPerCancerType[cancerType] = correctCosmicPairs
 
+			#only the part after 'HMF' is in the metadata
+			splitCancerType = cancerType.split('_')
+			pathogenicSNVCounts[cancerType] = DriverPlotter().getPathogenicSNVsPerGene(splitCancerType[1])
+
 		#make the plot across all cancer types
-		self.generateFrequencyScatterPlot(correctPairsPerCancerType, cosmicGeneCancerTypes)
+		self.generateFrequencyScatterPlot(correctPairsPerCancerType, cosmicGeneCancerTypes, pathogenicSNVCounts)
 
 	def plotAUC(self):
 
@@ -211,7 +219,7 @@ class DriverPlotter:
 		return codingFrequency
 
 
-	def generateFrequencyScatterPlot(self, allCosmicPairs, cosmicGeneCancerTypes):
+	def generateFrequencyScatterPlot(self, allCosmicPairs, cosmicGeneCancerTypes, pathogenicSNVCounts):
 
 		#Create an order for the genes and cancer types
 		cancerTypesIndex = dict()
@@ -249,123 +257,173 @@ class DriverPlotter:
 		
 		#Combine the genes into one set.
 		allGenes = np.concatenate((causalGenes, nonCausalGenes), axis=0)
-		allGenes = nonCausalGenes
-		randomCodingFrequency = dict()
 		
-		for cancerTypeInd in range(0, len(allCosmicPairs)):
-			cancerType = self.cancerTypes[cancerTypeInd]
-			
-			snvPatients = np.load(self.outDirPrefix + '/' + cancerType + '/patientGeneMutationPairs/snvPatients.npy', encoding='latin1', allow_pickle=True).item()
-			cnvPatientsAmp = np.load(self.outDirPrefix + '/' + cancerType + '/patientGeneMutationPairs/cnvPatientsAmp.npy', encoding='latin1', allow_pickle=True).item()
-			cnvPatientsDel = np.load(self.outDirPrefix + '/' + cancerType + '/patientGeneMutationPairs/cnvPatientsDel.npy', encoding='latin1', allow_pickle=True).item()
-			svPatientsDel = np.load(self.outDirPrefix + '/' + cancerType + '/patientGeneMutationPairs/svPatientsDel.npy', encoding='latin1', allow_pickle=True).item()
-			svPatientsDup = np.load(self.outDirPrefix + '/' + cancerType + '/patientGeneMutationPairs/svPatientsDup.npy', encoding='latin1', allow_pickle=True).item()
-			svPatientsInv = np.load(self.outDirPrefix + '/' + cancerType + '/patientGeneMutationPairs/svPatientsInv.npy', encoding='latin1', allow_pickle=True).item()
-			svPatientsItx = np.load(self.outDirPrefix + '/' + cancerType + '/patientGeneMutationPairs/svPatientsItx.npy', encoding='latin1', allow_pickle=True).item()
+		allGeneNames = []
+		for gene in allGenes:
+			allGeneNames.append(gene[3].name)
+		#allGenes = nonCausalGenes
 
-			#check how many events are there.
-			codingFrequency[cancerType] = dict()
-			patientCounts[cancerType] = dict()
-			normalizedCodingFrequency[cancerType] = dict()
-			randomCodingFrequency[cancerType] = []
+		np.random.seed(42)
+		randomGenes = np.random.choice(allGeneNames, 100)
+
+		for cancerType in self.cancerTypes:
+
+			randomDistribution = []
+			for gene in randomGenes:
+
+				if gene in pathogenicSNVCounts[cancerType]:
+					randomDistribution.append(pathogenicSNVCounts[cancerType][gene])
+				else:
+					randomDistribution.append(0)
+			print(cancerType)
+			print(randomDistribution)
+			print(np.mean(randomDistribution))
+
+			pValues = []
 			for pair in allCosmicPairs[cancerType]:
-				
+
 				splitPair = pair.split('_')
 				gene = splitPair[0]
-				patient = splitPair[1]
-				
-				patientCounts[cancerType][patient] = 0
-				
-				if gene not in codingFrequency:
-					codingFrequency[cancerType][gene] = 0
-	
-				codingPatients = dict()
-				codingPatients = self.getCodingFrequency(gene, snvPatients, codingPatients)
-				# codingPatients = self.getCodingFrequency(gene, cnvPatientsAmp, codingPatients)
-				# codingPatients = self.getCodingFrequency(gene, cnvPatientsDel, codingPatients)
-				# codingPatients = self.getCodingFrequency(gene, svPatientsDel, codingPatients)
-				# codingPatients = self.getCodingFrequency(gene, svPatientsDup, codingPatients)
-				# codingPatients = self.getCodingFrequency(gene, svPatientsInv, codingPatients)
-				# codingPatients = self.getCodingFrequency(gene, svPatientsItx, codingPatients)
-				
-				codingFrequency[cancerType][gene] = len(codingPatients)
-				
-			#normalize the coding frequencies by the sample count with pathogenic SVs
-			#for gene in codingFrequency[cancerType]:
-			#	normalizedCodingFrequency[cancerType][gene] = len(codingFrequency[cancerType][gene]) / len(patientCounts[cancerType])
-				#codingFrequency[cancerType][gene] = codingFrequency[cancerType][gene] / len(patientCounts[cancerType])
-				
-			for i in range(0, iterationCount):
-				
-				driverCount = len(codingFrequency[cancerType])
-				
-				#randomly sample driverCount genes
-				randomGenes = np.random.choice(allGenes[:,3], driverCount)
 
-				for gene in randomGenes:
-					
-					print(gene.name)
-				
-					
-					geneCodingFrequency = dict()
-					
-					
-					
-					#get the coding events for these genes
-					geneCodingFrequency = self.getCodingFrequency(gene.name, snvPatients, geneCodingFrequency)
-					# geneCodingFrequency = self.getCodingFrequency(gene.name, cnvPatientsAmp, geneCodingFrequency)
-					# geneCodingFrequency = self.getCodingFrequency(gene.name, cnvPatientsDel, geneCodingFrequency)
-					# geneCodingFrequency = self.getCodingFrequency(gene.name, svPatientsDel, geneCodingFrequency)
-					# geneCodingFrequency = self.getCodingFrequency(gene.name, svPatientsDup, geneCodingFrequency)
-					# geneCodingFrequency = self.getCodingFrequency(gene.name, svPatientsInv, geneCodingFrequency)
-					# geneCodingFrequency = self.getCodingFrequency(gene.name, svPatientsItx, geneCodingFrequency)
-					
-					if len(geneCodingFrequency) == 0:
-						print('missing gene: ', gene.name)
-						continue #skip for now because these mess up the statistics
-					
-					randomCodingFrequency[cancerType].append(len(geneCodingFrequency))
-		
-			break
-		print(codingFrequency)
-		print(randomCodingFrequency)
-		print(np.mean(randomCodingFrequency['BRCA']))
-		
-		pValues = dict()
-		for cancerType in codingFrequency:
-			pValues[cancerType] = []
-			
-			uncorrectedPValues = []
-			for gene in codingFrequency[cancerType]:
-				print(gene)
-				print(codingFrequency[cancerType][gene], np.mean(randomCodingFrequency[cancerType]))
-				z = (codingFrequency[cancerType][gene] - np.mean(randomCodingFrequency[cancerType])) / np.std(randomCodingFrequency[cancerType])
-				print(z)
+				score = 0
+				if gene in pathogenicSNVCounts[cancerType]:
+					print(gene, ': ', pathogenicSNVCounts[cancerType][gene])
+					score = pathogenicSNVCounts[cancerType][gene]
+				else:
+					print(gene, ' not pathogenic')
+
+				z = (score - np.mean(randomDistribution)) / np.std(randomDistribution)
 				pValue = stats.norm.sf(abs(z))
-				print(pValue)
-				uncorrectedPValues.append([gene, z, pValue])
-				
-			#do mtc
-			uncorrectedPValues = np.array(uncorrectedPValues, dtype = 'object')
+				pValues.append([gene, z, pValue])
+
+			uncorrectedPValues = np.array(pValues, dtype = 'object')
+			print(uncorrectedPValues)
 
 			reject, pAdjusted, _, _ = multipletests(uncorrectedPValues[:,2], method='bonferroni') #fdr_bh or bonferroni
-			
-			print(reject)
-			print(pAdjusted)
-			exit()
 
 			signPatients = []
 			for pValueInd in range(0, len(uncorrectedPValues[:,2])):
-				
+
 				if reject[pValueInd] == True and uncorrectedPValues[pValueInd, 1] > 0:
-			
+
 					signPatients.append([uncorrectedPValues[pValueInd][0], uncorrectedPValues[pValueInd][1], pAdjusted[pValueInd]])
-					
+
 			signPatients = np.array(signPatients, dtype='object')
-			pValues[cancerType] = signPatients
-		
-		print(pValues)
+
+			print(signPatients)
 		exit()
+		
+		
+		
+		# for cancerTypeInd in range(0, len(allCosmicPairs)):
+		# 	cancerType = self.cancerTypes[cancerTypeInd]
+		#
+		# 	snvPatients = np.load(self.outDirPrefix + '/' + cancerType + '/patientGeneMutationPairs/snvPatients.npy', encoding='latin1', allow_pickle=True).item()
+		# 	cnvPatientsAmp = np.load(self.outDirPrefix + '/' + cancerType + '/patientGeneMutationPairs/cnvPatientsAmp.npy', encoding='latin1', allow_pickle=True).item()
+		# 	cnvPatientsDel = np.load(self.outDirPrefix + '/' + cancerType + '/patientGeneMutationPairs/cnvPatientsDel.npy', encoding='latin1', allow_pickle=True).item()
+		# 	svPatientsDel = np.load(self.outDirPrefix + '/' + cancerType + '/patientGeneMutationPairs/svPatientsDel.npy', encoding='latin1', allow_pickle=True).item()
+		# 	svPatientsDup = np.load(self.outDirPrefix + '/' + cancerType + '/patientGeneMutationPairs/svPatientsDup.npy', encoding='latin1', allow_pickle=True).item()
+		# 	svPatientsInv = np.load(self.outDirPrefix + '/' + cancerType + '/patientGeneMutationPairs/svPatientsInv.npy', encoding='latin1', allow_pickle=True).item()
+		# 	svPatientsItx = np.load(self.outDirPrefix + '/' + cancerType + '/patientGeneMutationPairs/svPatientsItx.npy', encoding='latin1', allow_pickle=True).item()
+		#
+		# 	#check how many events are there.
+		# 	codingFrequency[cancerType] = dict()
+		# 	patientCounts[cancerType] = dict()
+		# 	normalizedCodingFrequency[cancerType] = dict()
+		# 	randomCodingFrequency[cancerType] = []
+		# 	for pair in allCosmicPairs[cancerType]:
+		#
+		# 		splitPair = pair.split('_')
+		# 		gene = splitPair[0]
+		# 		patient = splitPair[1]
+		#
+		# 		patientCounts[cancerType][patient] = 0
+		#
+		# 		if gene not in codingFrequency:
+		# 			codingFrequency[cancerType][gene] = 0
+		#
+		# 		codingPatients = dict()
+		# 		codingPatients = self.getCodingFrequency(gene, snvPatients, codingPatients)
+		# 		# codingPatients = self.getCodingFrequency(gene, cnvPatientsAmp, codingPatients)
+		# 		# codingPatients = self.getCodingFrequency(gene, cnvPatientsDel, codingPatients)
+		# 		# codingPatients = self.getCodingFrequency(gene, svPatientsDel, codingPatients)
+		# 		# codingPatients = self.getCodingFrequency(gene, svPatientsDup, codingPatients)
+		# 		# codingPatients = self.getCodingFrequency(gene, svPatientsInv, codingPatients)
+		# 		# codingPatients = self.getCodingFrequency(gene, svPatientsItx, codingPatients)
+		#
+		# 		codingFrequency[cancerType][gene] = len(codingPatients)
+		#
+		# 	#normalize the coding frequencies by the sample count with pathogenic SVs
+		# 	#for gene in codingFrequency[cancerType]:
+		# 	#	normalizedCodingFrequency[cancerType][gene] = len(codingFrequency[cancerType][gene]) / len(patientCounts[cancerType])
+		# 		#codingFrequency[cancerType][gene] = codingFrequency[cancerType][gene] / len(patientCounts[cancerType])
+		#
+		# 	for i in range(0, iterationCount):
+		#
+		# 		driverCount = len(codingFrequency[cancerType])
+		#
+		# 		#randomly sample driverCount genes
+		# 		randomGenes = np.random.choice(allGenes[:,3], driverCount)
+		#
+		# 		for gene in randomGenes:
+		#
+		# 			print(gene.name)
+		#
+		#
+		# 			geneCodingFrequency = dict()
+		#
+		#
+		#
+		# 			#get the coding events for these genes
+		# 			geneCodingFrequency = self.getCodingFrequency(gene.name, snvPatients, geneCodingFrequency)
+		# 			# geneCodingFrequency = self.getCodingFrequency(gene.name, cnvPatientsAmp, geneCodingFrequency)
+		# 			# geneCodingFrequency = self.getCodingFrequency(gene.name, cnvPatientsDel, geneCodingFrequency)
+		# 			# geneCodingFrequency = self.getCodingFrequency(gene.name, svPatientsDel, geneCodingFrequency)
+		# 			# geneCodingFrequency = self.getCodingFrequency(gene.name, svPatientsDup, geneCodingFrequency)
+		# 			# geneCodingFrequency = self.getCodingFrequency(gene.name, svPatientsInv, geneCodingFrequency)
+		# 			# geneCodingFrequency = self.getCodingFrequency(gene.name, svPatientsItx, geneCodingFrequency)
+		#
+		# 			if len(geneCodingFrequency) == 0:
+		# 				print('missing gene: ', gene.name)
+		# 				continue #skip for now because these mess up the statistics
+		#
+		# 			randomCodingFrequency[cancerType].append(len(geneCodingFrequency))
+		#
+		# 	break
+		#
+		# pValues = dict()
+		# for cancerType in codingFrequency:
+		# 	pValues[cancerType] = []
+		#
+		# 	uncorrectedPValues = []
+		# 	for gene in codingFrequency[cancerType]:
+		# 		print(gene)
+		# 		print(codingFrequency[cancerType][gene], np.mean(randomCodingFrequency[cancerType]))
+		# 		z = (codingFrequency[cancerType][gene] - np.mean(randomCodingFrequency[cancerType])) / np.std(randomCodingFrequency[cancerType])
+		# 		print(z)
+		# 		pValue = stats.norm.sf(abs(z))
+		# 		print(pValue)
+		# 		uncorrectedPValues.append([gene, z, pValue])
+		#
+		# 	#do mtc
+		# 	uncorrectedPValues = np.array(uncorrectedPValues, dtype = 'object')
+		#
+		# 	reject, pAdjusted, _, _ = multipletests(uncorrectedPValues[:,2], method='bonferroni') #fdr_bh or bonferroni
+		#
+		#
+		#
+		# 	signPatients = []
+		# 	for pValueInd in range(0, len(uncorrectedPValues[:,2])):
+		#
+		# 		if reject[pValueInd] == True and uncorrectedPValues[pValueInd, 1] > 0:
+		#
+		# 			signPatients.append([uncorrectedPValues[pValueInd][0], uncorrectedPValues[pValueInd][1], pAdjusted[pValueInd]])
+		#
+		# 	signPatients = np.array(signPatients, dtype='object')
+		# 	pValues[cancerType] = signPatients
+		#
+		# print(pValues)
+		# exit()
 		
 		print(cancerTypesIndex)
 		print(cosmicGenesIndex)
@@ -387,9 +445,9 @@ class DriverPlotter:
 				gene = splitPair[0]
 
 				#get frequency of this gene
-				#geneFrequency = geneFrequencies[cancerType][gene]
+				geneFrequency = geneFrequencies[cancerType][gene]
 				#use frequency of coding events
-				geneFrequency = normalizedCodingFrequency[cancerType][gene]
+				#geneFrequency = normalizedCodingFrequency[cancerType][gene]
 				if geneFrequency > 0:
 					if gene not in genePlotIndices:
 						genePlotIndices[gene] = currentGenePlotIndex
@@ -465,6 +523,7 @@ class DriverPlotter:
 		totalCosmicGenes = 0
 		for svType in self.svTypes:
 
+
 			#get the predictions
 			predOutFile = self.outDirPrefix + '/' + cancerType + '/multipleInstanceLearning/leaveOnePatientOutCV/leaveOnePatientOutCV_' + svType + '.txt'
 
@@ -472,6 +531,7 @@ class DriverPlotter:
 
 			if os.path.isfile(predOutFile) is False:
 				continue
+
 
 			perPatientPredictions = dict()
 			with open(predOutFile, 'r') as inF:
@@ -516,7 +576,8 @@ class DriverPlotter:
 						if splitLabel[0] in cosmicGeneNames:
 							totalCosmicGenes += 1
 
-					if bagLabelsTest[labelInd] == 1 and perPatientPredictions[patient][labelInd] == 1:
+					#if bagLabelsTest[labelInd] == 1 and perPatientPredictions[patient][labelInd] == 1:
+					if perPatientPredictions[patient][labelInd] == 1:
 						pairLabel = bagPairLabels[labelInd]
 						splitLabel = pairLabel.split('_')
 
@@ -526,8 +587,75 @@ class DriverPlotter:
 
 
 
-
 		return cosmicPairs
+
+	#check if there are more high/moderate impact snvs in the patients than random genes
+	def getPathogenicSNVsPerGene(self, cancerType):
+		
+		#doesn't work to use that as the folder name... 
+		if cancerType == 'Colorectal':
+			cancerType = 'Colon/Rectum'
+
+		pathogenicSNVCounts = dict()
+
+		#get the samples of this cancer type
+		metadataFile = settings.files['metadataHMF']
+		snvDir = settings.files['snvDir']
+
+		#save the IDs of the patients with this cancer type
+		cancerTypeIds = dict()
+		with open(metadataFile, 'rb') as inF:
+
+			for line in inF:
+				line = line.decode('ISO-8859-1')
+
+				splitLine = line.split('\t')
+				if splitLine[6] == cancerType:
+					sampleId = splitLine[1]
+					patientId = splitLine[0]
+
+					cancerTypeIds[sampleId] = patientId
+
+		#get the snv files
+		for sampleId in cancerTypeIds:
+			patientId = cancerTypeIds[sampleId]
+
+			matchedFile = glob.glob(snvDir + '/*_' + patientId + '/' + sampleId + '.purple.somatic.vcf.gz')[0]
+
+			#open the .gz file
+			with gzip.open(matchedFile, 'rb') as inF:
+
+				for line in inF:
+					line = line.strip().decode('ISO-8859-1')
+
+					if re.search('^#', line): #skip header
+						continue
+
+					#skip the SV if it did not pass.
+					splitLine = line.split("\t")
+					filterInfo = splitLine[6]
+					if filterInfo != 'PASS':
+						continue
+
+					#check if there is a pathogenic snv
+					if re.search('HIGH', line) or re.search('MODERATE', line):
+
+						#Check if this SNV has any affiliation with a gene. This means that in the info field, a gene is mentioned somewhere. That is, there is an ENSG identifier.
+						infoField = splitLine[7]
+
+						geneSearch = re.search('(ENSG\d+)', infoField)
+						if geneSearch:
+							#the gene name is always directly before the ENSG identifier
+							geneMatch = re.search('.+[\|\=\(](.+)?\|ENSG\d+', infoField).group(1)
+
+							if geneMatch not in pathogenicSNVCounts:
+								pathogenicSNVCounts[geneMatch] = 0
+							pathogenicSNVCounts[geneMatch] += 1
+
+
+		
+		return pathogenicSNVCounts
+
 	
 	
 	

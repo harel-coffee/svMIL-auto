@@ -240,6 +240,11 @@ for svType in svTypes:
 	negativeBags = np.array(negativeBags)
 	positiveBagPairNames = np.array(positiveBagPairNames)
 	negativeBagPairNames = np.array(negativeBagPairNames)
+
+	#fail-safe in case there are not enough SVs of this type
+	if positiveBags.shape[0] < 2 or negativeBags.shape[0] < 2:
+		continue
+
 	
 	#add the number of instances per bag as feature to the instances
 	for bag in positiveBags:
