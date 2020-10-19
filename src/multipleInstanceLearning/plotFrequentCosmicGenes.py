@@ -24,12 +24,21 @@ from inputParser import InputParser
 class DriverPlotter:
 
 	#the cancer types to show the results for
-	cancerTypes = ['HMF_Breast', 'HMF_Ovary', 'HMF_Lung', 'HMF_Liver', 'HMF_Colorectal']
-	cancerTypes = ['HMF_Colorectal']
+	cancerTypes = ['HMF_Breast', 'HMF_Ovary', 'HMF_Liver', 'HMF_Lung', 'HMF_Colorectal',
+				   'HMF_UrinaryTract', 'HMF_Prostate', 'HMF_Esophagus', 'HMF_Skin',
+				   'HMF_Pancreas', 'HMF_Uterus', 'HMF_Kidney', 'HMF_NervousSystem']
+
+	#cancerTypes = ['HMF_Colorectal']
 
 	#use names to search for the tissue in the cosmic cancer type list
-	cancerTypeNames = {'HMF_Breast': 'breast', 'HMF_Ovary': 'ovarian', 'HMF_Lung': 'lung',
-					   'HMF_Liver': 'liver', 'HMF_Colorectal': 'colorectal'}
+	#this is using regex, so partial matches are ok if necessary
+	cancerTypeNames = {'HMF_Breast': ['breast'], 'HMF_Ovary': ['ovarian'], 'HMF_Lung': ['lung'],
+					   'HMF_Liver': ['liver'], 'HMF_Colorectal': ['colorectal'],
+					   'HMF_UrinaryTract': ['bladder'], 'HMF_Prostate': ['prostate'],
+					   'HMF_Esophagus': ['esophagus', 'esophageal'],
+					   'HMF_Skin': ['skin', 'melanoma'], 'HMF_Pancreas': ['pancreas', 'pancreatic'],
+					   'HMF_Uterus': ['uter'], 'HMF_Kidney': ['kidney', 'renal'],
+					   'HMF_NervousSystem': ['brain', 'nervous']}
 	outDirPrefix = 'output/'
 	svTypes = ['DEL', 'DUP', 'INV', 'ITX']
 
@@ -44,7 +53,12 @@ class DriverPlotter:
 
 			#only the part after 'HMF' is in the metadata
 			splitCancerType = cancerType.split('_')
-			pathogenicSNVCounts[cancerType] = DriverPlotter().getPathogenicSNVsPerGene(splitCancerType[1])
+			#pathogenicSNVCounts[cancerType] = DriverPlotter().getPathogenicSNVsPerGene(splitCancerType[1])
+
+		#save the pathogenic snv counts for later
+		#np.save('pathogenicSNVCounts.npy', pathogenicSNVCounts)
+
+		pathogenicSNVCounts = np.load('pathogenicSNVCounts.npy', encoding='latin1', allow_pickle=True).item()
 
 		#make the plot across all cancer types
 		self.generateFrequencyScatterPlot(correctPairsPerCancerType, cosmicGeneCancerTypes, pathogenicSNVCounts)
@@ -52,18 +66,34 @@ class DriverPlotter:
 	def plotAUC(self):
 
 		#we should get this from a file automatically, this is just for the figure demo.
-		auc = {'BRCA': [0.89, 0.89, 0.9, 0.81],
-			   'PCAWG_OV': [0.76, 0.87, 0.87, 0.67],
-			   'LUAD': [0.85, 0.63, 0.8, 0],
-			   'LIHC': [0.65, 0.72, 0.76, 0.79],
-			   'COAD': [0.72, 0.64, 0.8, 0.72]}
+		# auc = {'BRCA': [0.89, 0.89, 0.9, 0.81],
+		# 	   'PCAWG_OV': [0.76, 0.87, 0.87, 0.67],
+		# 	   'LUAD': [0.85, 0.63, 0.8, 0],
+		# 	   'LIHC': [0.65, 0.72, 0.76, 0.79],
+		# 	   'COAD': [0.72, 0.64, 0.8, 0.72]}
+
+		auc = {'HMF_Breast': [0.95, 0.87, 0.89, 0.89],
+			   'HMF_Ovary': [0.82, 0.74, 0.73, 0.72],
+			   'HMF_Liver': [0.89, 0, 0.43, 0.93],
+			   'HMF_Lung': [0.85, 0.86, 0.79, 0.79],
+			   'HMF_Colorectal': [0.92, 0.84, 0.73, 0.74],
+
+			   'HMF_UrinaryTract': [0.95, 0.92, 0.92, 0.91],
+			   'HMF_Prostate': [0.73, 0.86, 0.76, 0.66],
+			   'HMF_Esophagus': [0.91, 0.65, 0.76, 0.69],
+			   'HMF_Skin': [0.88, 0.86, 0.87, 0.80],
+			   'HMF_Pancreas': [0.79, 0.84, 0.82, 0.82],
+			   'HMF_Uterus': [0.5, 0.83, 0.56, 0.62],
+			   'HMF_Kidney': [0.7, 0.8, 0.83, 0.96],
+			   'HMF_NervousSystem': [0.76, 0.69, 0.83, 0.75],
+			   }
 
 		#show the auc as dots in a scatterplot
 		cancerTypeInd = 0
 		plottedCancerTypes = []
 		svTypeColors = ['#b5ffb9', '#f9bc86', '#a3acff', '#FF6B6C']
 		#svTypeColors = [0, 1, 2, 3]
-		jitter = [-0.03, -0.01, 0.01, 0.03]
+		jitter = [-0.05, -0.03, 0.03, 0.05]
 		plotData = []
 		for cancerType in auc:
 			plottedCancerTypes.append(cancerType)
@@ -83,7 +113,7 @@ class DriverPlotter:
 		sns.scatterplot(data=data, x='cancer type', y='AUC', hue=data.color,
 						palette=sns.color_palette("Set1", data.color.nunique()), legend=False)
 
-		plt.ylim([0.5,1])
+		plt.ylim([0.4,1])
 		plt.xticks(np.arange(0, len(auc)), list(auc.keys()), rotation='vertical')
 		plt.tight_layout()
 
@@ -127,7 +157,7 @@ class DriverPlotter:
 				plotData.append([cancerType, sample, countsPerSample[sample], pathogenicSVCounts[cancerType]])
 
 			#plotData.append([cancerType, pathogenicSVCounts[cancerType]])
-		exit()
+		#exit()
 		#plotData = np.array(plotData)
 		data = pd.DataFrame(plotData)
 		data.columns = ['cancerType', 'sample', 'sampleCount', 'svCount']
@@ -143,7 +173,7 @@ class DriverPlotter:
 			cancerTypesWithCounts.append(cancerType + ' (N = ' + str(pathogenicSVCounts[cancerType]) + ')')
 
 		plt.xticks(np.arange(0, len(self.cancerTypes)), cancerTypesWithCounts, rotation='vertical')
-		plt.ylim([0, 750])
+		plt.ylim([0, 200])
 		plt.tight_layout()
 		plt.show()
 		
@@ -178,7 +208,7 @@ class DriverPlotter:
 		plt.bar(r, itxBars, bottom=[i+j+k for i,j,k in zip(delBars, dupBars, invBars)], color='#984ea3', edgecolor='white', width=barWidth, label = 'ITX')
 		 
 		# Custom x axis
-		plt.xticks(r, names)
+		plt.xticks(r, names, rotation='vertical')
 		#plt.xlabel("Cancer type")
 		
 		plt.legend(loc='upper left', bbox_to_anchor=(1,1), ncol=1)
@@ -261,12 +291,20 @@ class DriverPlotter:
 		allGeneNames = []
 		for gene in allGenes:
 			allGeneNames.append(gene[3].name)
+		cosmicGeneNames = []
+		for gene in causalGenes:
+			cosmicGeneNames.append(gene[3].name)
 		#allGenes = nonCausalGenes
 
 		np.random.seed(42)
 		randomGenes = np.random.choice(allGeneNames, 100)
-
+		
+		geneFrequencies = dict()
+		nonCodingOnlyGenes = dict()
+		allPValues = []
 		for cancerType in self.cancerTypes:
+			nonCodingOnlyGenes[cancerType] = dict()
+			geneFrequencies[cancerType] = dict()
 
 			randomDistribution = []
 			for gene in randomGenes:
@@ -275,9 +313,9 @@ class DriverPlotter:
 					randomDistribution.append(pathogenicSNVCounts[cancerType][gene])
 				else:
 					randomDistribution.append(0)
-			print(cancerType)
-			print(randomDistribution)
-			print(np.mean(randomDistribution))
+			# print(cancerType)
+			# print(randomDistribution)
+			# print(np.mean(randomDistribution))
 
 			pValues = []
 			for pair in allCosmicPairs[cancerType]:
@@ -287,32 +325,59 @@ class DriverPlotter:
 
 				score = 0
 				if gene in pathogenicSNVCounts[cancerType]:
-					print(gene, ': ', pathogenicSNVCounts[cancerType][gene])
+					#print(gene, ': ', pathogenicSNVCounts[cancerType][gene])
 					score = pathogenicSNVCounts[cancerType][gene]
 				else:
-					print(gene, ' not pathogenic')
+					#print(gene, ' not pathogenic')
+					#don't count duplicates, that would be more than 1 per patient
+					nonCodingOnlyGenes[cancerType][gene] = 0
 
 				z = (score - np.mean(randomDistribution)) / np.std(randomDistribution)
+
 				pValue = stats.norm.sf(abs(z))
 				pValues.append([gene, z, pValue])
+				allPValues.append([gene, cancerType, z, pValue])
 
-			uncorrectedPValues = np.array(pValues, dtype = 'object')
-			print(uncorrectedPValues)
+			#uncorrectedPValues = np.array(pValues, dtype = 'object')
 
-			reject, pAdjusted, _, _ = multipletests(uncorrectedPValues[:,2], method='bonferroni') #fdr_bh or bonferroni
-
-			signPatients = []
-			for pValueInd in range(0, len(uncorrectedPValues[:,2])):
-
-				if reject[pValueInd] == True and uncorrectedPValues[pValueInd, 1] > 0:
-
-					signPatients.append([uncorrectedPValues[pValueInd][0], uncorrectedPValues[pValueInd][1], pAdjusted[pValueInd]])
-
-			signPatients = np.array(signPatients, dtype='object')
-
-			print(signPatients)
-		exit()
+		#adjust across cancer types
 		
+		#print(uncorrectedPValues)
+		
+		uncorrectedPValues = np.array(allPValues, dtype='object')
+
+		reject, pAdjusted, _, _ = multipletests(uncorrectedPValues[:,3], method='bonferroni') #fdr_bh or bonferroni
+
+		signPatients = []
+		for pValueInd in range(0, len(uncorrectedPValues[:,3])):
+			
+			gene = uncorrectedPValues[pValueInd, 0]
+			cancerType = uncorrectedPValues[pValueInd, 1]
+
+
+
+			if reject[pValueInd] == True and uncorrectedPValues[pValueInd, 2] > 0:
+
+				geneFrequencies[cancerType][gene] = uncorrectedPValues[pValueInd, 2]
+
+				signPatients.append([uncorrectedPValues[pValueInd][0], uncorrectedPValues[pValueInd][2], pAdjusted[pValueInd]])
+
+		signPatients = np.array(signPatients, dtype='object')
+
+		print(signPatients)
+
+
+		# for cancerType in nonCodingOnlyGenes:
+		#
+		# 	print('cancer type: ', cancerType)
+		# 	for gene in nonCodingOnlyGenes[cancerType]:
+		#
+		# 		if gene in cosmicGeneNames:
+		# 			print(gene, ' (COSMIC)')
+		# 		else:
+		# 			print(gene)
+		#
+		# exit()
 		
 		
 		# for cancerTypeInd in range(0, len(allCosmicPairs)):
@@ -425,8 +490,8 @@ class DriverPlotter:
 		# print(pValues)
 		# exit()
 		
-		print(cancerTypesIndex)
-		print(cosmicGenesIndex)
+		#print(cancerTypesIndex)
+		#print(cosmicGenesIndex)
 		
 		
 	
@@ -439,16 +504,18 @@ class DriverPlotter:
 		pointColors = []
 		for cancerType in allCosmicPairs:
 			cancerTypeIndex = cancerTypesIndex[cancerType]
-			cancerTypeName = self.cancerTypeNames[cancerType]
+			cancerTypeNames = self.cancerTypeNames[cancerType]
 			for pair in allCosmicPairs[cancerType]:
 				splitPair = pair.split('_')
 				gene = splitPair[0]
 
 				#get frequency of this gene
-				geneFrequency = geneFrequencies[cancerType][gene]
-				#use frequency of coding events
-				#geneFrequency = normalizedCodingFrequency[cancerType][gene]
-				if geneFrequency > 0:
+				if gene in geneFrequencies[cancerType]:
+					geneFrequency = geneFrequencies[cancerType][gene]
+					#use frequency of coding events
+					#geneFrequency = normalizedCodingFrequency[cancerType][gene]
+					#3.5
+				
 					if gene not in genePlotIndices:
 						genePlotIndices[gene] = currentGenePlotIndex
 						currentGenePlotIndex += 1
@@ -457,14 +524,18 @@ class DriverPlotter:
 					edgecolors = 1
 					facecolors = 'black'
 
-					if re.search(cancerTypeName, cosmicGeneCancerTypes[gene], re.IGNORECASE):
-						print('match', cancerType, gene)
-						edgecolors = 2
-						facecolors = 'red'
+					if gene in cosmicGeneCancerTypes:
+						facecolors = 'green'
+						edgecolors = 3
+						for keyword in cancerTypeNames:
+							if re.search(keyword, cosmicGeneCancerTypes[gene], re.IGNORECASE):
+								print('match', cancerType, gene)
+								edgecolors = 2
+								facecolors = 'red'
 
-			
-					plotData.append([genePlotIndices[gene], cancerTypeIndex, edgecolors, geneFrequency])
-					plotFrequencies.append(geneFrequency)
+
+					#plotData.append([genePlotIndices[gene], cancerTypeIndex, edgecolors, plotFrequency])
+					#plotFrequencies.append(plotFrequency)
 					#plt.scatter(cancerTypeIndex, genePlotIndices[gene], s = geneFrequency*10)
 					plt.scatter(genePlotIndices[gene], cancerTypeIndex, color=facecolors, s = geneFrequency*5)
 		# plotData = np.array(plotData)
@@ -515,7 +586,7 @@ class DriverPlotter:
 			- correctlyPredictedSpecificCosmicGenes: correctly predicted cosmic genes, specific for this cancer type
 
 		"""
-		
+
 		leaveOneOutDataFolder = self.outDirPrefix + '/' + cancerType + '/multipleInstanceLearning/similarityMatrices/leaveOnePatientOut/'
 		
 		patientsWithCorrectCosmic = dict()
@@ -581,8 +652,9 @@ class DriverPlotter:
 						pairLabel = bagPairLabels[labelInd]
 						splitLabel = pairLabel.split('_')
 
-						if splitLabel[0] in cosmicGeneNames:
-							cosmicPairs.append(splitLabel[0] + '_' + splitLabel[7] + '_' + svType)
+						#if splitLabel[0] in cosmicGeneNames:
+						
+						cosmicPairs.append(splitLabel[0] + '_' + splitLabel[7] + '_' + svType)
 
 
 
@@ -595,6 +667,10 @@ class DriverPlotter:
 		#doesn't work to use that as the folder name... 
 		if cancerType == 'Colorectal':
 			cancerType = 'Colon/Rectum'
+		if cancerType == 'UrinaryTract':
+			cancerType = 'Urinary tract'
+		if cancerType == 'NervousSystem':
+			cancerType = 'Nervous system'
 
 		pathogenicSNVCounts = dict()
 
