@@ -15,7 +15,7 @@ files = dict(
 	expressionFile = '../data/expression/tophat_star_fpkm_uq.v2_aliquot_gl.tsv',
 
 	#specific for ov, mixed with HMEC where data unavailable
-	eQTLFile = '../data/eQTLs/ovarian_eQTLs.bed', #File with eQTLs specific for ovarian tissue
+	eQTLFile = '../data/eQTLs/ov/ovarian_eQTLs.bed', #File with eQTLs specific for ovarian tissue
 	tadFile = "../data/tads/ov/ovary_hg38_liftover.bed", #File with TADs specific for ovarian tissue
 	enhancerFile = '../data/enhancers/ov/encoderoadmap_elasticnet.95.csv',
 	h3k9me3 = '../data/histones/ov/ENCFF717WXC_H3K9me3.bed',
@@ -38,6 +38,10 @@ general = dict(
 	source = 'PCAWG',
 	cancerType = 'OV',
 	shuffleTads = False, #Should TAD positions be shuffled
-	crd = False
+	crd = False,
+	gtexControl = False, #Should we use GTEx expression as a normal control, or use the non-disrupted TADs in other patients as control?
+	geneENSG = False, #True if in the expression data (e.g. from HMF) the gene names are ENSG IDs. Otherwise, use False if these are regular gene names.
+	bagThreshold = 700 #Subsample the bags randomly if there are more than this amount. To save computational load.
+
 )
 

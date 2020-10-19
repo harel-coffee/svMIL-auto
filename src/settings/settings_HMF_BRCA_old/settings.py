@@ -1,13 +1,6 @@
 files = dict(
 	
-	#to run on the PCAWG data, we need both the directory of the SVs, and also the metadata to link file identifiers to cancer types
-	svDir = '/hpc/cuppen/shared_resources/PCAWG/pcawg_consensus_1.6.161116.somatic_svs/',
-	pcawgMetadata = '/hpc/cuppen/shared_resources/PCAWG/Metadata/overview_metadata.txt',
-	snvDir = '/hpc/cuppen/shared_resources/PCAWG/final_consensus_12oct/PASS_vcfs/SNV',
-	cnvDir = '/hpc/cuppen/shared_resources/PCAWG/somatic_CN/',
-	tcgaCNVFile = '../data/cnvs/brca/brca_cn.txt',
-	metadataICGC = '../data/expression/rnaseq.extended.metadata.aliquot_id.V4.tsv',
-	
+	svDir = '../../../somatics', #for running with HMF data
 	causalGenesFile = '../data/genes/CCGC.tsv', #file with all causal genes from cosmic.
 	nonCausalGenesFile = '../data/genes/hg19_proteinCodingGenes.bed', #file with all protein-coding genes.
 	promoterFile = '../data/promoters/epdnew_hg38ToHg19_9vC8m.bed', #File with promoters in human, not cell-specific
@@ -15,8 +8,12 @@ files = dict(
 	tfFile = '../data/tf/tf_experimentallyValidated.bed_clustered.bed', #All validated human TFs
 	rankedGeneScoreDir = "linkedSVGenePairs", #File that the output scores will be written to. The output will be in a folder with the provided UUID under this main results folder
 	hg19CoordinatesFile = "../data/chromosomes/hg19Coordinates.txt",
+	snvDir = '../../../somatics',
+	cnvDir = '../../../somatics',
 	geneNameConversionFile = '../data/genes/allGenesAndIdsHg19.txt', #used with HMF SNVs and expression, converting ENSG identifiers to gene names.
-	expressionFile = '../data/expression/brca/BRCA.rnaseqv2__illuminahiseq_rnaseqv2__unc_edu__Level_3__RSEM_genes_normalized__data.data.txt',
+	expressionFile = '../data/expression/brca_ruv_TMM.txt',
+	#expressionFile = '/hpc/compgen/users/mnieboer/data/pipeline/read_counts/brca_tmm.txt',
+	gtexExpressionFile = '../data/expression/gtex_ruv_TMM.txt',
 
 	#specific for HMEC
 	tadFile = "../data/tads/hmec/HMEC_Lieberman-raw_TADs.bed", #File with TADs specific for breast tissue
@@ -28,20 +25,19 @@ files = dict(
 	h3k27me3 = '../data/histones/hmec/ENCFF291WFP_H3K27me3.bed_clustered.bed',
 	h3k4me1 = '../data/histones/hmec/ENCFF336DDM_H3K4me1.bed_clustered.bed',
 	h3k36me3 = '../data/histones/hmec/ENCFF906MJM_H3K36me3.bed',
-	dnaseIFile = '../data/dnase/hmec/ENCFF336OGZ.bed', ##### the clustered file is missing information!
+	dnaseIFile = '../data/dnase/hmec/ENCFF336OGZ.bed_clustered.bed',
 	chromHmmFile = '../data/chromhmm/hmec/GSE57498_HMEC_ChromHMM.bed',
-	rnaPolFile = '../data/rnapol/hmec/ENCFF433ZKP.bed', #same here, missing data
+	rnaPolFile = '../data/rnapol/hmec/ENCFF433ZKP.bed_clustered.bed',
 	superEnhancerFile = '../data/superEnhancers/hmec/se_20200212_HMEC.bed',
-	ctcfFile = '../data/ctcf/hmec/ENCFF288RFS.bed', #same here
+	ctcfFile = '../data/ctcf/hmec/ENCFF288RFS.bed_clustered.bed',
 	hicFile = '../data/hic/HMEC_groupedTADInteractions.txt'
 	
 )
 
 general = dict(
 	
-	source = 'PCAWG',
-	expressionSource = 'TCGA',
-	cancerType = 'BRCA', #is used to get the right cancer type from the PCAWG data, use the abbreviation of the study
+	source = 'HMF',
+	cancerType = 'BRCA', #used to annotate the SVs, but is not required.
 	shuffleTads = False, #Should TAD positions be shuffled
 	crd = False,
 	gtexControl = False, #Should we use GTEx expression as a normal control, or use the non-disrupted TADs in other patients as control?
