@@ -1,6 +1,6 @@
 #!/bin/bash
-#SBATCH --mem=32G
-#SBATCH --time=24:00:00
+#SBATCH --mem=40G
+#SBATCH --time=01:00:00
 #SBATCH -o workflow.out
 #SBATCH -e workflow.err
 #SBATCH --mail-type=FAIL
@@ -24,14 +24,14 @@
 
 #Load in a settings file with the paths to the data that all code will be run on.
 ## path here
-settingsFolder='./settings/settings_HMF_BRCA_generic/'
+settingsFolder='./settings/settings_HMF_Ovary'
 
 #Create a folder in which all output for this data will be stored
 #Different steps will create their own intermediate folders in here
-outputFolder='output/HMF_BRCA_generic'
+outputFolder='output/HMF_Ovary'
 
 ### (REQUIRED) PART 2 - LINK SVS TO GENES ###
-run=true #Only skip this step if all output has already been generated!
+run=false #Only skip this step if all output has already been generated!
 
 if $run; then
 	runFolder='./linkSVsGenes/'
@@ -41,7 +41,7 @@ if $run; then
 fi
 
 ### (REQUIRED) PART 3 - IDENTIFY PATHOGENIC SV-GENE PAIRS ###
-run=true
+run=false
 
 if $run; then
 	runFolder='./tadDisruptionsZScores/'
@@ -61,7 +61,7 @@ if $run; then
 fi
 
 ### PART 4 - SETTING UP FOR MULTIPLE INSTANCE LEARNING ###
-run=true #these steps only need to be done when outputting anything related to multiple instance learning
+run=false #these steps only need to be done when outputting anything related to multiple instance learning
 
 if $run; then
 	runFolder='./multipleInstanceLearning/'
@@ -117,7 +117,7 @@ if $run; then
 fi
 
 ### FIGURE 3 - 3A: MIL PERFORMANCE CURVES PER SV TYPE, PER-PATIENT CV ###
-run=true
+run=false
 
 if $run; then
 	runFolder='./multipleInstanceLearning/'
