@@ -27,6 +27,15 @@ class DriverPlotter:
 	cancerTypes = ['HMF_Breast', 'HMF_Ovary', 'HMF_Liver', 'HMF_Lung', 'HMF_Colorectal',
 				   'HMF_UrinaryTract', 'HMF_Prostate', 'HMF_Esophagus', 'HMF_Skin',
 				   'HMF_Pancreas', 'HMF_Uterus', 'HMF_Kidney', 'HMF_NervousSystem']
+	#because the cancer types in the metadata have slashes and spaces, we cannot use them, so use those
+	#converted names here to read in the data.
+	cancerTypeMetadataNames = {'HMF_Breast': 'Breast', 'HMF_Ovary': 'Ovary', 'HMF_Lung': 'Lung',
+					   'HMF_Liver': 'Liver', 'HMF_Colorectal': 'Colon/Rectum',
+					   'HMF_UrinaryTract': 'Urinary tract', 'HMF_Prostate': 'Prostate',
+					   'HMF_Esophagus': 'Esophagus',
+					   'HMF_Skin': 'Skin', 'HMF_Pancreas': 'Pancreas',
+					   'HMF_Uterus': 'Uterus', 'HMF_Kidney': 'Kidney',
+					   'HMF_NervousSystem': 'Nervous system'}
 
 	#cancerTypes = ['HMF_Colorectal']
 
@@ -93,7 +102,7 @@ class DriverPlotter:
 		plottedCancerTypes = []
 		svTypeColors = ['#b5ffb9', '#f9bc86', '#a3acff', '#FF6B6C']
 		#svTypeColors = [0, 1, 2, 3]
-		jitter = [-0.05, -0.03, 0.03, 0.05]
+		jitter = [-0.15, -0.05, 0.05, 0.15]
 		plotData = []
 		for cancerType in auc:
 			plottedCancerTypes.append(cancerType)
@@ -110,8 +119,15 @@ class DriverPlotter:
 		data = data.drop_duplicates()
 		print(data)
 		#exit()
+		fig, ax = plt.subplots(1,1)
 		sns.scatterplot(data=data, x='cancer type', y='AUC', hue=data.color,
-						palette=sns.color_palette("Set1", data.color.nunique()), legend=False)
+						palette=sns.color_palette("Set1", data.color.nunique()), legend=False,
+						s = 60, edgecolor = 'k')
+
+		#set separators
+
+		ax.set_xticks(np.arange(0, len(auc)-1)+0.5, minor=True)
+		ax.grid(b=True, which='minor', linewidth=0.5, linestyle='--')
 
 		plt.ylim([0.4,1])
 		plt.xticks(np.arange(0, len(auc)), list(auc.keys()), rotation='vertical')
@@ -120,6 +136,80 @@ class DriverPlotter:
 		plt.show()
 
 	def plotPathogenicSVFrequency(self):
+
+		# plotData = dict()
+		# plotData['pathogenicSVs'] = []
+		# plotData['totalSVs'] = []
+		plotData = []
+		for cancerType in self.cancerTypes:
+
+			#count how many pathogenic SVs we have
+			pathogenicSVFile = 'output/' + cancerType + '/linkedSVGenePairs/nonCoding_geneSVPairs.txt_pathogenicPairsFeatures.txt'
+
+			pathogenicSVCount = 0
+			with open(pathogenicSVFile, 'r') as inF:
+				for line in inF:
+					pathogenicSVCount += 1
+
+			plotData.append([cancerType, pathogenicSVCount])
+
+			#plotData['pathogenicSVs'].append(pathogenicSVCount)
+
+			#count the total number of SVs
+			# svDir = settings.files['svDir']
+			# svData = InputParser().getSVs_hmf(svDir, self.cancerTypeMetadataNames[cancerType])
+			# #plotData['totalSVs'].append(svData.shape[0])
+			#
+			#
+			# plotData.append([cancerType, svData.shape[0], 'SV'])
+
+		data = pd.DataFrame(plotData)
+		data.columns = ['cancerType', 'svCount']
+
+		#make bar plot
+		ax = sns.barplot(x="cancerType", y="svCount", data=data, color='#a2d5f2')
+		plt.xticks(np.arange(0, len(self.cancerTypes)), self.cancerTypes, rotation='vertical')
+
+		plt.tight_layout()
+		# Show graphic
+		plt.show()
+		exit()
+
+		plotData = []
+		samplePlotData = []
+		for cancerType in self.cancerTypes:
+
+			#count the total number of SVs
+			svDir = settings.files['svDir']
+			svData = InputParser().getSVs_hmf(svDir, self.cancerTypeMetadataNames[cancerType])
+			#plotData['totalSVs'].append(svData.shape[0])
+
+
+			plotData.append([cancerType, svData.shape[0]])
+			samplePlotData.append([cancerType, len(np.unique(svData[:,7]))])
+
+		data = pd.DataFrame(plotData)
+		data.columns = ['cancerType', 'svCount']
+
+		#make bar plot
+		ax = sns.barplot(x="cancerType", y="svCount", data=data, color='#07689f')
+		plt.xticks(np.arange(0, len(self.cancerTypes)), self.cancerTypes, rotation='vertical')
+
+		plt.tight_layout()
+		# Show graphic
+		plt.show()
+
+		data = pd.DataFrame(samplePlotData)
+		data.columns = ['cancerType', 'sampleCount']
+
+		#make bar plot
+		ax = sns.barplot(x="cancerType", y="sampleCount", data=data, color='#ff7e67')
+		plt.xticks(np.arange(0, len(self.cancerTypes)), self.cancerTypes, rotation='vertical')
+
+		plt.tight_layout()
+		# Show graphic
+		plt.show()
+		exit()
 
 		#read the line count of the pathogenic SV files.
 		pathogenicSVCounts = dict()
@@ -176,6 +266,17 @@ class DriverPlotter:
 		plt.ylim([0, 200])
 		plt.tight_layout()
 		plt.show()
+
+
+		###make a plot showing how many pathogenic SVs vs total SVs
+
+
+
+		
+
+
+
+
 		
 		#make the SV type bar chart
 		
@@ -273,6 +374,36 @@ class DriverPlotter:
 					geneFrequencies[cancerType][gene] = 0
 				geneFrequencies[cancerType][gene] += 1
 
+		#check distribution of genes/cosmic etc
+		uniqueGenes = dict()
+		uniqueCosmicGenes = dict()
+		uniqueSpecificGenes = dict()
+		for cancerTypeInd in range(0, len(allCosmicPairs)):
+			cancerType = list(allCosmicPairs.keys())[cancerTypeInd]
+			cancerTypeNames = self.cancerTypeNames[cancerType]
+
+			for pair in allCosmicPairs[cancerType]:
+				splitPair = pair.split('_')
+				gene = splitPair[0]
+
+				uniqueGenes[gene] = 0
+				if gene in cosmicGeneCancerTypes:
+					uniqueCosmicGenes[gene] = 0
+					for keyword in cancerTypeNames:
+						if re.search(keyword, cosmicGeneCancerTypes[gene], re.IGNORECASE):
+							uniqueSpecificGenes[gene] = 0
+
+		print('total drivers: ', len(uniqueGenes))
+		print('total known drivers: ', len(uniqueCosmicGenes))
+		print('total specific drivers: ', len(uniqueSpecificGenes))
+		exit()
+				
+
+
+
+
+
+
 		#instead of frequency by non-coding SVs, use number of coding events as size
 		print('Calculating coding events...')
 		codingFrequency = dict()
@@ -366,134 +497,6 @@ class DriverPlotter:
 
 		print(signPatients)
 
-
-		# for cancerType in nonCodingOnlyGenes:
-		#
-		# 	print('cancer type: ', cancerType)
-		# 	for gene in nonCodingOnlyGenes[cancerType]:
-		#
-		# 		if gene in cosmicGeneNames:
-		# 			print(gene, ' (COSMIC)')
-		# 		else:
-		# 			print(gene)
-		#
-		# exit()
-		
-		
-		# for cancerTypeInd in range(0, len(allCosmicPairs)):
-		# 	cancerType = self.cancerTypes[cancerTypeInd]
-		#
-		# 	snvPatients = np.load(self.outDirPrefix + '/' + cancerType + '/patientGeneMutationPairs/snvPatients.npy', encoding='latin1', allow_pickle=True).item()
-		# 	cnvPatientsAmp = np.load(self.outDirPrefix + '/' + cancerType + '/patientGeneMutationPairs/cnvPatientsAmp.npy', encoding='latin1', allow_pickle=True).item()
-		# 	cnvPatientsDel = np.load(self.outDirPrefix + '/' + cancerType + '/patientGeneMutationPairs/cnvPatientsDel.npy', encoding='latin1', allow_pickle=True).item()
-		# 	svPatientsDel = np.load(self.outDirPrefix + '/' + cancerType + '/patientGeneMutationPairs/svPatientsDel.npy', encoding='latin1', allow_pickle=True).item()
-		# 	svPatientsDup = np.load(self.outDirPrefix + '/' + cancerType + '/patientGeneMutationPairs/svPatientsDup.npy', encoding='latin1', allow_pickle=True).item()
-		# 	svPatientsInv = np.load(self.outDirPrefix + '/' + cancerType + '/patientGeneMutationPairs/svPatientsInv.npy', encoding='latin1', allow_pickle=True).item()
-		# 	svPatientsItx = np.load(self.outDirPrefix + '/' + cancerType + '/patientGeneMutationPairs/svPatientsItx.npy', encoding='latin1', allow_pickle=True).item()
-		#
-		# 	#check how many events are there.
-		# 	codingFrequency[cancerType] = dict()
-		# 	patientCounts[cancerType] = dict()
-		# 	normalizedCodingFrequency[cancerType] = dict()
-		# 	randomCodingFrequency[cancerType] = []
-		# 	for pair in allCosmicPairs[cancerType]:
-		#
-		# 		splitPair = pair.split('_')
-		# 		gene = splitPair[0]
-		# 		patient = splitPair[1]
-		#
-		# 		patientCounts[cancerType][patient] = 0
-		#
-		# 		if gene not in codingFrequency:
-		# 			codingFrequency[cancerType][gene] = 0
-		#
-		# 		codingPatients = dict()
-		# 		codingPatients = self.getCodingFrequency(gene, snvPatients, codingPatients)
-		# 		# codingPatients = self.getCodingFrequency(gene, cnvPatientsAmp, codingPatients)
-		# 		# codingPatients = self.getCodingFrequency(gene, cnvPatientsDel, codingPatients)
-		# 		# codingPatients = self.getCodingFrequency(gene, svPatientsDel, codingPatients)
-		# 		# codingPatients = self.getCodingFrequency(gene, svPatientsDup, codingPatients)
-		# 		# codingPatients = self.getCodingFrequency(gene, svPatientsInv, codingPatients)
-		# 		# codingPatients = self.getCodingFrequency(gene, svPatientsItx, codingPatients)
-		#
-		# 		codingFrequency[cancerType][gene] = len(codingPatients)
-		#
-		# 	#normalize the coding frequencies by the sample count with pathogenic SVs
-		# 	#for gene in codingFrequency[cancerType]:
-		# 	#	normalizedCodingFrequency[cancerType][gene] = len(codingFrequency[cancerType][gene]) / len(patientCounts[cancerType])
-		# 		#codingFrequency[cancerType][gene] = codingFrequency[cancerType][gene] / len(patientCounts[cancerType])
-		#
-		# 	for i in range(0, iterationCount):
-		#
-		# 		driverCount = len(codingFrequency[cancerType])
-		#
-		# 		#randomly sample driverCount genes
-		# 		randomGenes = np.random.choice(allGenes[:,3], driverCount)
-		#
-		# 		for gene in randomGenes:
-		#
-		# 			print(gene.name)
-		#
-		#
-		# 			geneCodingFrequency = dict()
-		#
-		#
-		#
-		# 			#get the coding events for these genes
-		# 			geneCodingFrequency = self.getCodingFrequency(gene.name, snvPatients, geneCodingFrequency)
-		# 			# geneCodingFrequency = self.getCodingFrequency(gene.name, cnvPatientsAmp, geneCodingFrequency)
-		# 			# geneCodingFrequency = self.getCodingFrequency(gene.name, cnvPatientsDel, geneCodingFrequency)
-		# 			# geneCodingFrequency = self.getCodingFrequency(gene.name, svPatientsDel, geneCodingFrequency)
-		# 			# geneCodingFrequency = self.getCodingFrequency(gene.name, svPatientsDup, geneCodingFrequency)
-		# 			# geneCodingFrequency = self.getCodingFrequency(gene.name, svPatientsInv, geneCodingFrequency)
-		# 			# geneCodingFrequency = self.getCodingFrequency(gene.name, svPatientsItx, geneCodingFrequency)
-		#
-		# 			if len(geneCodingFrequency) == 0:
-		# 				print('missing gene: ', gene.name)
-		# 				continue #skip for now because these mess up the statistics
-		#
-		# 			randomCodingFrequency[cancerType].append(len(geneCodingFrequency))
-		#
-		# 	break
-		#
-		# pValues = dict()
-		# for cancerType in codingFrequency:
-		# 	pValues[cancerType] = []
-		#
-		# 	uncorrectedPValues = []
-		# 	for gene in codingFrequency[cancerType]:
-		# 		print(gene)
-		# 		print(codingFrequency[cancerType][gene], np.mean(randomCodingFrequency[cancerType]))
-		# 		z = (codingFrequency[cancerType][gene] - np.mean(randomCodingFrequency[cancerType])) / np.std(randomCodingFrequency[cancerType])
-		# 		print(z)
-		# 		pValue = stats.norm.sf(abs(z))
-		# 		print(pValue)
-		# 		uncorrectedPValues.append([gene, z, pValue])
-		#
-		# 	#do mtc
-		# 	uncorrectedPValues = np.array(uncorrectedPValues, dtype = 'object')
-		#
-		# 	reject, pAdjusted, _, _ = multipletests(uncorrectedPValues[:,2], method='bonferroni') #fdr_bh or bonferroni
-		#
-		#
-		#
-		# 	signPatients = []
-		# 	for pValueInd in range(0, len(uncorrectedPValues[:,2])):
-		#
-		# 		if reject[pValueInd] == True and uncorrectedPValues[pValueInd, 1] > 0:
-		#
-		# 			signPatients.append([uncorrectedPValues[pValueInd][0], uncorrectedPValues[pValueInd][1], pAdjusted[pValueInd]])
-		#
-		# 	signPatients = np.array(signPatients, dtype='object')
-		# 	pValues[cancerType] = signPatients
-		#
-		# print(pValues)
-		# exit()
-		
-		#print(cancerTypesIndex)
-		#print(cosmicGenesIndex)
-		
-		
 	
 
 		#create the scatter plot in this order, use the frequency as point size
@@ -534,18 +537,19 @@ class DriverPlotter:
 								facecolors = 'red'
 
 
-					#plotData.append([genePlotIndices[gene], cancerTypeIndex, edgecolors, plotFrequency])
-					#plotFrequencies.append(plotFrequency)
-					#plt.scatter(cancerTypeIndex, genePlotIndices[gene], s = geneFrequency*10)
-					plt.scatter(genePlotIndices[gene], cancerTypeIndex, color=facecolors, s = geneFrequency*5)
-		# plotData = np.array(plotData)
-		# data = pd.DataFrame(plotData)
-		# data.columns = ['gene', 'cancer type', 'color', 'frequency']
-		# data = data.drop_duplicates()
-		# print(data)
-		# #exit()
-		# sns.scatterplot(data=data, x='gene', y='cancer type', size='frequency', hue=data.color,
-		# 				palette=sns.color_palette("Set2", data.color.nunique()), legend=False)
+					plotData.append([genePlotIndices[gene], cancerTypeIndex, edgecolors, geneFrequency*500])
+					
+					#plt.scatter(genePlotIndices[gene], cancerTypeIndex, color=facecolors, s = geneFrequency*5)
+		plotData = np.array(plotData)
+		data = pd.DataFrame(plotData)
+		data.columns = ['gene', 'cancerType', 'color', 'frequency']
+		data = data.drop_duplicates()
+		print(data)
+		#exit()
+		sns.scatterplot(data=data, x='gene', y='cancerType', size=data.frequency, hue=data.cancerType,
+						legend=False, style=data.color, edgecolor = 'k', sizes=(20, 300),
+						palette=sns.color_palette("hls", data.cancerType.nunique()))
+
 
 		#plt.yticks(np.arange(0, len(genePlotIndices)), list(genePlotIndices.keys()))
 		#plt.xticks(np.arange(0, len(cancerTypesIndex)), list(cancerTypesIndex.keys()), rotation = 'vertical')
@@ -736,6 +740,6 @@ class DriverPlotter:
 	
 	
 #2. Make the plot
-#DriverPlotter().plotPathogenicSVFrequency()
+DriverPlotter().plotPathogenicSVFrequency()
 #DriverPlotter().plotAUC()
-DriverPlotter().plotCosmicFrequencyScatter()
+#DriverPlotter().plotCosmicFrequencyScatter()
