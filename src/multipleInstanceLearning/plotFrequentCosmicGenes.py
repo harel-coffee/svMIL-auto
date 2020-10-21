@@ -14,6 +14,7 @@ import pandas as pd
 from scipy import stats
 from statsmodels.sandbox.stats.multicomp import multipletests
 import gzip
+from matplotlib_venn import venn2
 path = sys.argv[1]
 sys.path.insert(1, path)
 sys.path.insert(1, 'linkSVsGenes/')
@@ -71,6 +72,67 @@ class DriverPlotter:
 
 		#make the plot across all cancer types
 		self.generateFrequencyScatterPlot(correctPairsPerCancerType, cosmicGeneCancerTypes, pathogenicSNVCounts)
+
+	def plotSVContributionVenn(self):
+
+		correctPairsPerCancerType = dict()
+		for cancerType in self.cancerTypes:
+			cosmicGeneNames, cosmicGeneCancerTypes = self.getCosmicGenes()
+			correctCosmicPairs = self.getCorrectlyPredictedCosmicPairs(cancerType, cosmicGeneNames)
+			correctPairsPerCancerType[cancerType] = correctCosmicPairs
+
+		pathogenicSNVCounts = np.load('pathogenicSNVCounts.npy', encoding='latin1', allow_pickle=True).item()
+
+		#check how many SNVs there are compared to ncSV drivers.
+
+		plotData = []
+		for cancerType in self.cancerTypes:
+			geneSNVCounts = 0
+			snvGenes = dict()
+			for gene in pathogenicSNVCounts[cancerType]:
+				geneSNVCounts += pathogenicSNVCounts[cancerType][gene]
+				snvGenes[gene] = 0
+
+			geneNcSVCounts = len(correctPairsPerCancerType[cancerType])
+			ncSVGenes = dict()
+			for pair in correctPairsPerCancerType[cancerType]:
+				splitPair = pair.split('_')
+				ncSVGenes[splitPair[0]] = 0
+
+			# print('cancer type: ', cancerType)
+			# print('SNVs: ', geneSNVCounts)
+			# print('ncSVs: ', geneNcSVCounts)
+			#
+			# print('snv genes: ', len(snvGenes))
+			# print('sv genes: ', len(ncSVGenes))
+
+			#check which are in common, and which are unique.
+			uniqueSNVs = np.setdiff1d(list(snvGenes.keys()), list(ncSVGenes.keys()))
+			uniqueSVs = np.setdiff1d(list(ncSVGenes.keys()), list(snvGenes.keys()))
+			intersect = np.intersect1d(list(snvGenes.keys()), list(ncSVGenes.keys()))
+
+			print(len(uniqueSNVs), len(uniqueSVs), len(intersect))
+			plotData.append([cancerType, len(uniqueSNVs), len(uniqueSVs)])
+
+			#venn2(subsets = (len(uniqueSNVs), len(uniqueSVs), len(intersect)), set_labels = ('SNVs', 'non-coding SVs'))
+
+			#plt.show()
+
+		data = pd.DataFrame(plotData)
+		data.columns = ['Cancer type', 'Genes uniquely affected by driver SNVs', 'Genes uniquely affected by driver non-coding SVs']
+
+		sns.scatterplot(data=data, x='Genes uniquely affected by driver non-coding SVs',
+						y='Genes uniquely affected by driver SNVs', hue=data['Cancer type'],
+						palette=sns.color_palette("hls", len(self.cancerTypes)), legend='brief',
+						s = 60, edgecolor = 'k')
+
+		plt.tight_layout()
+
+		plt.show()
+		
+
+		exit()
+
 
 	def plotAUC(self):
 
@@ -740,6 +802,7 @@ class DriverPlotter:
 	
 	
 #2. Make the plot
-DriverPlotter().plotPathogenicSVFrequency()
+#DriverPlotter().plotPathogenicSVFrequency()
 #DriverPlotter().plotAUC()
 #DriverPlotter().plotCosmicFrequencyScatter()
+DriverPlotter().plotSVContributionVenn()
