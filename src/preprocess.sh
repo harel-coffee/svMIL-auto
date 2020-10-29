@@ -16,6 +16,11 @@ if $run; then
 
 fi
 
+### CANCER TYPE-SPECIFIC DATA PROCESSING ###
+#These are the cancer types we want to run the tool for, so preprocess their data.
+types=('urinaryTract' 'prostate' 'esophagus' 'skin' 'pancreas' 'uterus' 'kidney' 'nervousSystem')
+
+
 ### PARSE EQTLS ###
 #This requires download of GTEx_Analysis_v7.metasoft.txt.gz. See eQTLs/readme.txt.
 run=false
@@ -25,58 +30,25 @@ if $run; then
 	inFile='../data/eQTLs/GTEx_Analysis_v7.metasoft.txt'
 	geneLookupFile='../data/genes/ensemblGenesHg19'
 
-	#ideally also use the loop here same as below
+	#loop over the cancer types
+	for type in ${types[@]}; do
+		outFolder='../data/eQTLs/$type/'
+		python "$runFolder/filterEQTLs.py" "$inFile" "$geneLookupFile" "$outFolder" "$type"
 
-	#breastOutFolder='../data/eQTLs/breast/'
-	#python "$runFolder/filterEQTLs.py" "$inFile" "$geneLookupFile" "$breastOutFolder" "breast"
-	#
-	##repeat for ovary and liver
-	#ovarianOutFolder='../data/eQTLs/ov/'
-	#python "$runFolder/filterEQTLs.py" "$inFile" "$geneLookupFile" "$ovarianOutFolder" "ovarian"
-	#
-	#liverOutFolder='../data/eQTLs/liver/'
-	#python "$runFolder/filterEQTLs.py" "$inFile" "$geneLookupFile" "$liverOutFolder" "liver"
+		#for a few types, we do not have tissue-specific data, so we use blood.
+		if [ "$type" = "urinaryTract" ] || [ "$type" = "kidney" ]; then
 
-	#liverOutFolder='../data/eQTLs/luad/'
-	#python "$runFolder/filterEQTLs.py" "$inFile" "$geneLookupFile" "$liverOutFolder" "lung"
+			python "$runFolder/filterEQTLs.py" "$inFile" "$geneLookupFile" "$outFolder" "blood"
 
-	#liverOutFolder='../data/eQTLs/coad/'
-	#python "$runFolder/filterEQTLs.py" "$inFile" "$geneLookupFile" "$liverOutFolder" "colon"
+		fi
 
-	#outFolder='../data/eQTLs/prostate/'
-	#python "$runFolder/filterEQTLs.py" "$inFile" "$geneLookupFile" "$outFolder" "prostate"
-	#
-	#outFolder='../data/eQTLs/esophagus/'
-	#python "$runFolder/filterEQTLs.py" "$inFile" "$geneLookupFile" "$outFolder" "esophagus"
-
-	outFolder='../data/eQTLs/skin/'
-	python "$runFolder/filterEQTLs.py" "$inFile" "$geneLookupFile" "$outFolder" "skin"
-
-	outFolder='../data/eQTLs/pancreas/'
-	python "$runFolder/filterEQTLs.py" "$inFile" "$geneLookupFile" "$outFolder" "pancreas"
-
-	outFolder='../data/eQTLs/uterus/'
-	python "$runFolder/filterEQTLs.py" "$inFile" "$geneLookupFile" "$outFolder" "uterus"
-
-	outFolder='../data/eQTLs/nervousSystem/'
-	python "$runFolder/filterEQTLs.py" "$inFile" "$geneLookupFile" "$outFolder" "brain"
-
-
-	#for which we have no specific tissue data, use whole blood
-	outFolder='../data/eQTLs/urinaryTract/'
-	python "$runFolder/filterEQTLs.py" "$inFile" "$geneLookupFile" "$outFolder" "blood"
-
-	outFolder='../data/eQTLs/kidney/'
-	python "$runFolder/filterEQTLs.py" "$inFile" "$geneLookupFile" "$outFolder" "blood"
-
+	done
 
 fi
 
-run=true
+run=false
 if $run; then
 	runFolder='./DataProcessing/'
-	#ideally define this at the top, for which types to run for.
-	types=('urinaryTract' 'prostate' 'esophagus' 'skin' 'pancreas' 'uterus' 'kidney' 'nervousSystem')
 
 	#loop over the different types
 	for type in ${types[@]}; do
@@ -84,68 +56,9 @@ if $run; then
 		#Cluster histones
 		python "$runFolder/genericClustering.py" "../data/histones/$type/"
 
-		#Cluster DNASe
-		#python "$runFolder/genericClustering.py" "../data/dnase/$type/"
-
-		#cluster RNA pol
-		#python "$runFolder/genericClustering.py" "../data/rnapol/$type/"
-
-		#Cluster CTCF
-		#python "$runFolder/genericClustering.py" "../data/ctcf/$type/"
-
 		#cluster eQTLs
 		python "$runFolder/eQTLClustering.py" "../data/eQTLs/$type/"
 	done
-
-fi
-
-### PARSE HIC DATA ###
-run=false
-
-#Requires download of 5kb resolution intrachromosomal interactions. See hic/readme.txt
-
-if $run; then
-	runFolder='./DataProcessing'
-	inFiles='../data/hic/HMEC/5kb_resolution_intrachromosomal/'
-	thresholdedDataOutFolder='../data/hic/HMEC/thresholdedHiC/'
-
-	#First apply a threshold to filter out regions with too few interactions.
-	python "$runFolder/thresholdHiCData.py" "$inFiles" "$thresholdedDataOutFolder"
-
-	#Then parse the thresholded interaction to 1 file
-	parsedOutFile='../data/hic/HMEC_interactions.txt'
-	python "$runFolder/parseHicInteractions.py" "$thresholdedDataOutFolder" "$parsedOutFile"
-
-	#make tmp file to check if the same
-	#Then group the interactions by the TAD that these take place in for faster processing
-	groupedInteractionsFile='../data/hic/HMEC_groupedTADInteractions.txt'
-	tadFile='../data/tads/hmec/HMEC_Lieberman-raw_TADs.bed'
-	python "$runFolder/makeTADHiCFile.py" "$parsedOutFile" "$tadFile" "$groupedInteractionsFile"
-
-fi
-
-### PARSE GERMLINE VARIANTS ###
-#Parse gnomAD variants. See svs/readme.txt
-run=false
-if $run; then
-	runFolder='./DataProcessing'
-	inFile='../data/svs/gnomad_v2.1_sv.sites.bed'
-	outFile='../data/svs/gnomad_v2.1_sv.sites_filtered_01072020.bed'
-
-	python "$runFolder/filterGnomadVariants.py" "$inFile" "$outFile"
-
-fi
-
-#Alternative to use DGV variants.
-run=false
-#Requires download of germline DGV variants. See svs/readme.txt
-
-if $run; then
-	runFolder='./DataProcessing'
-	inFile='../data/svs/GRCh37_hg19_variants_2020-02-25.txt'
-	outFile='../data/svs/GRCh37_hg19_variants_2020-02-25_filtered.txt'
-
-	python "$runFolder/filterDgvVariants.py" "$inFile" "$outFile"
 
 fi
 
@@ -155,62 +68,13 @@ run=false
 
 if $run; then
 	runFolder='./DataProcessing'
+	settingsFile='./settings/settings_HMF_Breast' #which file does not matter, all we need
+	#are the paths to the svDir, expressionDir and metadata file.
+
+	#first merge the HMF expression files
+	python "$runFolder/mergeHMFExpression.py" "$settingsFile"
 	
 	Rscript "$runFolder/normalizeEdgeR.R"
 
 fi
 
-### PROCESS GTEX DATA ###
-
-
-### BATCH CORRECTION AND TMM NORMALIZATION OF BRCA AND GTEX EXPRESSION ###
-run=false
-
-if $run; then
-	runFolder='./DataProcessing'
-	gtexExpression='../data/expression/GTEx_Analysis_2016-01-15_v7_RNASeQCv1.1.8_gene_reads.gct'
-	gtexMetaData='../data/expression/GTEx_v7_Annotations_SampleAttributesDS.txt'
-	brcaExpressionFolder='/hpc/compgen/users/mnieboer/data/gtexPipeline/gtex/gtex_output/read_counts/' #this needs to be made
-	
-	#merge the BRCA read counts into one file, same format as the GTEx expression
-	combinedReadCountsBRCAFile='../data/expression/combinedReadCountsBRCA.txt'
-	#python "$runFolder/combineReadCountsBRCA.py" "$brcaExpressionFolder" "$combinedReadCountsBRCAFile"
-	
-	#### !needs proper output folder provided to write to
-	#python "$runFolder/mergeBRCAGTEx.py" "$gtexExpression" "$gtexMetaData" "$combinedReadCountsBRCAFile" 
-	
-	#Then perform batch correction and TMM normalization
-	### !also provide locations and output folders
-	module load R/3.2.2
-	Rscript "$runFolder/normalizeBRCAGTEx.R"
-	
-fi
-
-
-
-### ANNOTATE HMF SVS WITH SV TYPES ###
-run=false
-
-if $run; then
-	runFolder='./DataProcessing'
-
-	Rscript "$runFolder/simple-event-annotation.R"
-
-fi
-
-
-
-### pre-process CNVs of TCGA ###
-run=false
-
-if $run; then
-	runFolder='./DataProcessing'
-
-	### TO DO:
-	# -define out file
-	# - make this run on all files, not specific to 1 cancer type
-	# - maybe move it into the other pipeline to make it specific for the cancer type
-	
-
-	python "$runFolder/preprocessCNVs.py" "$settingsFolder" "$outFile"
-fi
