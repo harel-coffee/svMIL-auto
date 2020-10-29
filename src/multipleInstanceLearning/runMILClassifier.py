@@ -390,6 +390,14 @@ def leaveOnePatientOutCV(leaveOneOutDataFolder, classifier, svType, plotOutputFi
 			for patient in predictions:
 				outF.write(patient + '\t' + '\t'.join([str(i) for i in predictions[patient]]) + "\n")
 
+		#also generate a file with the total final AUC and std.
+		outFile = finalOutDir + '/leaveOnePatientOutCV_' + svType + '_FINAL_AUC.txt'
+		with open(outFile, 'a') as outF:
+
+			outF.write(np.mean(aucs) + '\t' + np.std(aucs))
+
+
+
 
 for svType in svTypes:
 

@@ -209,7 +209,6 @@ for svType in svTypes:
 
 					dupMatch = splitPair[0] + '_' + splitPair[7] + '_DUP'
 
-					#if splitPair[0] in cnvPatientsAmp[splitPair[7]]:
 					if splitPair[0] in cnvPatientsAmp[splitPair[7]] and dupMatch not in splitSVGenePairs:
 						negativeBags.append(instances)
 						negativeBagPairNames.append(pair)
