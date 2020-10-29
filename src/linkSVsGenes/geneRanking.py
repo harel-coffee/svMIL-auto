@@ -154,14 +154,6 @@ class GeneRanking:
 
 		np.savetxt(outDir + '/' + runId + "/nonCoding_geneSVPairs.txt_" + str(permutationRound), pairScoresWithPairIds, delimiter='\t', fmt='%s')
 
-		#Also output the coding pairs
-		codingPairs = []
-		for gene in genes:
-			for sv in gene.SVs:
-
-				codingPairs.append(gene.name + "_" + sv)
-		codingPairs = np.array(codingPairs, dtype="object")
-		np.savetxt(outDir + '/' + runId + "/coding_geneSVPairs.txt_" + str(permutationRound), codingPairs, delimiter='\t', fmt='%s')
 
 		###3. Make the feature file for MIL for each sv-gene pair
 		#Each SV-gene pair is a bag. A bag can contain a variable set of isntances, which represent the gained/lost elements
