@@ -31,7 +31,7 @@ from genomicShuffler import GenomicShuffler
 
 ###parameters
 geneNameConversionFile = settings.files['geneNameConversionFile']
-expressionFile = settings.files['expressionFile']
+expressionFile = settings.files['normalizedExpressionFile']
 outDir = sys.argv[2]
 randomize = sys.argv[3] #shuffle expression to get random z-scores?
 
@@ -89,13 +89,7 @@ filteredSVs = svData
 
 print(len(np.unique(filteredSVs[:,7])))
 
-#Step 1: extract the expression data only for the patients for which we have SVs.
-
-#Step 2: combine the expression data
-
-#Step 3: export the expression data and run an R script to obtain the normalized TMM values
-
-#Step 4: re-load the normalized data and remove the temporary file
+#load the expression data from the pre-normalized file.
 
 
 #get the gene expression
@@ -107,76 +101,17 @@ with open(expressionFile, 'r') as inF:
 		line = line.strip()
 		if lineCount == 0:
 
-			if settings.general['expressionSource'] == 'PCAWG':
-				samples += line.split("\t")
-				samples[0] = '' #replace the 'feature'
-			elif settings.general['expressionSource'] == 'TCGA' and settings.general['source'] == 'PCAWG':
-
-				#in this case, map the expression identifiers to the PCAWG WGS identifiers
-				tcgaSampleNames = line.split('\t')
-				tcgaSampleNames[0] = '' #replace the hybrid ref
-				
-				
-				
-				#re-name them to their wgs names only if present
-				#we later filter out the columns that do not have WGS. 
-				for sample in tcgaSampleNames:
-					#split the tcga sample names into short format here as well for matching
-					splitSampleName = sample.split('-')
-					shortSampleName = '-'.join(splitSampleName[0:4])
-					
-					if shortSampleName in nameMap:
-						#and only add it if we have SV data for it, otherwise we will never know
-						#if the sample is truly negative or not
-						
-						if nameMap[shortSampleName] in filteredSVs[:,7]:
-							
-							wgsName = nameMap[shortSampleName]
-							
-							#skip matching for normal samples, we want expression for the tumor. 
-							splitSample = shortSampleName.split('-')
-							tumorNormalId = splitSample[3]
-							tumorNormalIdNumber = int(tumorNormalId[0:2]) #only the first 2 numbers are relevant
-							if tumorNormalIdNumber > 10:
-								print('skipping normal', wgsName, shortSampleName)
-								continue
-							samples.append(wgsName)
-								
-						#else:
-						#	wgsName = nameMap[sample]
-						#	print('sample ', wgsName, ' does not have SVs')
-					#samples.append(wgsName)
-						
-
-			else:
-				samples = ['']
-				samples += line.split("\t")
+			samples = ['']
+			samples += line.split("\t")
 
 			lineCount += 1
 			continue
 		splitLine = line.split("\t")
-		fullGeneName = splitLine[0]
+		geneName = splitLine[0]
 
-		lineCount += 1
-		if settings.general['expressionSource'] == 'HMF':
-
-			if settings.general['geneENSG'] == True:
-				if fullGeneName not in geneNameConversionMap:
-					continue
-				geneName = geneNameConversionMap[fullGeneName] #get the gene name rather than the ENSG ID
-			else:
-				geneName = fullGeneName
-		elif settings.general['expressionSource'] == 'PCAWG': #parse the gene name correctly
-
-			splitGeneName = fullGeneName.split('.')
-			if splitGeneName[0] not in geneNameConversionMap:
-				continue
-			geneName = geneNameConversionMap[splitGeneName[0]]
-		else:
-
-			geneName = fullGeneName.split("|")[0]
-			if geneName == 'gene_id':
-				continue #skip this line
+		#no need to check for genes that we did not check SVs for
+		if geneName not in genes[:,3]:
+			continue
 
 		data = splitLine[1:len(splitLine)]
 
@@ -187,112 +122,18 @@ with open(expressionFile, 'r') as inF:
 
 expressionData = np.array(expressionData, dtype="object")
 
-print(samples)
-print(len(samples))
-print('418e916b-7a4e-4fab-8616-15dcec4d79f8' in samples)
-#if we have TCGA-PCAWG mapped data, we need to remove the columns that we have no WGS for,
-#because we cannot say if these are truly negative samples.
+#remove the columns that do not have SVs, and are thus not for this cancer type. 
 columnsToRemove = []
 filteredSamples = []
-for sampleCol in range(0, len(samples)):
-	if re.search('TCGA', samples[sampleCol]):
+patientsWithSVs = np.unique(filteredSVs[:,7])
+for sampleCol in range(1, len(samples)):
+	if samples[sampleCol] not in patientsWithSVs:
 		columnsToRemove.append(sampleCol)
 	else:
 		filteredSamples.append(samples[sampleCol])
 
 expressionData = np.delete(expressionData, columnsToRemove, axis=1)
-samples = filteredSamples
-print(samples)
-print('sample num after filtering: ', len(samples))
-print('418e916b-7a4e-4fab-8616-15dcec4d79f8' in samples)
-exit()
-
-
-metadataFile = settings.files['metadataICGC']
-
-metadata = []
-header = dict()
-with open(metadataFile, 'r') as inF:
-	
-	lineCount = 0
-	for line in inF:
-		splitLine = line.split('\t')
-		if lineCount < 1:
-			for col in range(0, len(splitLine)):
-				
-				header[splitLine[col]] = col
-			lineCount += 1
-		
-		cohort = splitLine[header['project_code']]
-		sampleId = splitLine[header['sample_id']]
-		tcgaId = splitLine[header['tcga_sample_uuid']]
-		
-		metadata.append([cohort, sampleId, tcgaId])
-		
-metadata = np.array(metadata, dtype='object')
-
-metadataCount = 0
-for sample in metadata:
-	
-	if sample[0] != 'BRCA-US':
-		continue
-	
-	metadataCount += 1
-	
-	if sample[2] in samples:
-		#print('found sample ', sample)
-		continue
-	else:
-		print('missing sample: ', sample)
-		
-print(metadataCount)
-exit()
-
-
-for sample in samples:
-
-	metadataMatch = np.where(metadata[:,2] == sample)[0]
-	print(np.where(metadata[:,2] == sample))
-	print(metadata[metadataMatch,:])
-	
-
-		
-	
-	
-	
-
-np.savetxt('id_test.txt', samples, fmt='%s')
-exit()
-
-#use a setting for if we want to run using GTEx as a control, or using the non-affected TADs.
-#if using GTEx, split up the expression here into 2 matrices.
-if settings.general['gtexControl'] == True:
-	
-	print('using GTEx as normal control')
-	gtexExpressionFile = settings.files['gtexExpressionFile']
-	
-	#read the expression (better if there was a function specific for this)
-	gtexExpressionData = []
-	with open(gtexExpressionFile, 'r') as inF:
-		lineCount = 0
-		for line in inF:
-			line = line.strip()
-			if lineCount == 0:
-				lineCount += 1
-				continue
-			splitLine = line.split("\t")
-			fullGeneName = splitLine[0]
-			
-			geneName = fullGeneName
-			data = splitLine[1:len(splitLine)]
-	
-			fixedData = [geneName]
-			fixedData += data
-	
-			gtexExpressionData.append(fixedData)
-	
-	gtexExpressionData = np.array(gtexExpressionData, dtype="object")
-
+samples = [''] + filteredSamples
 
 
 #Get the TADs.

@@ -323,12 +323,28 @@ if settings.general['source'] == 'HMF':
 				sampleId = splitLine[1]
 				patientId = splitLine[0]
 
+				#here already skip patients for which there is no SV/expression data.
+				#we don't need to process these patients
+				matchedFiles = glob.glob(settings.files['svDir'] + '/*_' + patientId + '/' + sampleId + '.purple.sv.ann.vcf.gz')
+
+				#if we don't have SVs for this sample, skip it.
+				if len(matchedFiles) < 1:
+					print('Skipping ', sampleId, ' which has no SVs')
+					continue
+
+				#### check if we have expression for this sample.
+				expressionDir = settings.files['expressionDir']
+				matchedExpressionFiles = glob.glob(expressionDir + sampleId)
+
+				if len(matchedExpressionFiles) < 1:
+					print('Skipping ', sampleId, ' due to missing expression data')
+					continue
+
 				cancerTypeIds[sampleId] = patientId
 	
-	
+	svPatientsDel, svPatientsDup, svPatientsInv, svPatientsItx = getPatientsWithSVs_hmf(settings.files['svDir'], allGenes, cancerTypeIds)
 	cnvPatientsAmp, cnvPatientsDel = getPatientsWithCNVGeneBased_hmf(settings.files['cnvDir'], cancerTypeIds)
 	snvPatients = getPatientsWithSNVs_hmf(settings.files['snvDir'], cancerTypeIds)
-	svPatientsDel, svPatientsDup, svPatientsInv, svPatientsItx = getPatientsWithSVs_hmf(settings.files['svDir'], allGenes, cancerTypeIds)
 
 
 finalOutDir = outDir + '/patientGeneMutationPairs/'

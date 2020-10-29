@@ -75,6 +75,20 @@ def filterEQTLs(eQTLFile, ensemblIDLookup, filteredEQTLFile):
 					tissueInd = header['pval_Lung']
 				elif tissue == 'colon':
 					tissueInd = header['pval_Colon_Sigmoid']
+				elif tissue == 'blood':
+					tissueInd = header['pval_Whole_Blood']
+				elif tissue == 'prostate':
+					tissueInd = header['pval_Prostate']
+				elif tissue == 'esophagus':
+					tissueInd = header['pval_Esophagus_Mucosa']
+				elif tissue == 'skin':
+					tissueInd = header['pval_Skin_Sun_Exposed_Lower_leg']
+				elif tissue == 'pancreas':
+					tissueInd = header['pval_Pancreas']
+				elif tissue == 'uterus':
+					tissueInd = header['pval_Uterus']
+				elif tissue == 'brain':
+					tissueInd = header['pval_Brain_Cortex']
 				if splitLine[tissueInd] == 'NA':
 					continue
 				

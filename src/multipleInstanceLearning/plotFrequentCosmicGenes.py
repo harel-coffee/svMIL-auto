@@ -444,21 +444,35 @@ class DriverPlotter:
 			cancerType = list(allCosmicPairs.keys())[cancerTypeInd]
 			cancerTypeNames = self.cancerTypeNames[cancerType]
 
+			uniqueGenesC = dict()
+			uniqueCosmicGenesC = dict()
+			uniqueSpecificGenesC = dict()
+
 			for pair in allCosmicPairs[cancerType]:
 				splitPair = pair.split('_')
 				gene = splitPair[0]
 
 				uniqueGenes[gene] = 0
+				uniqueGenesC[gene] = 0
 				if gene in cosmicGeneCancerTypes:
 					uniqueCosmicGenes[gene] = 0
+					uniqueCosmicGenesC[gene] = 0
 					for keyword in cancerTypeNames:
 						if re.search(keyword, cosmicGeneCancerTypes[gene], re.IGNORECASE):
 							uniqueSpecificGenes[gene] = 0
+							uniqueSpecificGenesC[gene] = 0
+
+			print('cancer type: ', cancerType)
+			print('genes: ', len(uniqueGenesC))
+			print('cosmic genes: ', len(uniqueCosmicGenesC))
+			print('specific genes: ', len(uniqueSpecificGenesC))
+			print(uniqueSpecificGenesC)
+
 
 		print('total drivers: ', len(uniqueGenes))
 		print('total known drivers: ', len(uniqueCosmicGenes))
 		print('total specific drivers: ', len(uniqueSpecificGenes))
-		exit()
+
 				
 
 
@@ -558,6 +572,7 @@ class DriverPlotter:
 		signPatients = np.array(signPatients, dtype='object')
 
 		print(signPatients)
+		exit()
 
 	
 
@@ -804,5 +819,5 @@ class DriverPlotter:
 #2. Make the plot
 #DriverPlotter().plotPathogenicSVFrequency()
 #DriverPlotter().plotAUC()
-#DriverPlotter().plotCosmicFrequencyScatter()
-DriverPlotter().plotSVContributionVenn()
+DriverPlotter().plotCosmicFrequencyScatter()
+#DriverPlotter().plotSVContributionVenn()

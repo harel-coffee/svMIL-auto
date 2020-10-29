@@ -1,19 +1,24 @@
-data <- read.table('/hpc/compgen/users/mnieboer/data/pipeline/read_counts/pipeline_readCounts_raw.txt', header=TRUE, sep='\t')
+
+totalExpression <- read.table('../data/expression/HMF_merged.txt', header=TRUE, sep='\t')
 library(edgeR)
 
-d <- data[,2:dim(data)[2]]
-rownames(d) <- data[,1]
+d <- totalExpression[,2:dim(totalExpression)[2]]
+print(d)
+#somehow row names are duplicate, add them back later
+#rownames(d) <- totalExpression[,1]
 
-group = rep('brca', 162)
+group = rep('HMF', dim(d)[2])
 d <- DGEList(counts = d, group = group)
 
 TMM <- calcNormFactors(d, method = 'TMM')
 
-TMM$samples
-
-#plotMDS(TMM)
-
 normCounts <- cpm(TMM)
 
-outfile2="/hpc/compgen/users/mnieboer/data/pipeline/read_counts/brca_tmm.txt"
-write.table(normCounts, file=outfile2, row.names=T,col.names=NA, quote=F,sep="\t")
+#add back row names as a column here
+normCountsWithGeneNames <- data.frame(totalExpression[,1])
+normCountsWithGeneNames <- cbind(normCountsWithGeneNames, normCounts)
+colnames(normCountsWithGeneNames)[1] <- ''
+
+
+outfile="/hpc/compgen/users/mnieboer/data/svMIL2/svMIL/data/expression/HMF_TMM.txt"
+write.table(normCountsWithGeneNames, file=outfile, row.names=F,col.names=T, quote=F,sep="\t")

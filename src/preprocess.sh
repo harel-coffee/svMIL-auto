@@ -25,6 +25,8 @@ if $run; then
 	inFile='../data/eQTLs/GTEx_Analysis_v7.metasoft.txt'
 	geneLookupFile='../data/genes/ensemblGenesHg19'
 
+	#ideally also use the loop here same as below
+
 	#breastOutFolder='../data/eQTLs/breast/'
 	#python "$runFolder/filterEQTLs.py" "$inFile" "$geneLookupFile" "$breastOutFolder" "breast"
 	#
@@ -38,9 +40,62 @@ if $run; then
 	#liverOutFolder='../data/eQTLs/luad/'
 	#python "$runFolder/filterEQTLs.py" "$inFile" "$geneLookupFile" "$liverOutFolder" "lung"
 
-	liverOutFolder='../data/eQTLs/coad/'
-	python "$runFolder/filterEQTLs.py" "$inFile" "$geneLookupFile" "$liverOutFolder" "colon"
+	#liverOutFolder='../data/eQTLs/coad/'
+	#python "$runFolder/filterEQTLs.py" "$inFile" "$geneLookupFile" "$liverOutFolder" "colon"
 
+	#outFolder='../data/eQTLs/prostate/'
+	#python "$runFolder/filterEQTLs.py" "$inFile" "$geneLookupFile" "$outFolder" "prostate"
+	#
+	#outFolder='../data/eQTLs/esophagus/'
+	#python "$runFolder/filterEQTLs.py" "$inFile" "$geneLookupFile" "$outFolder" "esophagus"
+
+	outFolder='../data/eQTLs/skin/'
+	python "$runFolder/filterEQTLs.py" "$inFile" "$geneLookupFile" "$outFolder" "skin"
+
+	outFolder='../data/eQTLs/pancreas/'
+	python "$runFolder/filterEQTLs.py" "$inFile" "$geneLookupFile" "$outFolder" "pancreas"
+
+	outFolder='../data/eQTLs/uterus/'
+	python "$runFolder/filterEQTLs.py" "$inFile" "$geneLookupFile" "$outFolder" "uterus"
+
+	outFolder='../data/eQTLs/nervousSystem/'
+	python "$runFolder/filterEQTLs.py" "$inFile" "$geneLookupFile" "$outFolder" "brain"
+
+
+	#for which we have no specific tissue data, use whole blood
+	outFolder='../data/eQTLs/urinaryTract/'
+	python "$runFolder/filterEQTLs.py" "$inFile" "$geneLookupFile" "$outFolder" "blood"
+
+	outFolder='../data/eQTLs/kidney/'
+	python "$runFolder/filterEQTLs.py" "$inFile" "$geneLookupFile" "$outFolder" "blood"
+
+
+fi
+
+run=true
+if $run; then
+	runFolder='./DataProcessing/'
+	#ideally define this at the top, for which types to run for.
+	types=('urinaryTract' 'prostate' 'esophagus' 'skin' 'pancreas' 'uterus' 'kidney' 'nervousSystem')
+
+	#loop over the different types
+	for type in ${types[@]}; do
+
+		#Cluster histones
+		python "$runFolder/genericClustering.py" "../data/histones/$type/"
+
+		#Cluster DNASe
+		#python "$runFolder/genericClustering.py" "../data/dnase/$type/"
+
+		#cluster RNA pol
+		#python "$runFolder/genericClustering.py" "../data/rnapol/$type/"
+
+		#Cluster CTCF
+		#python "$runFolder/genericClustering.py" "../data/ctcf/$type/"
+
+		#cluster eQTLs
+		python "$runFolder/eQTLClustering.py" "../data/eQTLs/$type/"
+	done
 
 fi
 
@@ -143,28 +198,6 @@ if $run; then
 
 fi
 
-run=true
-if $run; then
-	runFolder='./DataProcessing/'
-	type='lihc'
-
-	#Cluster histones
-	python "$runFolder/genericClustering.py" "../data/histones/$type/"
-
-	#Cluster DNASe
-	#python "$runFolder/genericClustering.py" "../data/dnase/$type/"
-
-	#cluster RNA pol
-	#python "$runFolder/genericClustering.py" "../data/rnapol/$type/"
-
-	#Cluster CTCF
-	#python "$runFolder/genericClustering.py" "../data/ctcf/$type/"
-
-	#cluster eQTLs
-	python "$runFolder/eQTLClustering.py" "../data/eQTLs/$type/"
-
-
-fi
 
 
 ### pre-process CNVs of TCGA ###
