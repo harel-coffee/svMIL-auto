@@ -19,7 +19,7 @@ class Figure2:
 
 	"""
 
-	def generateHeatmap(cancerTypes, svTypes = ['DEL', 'DUP', 'INV', 'ITX']):
+	def generateHeatmap(self, cancerTypes, svTypes = ['DEL', 'DUP', 'INV', 'ITX']):
 		"""
 			Handler for generating the feature significance heatmap for all cancer types.
 			First, per cancer type, get the instances and their importance ranking from
@@ -39,14 +39,14 @@ class Figure2:
 		for cancerType in cancerTypes:
 			print('cancer type: ', cancerType)
 			#first get the instances and their ranking across all SV types
-			importances, instances = getFeatureImportances(svTypes, cancerType)
+			importances, instances = self.getFeatureImportances(svTypes, cancerType)
 			#then compute the significances of the top 100 to random 100 instances
 
-			pValues, zScores = computeFeatureSignificances(importances, instances, 100)
+			pValues, zScores = self.computeFeatureSignificances(importances, instances, 100)
 			pValuesPerCancerType[cancerType] = [pValues, zScores]
 
 		#then make a heatmap plot of the significances.
-		plotHeatmap(pValuesPerCancerType)
+		self.plotHeatmap(pValuesPerCancerType)
 
 	def plotHeatmap(self, pValuesPerCancerType):
 		"""
@@ -184,8 +184,6 @@ class Figure2:
 
 		reject, pAdjusted, _, _ = multipletests(featurePValues, method='bonferroni')
 
-
-		print(pAdjusted)
 		return pAdjusted, featureZScores
 
 
