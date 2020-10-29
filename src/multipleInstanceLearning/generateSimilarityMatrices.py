@@ -391,12 +391,25 @@ for svType in svTypes:
 	#and save the bags.
 	np.save(finalOutDir + '/bagsNotSubsampled_' + svType + '.npy', bags)
 
-	if leaveOnePatientOut == 'False':
+	print('size comparison: ')
+	print('bags not subsampled: ', bags.shape)
+	print('instances not subsampled: ', instances.shape)
+	print('bag labels not subsampled: ', bagLabels.shape)
+	print('bag pair labels not subsampled: ', bagPairLabels.shape)
+
+	print('bags subsampled: ', bagsSubsampled.shape)
+	print('instances subsampled: ', instancesSubsampled.shape)
+	print('bag labels subsampled: ', bagLabelsSubsampled.shape)
+	print('bag pair labels subsampled: ', bagPairLabelsSubsampled.shape)
+
+
+
+	if fullDataset == 'False':
 		bags = bagsSubsampled
 		instances = instancesSubsampled
 		bagPairLabels = bagPairLabelsSubsampled
 		bagLabels = bagLabelsSubsampled
-		
+
 
 
 	#Make an index where we can lookup at which position the instances are in the concatenated bag array.
@@ -1019,6 +1032,9 @@ for svType in svTypes:
 		else: #output the whole similarity matrix
 
 			similarityMatrix = getSimilarityMatrix(bags, instances, reverseBagMap)
+			
+			print('similarity matrix sizes: ', similarityMatrix.shape)
+			print('bag size: ', bags.shape)
 
 			#output these to a file
 			#write these data to disk so that we can access it later on

@@ -394,7 +394,7 @@ def leaveOnePatientOutCV(leaveOneOutDataFolder, classifier, svType, plotOutputFi
 		outFile = finalOutDir + '/leaveOnePatientOutCV_' + svType + '_FINAL_AUC.txt'
 		with open(outFile, 'a') as outF:
 
-			outF.write(np.mean(aucs) + '\t' + np.std(aucs))
+			outF.write(str(np.mean(aucs)) + '\t' + str(np.std(aucs)))
 
 
 
