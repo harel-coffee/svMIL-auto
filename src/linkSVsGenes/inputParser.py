@@ -80,6 +80,28 @@ class InputParser:
 
 		return allSVs
 
+	def getSVs_hmf_simple(self, svDir):
+		"""
+			Extra function for running on a case where all samples are within 1 folder,
+			and no metadata is needed.
+		"""
+
+		svFiles = glob.glob(svDir + '/*gridss.somatic.vcf')
+
+		allSVs = []
+		for sampleSVFile in svFiles:
+			fileName = sampleSVFile.split('/')[5] #quick and dirty, depends on the filenames...
+			sampleId = fileName.split('.')[0]
+
+			sampleSVs = self.getSVsFromFile_hmf(sampleSVFile, sampleId)
+			allSVs = allSVs + sampleSVs
+
+		allSVs = np.array(allSVs, dtype='object')
+		print(allSVs.shape)
+		print(len(np.unique(allSVs[:,7])))
+
+		return allSVs
+
 
 	def getSVsFromFile_hmf(self, svFile, sampleName):
 
@@ -87,6 +109,7 @@ class InputParser:
 		addedVariants = []
 		variantsList = []
 		with gzip.open(svFile, 'rb') as inF:
+		#with open(svFile, 'rb') as inF:
 			
 			for line in inF:
 				line = line.decode('ISO-8859-1')

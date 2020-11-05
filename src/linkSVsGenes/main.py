@@ -72,6 +72,11 @@ if settings.general['source'] == 'HMF':
 	svDir = settings.files['svDir']
 	cancerType = settings.general['cancerType']
 	svData = InputParser().getSVs_hmf(svDir, cancerType)
+if settings.general['source'] == 'HMF_simple':
+	print("Reading SV data")
+	svDir = settings.files['svDir']
+	cancerType = settings.general['cancerType']
+	svData = InputParser().getSVs_hmf_simple(svDir)
 print(svData) #check if the SVs are read in correctly
 
 #Check the SV distribution
