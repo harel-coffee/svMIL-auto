@@ -593,8 +593,13 @@ class DriverPlotter:
 			cosmicGeneNames.append(gene[3].name)
 		#allGenes = nonCausalGenes
 
-		np.random.seed(42)
-		randomGenes = np.random.choice(allGeneNames, 100)
+
+		#instead, sample 10.000 times X genes of the same set size
+		#take the average of that set.
+
+		np.random.seed(1)
+		#randomGenes = np.random.choice(allGeneNames, 100)
+		randomSampleIterations = 1000
 		
 		geneFrequencies = dict()
 		nonCodingOnlyGenes = dict()
@@ -603,18 +608,43 @@ class DriverPlotter:
 			nonCodingOnlyGenes[cancerType] = dict()
 			geneFrequencies[cancerType] = dict()
 
-			randomDistribution = []
-			for gene in randomGenes:
+			trueGenes = dict()
+			for pair in allCosmicPairs[cancerType]:
 
-				if gene in pathogenicSNVCounts[cancerType]:
-					randomDistribution.append(pathogenicSNVCounts[cancerType][gene])
-				else:
-					randomDistribution.append(0)
+				splitPair = pair.split('_')
+				gene = splitPair[0]
+				trueGenes[gene] = 0
+
+
+
+			print(cancerType, len(trueGenes))
+			randomDistribution = []
+			for iteration in range(0, randomSampleIterations):
+
+				#sample random genes of the same size.
+				randomGenes = np.random.choice(allGeneNames, len(trueGenes))
+				for gene in randomGenes:
+					if gene in pathogenicSNVCounts[cancerType]:
+						randomDistribution.append(pathogenicSNVCounts[cancerType][gene])
+					else:
+						randomDistribution.append(0)
+
+			print(np.mean(randomDistribution), np.std(randomDistribution))
+
+			# for gene in randomGenes:
+			#
+			# 	if gene in pathogenicSNVCounts[cancerType]:
+			# 		randomDistribution.append(pathogenicSNVCounts[cancerType][gene])
+			# 	else:
+			# 		randomDistribution.append(0)
 			# print(cancerType)
 			# print(randomDistribution)
 			# print(np.mean(randomDistribution))
 
+			randomMean = np.mean(randomDistribution)
+			randomStd = np.std(randomDistribution)
 			pValues = []
+			allPValues = []
 			for pair in allCosmicPairs[cancerType]:
 
 				splitPair = pair.split('_')
@@ -622,46 +652,43 @@ class DriverPlotter:
 
 				score = 0
 				if gene in pathogenicSNVCounts[cancerType]:
-					#print(gene, ': ', pathogenicSNVCounts[cancerType][gene])
 					score = pathogenicSNVCounts[cancerType][gene]
 				else:
 					#print(gene, ' not pathogenic')
 					#don't count duplicates, that would be more than 1 per patient
 					nonCodingOnlyGenes[cancerType][gene] = 0
 
-				z = (score - np.mean(randomDistribution)) / np.std(randomDistribution)
+				z = (score - randomMean) / randomStd
 
 				pValue = stats.norm.sf(abs(z))
 				pValues.append([gene, z, pValue])
-				allPValues.append([gene, cancerType, z, pValue])
+				allPValues.append([gene, cancerType, z, pValue, score])
 
-			#uncorrectedPValues = np.array(pValues, dtype = 'object')
+			if len(allPValues) < 1:
+				continue
+			uncorrectedPValues = np.array(allPValues, dtype='object')
 
-		#adjust across cancer types
-		
-		#print(uncorrectedPValues)
-		
-		uncorrectedPValues = np.array(allPValues, dtype='object')
+			reject, pAdjusted, _, _ = multipletests(uncorrectedPValues[:,3], method='bonferroni') #fdr_bh or bonferroni
 
-		reject, pAdjusted, _, _ = multipletests(uncorrectedPValues[:,3], method='bonferroni') #fdr_bh or bonferroni
+			signPatients = []
+			for pValueInd in range(0, len(uncorrectedPValues[:,3])):
 
-		signPatients = []
-		for pValueInd in range(0, len(uncorrectedPValues[:,3])):
-			
-			gene = uncorrectedPValues[pValueInd, 0]
-			cancerType = uncorrectedPValues[pValueInd, 1]
+				gene = uncorrectedPValues[pValueInd, 0]
+				cancerType = uncorrectedPValues[pValueInd, 1]
 
 
 
-			if reject[pValueInd] == True and uncorrectedPValues[pValueInd, 2] > 0:
+				if reject[pValueInd] == True and uncorrectedPValues[pValueInd, 2] > 0:
+				#if uncorrectedPValues[pValueInd, 2] > 0:
 
-				geneFrequencies[cancerType][gene] = uncorrectedPValues[pValueInd, 2]
+					geneFrequencies[cancerType][gene] = uncorrectedPValues[pValueInd, 2]
 
-				signPatients.append([uncorrectedPValues[pValueInd][0], uncorrectedPValues[pValueInd][2], pAdjusted[pValueInd]])
+					signPatients.append([uncorrectedPValues[pValueInd][0], uncorrectedPValues[pValueInd][2], pAdjusted[pValueInd], uncorrectedPValues[pValueInd][3], uncorrectedPValues[pValueInd][4]])
 
-		signPatients = np.array(signPatients, dtype='object')
+			signPatients = np.array(signPatients, dtype='object')
 
-		print(signPatients)
+			#for patient in signPatients:
+			print(signPatients)
 		exit()
 
 	
@@ -774,7 +801,6 @@ class DriverPlotter:
 			if os.path.isfile(predOutFile) is False:
 				continue
 
-
 			perPatientPredictions = dict()
 			with open(predOutFile, 'r') as inF:
 
@@ -799,7 +825,7 @@ class DriverPlotter:
 				if patientId not in patientFiles:
 					patientFiles[patientId] = []
 				patientFiles[patientId].append(dataFile)
-
+			
 			predictions = dict()
 			for patient in patientFiles:
 
@@ -822,7 +848,7 @@ class DriverPlotter:
 					if perPatientPredictions[patient][labelInd] == 1:
 						pairLabel = bagPairLabels[labelInd]
 						splitLabel = pairLabel.split('_')
-
+						
 						#if splitLabel[0] in cosmicGeneNames:
 						
 						cosmicPairs.append(splitLabel[0] + '_' + splitLabel[7] + '_' + svType)
@@ -908,6 +934,6 @@ class DriverPlotter:
 	
 #2. Make the plot
 #DriverPlotter().plotPathogenicSVFrequency()
-DriverPlotter().plotAUC()
-#DriverPlotter().plotCosmicFrequencyScatter()
+#DriverPlotter().plotAUC()
+DriverPlotter().plotCosmicFrequencyScatter()
 #DriverPlotter().plotSVContributionVenn()
