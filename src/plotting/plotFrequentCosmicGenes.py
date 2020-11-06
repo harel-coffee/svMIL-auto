@@ -599,7 +599,7 @@ class DriverPlotter:
 
 		np.random.seed(1)
 		#randomGenes = np.random.choice(allGeneNames, 100)
-		randomSampleIterations = 1000
+		randomSampleIterations = 100
 		
 		geneFrequencies = dict()
 		nonCodingOnlyGenes = dict()
@@ -629,17 +629,8 @@ class DriverPlotter:
 					else:
 						randomDistribution.append(0)
 
-			print(np.mean(randomDistribution), np.std(randomDistribution))
+			#print(np.mean(randomDistribution), np.std(randomDistribution))
 
-			# for gene in randomGenes:
-			#
-			# 	if gene in pathogenicSNVCounts[cancerType]:
-			# 		randomDistribution.append(pathogenicSNVCounts[cancerType][gene])
-			# 	else:
-			# 		randomDistribution.append(0)
-			# print(cancerType)
-			# print(randomDistribution)
-			# print(np.mean(randomDistribution))
 
 			randomMean = np.mean(randomDistribution)
 			randomStd = np.std(randomDistribution)
@@ -658,38 +649,53 @@ class DriverPlotter:
 					#don't count duplicates, that would be more than 1 per patient
 					nonCodingOnlyGenes[cancerType][gene] = 0
 
+				# randomGenes = np.random.choice(allGeneNames, 100)
+				#
+				# randomDistribution = []
+				# for randomGene in randomGenes:
+				# 	if randomGene in pathogenicSNVCounts[cancerType]:
+				# 		randomDistribution.append(pathogenicSNVCounts[cancerType][randomGene])
+				# 	else:
+				# 		randomDistribution.append(0)
+				#
+				# randomMean = np.mean(randomDistribution)
+				# randomStd = np.std(randomDistribution)
+
+
 				z = (score - randomMean) / randomStd
 
 				pValue = stats.norm.sf(abs(z))
 				pValues.append([gene, z, pValue])
 				allPValues.append([gene, cancerType, z, pValue, score])
 
+
+
 			if len(allPValues) < 1:
 				continue
 			uncorrectedPValues = np.array(allPValues, dtype='object')
-
+	
 			reject, pAdjusted, _, _ = multipletests(uncorrectedPValues[:,3], method='bonferroni') #fdr_bh or bonferroni
-
+	
 			signPatients = []
 			for pValueInd in range(0, len(uncorrectedPValues[:,3])):
-
+	
 				gene = uncorrectedPValues[pValueInd, 0]
 				cancerType = uncorrectedPValues[pValueInd, 1]
-
-
-
+	
+	
+	
 				if reject[pValueInd] == True and uncorrectedPValues[pValueInd, 2] > 0:
 				#if uncorrectedPValues[pValueInd, 2] > 0:
-
+	
 					geneFrequencies[cancerType][gene] = uncorrectedPValues[pValueInd, 2]
-
+	
 					signPatients.append([uncorrectedPValues[pValueInd][0], uncorrectedPValues[pValueInd][2], pAdjusted[pValueInd], uncorrectedPValues[pValueInd][3], uncorrectedPValues[pValueInd][4]])
-
+	
 			signPatients = np.array(signPatients, dtype='object')
-
+	
 			#for patient in signPatients:
 			print(signPatients)
-		exit()
+		#exit()
 
 	
 
