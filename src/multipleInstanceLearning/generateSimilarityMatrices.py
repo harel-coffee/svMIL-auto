@@ -37,6 +37,7 @@ fullDataset = sys.argv[6] #generate sim matrix for the whole dataset.
 
 svTypes = ['DEL', 'DUP', 'INV', 'ITX']
 #svTypes = ['DEL', 'DUP', 'INV']
+svTypes = ['ALL']
 
 outDir = sys.argv[1]
 finalOutDir = outDir + '/multipleInstanceLearning/similarityMatrices/'
@@ -169,7 +170,7 @@ for svType in svTypes:
 		splitPair = pair.split("_")
 		shortPair = splitPair[7] + '_' + splitPair[0]
 
-		if svType != '':
+		if svType != '' and svType != 'ALL':
 			if splitPair[12] != svType:
 				continue
 
@@ -404,11 +405,15 @@ for svType in svTypes:
 
 
 
-	if fullDataset == 'False':
-		bags = bagsSubsampled
-		instances = instancesSubsampled
-		bagPairLabels = bagPairLabelsSubsampled
-		bagLabels = bagLabelsSubsampled
+	# if fullDataset == 'False':
+	# 	bags = bagsSubsampled
+	# 	instances = instancesSubsampled
+	# 	bagPairLabels = bagPairLabelsSubsampled
+	# 	bagLabels = bagLabelsSubsampled
+	bags = bagsSubsampled
+	instances = instancesSubsampled
+	bagPairLabels = bagPairLabelsSubsampled
+	bagLabels = bagLabelsSubsampled
 
 
 
@@ -1031,6 +1036,7 @@ for svType in svTypes:
 
 		else: #output the whole similarity matrix
 
+			#similarityMatrix = getSimilarityMatrix(bags, instances, reverseBagMap)
 			similarityMatrix = getSimilarityMatrix(bags, instances, reverseBagMap)
 			
 			print('similarity matrix sizes: ', similarityMatrix.shape)

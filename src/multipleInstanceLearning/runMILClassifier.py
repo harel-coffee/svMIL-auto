@@ -34,6 +34,7 @@ randomLabels = sys.argv[6] #running CV with randomized labels, only implemented 
 
 svTypes = ['DEL', 'DUP', 'INV', 'ITX']
 #svTypes = ['DUP', 'INV', 'ITX']
+svTypes = ['ALL']
 
 outDir = sys.argv[1]
 
@@ -302,6 +303,9 @@ def leaveOnePatientOutCV(leaveOneOutDataFolder, classifier, svType, plotOutputFi
 	totalFP = 0
 	totalTN = 0
 	totalFN = 0
+	positives = 0
+	allPreds = []
+	allLabels = []
 	for patient in patientFiles:
 
 		for dataFile in patientFiles[patient]:
@@ -324,8 +328,21 @@ def leaveOnePatientOutCV(leaveOneOutDataFolder, classifier, svType, plotOutputFi
 
 		#output the predictions to a file for the COSMIC analysis
 		preds = classifier.predict(similarityMatrixTest)
-		predictions[patient] = preds
 
+
+		threshold = 0.5
+		proba = classifier.predict_proba(similarityMatrixTest)[:,1]
+		preds = []
+		for prob in proba:
+			if prob > threshold:
+				preds.append(1)
+			else:
+				preds.append(0)
+		
+		allPreds += list(preds)
+		allLabels += list(bagLabelsTest)
+
+		predictions[patient] = preds
 		#check fpr/tpr
 		for labelInd in range(0, len(bagLabelsTest)):
 			if bagLabelsTest[labelInd] == 1 and predictions[patient][labelInd] == 1:
@@ -336,6 +353,9 @@ def leaveOnePatientOutCV(leaveOneOutDataFolder, classifier, svType, plotOutputFi
 				totalFN += 1
 			else:
 				totalTN += 1
+				
+			if predictions[patient][labelInd] == 1:
+				positives += 1
 		
 
 		viz = plot_roc_curve(classifier, similarityMatrixTest, bagLabelsTest,
@@ -345,13 +365,17 @@ def leaveOnePatientOutCV(leaveOneOutDataFolder, classifier, svType, plotOutputFi
 		interp_tpr[0] = 0.0
 		tprs.append(interp_tpr)
 		aucs.append(np.mean(viz.roc_auc))
-		print('auc: ', np.mean(viz.roc_auc))
+		#print('auc: ', np.mean(viz.roc_auc))
 
 	print(np.mean(aucs))
 	tpr = totalTP / (totalTP + totalFN)
 	fpr = totalFP / (totalTN + totalFP)
-	print('tpr', tpr)
-	print('fpr', fpr)
+	#print('tpr', tpr)
+	#print('fpr', fpr)
+	print('positives: ', positives)
+	
+	from sklearn.metrics import recall_score
+	print('Recall: ', recall_score(allLabels, allPreds))
 	
 	#make the CV plot, just plot the mean
 	fig, ax = plt.subplots()
@@ -392,7 +416,7 @@ def leaveOnePatientOutCV(leaveOneOutDataFolder, classifier, svType, plotOutputFi
 
 		#also generate a file with the total final AUC and std.
 		outFile = finalOutDir + '/leaveOnePatientOutCV_' + svType + '_FINAL_AUC.txt'
-		with open(outFile, 'a') as outF:
+		with open(outFile, 'w') as outF:
 
 			outF.write(str(np.mean(aucs)) + '\t' + str(np.std(aucs)))
 
@@ -416,8 +440,9 @@ for svType in svTypes:
 		title = 'translocations'
 	else:
 		print('Please provide a SV type')
-		exit(1)
-
+		classifier = RandomForestClassifier(random_state=785)
+		title = 'all'
+		#exit(1)
 
 	plot = False #in feature elimination don't plot curves. 
 	if featureElimination == "False" and leaveBagsOut == 'True': ### leave-bags-out CV
