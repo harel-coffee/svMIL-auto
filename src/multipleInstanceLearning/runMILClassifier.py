@@ -31,10 +31,11 @@ leaveOnePatientOut = sys.argv[3] #1 patient at a time in the test set
 leaveOneChromosomeOut = sys.argv[4] #1 chromosome at a time in the test set
 leaveBagsOut = sys.argv[5] #random bags in each CV fold
 randomLabels = sys.argv[6] #running CV with randomized labels, only implemented for lopoCV
+multipleOPs = sys.argv[7] #testing multiple operating points
 
-svTypes = ['DEL', 'DUP', 'INV', 'ITX']
+svTypes = ['DEL', 'DUP', 'INV', 'ITX', 'ALL']
 #svTypes = ['DUP', 'INV', 'ITX']
-svTypes = ['ALL']
+thresholds = np.arange(0,10) * 0.1
 
 outDir = sys.argv[1]
 
@@ -260,7 +261,7 @@ def bagsCVClassification(dataPath, clf, svType, title, plot, plotOutputFile, out
 		plt.savefig(plotOutputFile)
 
 
-def leaveOnePatientOutCV(leaveOneOutDataFolder, classifier, svType, plotOutputFile, title, shuffleLabels):
+def leaveOnePatientOutCV(leaveOneOutDataFolder, classifier, svType, plotOutputFile, title, shuffleLabels, threshold):
 	"""
 		function to classify on a case where 1 patient is left out at a time the similarity matrices are pre-made, with each time 1 patient being left out.
 		so we can just load these in, and then train our standard classifier on that. report on the performance of each patient.
@@ -329,8 +330,9 @@ def leaveOnePatientOutCV(leaveOneOutDataFolder, classifier, svType, plotOutputFi
 		#output the predictions to a file for the COSMIC analysis
 		preds = classifier.predict(similarityMatrixTest)
 
+		#from sklearn.metrics import recall_score
+		#print('Recall: ', recall_score(bagLabelsTest, preds))
 
-		threshold = 0.5
 		proba = classifier.predict_proba(similarityMatrixTest)[:,1]
 		preds = []
 		for prob in proba:
@@ -366,6 +368,8 @@ def leaveOnePatientOutCV(leaveOneOutDataFolder, classifier, svType, plotOutputFi
 		tprs.append(interp_tpr)
 		aucs.append(np.mean(viz.roc_auc))
 		#print('auc: ', np.mean(viz.roc_auc))
+		
+
 
 	print(np.mean(aucs))
 	tpr = totalTP / (totalTP + totalFN)
@@ -404,7 +408,7 @@ def leaveOnePatientOutCV(leaveOneOutDataFolder, classifier, svType, plotOutputFi
 		if not os.path.exists(finalOutDir):
 			os.makedirs(finalOutDir)
 
-		outFile = finalOutDir + '/leaveOnePatientOutCV_' + svType + '.txt'
+		outFile = finalOutDir + '/leaveOnePatientOutCV_' + svType + '_' + str(threshold) + '.txt'
 
 		strAucs = [str(i) for i in aucs]
 		strAuc = '\t'.join(strAucs)
@@ -415,7 +419,7 @@ def leaveOnePatientOutCV(leaveOneOutDataFolder, classifier, svType, plotOutputFi
 				outF.write(patient + '\t' + '\t'.join([str(i) for i in predictions[patient]]) + "\n")
 
 		#also generate a file with the total final AUC and std.
-		outFile = finalOutDir + '/leaveOnePatientOutCV_' + svType + '_FINAL_AUC.txt'
+		outFile = finalOutDir + '/leaveOnePatientOutCV_' + svType + '_' + str(threshold) + '_FINAL_AUC.txt'
 		with open(outFile, 'w') as outF:
 
 			outF.write(str(np.mean(aucs)) + '\t' + str(np.std(aucs)))
@@ -480,26 +484,21 @@ for svType in svTypes:
 			leaveOneChromosomeOutCV(featureEliminationDataFolder, classifier, svType, '', title, featureInd)
 	elif featureElimination == 'False' and leaveOnePatientOut == 'True': ### Leave-one-patient-out CV
 		
-		shuffleLabels = False
-		if randomLabels == 'True':
-			shuffleLabels = True
-			plotOutputFile = finalOutDir + '/rocCurve_' + svType + '_leaveOnePatientOut_random.svg'
+		if multipleOPs == True:
+			testThresholds = self.thresholds
 		else:
-			plotOutputFile = finalOutDir + '/rocCurve_' + svType + '_leaveOnePatientOut.svg'
-
-		leaveOneOutDataFolder = outDir + '/multipleInstanceLearning/similarityMatrices/leaveOnePatientOut/'
-		leaveOnePatientOutCV(leaveOneOutDataFolder, classifier, svType, plotOutputFile, title, shuffleLabels)
-
-	elif featureElimination == 'False' and leaveOneChromosomeOut == 'True': ### leave-one-chromosome-out CV
-
-		plotOutputFile = finalOutDir + '/rocCurve_' + svType + '_leaveOneChromosomeOut.svg'
-
-		leaveOneChromosomeOutDataFolder = outDir + '/multipleInstanceLearning/similarityMatrices/leaveOneChromosomeOut/'
-		leaveOneChromosomeOutCV(leaveOneChromosomeOutDataFolder, classifier, svType, plotOutputFile, title, 'False')
+			testThresholds = [0.5]
+		
+		for threshold in testThresholds:
+			shuffleLabels = False
+			if randomLabels == 'True':
+				shuffleLabels = True
+				plotOutputFile = finalOutDir + '/rocCurve_' + svType + '_' + threshold + '_leaveOnePatientOut_random.svg'
+			else:
+				plotOutputFile = finalOutDir + '/rocCurve_' + svType + '_' + threshold + '_leaveOnePatientOut.svg'
 	
-	else:
-		
-		print('Combination of options not implemented')
-		exit(1)
-		
-		
+			
+			leaveOneOutDataFolder = outDir + '/multipleInstanceLearning/similarityMatrices/leaveOnePatientOut/'
+			leaveOnePatientOutCV(leaveOneOutDataFolder, classifier, svType, plotOutputFile, title, shuffleLabels, threshold)
+
+	elif featureElimination == 'False' and leaveOneChromosomeOut == '
