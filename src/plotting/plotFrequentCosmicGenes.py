@@ -50,7 +50,7 @@ class DriverPlotter:
 					   'HMF_Uterus': ['uter'], 'HMF_Kidney': ['kidney', 'renal'],
 					   'HMF_NervousSystem': ['brain', 'nervous']}
 	outDirPrefix = 'output/'
-	svTypes = ['DEL', 'DUP', 'INV', 'ITX']
+	svTypes = ['DEL', 'DUP', 'INV', 'ITX', 'ALL']
 
 	def plotCosmicFrequencyScatter(self):
 
@@ -160,7 +160,7 @@ class DriverPlotter:
 		plottedCancerTypes = []
 		svTypeColors = ['#b5ffb9', '#f9bc86', '#a3acff', '#FF6B6C']
 		#svTypeColors = [0, 1, 2, 3]
-		jitter = [-0.15, -0.05, 0.05, 0.15]
+		jitter = [-0.15, -0.05, 0, 0.05, 0.15]
 		plotData = []
 		for cancerType in aucs:
 			plottedCancerTypes.append(cancerType)
@@ -599,7 +599,7 @@ class DriverPlotter:
 
 		np.random.seed(1)
 		#randomGenes = np.random.choice(allGeneNames, 100)
-		randomSampleIterations = 100
+		randomSampleIterations = 10000
 		
 		geneFrequencies = dict()
 		nonCodingOnlyGenes = dict()
@@ -635,7 +635,7 @@ class DriverPlotter:
 			randomMean = np.mean(randomDistribution)
 			randomStd = np.std(randomDistribution)
 			pValues = []
-			allPValues = []
+			#allPValues = []
 			for pair in allCosmicPairs[cancerType]:
 
 				splitPair = pair.split('_')
@@ -649,7 +649,7 @@ class DriverPlotter:
 					#don't count duplicates, that would be more than 1 per patient
 					nonCodingOnlyGenes[cancerType][gene] = 0
 
-				# randomGenes = np.random.choice(allGeneNames, 100)
+				# randomGenes = np.random.choice(allGeneNames, 1000)
 				#
 				# randomDistribution = []
 				# for randomGene in randomGenes:
@@ -672,29 +672,33 @@ class DriverPlotter:
 
 			if len(allPValues) < 1:
 				continue
-			uncorrectedPValues = np.array(allPValues, dtype='object')
-	
-			reject, pAdjusted, _, _ = multipletests(uncorrectedPValues[:,3], method='bonferroni') #fdr_bh or bonferroni
-	
-			signPatients = []
-			for pValueInd in range(0, len(uncorrectedPValues[:,3])):
-	
-				gene = uncorrectedPValues[pValueInd, 0]
-				cancerType = uncorrectedPValues[pValueInd, 1]
-	
-	
-	
-				if reject[pValueInd] == True and uncorrectedPValues[pValueInd, 2] > 0:
-				#if uncorrectedPValues[pValueInd, 2] > 0:
-	
-					geneFrequencies[cancerType][gene] = uncorrectedPValues[pValueInd, 2]
-	
-					signPatients.append([uncorrectedPValues[pValueInd][0], uncorrectedPValues[pValueInd][2], pAdjusted[pValueInd], uncorrectedPValues[pValueInd][3], uncorrectedPValues[pValueInd][4]])
-	
-			signPatients = np.array(signPatients, dtype='object')
-	
-			#for patient in signPatients:
-			print(signPatients)
+		uncorrectedPValues = np.array(allPValues, dtype='object')
+		
+		#sort by most significant first
+		uncorrectedPValues = uncorrectedPValues[np.argsort(uncorrectedPValues[:,3])]
+
+		
+		reject, pAdjusted, _, _ = multipletests(uncorrectedPValues[:,3], method='bonferroni') #fdr_bh or bonferroni
+
+		signPatients = []
+		for pValueInd in range(0, len(uncorrectedPValues[:,3])):
+
+			gene = uncorrectedPValues[pValueInd, 0]
+			cancerType = uncorrectedPValues[pValueInd, 1]
+
+
+
+			#if reject[pValueInd] == True and uncorrectedPValues[pValueInd, 2] > 0:
+			if uncorrectedPValues[pValueInd, 2] > 0:
+
+				geneFrequencies[cancerType][gene] = uncorrectedPValues[pValueInd, 2]
+
+				signPatients.append([uncorrectedPValues[pValueInd][0], uncorrectedPValues[pValueInd][2], pAdjusted[pValueInd], uncorrectedPValues[pValueInd][3], uncorrectedPValues[pValueInd][4]])
+
+		signPatients = np.array(signPatients, dtype='object')[0:20,]
+
+		#for patient in signPatients:
+		print(signPatients)
 		#exit()
 
 	
@@ -713,7 +717,7 @@ class DriverPlotter:
 				gene = splitPair[0]
 
 				#get frequency of this gene
-				if gene in geneFrequencies[cancerType]:
+				if gene in geneFrequencies[cancerType] and gene in signPatients[:,0]:
 					geneFrequency = geneFrequencies[cancerType][gene]
 					#use frequency of coding events
 					#geneFrequency = normalizedCodingFrequency[cancerType][gene]
