@@ -34,8 +34,8 @@ randomLabels = sys.argv[6] #running CV with randomized labels, only implemented 
 multipleOPs = sys.argv[7] #testing multiple operating points
 
 svTypes = ['DEL', 'DUP', 'INV', 'ITX', 'ALL']
-#svTypes = ['DUP', 'INV', 'ITX']
-thresholds = np.arange(0,10) * 0.1
+svTypes = ['INV', 'ITX']
+thresholds = np.arange(0,11) * 0.1
 
 outDir = sys.argv[1]
 
@@ -307,6 +307,7 @@ def leaveOnePatientOutCV(leaveOneOutDataFolder, classifier, svType, plotOutputFi
 	positives = 0
 	allPreds = []
 	allLabels = []
+	allProbas = []
 	for patient in patientFiles:
 
 		for dataFile in patientFiles[patient]:
@@ -343,21 +344,22 @@ def leaveOnePatientOutCV(leaveOneOutDataFolder, classifier, svType, plotOutputFi
 		
 		allPreds += list(preds)
 		allLabels += list(bagLabelsTest)
+		allProbas += list(proba)
 
-		predictions[patient] = preds
-		#check fpr/tpr
-		for labelInd in range(0, len(bagLabelsTest)):
-			if bagLabelsTest[labelInd] == 1 and predictions[patient][labelInd] == 1:
-				totalTP += 1
-			elif bagLabelsTest[labelInd] == 0 and predictions[patient][labelInd] == 1:
-				totalFP += 1
-			elif bagLabelsTest[labelInd] == 1 and predictions[patient][labelInd] == 0:
-				totalFN += 1
-			else:
-				totalTN += 1
-				
-			if predictions[patient][labelInd] == 1:
-				positives += 1
+		# predictions[patient] = preds
+		# #check fpr/tpr
+		# for labelInd in range(0, len(bagLabelsTest)):
+		# 	if bagLabelsTest[labelInd] == 1 and predictions[patient][labelInd] == 1:
+		# 		totalTP += 1
+		# 	elif bagLabelsTest[labelInd] == 0 and predictions[patient][labelInd] == 1:
+		# 		totalFP += 1
+		# 	elif bagLabelsTest[labelInd] == 1 and predictions[patient][labelInd] == 0:
+		# 		totalFN += 1
+		# 	else:
+		# 		totalTN += 1
+		#
+		# 	if predictions[patient][labelInd] == 1:
+		# 		positives += 1
 		
 
 		viz = plot_roc_curve(classifier, similarityMatrixTest, bagLabelsTest,
@@ -368,7 +370,57 @@ def leaveOnePatientOutCV(leaveOneOutDataFolder, classifier, svType, plotOutputFi
 		tprs.append(interp_tpr)
 		aucs.append(np.mean(viz.roc_auc))
 		#print('auc: ', np.mean(viz.roc_auc))
-		
+
+	#get PR
+	from sklearn.metrics import average_precision_score, precision_recall_curve, auc
+	precision, recall, thresholds = precision_recall_curve(allLabels, allProbas)
+	auprc = auc(recall, precision)
+
+	print(precision)
+	print(recall)
+	print(thresholds)
+
+	ap = average_precision_score(allLabels, allProbas)
+
+	print('PR: ', auprc)
+	print('AP: ', ap)
+
+	#select cases where the P and R are at least 50%
+	#remove the last element, which is always 0 and 1 and does not reflect the threshold
+	matchingInd = (precision[0:len(precision)-1] > 0.5) * (recall[0:len(recall)-1] > 0.5)
+	print(matchingInd)
+	if len(matchingInd) < 0:
+		print('cannot select optimal threshold')
+		op = 0.5
+	bestThresholds = thresholds[matchingInd]
+	bestRecalls = recall[0:len(recall)-1][matchingInd]
+	op = bestThresholds[np.argmax(bestRecalls)]
+
+	print(bestThresholds)
+	print(bestRecalls)
+	print('selected op: ', op)
+	
+	#now use this selected operating point to report the predicted cosmic drivers.
+	allPreds = []
+	for prob in allProbas:
+		if prob > op:
+			allPreds.append(1)
+		else:
+			allPreds.append(0)
+	
+	#compute the TP/TN with these predictions
+	#check fpr/tpr
+	for labelInd in range(0, len(allLabels)):
+		if allLabels[labelInd] == 1 and allPreds[labelInd] == 1:
+			totalTP += 1
+		elif allLabels[labelInd] == 0 and allPreds[labelInd] == 1:
+			totalFP += 1
+		elif allLabels[labelInd] == 1 and allPreds[labelInd] == 0:
+			totalFN += 1
+		else:
+			totalTN += 1
+		if allPreds[labelInd] == 1:
+			positives += 1
 
 
 	print(np.mean(aucs))
@@ -484,21 +536,34 @@ for svType in svTypes:
 			leaveOneChromosomeOutCV(featureEliminationDataFolder, classifier, svType, '', title, featureInd)
 	elif featureElimination == 'False' and leaveOnePatientOut == 'True': ### Leave-one-patient-out CV
 		
-		if multipleOPs == True:
-			testThresholds = self.thresholds
+		if multipleOPs == 'True':
+			testThresholds = thresholds
 		else:
 			testThresholds = [0.5]
 		
 		for threshold in testThresholds:
+			print('threshold: ', threshold)
 			shuffleLabels = False
 			if randomLabels == 'True':
 				shuffleLabels = True
-				plotOutputFile = finalOutDir + '/rocCurve_' + svType + '_' + threshold + '_leaveOnePatientOut_random.svg'
+				plotOutputFile = finalOutDir + '/rocCurve_' + svType + '_' + str(threshold) + '_leaveOnePatientOut_random.svg'
 			else:
-				plotOutputFile = finalOutDir + '/rocCurve_' + svType + '_' + threshold + '_leaveOnePatientOut.svg'
+				plotOutputFile = finalOutDir + '/rocCurve_' + svType + '_' + str(threshold) + '_leaveOnePatientOut.svg'
 	
 			
 			leaveOneOutDataFolder = outDir + '/multipleInstanceLearning/similarityMatrices/leaveOnePatientOut/'
 			leaveOnePatientOutCV(leaveOneOutDataFolder, classifier, svType, plotOutputFile, title, shuffleLabels, threshold)
 
-	elif featureElimination == 'False' and leaveOneChromosomeOut == '
+	elif featureElimination == 'False' and leaveOneChromosomeOut == 'True': ### leave-one-chromosome-out CV
+
+		plotOutputFile = finalOutDir + '/rocCurve_' + svType + '_leaveOneChromosomeOut.svg'
+
+		leaveOneChromosomeOutDataFolder = outDir + '/multipleInstanceLearning/similarityMatrices/leaveOneChromosomeOut/'
+		leaveOneChromosomeOutCV(leaveOneChromosomeOutDataFolder, classifier, svType, plotOutputFile, title, 'False')
+	
+	else:
+		
+		print('Combination of options not implemented')
+		exit(1)
+		
+		
