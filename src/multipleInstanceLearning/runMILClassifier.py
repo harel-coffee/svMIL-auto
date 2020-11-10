@@ -31,7 +31,6 @@ leaveOnePatientOut = sys.argv[3] #1 patient at a time in the test set
 leaveOneChromosomeOut = sys.argv[4] #1 chromosome at a time in the test set
 leaveBagsOut = sys.argv[5] #random bags in each CV fold
 randomLabels = sys.argv[6] #running CV with randomized labels, only implemented for lopoCV
-multipleOPs = sys.argv[7] #testing multiple operating points
 
 svTypes = ['DEL', 'DUP', 'INV', 'ITX', 'ALL']
 svTypes = ['INV', 'ITX']
@@ -261,7 +260,7 @@ def bagsCVClassification(dataPath, clf, svType, title, plot, plotOutputFile, out
 		plt.savefig(plotOutputFile)
 
 
-def leaveOnePatientOutCV(leaveOneOutDataFolder, classifier, svType, plotOutputFile, title, shuffleLabels, threshold):
+def leaveOnePatientOutCV(leaveOneOutDataFolder, classifier, svType, title, shuffleLabels, finalOutDir):
 	"""
 		function to classify on a case where 1 patient is left out at a time the similarity matrices are pre-made, with each time 1 patient being left out.
 		so we can just load these in, and then train our standard classifier on that. report on the performance of each patient.
@@ -308,6 +307,7 @@ def leaveOnePatientOutCV(leaveOneOutDataFolder, classifier, svType, plotOutputFi
 	allPreds = []
 	allLabels = []
 	allProbas = []
+	allBagPairLabels = []
 	for patient in patientFiles:
 
 		for dataFile in patientFiles[patient]:
@@ -320,6 +320,9 @@ def leaveOnePatientOutCV(leaveOneOutDataFolder, classifier, svType, plotOutputFi
 				bagLabelsTrain = np.load(dataFile, encoding='latin1', allow_pickle=True)
 			if re.search('bagLabelsTest', dataFile):
 				bagLabelsTest = np.load(dataFile, encoding='latin1', allow_pickle=True)
+			if re.search('bagPairLabels', dataFile):
+				bagPairLabels = np.load(dataFile, encoding='latin1', allow_pickle=True)
+
 
 		if shuffleLabels == True:
 			shuffle(bagLabelsTrain)
@@ -335,18 +338,13 @@ def leaveOnePatientOutCV(leaveOneOutDataFolder, classifier, svType, plotOutputFi
 		#print('Recall: ', recall_score(bagLabelsTest, preds))
 
 		proba = classifier.predict_proba(similarityMatrixTest)[:,1]
-		preds = []
-		for prob in proba:
-			if prob > threshold:
-				preds.append(1)
-			else:
-				preds.append(0)
-		
+
 		allPreds += list(preds)
 		allLabels += list(bagLabelsTest)
 		allProbas += list(proba)
+		allBagPairLabels += list(bagPairLabels)
 
-		# predictions[patient] = preds
+		#predictions[patient] = preds
 		# #check fpr/tpr
 		# for labelInd in range(0, len(bagLabelsTest)):
 		# 	if bagLabelsTest[labelInd] == 1 and predictions[patient][labelInd] == 1:
@@ -376,10 +374,6 @@ def leaveOnePatientOutCV(leaveOneOutDataFolder, classifier, svType, plotOutputFi
 	precision, recall, thresholds = precision_recall_curve(allLabels, allProbas)
 	auprc = auc(recall, precision)
 
-	print(precision)
-	print(recall)
-	print(thresholds)
-
 	ap = average_precision_score(allLabels, allProbas)
 
 	print('PR: ', auprc)
@@ -388,7 +382,7 @@ def leaveOnePatientOutCV(leaveOneOutDataFolder, classifier, svType, plotOutputFi
 	#select cases where the P and R are at least 50%
 	#remove the last element, which is always 0 and 1 and does not reflect the threshold
 	matchingInd = (precision[0:len(precision)-1] > 0.5) * (recall[0:len(recall)-1] > 0.5)
-	print(matchingInd)
+
 	if len(matchingInd) < 0:
 		print('cannot select optimal threshold')
 		op = 0.5
@@ -396,8 +390,6 @@ def leaveOnePatientOutCV(leaveOneOutDataFolder, classifier, svType, plotOutputFi
 	bestRecalls = recall[0:len(recall)-1][matchingInd]
 	op = bestThresholds[np.argmax(bestRecalls)]
 
-	print(bestThresholds)
-	print(bestRecalls)
 	print('selected op: ', op)
 	
 	#now use this selected operating point to report the predicted cosmic drivers.
@@ -410,6 +402,7 @@ def leaveOnePatientOutCV(leaveOneOutDataFolder, classifier, svType, plotOutputFi
 	
 	#compute the TP/TN with these predictions
 	#check fpr/tpr
+	perPatientPredictions = [] #use these for the output file so that we can retrieve it later
 	for labelInd in range(0, len(allLabels)):
 		if allLabels[labelInd] == 1 and allPreds[labelInd] == 1:
 			totalTP += 1
@@ -421,17 +414,23 @@ def leaveOnePatientOutCV(leaveOneOutDataFolder, classifier, svType, plotOutputFi
 			totalTN += 1
 		if allPreds[labelInd] == 1:
 			positives += 1
+			
+		perPatientPredictions.append([allBagPairLabels[labelInd], allLabels[labelInd], allPreds[labelInd]])
 
+	perPatientPredictions = np.array(perPatientPredictions, dtype='object')
 
 	print(np.mean(aucs))
 	tpr = totalTP / (totalTP + totalFN)
 	fpr = totalFP / (totalTN + totalFP)
 	#print('tpr', tpr)
 	#print('fpr', fpr)
-	print('positives: ', positives)
 	
-	from sklearn.metrics import recall_score
-	print('Recall: ', recall_score(allLabels, allPreds))
+	from sklearn.metrics import recall_score, precision_score
+	#do extra check here to see if it matches what we expect.
+	selectedRecall = recall_score(allLabels, allPreds)
+	selectedPrecision = precision_score(allLabels, allPreds)
+	print('Recall: ', selectedRecall)
+	print('Precision: ', selectedPrecision)
 	
 	#make the CV plot, just plot the mean
 	fig, ax = plt.subplots()
@@ -451,30 +450,68 @@ def leaveOnePatientOutCV(leaveOneOutDataFolder, classifier, svType, plotOutputFi
 		   title="Leave-one-patient-out CV: " + title)
 	ax.legend(loc="lower right")
 	plt.tight_layout()
+	if randomLabels == 'True':
+		shuffleLabels = True
+		plotOutputFile = finalOutDir + '/rocCurve_' + svType + '_leaveOnePatientOut_random.svg'
+	else:
+		plotOutputFile = finalOutDir + '/rocCurve_' + svType + '_leaveOnePatientOut.svg'
 	plt.savefig(plotOutputFile)
+	plt.clf()
+
+	#also output PR curve plots
+	lr_precision, lr_recall, _ = precision_recall_curve(allLabels, allProbas)
+
+	# plot the precision-recall curves
+	allLabels = np.array(allLabels)
+	random = len(allLabels[np.where(allLabels==1)[0]]) / len(allLabels)
+	plt.plot([0, 1], [random, random], linestyle='--', label='Random performance')
+	plt.plot(lr_recall, lr_precision, marker='.', label='True performance')
+	# axis labels
+	#
+	plt.title("Leave-one-patient-out CV: " + title)
+	plt.xlim([-0.05, 1.05]) #fix axes to combine plots later on
+	plt.ylim([-0.05, 1.05])
+	plt.xlabel('Recall')
+	plt.ylabel('Precision')
+	# show the legend
+	plt.legend()
+	# show the plot
+	plt.tight_layout()
+	plotOutputFile = finalOutDir + '/prCurve_' + svType + '_leaveOnePatientOut.svg'
+	plt.savefig(plotOutputFile)
+
 	
 
 	#output these values to a file
-	if shuffleLabels == False:
+	if shuffleLabels == "False":
 		finalOutDir = outDir + '/multipleInstanceLearning/leaveOnePatientOutCV/'
 		if not os.path.exists(finalOutDir):
 			os.makedirs(finalOutDir)
 
-		outFile = finalOutDir + '/leaveOnePatientOutCV_' + svType + '_' + str(threshold) + '.txt'
+		outFile = finalOutDir + '/leaveOnePatientOutCV_' + svType + '.txt'
+		np.savetxt(outFile, perPatientPredictions, fmt='%s', delimiter = '\t')
 
 		strAucs = [str(i) for i in aucs]
 		strAuc = '\t'.join(strAucs)
 
-		with open(outFile, 'a') as outF:
-
-			for patient in predictions:
-				outF.write(patient + '\t' + '\t'.join([str(i) for i in predictions[patient]]) + "\n")
-
+		
 		#also generate a file with the total final AUC and std.
-		outFile = finalOutDir + '/leaveOnePatientOutCV_' + svType + '_' + str(threshold) + '_FINAL_AUC.txt'
+		#also save the PR and AP here for later reference.
+		outFile = finalOutDir + '/leaveOnePatientOutCV_' + svType + '_FINAL_AUC.txt'
 		with open(outFile, 'w') as outF:
 
 			outF.write(str(np.mean(aucs)) + '\t' + str(np.std(aucs)))
+			outF.write('\n')
+			outF.write(str(auprc) + '\t' + str(ap))
+			outF.write('\n')
+			outF.write(str(selectedPrecision) + '\t' + str(selectedRecall))
+
+		#save the selected OP to a file
+		outFile = finalOutDir + '/leaveOnePatientOutCV_' + svType + '_threshold.txt'
+		with open(outFile, 'w') as outF:
+
+			outF.write(str(op))
+
 
 
 
@@ -536,23 +573,8 @@ for svType in svTypes:
 			leaveOneChromosomeOutCV(featureEliminationDataFolder, classifier, svType, '', title, featureInd)
 	elif featureElimination == 'False' and leaveOnePatientOut == 'True': ### Leave-one-patient-out CV
 		
-		if multipleOPs == 'True':
-			testThresholds = thresholds
-		else:
-			testThresholds = [0.5]
-		
-		for threshold in testThresholds:
-			print('threshold: ', threshold)
-			shuffleLabels = False
-			if randomLabels == 'True':
-				shuffleLabels = True
-				plotOutputFile = finalOutDir + '/rocCurve_' + svType + '_' + str(threshold) + '_leaveOnePatientOut_random.svg'
-			else:
-				plotOutputFile = finalOutDir + '/rocCurve_' + svType + '_' + str(threshold) + '_leaveOnePatientOut.svg'
-	
-			
-			leaveOneOutDataFolder = outDir + '/multipleInstanceLearning/similarityMatrices/leaveOnePatientOut/'
-			leaveOnePatientOutCV(leaveOneOutDataFolder, classifier, svType, plotOutputFile, title, shuffleLabels, threshold)
+		leaveOneOutDataFolder = outDir + '/multipleInstanceLearning/similarityMatrices/leaveOnePatientOut/'
+		leaveOnePatientOutCV(leaveOneOutDataFolder, classifier, svType, title, randomLabels, finalOutDir)
 
 	elif featureElimination == 'False' and leaveOneChromosomeOut == 'True': ### leave-one-chromosome-out CV
 

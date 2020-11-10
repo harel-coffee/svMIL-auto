@@ -28,6 +28,7 @@ class DriverPlotter:
 	cancerTypes = ['HMF_Breast', 'HMF_Ovary', 'HMF_Liver', 'HMF_Lung', 'HMF_Colorectal',
 				   'HMF_UrinaryTract', 'HMF_Prostate', 'HMF_Esophagus', 'HMF_Skin',
 				   'HMF_Pancreas', 'HMF_Uterus', 'HMF_Kidney', 'HMF_NervousSystem']
+	cancerTypes = ['HMF_Uterus']
 	#because the cancer types in the metadata have slashes and spaces, we cannot use them, so use those
 	#converted names here to read in the data.
 	cancerTypeMetadataNames = {'HMF_Breast': 'Breast', 'HMF_Ovary': 'Ovary', 'HMF_Lung': 'Lung',
@@ -50,7 +51,8 @@ class DriverPlotter:
 					   'HMF_Uterus': ['uter'], 'HMF_Kidney': ['kidney', 'renal'],
 					   'HMF_NervousSystem': ['brain', 'nervous']}
 	outDirPrefix = 'output/'
-	svTypes = ['DEL', 'DUP', 'INV', 'ITX', 'ALL']
+	svTypes = ['DEL', 'DUP', 'INV', 'ITX']
+	svTypes = ['INV', 'ITX']
 
 	def plotCosmicFrequencyScatter(self):
 
@@ -64,6 +66,7 @@ class DriverPlotter:
 			#only the part after 'HMF' is in the metadata
 			splitCancerType = cancerType.split('_')
 			#pathogenicSNVCounts[cancerType] = DriverPlotter().getPathogenicSNVsPerGene(splitCancerType[1])
+
 
 		#save the pathogenic snv counts for later
 		#np.save('pathogenicSNVCounts.npy', pathogenicSNVCounts)
@@ -129,7 +132,7 @@ class DriverPlotter:
 		plt.tight_layout()
 
 		plt.show()
-		
+
 
 		exit()
 
@@ -160,7 +163,7 @@ class DriverPlotter:
 		plottedCancerTypes = []
 		svTypeColors = ['#b5ffb9', '#f9bc86', '#a3acff', '#FF6B6C']
 		#svTypeColors = [0, 1, 2, 3]
-		jitter = [-0.15, -0.05, 0, 0.05, 0.15]
+		jitter = [-0.15, -0.05, 0.05, 0.15]
 		plotData = []
 		for cancerType in aucs:
 			plottedCancerTypes.append(cancerType)
@@ -200,6 +203,7 @@ class DriverPlotter:
 					  'HMF_GM12878_Esophagus', 'HMF_GM12878_Skin',
 					  'HMF_GM12878_Pancreas', 'HMF_GM12878_Uterus',
 					  'HMF_GM12878_Kidney', 'HMF_GM12878_NervousSystem']
+		
 
 		gm12878Aucs = dict()
 		for cancerType in cancerTypesGM12878:
@@ -256,11 +260,80 @@ class DriverPlotter:
 		ax.grid(b=True, which='minor', linewidth=0.5, linestyle='--')
 
 		plt.ylim([-1,1])
+		plt.ylabel('AUC - GM12878 AUC')
 		plt.xticks(np.arange(0, len(aucs)), list(aucs.keys()), rotation='vertical')
 		plt.tight_layout()
 
 		plt.show()
 		
+		#then make the last plot where we compare to the z = 2 cutoff results
+		cancerTypesZ2 = ['HMF_Breast_2', 'HMF_Ovary_2', 'HMF_Liver_2',
+					  'HMF_Lung_2', 'HMF_Colorectal_2',
+					  'HMF_UrinaryTract_2', 'HMF_Prostate_2',
+					  'HMF_Esophagus_2', 'HMF_Skin_2',
+					  'HMF_Pancreas_2', 'HMF_Uterus_2',
+					  'HMF_Kidney_2', 'HMF_NervousSystem_2']
+		
+		z2Aucs = dict()
+		for cancerType in cancerTypesZ2:
+
+			z2Aucs[cancerType] = []
+
+			for svType in self.svTypes:
+				outFile = self.outDirPrefix + '/' + cancerType + '/multipleInstanceLearning/leaveOnePatientOutCV/leaveOnePatientOutCV_' + svType + '_FINAL_AUC.txt'
+				print(outFile)
+
+				#skip runs for which there was no output due to e.g. no SVs
+				if os.path.isfile(outFile) == True:
+					aucData = np.loadtxt(outFile, dtype='object')
+					svAuc = float(aucData[0])
+					z2Aucs[cancerType].append(svAuc)
+				else:
+					z2Aucs[cancerType].append(0)
+
+		#show the auc as dots in a scatterplot
+		cancerTypeInd = 0
+		svTypeColors = ['#b5ffb9', '#f9bc86', '#a3acff', '#FF6B6C']
+		#svTypeColors = [0, 1, 2, 3]
+		jitter = [-0.15, -0.05, 0.05, 0.15]
+		plotData = []
+		for cancerType in z2Aucs:
+
+			for svTypeInd in range(0, len(self.svTypes)):
+
+				#compute the difference of this value to the original.
+				splitCancerType = cancerType.split('_')
+				originalCancerType = splitCancerType[0] + '_' + splitCancerType[1]
+				difference = aucs[originalCancerType][svTypeInd] - z2Aucs[cancerType][svTypeInd]
+
+				plotData.append([cancerTypeInd+jitter[svTypeInd], difference, svTypeColors[svTypeInd]])
+				#plt.scatter(cancerTypeInd + jitter[svTypeInd], auc[cancerType][svTypeInd], color=svTypeColors[svTypeInd])
+
+			cancerTypeInd += 1
+		
+		data = pd.DataFrame(plotData)
+		data.columns = ['cancer type', 'AUC', 'color']
+		data = data.drop_duplicates()
+		print(data)
+		#exit()
+		fig, ax = plt.subplots(1,1)
+		sns.scatterplot(data=data, x='cancer type', y='AUC', hue=data.color,
+						palette=sns.color_palette("Set1", data.color.nunique()), legend=False,
+						s = 60, edgecolor = 'k')
+
+		plt.axhline(y=0, color='k', linestyle='--')
+
+		#set separators
+
+		ax.set_xticks(np.arange(0, len(aucs)-1)+0.5, minor=True)
+		ax.grid(b=True, which='minor', linewidth=0.5, linestyle='--')
+
+		plt.ylim([-1,1])
+		plt.ylabel('AUC - z2 AUC')
+		plt.xticks(np.arange(0, len(aucs)), list(aucs.keys()), rotation='vertical')
+		plt.tight_layout()
+
+		plt.show()
 
 	def plotPathogenicSVFrequency(self):
 
@@ -818,53 +891,66 @@ class DriverPlotter:
 					line = line.strip()
 					splitLine = line.split('\t')
 
-					patient = splitLine[0]
-					predictions = splitLine[1:]
-					perPatientPredictions[patient] = [float(i) for i in predictions]
+					pair = splitLine[0]
+					splitPairLabel = pair.split("_")
+					trueLabel = splitLine[1]
+					prediction = splitLine[2]
 
-			#get the original labels
-			allFiles = glob.glob(leaveOneOutDataFolder + '*_[0-9]*' + svType + '.npy')
-
-			patientFiles = dict()
-			for dataFile in allFiles:
-
-				#get the patient ID
-				splitFileId = dataFile.split('_')
-				patientId = splitFileId[len(splitFileId)-2]
-
-				if patientId not in patientFiles:
-					patientFiles[patientId] = []
-				patientFiles[patientId].append(dataFile)
-			
-			predictions = dict()
-			for patient in patientFiles:
-
-				for dataFile in patientFiles[patient]:
-
-					if re.search('bagLabelsTest', dataFile):
-						bagLabelsTest = np.load(dataFile, encoding='latin1', allow_pickle=True)
-					if re.search('bagPairLabels', dataFile):
-						bagPairLabels = np.load(dataFile, encoding='latin1', allow_pickle=True)
-
-				for labelInd in range(0, len(bagPairLabels)):
-					pairLabel = bagPairLabels[labelInd]
-					splitLabel = pairLabel.split('_')
-
-					if bagLabelsTest[labelInd] == 1:
-						if splitLabel[0] in cosmicGeneNames:
-							totalCosmicGenes += 1
-
-					#if bagLabelsTest[labelInd] == 1 and perPatientPredictions[patient][labelInd] == 1:
-					if perPatientPredictions[patient][labelInd] == 1:
-						pairLabel = bagPairLabels[labelInd]
-						splitLabel = pairLabel.split('_')
+					if prediction == "1":
 						
 						#if splitLabel[0] in cosmicGeneNames:
 						
-						cosmicPairs.append(splitLabel[0] + '_' + splitLabel[7] + '_' + svType)
+						cosmicPairs.append(splitPairLabel[0] + '_' + splitPairLabel[7] + '_' + svType)
+
+			#
+			#
+			# 		patient = splitLine[0]
+			# 		predictions = splitLine[1:]
+			# 		perPatientPredictions[patient] = [float(i) for i in predictions]
+			#
+			# #get the original labels
+			# allFiles = glob.glob(leaveOneOutDataFolder + '*_[0-9]*' + svType + '.npy')
+			#
+			# patientFiles = dict()
+			# for dataFile in allFiles:
+			#
+			# 	#get the patient ID
+			# 	splitFileId = dataFile.split('_')
+			# 	patientId = splitFileId[len(splitFileId)-2]
+			#
+			# 	if patientId not in patientFiles:
+			# 		patientFiles[patientId] = []
+			# 	patientFiles[patientId].append(dataFile)
+			#
+			# predictions = dict()
+			# for patient in patientFiles:
+			#
+			# 	for dataFile in patientFiles[patient]:
+			#
+			# 		if re.search('bagLabelsTest', dataFile):
+			# 			bagLabelsTest = np.load(dataFile, encoding='latin1', allow_pickle=True)
+			# 		if re.search('bagPairLabels', dataFile):
+			# 			bagPairLabels = np.load(dataFile, encoding='latin1', allow_pickle=True)
+			#
+			# 	for labelInd in range(0, len(bagPairLabels)):
+			# 		pairLabel = bagPairLabels[labelInd]
+			# 		splitLabel = pairLabel.split('_')
+			#
+			# 		if bagLabelsTest[labelInd] == 1:
+			# 			if splitLabel[0] in cosmicGeneNames:
+			# 				totalCosmicGenes += 1
+			#
+			# 		#if bagLabelsTest[labelInd] == 1 and perPatientPredictions[patient][labelInd] == 1:
+			# 		if perPatientPredictions[patient][labelInd] == 1:
+			# 			pairLabel = bagPairLabels[labelInd]
+			# 			splitLabel = pairLabel.split('_')
+			#
+			# 			#if splitLabel[0] in cosmicGeneNames:
+			#
+			# 			cosmicPairs.append(splitLabel[0] + '_' + splitLabel[7] + '_' + svType)
 
 
-
+		print(cosmicPairs)
 
 		return cosmicPairs
 
