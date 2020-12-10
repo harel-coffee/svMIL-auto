@@ -92,6 +92,11 @@ class Figure2:
 
 		significanceMatrix = np.array(significanceMatrix)
 
+		np.save('signMatrix.npy', significanceMatrix)
+		#24 and 29 should be removed
+		#significanceMatrix = np.delete(significanceMatrix, 29, 1)
+		#significanceMatrix = np.delete(significanceMatrix, 24, 1)
+
 		fig =plt.figure(figsize=(15,10))
 
 		data = pd.DataFrame(significanceMatrix) #exclude translocations, these are not there for germline.
@@ -100,15 +105,15 @@ class Figure2:
 					  yticklabels=list(pValuesPerCancerType.keys()))
 
 		g.set_yticklabels(g.get_yticklabels(), horizontalalignment='right',fontsize='small')
-		plt.xticks(np.arange(0, len(pValues))+0.5, ['Gains', 'Losses', 'cpg', 'tf', 'hic', 'ctcf', 'dnaseI', 'h3k9me3', 'h3k4me3', 'h3k27ac', 'h3k27me3', 'h3k4me1', 'h3k36me3',
+		plt.xticks(np.arange(0, significanceMatrix.shape[1])+0.5, ['Gains', 'Losses', 'cpg', 'tf', 'ctcf', 'dnaseI', 'h3k4me3', 'h3k27ac', 'h3k27me3', 'h3k4me1',
 				'CTCF', 'CTCF+Enhancer', 'CTCF+Promoter', 'Enhancer', 'Heterochromatin', 'Poised_Promoter', 'Promoter', 'Repeat', 'Repressed', 'Transcribed', 'rnaPol',
-				'enhancer_s', 'ctcf_s', 'rnaPol_s', 'h3k9me3_s', 'h3k4me3_s', 'h3k27ac_s', 'h3k27me3_s', 'h3k4me1_s', 'h3k26me3_s', 'enhancerType', 'eQTLType', 'superEnhancerType',
+				'enhancer_s', 'ctcf_s', 'rnaPol_s', 'h3k4me3_s', 'h3k27ac_s', 'h3k27me3_s', 'h3k4me1_s', 'enhancerType', 'eQTLType', 'superEnhancerType',
 				'instCount'], rotation=45, horizontalalignment='right')
 
 		plt.tight_layout()
 
 
-		plt.savefig('featureImportanceHeatmap.svg')
+		plt.savefig('featureImportanceHeatmap_CTCF.svg')
 		plt.show()
 
 
@@ -260,7 +265,8 @@ class Figure2:
 			#to retain an overview of all used features
 			fixedInstances = []
 			for instance in instances:
-				finalLength = len(instance) + len(filteredFeatures)
+
+				finalLength = len(instance) + filteredFeatures.size
 				instanceMal = np.zeros(finalLength) #mal including missing features
 				addedFeatures = 0
 				for featureInd in range(0, finalLength):
@@ -279,8 +285,10 @@ class Figure2:
 		allInstances = np.array(allInstances)
 		return allImportances, allInstances
 
-cancerTypes = ['HMF_Breast', 'HMF_Ovary', 'HMF_Liver', 'HMF_Lung', 'HMF_Colorectal',
+cancerTypes = ['HMF_Breast', 'HMF_Ovary', 'HMF_Lung', 'HMF_Colorectal',
 				   'HMF_UrinaryTract', 'HMF_Prostate', 'HMF_Esophagus', 'HMF_Skin',
 				   'HMF_Pancreas', 'HMF_Uterus', 'HMF_Kidney', 'HMF_NervousSystem']
+cancerTypes = ['HMF_Breast_CTCF', 'HMF_Colorectal_CTCF', 'HMF_Lung_CTCF']
+#cancerTypes = ['HMF_Breast_CTCF_TADs', 'HMF_Colorectal_CTCF_TADs', 'HMF_Lung_CTCF_TADs']
 
 Figure2().generateHeatmap(cancerTypes)

@@ -18,8 +18,11 @@ fi
 
 ### CANCER TYPE-SPECIFIC DATA PROCESSING ###
 #These are the cancer types we want to run the tool for, so preprocess their data.
-types=('urinaryTract' 'prostate' 'esophagus' 'skin' 'pancreas' 'uterus' 'kidney' 'nervousSystem')
 
+###TO DO
+#### the rest also needs to be added. and make sure to update the folder output for hmec etc
+
+types=('hmec' 'ov' 'gm12878' 'coad' 'luad' 'urinaryTract' 'prostate' 'esophagus' 'skin' 'pancreas' 'uterus' 'nervousSystem' 'kidney')
 
 ### PARSE EQTLS ###
 #This requires download of GTEx_Analysis_v7.metasoft.txt.gz. See eQTLs/readme.txt.
@@ -32,21 +35,21 @@ if $run; then
 
 	#loop over the cancer types
 	for type in ${types[@]}; do
-		outFolder='../data/eQTLs/$type/'
+		outFolder="../data/eQTLs/$type/"
+
+		if [ "$type" = "kidney" ]; then
+			inFile='../data/eQTLs/GTEx_Analysis_v8.metasoft.txt'
+		fi
+
 		python "$runFolder/filterEQTLs.py" "$inFile" "$geneLookupFile" "$outFolder" "$type"
 
-		#for a few types, we do not have tissue-specific data, so we use blood.
-		if [ "$type" = "urinaryTract" ] || [ "$type" = "kidney" ]; then
-
-			python "$runFolder/filterEQTLs.py" "$inFile" "$geneLookupFile" "$outFolder" "blood"
-
-		fi
 
 	done
 
 fi
+types=('skin')
 
-run=false
+run=true
 if $run; then
 	runFolder='./DataProcessing/'
 
@@ -54,13 +57,30 @@ if $run; then
 	for type in ${types[@]}; do
 
 		#Cluster histones
-		python "$runFolder/genericClustering.py" "../data/histones/$type/"
+		python "$runFolder/genericClustering.py" "../data/h3k27ac/$type/"
 
 		#cluster eQTLs
-		python "$runFolder/eQTLClustering.py" "../data/eQTLs/$type/"
+		#python "$runFolder/eQTLClustering.py" "../data/eQTLs/$type/"
 	done
 
 fi
+
+#convert the SEdb files to actual bed files
+run=false
+#types=('uterus' 'kidney' 'nervousSystem', 'prostate')
+types=('prostate')
+if $run; then
+	runFolder='./DataProcessing'
+	dataFolder='../data/superEnhancers/'
+
+	#loop over the different types
+	for type in ${types[@]}; do
+
+		python "$runFolder/convertSeDbFiles.py" "$dataFolder/$type/" "$dataFolder/$type/$type.bed"
+
+	done
+fi
+
 
 
 ### TMM NORMALIZATION ###
