@@ -114,7 +114,10 @@ class Figure3:
 				'Instance count'], rotation=45, horizontalalignment='right')
 
 		plt.tight_layout()
-		plt.savefig('output/figures/featureImportanceHeatmap' + loopType + '.svg')
+		if loopType == 'TAD':
+			plt.savefig('output/figures/figure3a.svg')
+		else:
+			plt.savefig('output/figures/figure3b.svg')
 
 
 	def computeFeatureSignificances(self, importances, instances, top):
