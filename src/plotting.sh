@@ -52,3 +52,17 @@ if $run; then
 
 fi
 
+
+
+
+### FIGURE S1 ###
+run=false
+
+if $run; then
+	runFolder='./plotting/'
+
+	python "$runFolder/plotVariances.py"
+
+
+fi
+
