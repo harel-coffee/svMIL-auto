@@ -114,7 +114,7 @@ class Figure3:
 				'Instance count'], rotation=45, horizontalalignment='right')
 
 		plt.tight_layout()
-		plt.savefig('featureImportanceHeatmap' + loopType + '.svg')
+		plt.savefig('output/figures/featureImportanceHeatmap' + loopType + '.svg')
 
 
 	def computeFeatureSignificances(self, importances, instances, top):
