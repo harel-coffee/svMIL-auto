@@ -95,5 +95,5 @@ g=sns.heatmap(data,annot=False,square=True, linewidths=0.5,
 			  xticklabels=allTypes, yticklabels=cancerTypes,
 			  cmap="vlag", center=0, vmin=-2, vmax=2)
 plt.tight_layout()
-plt.savefig('output/figures/swap.svg')
+plt.savefig('output/figures/figure4a.svg')
 plt.show()

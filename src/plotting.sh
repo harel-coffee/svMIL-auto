@@ -37,9 +37,18 @@ run=false
 
 if $run; then
 	runFolder='./plotting/'
-	outputFolder='./output/'
 
-	python "$runFolder/figure3.py" "$outputFolder"
+	python "$runFolder/figure3.py"
+fi
+
+### FIGURE 4A ###
+run=false
+
+if $run; then
+	runFolder='./plotting/'
+
+	python "$runFolder/makeSwapHeatmap.py"
 
 
 fi
+
