@@ -1,3 +1,8 @@
+"""
+	Plot figure 4A, the results of swapping tissue types between cancer types
+	and the effect on the performance of svMIL2.
+"""
+
 ## for eah cancer type, get the performance from all swap folders
 import os
 import numpy as np
@@ -5,11 +10,16 @@ import seaborn as sns
 import matplotlib.pyplot as plt
 import pandas as pd
 
+#Names of the cancer types
 cancerTypes = ['Breast', 'Colorectal', 'Esophagus', 'Lung', 'Kidney', 'NervousSystem', 'Ovary',
 			   'Pancreas', 'Prostate', 'Skin', 'UrinaryTract', 'Uterus']
+#the names of the tissue we used for them, these should be in the same order as
+#the cancer types, so that we know what the 'original' run is to compare the
+#performance to
 baselines = ['hmec', 'coad', 'esophagus', 'luad', 'kidney', 'nervousSystem', 'ov',
 			 'pancreas', 'prostate', 'skin', 'urinaryTract', 'uterus']
 
+#these are all types that we made the swaps with. 
 allTypes = ['hmec', 'coad', 'esophagus', 'luad', 'kidney', 'nervousSystem', 'ov', 'pancreas',
 			'prostate', 'skin', 'urinaryTract', 'uterus', 'gm12878']
 
@@ -32,7 +42,6 @@ for cancerTypeInd in range(0, len(cancerTypes)):
 			#skip runs for which there was no output due to e.g. no SVs
 			if os.path.isfile(outFile) == True:
 				aucData = np.loadtxt(outFile, dtype='object')
-				#if cancerType == 'HMF_Uterus':
 				aucData = aucData[0]
 				svAuc = float(aucData[0])
 				aucs[swapFolder].append(svAuc)
@@ -48,22 +57,24 @@ for cancerTypeInd in range(0, len(cancerTypes)):
 
 		swapFolder = 'HMF_' + cancerType + '_' + swapType
 
+		#compute the total difference from the baseline
 		differenceFromBase = 0
 		for svTypeInd in range(0, len(svTypes)):
 			baseAUC = baseAUCs[svTypeInd]
 			swapAUC = aucs[swapFolder][svTypeInd]
 
+			#avoid failed runs that will give a huge difference (e.g. no pathogenic SVs with swap)
 			if swapAUC == 0:
-
 				continue
 
 			differenceFromBase += (swapAUC - baseAUC)
 
 
-		#allDifferences[swapFolder] = differenceFromBase
-
 		allDifferences.append(differenceFromBase)
 
+	#compute a z-score from the swap - original difference to the mean and std
+	#of ALL the other swaps made for that cancer type, and assess if the
+	#difference is really significant.
 	zDifferences = []
 	for difference in allDifferences:
 
