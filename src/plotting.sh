@@ -17,7 +17,15 @@ fi
 
 #### PLOTTING #####
 
-## TO DO ###
+### FIGURE 1C, 4C ###
+run=false
+
+if $run; then
+	runFolder='./plotting/'
+
+	python "$runFolder/plotAUC.py"
+fi
+
 
 #
 #run=true
@@ -49,11 +57,7 @@ if $run; then
 
 	python "$runFolder/makeSwapHeatmap.py"
 
-
 fi
-
-
-
 
 ### FIGURE S1 ###
 run=false
@@ -63,6 +67,13 @@ if $run; then
 
 	python "$runFolder/plotVariances.py"
 
-
 fi
+
+### FIGURE 1B & S5 ###
+#Generate 1B by running svMIL and svMIL2 on the breast samples, then combining
+#the ROC curves in output/specifiedOutputFolder/rocCurves
+
+#Generate S5 by running svMIL2 on the breast samples with a bag limit of 700 in
+#the settings vs no limit (e.g. 70000), and combine the ROC curves
+#in output/specifiedOutputFolder/rocCurves
 
