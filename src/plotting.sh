@@ -26,18 +26,14 @@ if $run; then
 	python "$runFolder/plotAUC.py"
 fi
 
+### FIGURE 2A, 2B ###
+run=false
 
-#
-#run=true
-#
-#if $run; then
-#	runFolder='./plotting/'
-#	settingsFolder='./settings/settings_HMF_Breast' #we need access to ?
-#
-#	#figure 1 plots
-#	python "$runFolder/plotFrequentCosmicGenes.py" "$settingsFolder"
-#
-#fi
+if $run; then
+	runFolder='./plotting/'
+
+	python "$runFolder/figure2.py"
+fi
 
 ### FIGURE 3 ###
 
@@ -66,6 +62,17 @@ if $run; then
 	runFolder='./plotting/'
 
 	python "$runFolder/plotVariances.py"
+
+fi
+
+### FIGURE S2, S4 and 4B ###
+run=false
+
+if $run; then
+	runFolder='./plotting/'
+	settingsFile='./settings/settings_HMF_Breast_hmec/'
+
+	python "$runFolder/plotSVStats.py" "$settingsFile"
 
 fi
 
