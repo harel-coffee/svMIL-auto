@@ -1,6 +1,7 @@
 from __future__ import absolute_import
 from copy import deepcopy
 import numpy as np
+import random
 
 import settings
 
@@ -9,7 +10,7 @@ class Gene:
 		Class to describe a gene. Holds all other information related to the neighborhood of the gene as well, like the TADs, regulatory elements and SVs affecting the gene.
 	"""
 	def __init__(self, name, chromosome, start, end):
-		
+
 		self.name = name
 		self.chromosome = chromosome
 		self.start = start
@@ -27,10 +28,13 @@ class Gene:
 		self.gainedElementsStrengthsSVs = dict()
 		self.lostElementsStrengthsSVs = dict()
 		self.alteredElements = dict()
-		self.elementsNotLinkedToGenes = ['ctcf', 'rnaPol', 'cpg', 'tf', 'hic', 'dnaseI', 'h3k9me3', 'h3k4me3', 'h3k27ac', 'h3k27me3', 'h3k4me1', 'h3k36me3',
+		self.elementsNotLinkedToGenes = ['ctcf', 'rnaPol', 'cpg', 'tf', 'dnaseI', 'h3k4me3', 'h3k27ac', 'h3k27me3', 'h3k4me1',
 									'CTCF', 'CTCF+Enhancer', 'CTCF+Promoter', 'Enhancer', 'Heterochromatin',
-									'Poised_Promoter', 'Promoter', 'Repeat', 'Repressed', 'Transcribed', 'superEnhancer']
-		self.strengthElements = ['enhancer', 'ctcf', 'rnaPol', 'h3k9me3', 'h3k4me3', 'h3k27ac', 'h3k27me3', 'h3k4me1', 'h3k36me3']
+									'Poised_Promoter', 'Promoter', 'Repressed', 'Transcribed', 'superEnhancer']
+
+		self.strengthElements = ['ctcf', 'rnaPol', 'h3k4me3', 'h3k27ac', 'h3k27me3', 'h3k4me1']
+		## the old way
+		#self.strengthElements = ['enhancer', 'ctcf', 'rnaPol', 'h3k9me3', 'h3k4me3', 'h3k27ac', 'h3k27me3', 'h3k4me1', 'h3k36me3']
 		self.cosmic = 0
 		
 		
@@ -211,10 +215,14 @@ class Gene:
 
 		#For methylation marks, gather all relevant marks here for easy lookup.
 		methylationMarks = []
-		annotationElements = ['cpg', 'tf', 'hic', 'ctcf', 'dnaseI', 'h3k9me3', 'h3k4me3', 'h3k27ac', 'h3k27me3', 'h3k4me1', 'h3k36me3',
-							  'CTCF', 'CTCF+Enhancer', 'CTCF+Promoter', 'Enhancer', 'Heterochromatin', 'Poised_Promoter', 'Promoter', 'Repeat', 'Repressed', 'Transcribed', 'rnaPol']
+		annotationElements = ['cpg', 'tf', 'ctcf', 'dnaseI', 'h3k4me3', 'h3k27ac', 'h3k27me3', 'h3k4me1',
+							  'CTCF', 'CTCF+Enhancer', 'CTCF+Promoter', 'Enhancer', 'Heterochromatin', 'Poised_Promoter', 'Promoter', 'Repressed', 'Transcribed', 'rnaPol']
 
-		strengthElements = ['enhancer', 'ctcf', 'rnaPol', 'h3k9me3', 'h3k4me3', 'h3k27ac', 'h3k27me3', 'h3k4me1', 'h3k36me3']
+		#the old way
+		#annotationElements = ['cpg', 'tf', 'hic', 'ctcf', 'dnaseI', 'h3k9me3', 'h3k4me3', 'h3k27ac', 'h3k27me3', 'h3k4me1', 'h3k36me3',
+		#					  'CTCF', 'CTCF+Enhancer', 'CTCF+Promoter', 'Enhancer', 'Heterochromatin', 'Poised_Promoter', 'Promoter', 'Repeat', 'Repressed', 'Transcribed', 'rnaPol']
+
+
 		for element in elements:
 
 			if element[3] in annotationElements:
@@ -246,11 +254,8 @@ class Gene:
 				methylationMatches = methylationMarks[(methylationMarks[:,2] >= element[1]) * (methylationMarks[:,1] <= element[2])]
 
 
-
-			#Fix this later and make it not-so-hardcoded
-			#elementMethylation = [0, 0] #keep order of elements
 			elementMethylation = [0]*len(annotationElements) #keep order of elements
-			elementStrength = [0]*len(strengthElements) #keep order of elements
+			elementStrength = [0]*len(self.strengthElements) #keep order of elements
 			for match in methylationMatches:
 
 				for elementInd in range(0, len(annotationElements)):
@@ -258,8 +263,8 @@ class Gene:
 					if match[3] == annotationElement:
 						elementMethylation[elementInd] = 1
 
-				for elementInd in range(0, len(strengthElements)):
-					strengthElement = strengthElements[elementInd]
+				for elementInd in range(0, len(self.strengthElements)):
+					strengthElement = self.strengthElements[elementInd]
 					if match[3] == strengthElement:
 						elementStrength[elementInd] = match[5]
 
@@ -291,6 +296,15 @@ class Gene:
 				eQTLType = 1
 			elif element[3] == 'superEnhancer':
 				superEnhancerType = 1
+
+			#try shuffling here.
+			# lossGains = [random.randint(0,1), random.randint(0,1)]
+			# elementMethylation = [random.randint(0,1)]*len(elementMethylation)
+			# elementStrength = [random.randint(0,1000)]*len(elementStrength)
+			# enhancerType = random.randint(0,1)
+			# eQTLType = random.randint(0,1)
+			# superEnhancerType = random.randint(0,1)
+
 
 
 			#if we get here, we passed all checks and there is a valid gain OR loss
