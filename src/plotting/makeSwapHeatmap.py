@@ -103,8 +103,7 @@ fig =plt.figure(figsize=(5,5))
 
 data = pd.DataFrame(differencesAcrossCancerTypes)
 g=sns.heatmap(data,annot=False,square=True, linewidths=0.5,
-			  xticklabels=allTypes, yticklabels=cancerTypes,
+			  xticklabels=cancerTypes + ['GM12878'], yticklabels=cancerTypes,
 			  cmap="vlag", center=0, vmin=-2, vmax=2)
 plt.tight_layout()
-plt.savefig('output/figures/figure4a.svg')
-plt.show()
+plt.savefig('output/figures/figure5.svg')

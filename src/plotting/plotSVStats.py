@@ -54,8 +54,11 @@ def plotSVStatsPanels(cancerTypes, loopType):
 	cancerTypePlotNames = []
 	for cancerType in cancerTypes:
 		splitCancerType = cancerType.split('_')
-		cancerType2 = '_'.join(splitCancerType[0:2])
-		cancerTypePlotNames.append(cancerType2)
+		cancerType2 = '_'.join(splitCancerType[1:2])
+		if loopType == 'TAD':
+			cancerTypePlotNames.append(cancerType2)
+		else:
+			cancerTypePlotNames.append(cancerType2 + '_CTCF')
 
 		#count how many pathogenic SVs we have
 		pathogenicSVFile = 'output/' + cancerType + '/linkedSVGenePairs/nonCoding_geneSVPairs.txt_pathogenicPairsFeatures.txt'
@@ -79,7 +82,7 @@ def plotSVStatsPanels(cancerTypes, loopType):
 	if loopType == 'TAD':
 		plt.savefig('output/figures/figureS2C.svg')
 	else:
-		plt.savefig('output/figures/figure4B_A.svg')
+		plt.savefig('output/figures/figure4A_A.svg')
 	plt.clf()
 
 	#2. Make plot of the total SV counts
@@ -148,7 +151,7 @@ def plotSVStatsPanels(cancerTypes, loopType):
 	if loopType == 'TAD':
 		plt.savefig('output/figures/figureS2D.svg')
 	else:
-		plt.savefig('output/figures/figure4B_B.svg')
+		plt.savefig('output/figures/figure4A_B.svg')
 		
 	plt.clf()
 
@@ -172,7 +175,7 @@ def plotSVTypeDistribution(cancerTypes):
 	for cancerType in cancerTypes:
 		#split names for clarity in plots
 		splitCancerType = cancerType.split('_')
-		cancerType2 = '_'.join(splitCancerType[0:2])
+		cancerType2 = '_'.join(splitCancerType[1:2])
 		cancerTypePlotNames.append(cancerType2)
 
 		pathogenicSVCounts[cancerType] = 0
@@ -236,7 +239,7 @@ cancerTypes = ['HMF_Breast_hmec', 'HMF_Ovary_ov', 'HMF_Lung_luad', 'HMF_Colorect
 			   'HMF_Pancreas_pancreas', 'HMF_Uterus_uterus', 'HMF_Kidney_kidney', 'HMF_NervousSystem_nervousSystem']
 
 #1. Make the panels of Fig S2
-plotSVStatsPanels(cancerTypes, 'TAD')
+#plotSVStatsPanels(cancerTypes, 'TAD')
 
 #2. Make the panels of Fig 4B
 cancerTypesCTCF = ['HMF_Breast_CTCF', 'HMF_Colorectal_CTCF', 'HMF_Lung_CTCF']

@@ -50,7 +50,7 @@ class Figure3:
 		#then make a heatmap plot of the significances.
 		self.plotHeatmap(pValuesPerCancerType, loopType)
 
-	def plotHeatmap(self, pValuesPerCancerType):
+	def plotHeatmap(self, pValuesPerCancerType, loopType):
 		"""
 			Plot the heatmap showing the signficances of each feature (columns) in each cancer
 			type (rows). P-values are binarized into very significant (1e-5) and significant (
@@ -69,7 +69,9 @@ class Figure3:
 		for cancerType in pValuesPerCancerType:
 			#get the short name of the cancer type for plotting clarity
 			splitCancerType = cancerType.split('_')
-			shortCancerType = '_'.join(splitCancerType[0:2])
+			shortCancerType = '_'.join(splitCancerType[1:2])
+			if loopType == 'CTCF':
+				shortCancerType += '_CTCF'
 			shortCancerTypeNames.append(shortCancerType)
 
 			significances = []
@@ -99,6 +101,8 @@ class Figure3:
 			significanceMatrix.append(significances)
 
 		significanceMatrix = np.array(significanceMatrix)
+		#np.save('signMatrix.npy', significanceMatrix)
+		#print(significanceMatrix)
 
 		fig =plt.figure(figsize=(15,10))
 
@@ -115,9 +119,9 @@ class Figure3:
 
 		plt.tight_layout()
 		if loopType == 'TAD':
-			plt.savefig('output/figures/figure3a.svg')
+			plt.savefig('output/figures/figure3.svg')
 		else:
-			plt.savefig('output/figures/figure3b.svg')
+			plt.savefig('output/figures/figure4C.svg')
 
 
 	def computeFeatureSignificances(self, importances, instances, top):
@@ -214,7 +218,7 @@ class Figure3:
 		"""
 
 		#set the directory to look in for this cancer type
-		outDir = sys.argv[1] + '/' + cancerType
+		outDir = 'output/' + cancerType
 
 		#gather the top 100 instances across all SV types
 		#also return the instances themselves to get the features
@@ -287,7 +291,7 @@ class Figure3:
 		allInstances = np.array(allInstances)
 		return allImportances, allInstances
 
-#1. Make the figure for all TAD-based runs (Fig 3A)
+#1. Make the figure for all TAD-based runs (Fig 3)
 cancerTypes = ['HMF_Breast_hmec', 'HMF_Ovary_ov', 'HMF_Lung_luad', 'HMF_Colorectal_coad',
 				   'HMF_UrinaryTract_urinaryTract', 'HMF_Prostate_prostate',
 				   'HMF_Esophagus_esophagus', 'HMF_Skin_skin',
@@ -296,6 +300,6 @@ cancerTypes = ['HMF_Breast_hmec', 'HMF_Ovary_ov', 'HMF_Lung_luad', 'HMF_Colorect
 
 Figure3().generateHeatmap(cancerTypes, 'TAD')
 
-#2. Make the figure for all CTCF-based runs (Fig 3B)
+#2. Make the figure for all CTCF-based runs (Fig 4C)
 cancerTypesCTCF = ['HMF_Breast_CTCF']
 Figure3().generateHeatmap(cancerTypesCTCF, 'CTCF')

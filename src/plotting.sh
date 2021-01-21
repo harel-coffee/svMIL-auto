@@ -1,7 +1,18 @@
+#!/bin/bash
+#SBATCH --mem=60G
+#SBATCH --time=04:00:00
+#SBATCH -o re.out
+#SBATCH -e re.err
+#SBATCH --mail-type=FAIL
+#SBATCH --mail-user=m.m.nieboer@umcutrecht.nl
+
 # Script to create all paper figures for svMIL2.
 
+# Assumes that preprocessing.sh has already been run.
+
 ##### REQUIRED RUNS #####
-#1. Run svMIL2 to create all output needed for figures.
+#1. In createSettingsFiles.py, set all correct paths.
+#2. Run svMIL2 to create all output needed for figures.
 
 run=false
 if $run; then
@@ -15,9 +26,17 @@ if $run; then
 	done
 fi
 
+#2. Run svMIL2 with CTCF loops
+
+#To get the chromatin loops, run iTAD as described in the paper.
+#Then in a settings file, use the final_iTADs_ctcf_score.bed12 output file in place
+#of the tadFile.
+#Run workflow_breast_ctcf.sh, workflow_lung_ctcf.sh and workflow_colorectal_ctcf.sh
+#to get the results when using CTCF data.
+
 #### PLOTTING #####
 
-### FIGURE 1C, 4C ###
+### FIGURE 1C, 4B ###
 run=false
 
 if $run; then
@@ -35,7 +54,7 @@ if $run; then
 	python "$runFolder/figure2.py"
 fi
 
-### FIGURE 3 ###
+### FIGURE 3, 4C ###
 
 run=false
 
@@ -45,7 +64,7 @@ if $run; then
 	python "$runFolder/figure3.py"
 fi
 
-### FIGURE 4A ###
+### FIGURE 5 ###
 run=false
 
 if $run; then
@@ -56,16 +75,22 @@ if $run; then
 fi
 
 ### FIGURE S1 ###
-run=false
+
+#1. First run the old svMIL model and output normalizedBags.pkl.
+#2. Use these bags as input for plotVariances.py.
+
+run=true
 
 if $run; then
 	runFolder='./plotting/'
+	#specify directory with the normalizedBags.pkl
+	outDir='./output/HMF_Breast_oldFeatures'
 
-	python "$runFolder/plotVariances.py"
+	python "$runFolder/plotVariances.py" "$outDir"
 
 fi
 
-### FIGURE S2, S4 and 4B ###
+### FIGURE S2, S4 and 4A ###
 run=false
 
 if $run; then
