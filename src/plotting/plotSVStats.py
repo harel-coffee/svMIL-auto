@@ -222,7 +222,7 @@ def plotSVTypeDistribution(cancerTypes):
 	# Create orange Bars
 	plt.bar(r, dupBars, bottom=delBars, color='#377eb8', edgecolor='white', width=barWidth, label = 'DUP')
 	# Create blue Bars
-	plt.bar(r, invBars, bottom=[i+j for i,j in zip(delBars, dupBars)], color='#4daf4a', edgecolor='white', width=barWidth, label = 'INV')
+	plt.bar(r, invBars, bottom=[i+j for i,j in zip(delBars, dupBars)], color='#ff6000ff', edgecolor='white', width=barWidth, label = 'INV')
 	plt.bar(r, itxBars, bottom=[i+j+k for i,j,k in zip(delBars, dupBars, invBars)], color='#984ea3', edgecolor='white', width=barWidth, label = 'ITX')
 
 	# Custom x axis
@@ -243,7 +243,7 @@ cancerTypes = ['HMF_Breast_hmec', 'HMF_Ovary_ov', 'HMF_Lung_luad', 'HMF_Colorect
 
 #2. Make the panels of Fig 4B
 cancerTypesCTCF = ['HMF_Breast_CTCF', 'HMF_Colorectal_CTCF', 'HMF_Lung_CTCF']
-plotSVStatsPanels(cancerTypesCTCF, 'CTCF')
+#plotSVStatsPanels(cancerTypesCTCF, 'CTCF')
 
 #3. Make Fig S4
-#plotSVTypeDistribution(cancerTypes)
+plotSVTypeDistribution(cancerTypes)

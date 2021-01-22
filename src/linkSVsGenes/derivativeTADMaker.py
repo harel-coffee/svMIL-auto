@@ -58,7 +58,6 @@ class DerivativeTADMaker:
 		
 		endTime = time.time()
 		print("The program took ", endTime-startTime, " for inv")
-		#exit()
 		
 		
 		#Duplications
@@ -445,14 +444,15 @@ class DerivativeTADMaker:
 			leftMostTad = tadChrSubset[invStartMatches]
 			rightMostTad = tadChrSubset[invEndMatches]
 			
+
+			
 			
 			if len(leftMostTad) < 1 or len(rightMostTad) < 1:
 				return #for now skip all inversions that do not end in a TAD on either side. 
 
 			#These are only the cases where the inversion ends in a TAD on both sides. 
 			if len(leftMostTad) > 0 and len(rightMostTad) > 0:
-				
-				
+
 				if leftMostTad[0][1] == rightMostTad[0][1] and leftMostTad[0][2] == rightMostTad[0][2]: #skip if the SV is within a TAD entirely
 					
 					return
@@ -460,6 +460,8 @@ class DerivativeTADMaker:
 				
 				leftMostTad = leftMostTad[0]
 				rightMostTad = rightMostTad[0]
+				
+				
 				
 				#2. Collect all elements until the right TAD boundary inside the inversion.
 				
@@ -493,7 +495,7 @@ class DerivativeTADMaker:
 				gene.addLostElementsSVs(leftSideElements, svStr)
 				
 			#All genes in the right side of the inversion will gain elements from the original left TAD.
-			#All genes in the right side will lose interactions with eQTLs in the unaffected right TAD. 
+			#All genes in the right side will lose interactions with eQTLs in the unaffected right TAD.
 			for gene in rightSideGenes:
 				
 				gene.addGainedElements(unaffectedElementsLeft, svData[7])

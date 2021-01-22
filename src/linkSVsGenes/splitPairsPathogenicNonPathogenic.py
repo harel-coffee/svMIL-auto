@@ -35,7 +35,6 @@ positivePairsFeatures = []
 negativePairsFeatures = []
 
 for pair in svGenePairs:
-	features = list(pair)
 
 	splitPair = pair[0].split('_')
 	shortPair = splitPair[7] + '_' + splitPair[0]
@@ -45,15 +44,15 @@ for pair in svGenePairs:
 		zPairInfo = zScores[zScores[:,0] == shortPair][0]
 
 		if float(zPairInfo[5]) > 1.5 or float(zPairInfo[5]) < -1.5:
+		#if float(zPairInfo[5]) > 2 or float(zPairInfo[5]) < -2:
 
 			#only add to the positive set if there is no CNV amp without duplication.
-			#if splitPair[0] in cnvPatientsAmp[splitPair[7]]:
 			if splitPair[0] in cnvPatientsAmp[splitPair[7]] and shortPair + '_DUP' not in splitSVGenePairs:
-				negativePairsFeatures.append(features)
+				negativePairsFeatures.append(pair)
 			else:
-				positivePairsFeatures.append(features)
+				positivePairsFeatures.append(pair)
 		else:
-			negativePairsFeatures.append(features)
+			negativePairsFeatures.append(pair)
 
 
 positivePairsFeatures = np.array(positivePairsFeatures)

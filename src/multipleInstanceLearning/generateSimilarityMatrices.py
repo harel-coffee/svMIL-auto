@@ -6,10 +6,8 @@
 	- leave-one-patient-out CV
 	- leave-bags-out CV
 	- the similarity matrix on the whole dataset (used for feature importance)
-
 	If we do feature elimination, we have similarity matrices for each feature
 	output these as well.
-
 """
 
 
@@ -36,8 +34,7 @@ leaveBagsOut = sys.argv[5] #random bags in each CV fold
 fullDataset = sys.argv[6] #generate sim matrix for the whole dataset.
 
 svTypes = ['DEL', 'DUP', 'INV', 'ITX']
-#svTypes = ['DEL', 'DUP', 'INV']
-svTypes = ['ALL']
+#svTypes = ['ALL']
 
 outDir = sys.argv[1]
 finalOutDir = outDir + '/multipleInstanceLearning/similarityMatrices/'
@@ -125,7 +122,6 @@ def getSimilarityMatrixTest(testBags, trainInstances, labels):
 	"""
 		function to get the similarity matrix specific for the test case.
 		The instances that we map the distance to are the provided train instances.
-
 		testBags (numpy array): all test bags that we use for this matrix
 		trainInstances (numpy array): all instances in the bags of the training data, we compute distance to these instances from the test bags
 		labels (list): obsolete.
@@ -1045,6 +1041,3 @@ for svType in svTypes:
 			#output these to a file
 			#write these data to disk so that we can access it later on
 			np.save(finalOutDir + '/' + 'similarityMatrix_' + svType + '.npy', similarityMatrix)
-
-
-			

@@ -33,8 +33,8 @@ leaveBagsOut = sys.argv[5] #random bags in each CV fold
 randomLabels = sys.argv[6] #running CV with randomized labels, only implemented for lopoCV
 
 svTypes = ['DEL', 'DUP', 'INV', 'ITX', 'ALL']
-svTypes = ['INV', 'ITX']
-thresholds = np.arange(0,11) * 0.1
+svTypes = ['DEL', 'DUP', 'INV', 'ITX']
+#svTypes = ['ITX']
 
 outDir = sys.argv[1]
 
@@ -324,9 +324,11 @@ def leaveOnePatientOutCV(leaveOneOutDataFolder, classifier, svType, title, shuff
 				bagPairLabels = np.load(dataFile, encoding='latin1', allow_pickle=True)
 
 
-		if shuffleLabels == True:
+		if shuffleLabels == "True":
 			shuffle(bagLabelsTrain)
 			shuffle(bagLabelsTest)
+			
+			
 
 		#then train the classifier
 		classifier.fit(similarityMatrixTrain, bagLabelsTrain)
@@ -378,17 +380,19 @@ def leaveOnePatientOutCV(leaveOneOutDataFolder, classifier, svType, title, shuff
 
 	print('PR: ', auprc)
 	print('AP: ', ap)
+	print(precision,recall)
 
 	#select cases where the P and R are at least 50%
 	#remove the last element, which is always 0 and 1 and does not reflect the threshold
 	matchingInd = (precision[0:len(precision)-1] > 0.5) * (recall[0:len(recall)-1] > 0.5)
 
-	if len(matchingInd) < 0:
+	if len(thresholds[matchingInd]) < 1:
 		print('cannot select optimal threshold')
 		op = 0.5
-	bestThresholds = thresholds[matchingInd]
-	bestRecalls = recall[0:len(recall)-1][matchingInd]
-	op = bestThresholds[np.argmax(bestRecalls)]
+	else:
+		bestThresholds = thresholds[matchingInd]
+		bestRecalls = recall[0:len(recall)-1][matchingInd]
+		op = bestThresholds[np.argmax(bestRecalls)]
 
 	print('selected op: ', op)
 	
@@ -450,8 +454,7 @@ def leaveOnePatientOutCV(leaveOneOutDataFolder, classifier, svType, title, shuff
 		   title="Leave-one-patient-out CV: " + title)
 	ax.legend(loc="lower right")
 	plt.tight_layout()
-	if randomLabels == 'True':
-		shuffleLabels = True
+	if shuffleLabels == 'True':
 		plotOutputFile = finalOutDir + '/rocCurve_' + svType + '_leaveOnePatientOut_random.svg'
 	else:
 		plotOutputFile = finalOutDir + '/rocCurve_' + svType + '_leaveOnePatientOut.svg'

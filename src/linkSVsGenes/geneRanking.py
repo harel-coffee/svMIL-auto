@@ -55,6 +55,13 @@ class GeneRanking:
 		print("collecting all gains and losses")
 		features = ['eQTL', 'enhancer', 'promoter', 'cpg', 'tf', 'h3k4me3', 'h3k27ac', 'h3k27me3', 'h3k4me1', 'dnaseI', 'rnaPol',
 						'CTCF', 'CTCF+Enhancer', 'CTCF+Promoter', 'Enhancer', 'Heterochromatin', 'Poised_Promoter', 'Promoter', 'Repeat', 'Repressed', 'Transcribed', 'superEnhancer', 'ctcf']
+
+		# features = ['eQTL', 'enhancer', 'promoter', 'cpg', 'tf', 'hic', 'h3k9me3', 'h3k4me3', 'h3k27ac', 'h3k27me3', 'h3k4me1', 'h3k36me3', 'dnaseI', 'rnaPol',
+		# 				'CTCF', 'CTCF+Enhancer', 'CTCF+Promoter', 'Enhancer', 'Heterochromatin', 'Poised_Promoter', 'Promoter', 'Repeat', 'Repressed', 'Transcribed', 'superEnhancer', 'ctcf']
+		#
+
+
+
 		svGeneMap = dict()
 		svGeneIndices = []
 		allLossScores = []
@@ -74,23 +81,26 @@ class GeneRanking:
 			header += feature + '_gain'
 
 		#get the strength features
-		# strengthFeatures = ['enhancer', 'ctcf', 'rnaPol', 'h3k4me3', 'h3k27ac', 'h3k27me3', 'h3k4me1']
-		#
-		# allStrengthLossScores = []
-		# allStrengthGainScores = []
-		# for feature in strengthFeatures:
-		# 	lossScores = self.scoreByElementLossesStrengthsSVs(genes, feature)
-		# 	allStrengthLossScores.append(lossScores)
-		#
-		# 	gainScores = self.scoreByElementGainsStrengthsSVs(genes, feature)
-		# 	allStrengthGainScores.append(gainScores)
+		strengthFeatures = ['enhancer', 'ctcf', 'rnaPol', 'h3k4me3', 'h3k27ac', 'h3k27me3', 'h3k4me1']
+
+		#strengthFeatures = ['enhancer', 'ctcf', 'rnaPol', 'h3k9me3', 'h3k4me3', 'h3k27ac', 'h3k27me3', 'h3k4me1', 'h3k36me3']
+
+
+		allStrengthLossScores = []
+		allStrengthGainScores = []
+		for feature in strengthFeatures:
+			lossScores = self.scoreByElementLossesStrengthsSVs(genes, feature)
+			allStrengthLossScores.append(lossScores)
+
+			gainScores = self.scoreByElementGainsStrengthsSVs(genes, feature)
+			allStrengthGainScores.append(gainScores)
 
 
 		delCount = 0
 		dupCount = 0
 		invCount = 0
 		itxCount = 0
-		pairScores = np.zeros([len(svGeneIndices), 46])
+		pairScores = np.zeros([len(svGeneIndices), 80]) #46
 		pairIds = []
 		for ind in range(0, len(svGeneIndices)):
 			sv = svGeneIndices[ind]
@@ -103,45 +113,41 @@ class GeneRanking:
 				if sv in allGainScores[featureInd]:
 					pairScores[ind,featureInd+len(features)] = allGainScores[featureInd][sv]
 
-			# for featureInd in range(0, len(strengthFeatures)):
-			# 	if sv in allStrengthLossScores[featureInd]:
-			# 		pairScores[ind,(featureInd+len(features)*2)] = allStrengthLossScores[featureInd][sv]
-			# 
-			# 	if sv in allStrengthGainScores[featureInd]:
-			# 		pairScores[ind,(featureInd+len(features)*2)+len(strengthFeatures)] = allStrengthGainScores[featureInd][sv]
+			for featureInd in range(0, len(strengthFeatures)):
+				if sv in allStrengthLossScores[featureInd]:
+					pairScores[ind,(featureInd+len(features)*2)] = allStrengthLossScores[featureInd][sv]
 
-		# 	translocation = 0
-		# 	deletion = 0
-		# 	duplication = 0
-		# 	inversion = 0
-		# 	#Add some features for SV type
-		# 	splitSV = sv.split("_")
-		# 	svType = splitSV[12]
-		# 	if re.search("ITX", svType, re.IGNORECASE):
-		# 		translocation = 1
-		# 		itxCount += 1
-		# 	elif re.search("DEL", svType, re.IGNORECASE):
-		# 		deletion = 1
-		# 		delCount += 1
-		# 	elif re.search("DUP", svType, re.IGNORECASE):
-		# 		duplication = 1
-		# 		dupCount += 1
-		# 	elif re.search("INV", svType, re.IGNORECASE):
-		# 		inversion = 1
-		# 		invCount += 1
-		#
-		# 	pairScores[ind,70] = deletion
-		# 	pairScores[ind,71] = duplication
-		# 	pairScores[ind,72] = inversion
-		# 	pairScores[ind,73] = translocation
-		#
-		# 	#any other features beyond this point were removed, because they are not useful anymore.
-		#
-		#
-		# print('del pairs: ', delCount)
-		# print('inv pairs: ', invCount)
-		# print('dup pairs: ', dupCount)
-		# print('itx pairs: ', itxCount)
+				if sv in allStrengthGainScores[featureInd]:
+					pairScores[ind,(featureInd+len(features)*2)+len(strengthFeatures)] = allStrengthGainScores[featureInd][sv]
+
+			# translocation = 0
+			# deletion = 0
+			# duplication = 0
+			# inversion = 0
+			# #Add some features for SV type
+			# splitSV = sv.split("_")
+			# svType = splitSV[12]
+			# if re.search("ITX", svType, re.IGNORECASE):
+			# 	translocation = 1
+			# 	itxCount += 1
+			# elif re.search("DEL", svType, re.IGNORECASE):
+			# 	deletion = 1
+			# 	delCount += 1
+			# elif re.search("DUP", svType, re.IGNORECASE):
+			# 	duplication = 1
+			# 	dupCount += 1
+			# elif re.search("INV", svType, re.IGNORECASE):
+			# 	inversion = 1
+			# 	invCount += 1
+			# 
+			# pairScores[ind,70] = deletion
+			# pairScores[ind,71] = duplication
+			# pairScores[ind,72] = inversion
+			# pairScores[ind,73] = translocation
+
+			#any other features beyond this point were removed, because they are not useful anymore.
+
+
 
 		pairIds = np.array(pairIds)
 
@@ -153,13 +159,12 @@ class GeneRanking:
 			os.makedirs(outDir + "/" + runId)
 
 		#keep at 80 to ensure that it still works with downstream processing although final features are now gone. Filter those out later where necessary.
-		pairScoresWithPairIds = np.empty([len(svGeneIndices), 47], dtype="object")
+		pairScoresWithPairIds = np.empty([len(svGeneIndices), 81], dtype="object") #47
 		#pairScoresWithPairIds = np.empty([len(svGeneIndices), 1], dtype="object")
 		pairScoresWithPairIds[:,0] = pairIds
-		pairScoresWithPairIds[:,1:47] = pairScores
-		
+		pairScoresWithPairIds[:,1:81] = pairScores #47
+
 		np.savetxt(outDir + '/' + runId + "/nonCoding_geneSVPairs.txt_" + str(permutationRound), pairScoresWithPairIds, delimiter='\t', fmt='%s', header = header)
-		exit()
 
 		###3. Make the feature file for MIL for each sv-gene pair
 		#Each SV-gene pair is a bag. A bag can contain a variable set of isntances, which represent the gained/lost elements
@@ -179,7 +184,11 @@ class GeneRanking:
 				instances = []
 				for element in gene.alteredElements[sv]:
 					instances.append(gene.alteredElements[sv][element])
-
+					
+				#add number of instances as final feature
+				#for instance in instances:
+				#	instance.append(len(instances))
+				
 				if len(instances) > 0:
 					bags[gene.name + "_" + sv] = instances
 

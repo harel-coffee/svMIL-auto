@@ -108,11 +108,6 @@ class GenomicShuffler:
 
 		shuffledTads = shuffledTads[ind,:]
 		
-		#Write the shuffled TADs to a file to check in IGV
-		outFile = "shuffledTads.bed"
-		with open(outFile, 'wb') as outF:
-			for tad in shuffledTads:
-				outF.write(tad[0] + "\t" + str(tad[1]) + "\t" + str(tad[2]) + "\n")
 
 		return shuffledTads
 		

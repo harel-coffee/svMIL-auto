@@ -7,6 +7,7 @@ import glob
 import re
 import numpy as np
 import matplotlib.pyplot as plt
+from matplotlib.colors import ListedColormap
 import seaborn as sns
 import os.path
 import pandas as pd
@@ -47,26 +48,27 @@ def plotAUC(cancerTypes, outFileName, svTypes = ['DEL', 'DUP', 'INV', 'ITX']):
 	#show the auc as dots in a scatterplot
 	cancerTypeInd = 0
 	plottedCancerTypes = []
-	svTypeColors = ['#b5ffb9', '#f9bc86', '#a3acff', '#FF6B6C']
+	svTypeColors = ['#e41a1cff', '#377eb8ff', '#ff6000ff', '#984ea3ff']
 	#make sure that the points do not overlap
 	jitter = [-0.15, -0.05, 0.05, 0.15]
 	plotData = []
 	cancerTypeNames = []
 	for cancerType in aucs:
-
 		for svTypeInd in range(0, len(svTypes)):
 			plotData.append([cancerTypeInd+jitter[svTypeInd], aucs[cancerType][svTypeInd], svTypeColors[svTypeInd], stdevs[cancerType][svTypeInd]])
-
 		cancerTypeInd += 1
+
 
 	data = pd.DataFrame(plotData)
 	data.columns = ['cancer type', 'AUC', 'color', 'stdev']
 	data = data.drop_duplicates()
 
+	print(data)
+
 	fig, ax = plt.subplots(1,1)
 	plt.axhline(y=0.5, color='k', linestyle='--', linewidth=0.5)
 	sns.scatterplot(data=data, x='cancer type', y='AUC', hue=data.color,
-					palette=sns.color_palette("Set1", data.color.nunique()), legend=False,
+					cmap=ListedColormap(svTypeColors), legend=False,
 					s = 60, edgecolor = 'k')
 
 	#set separators

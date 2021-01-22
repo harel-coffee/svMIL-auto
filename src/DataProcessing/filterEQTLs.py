@@ -67,15 +67,15 @@ def filterEQTLs(eQTLFile, ensemblIDLookup, filteredEQTLFile):
 				#Filter by one tissue for now. Is the p-value significant?
 				#pval_Breast_Mammary_Tissue for breast tissue
 				#pval_Ovary for ovary
-				if tissue == 'breast':
+				if tissue == 'hmec':
 					tissueInd = header['pval_Breast_Mammary_Tissue']
-				elif tissue == 'ovarian':
+				elif tissue == 'ov':
 					tissueInd = header['pval_Ovary']
-				elif tissue == 'lung':
+				elif tissue == 'luad':
 					tissueInd = header['pval_Lung']
-				elif tissue == 'colon':
+				elif tissue == 'coad':
 					tissueInd = header['pval_Colon_Sigmoid']
-				elif tissue == 'blood':
+				elif tissue == 'gm12878':
 					tissueInd = header['pval_Whole_Blood']
 				elif tissue == 'prostate':
 					tissueInd = header['pval_Prostate']
@@ -87,13 +87,17 @@ def filterEQTLs(eQTLFile, ensemblIDLookup, filteredEQTLFile):
 					tissueInd = header['pval_Pancreas']
 				elif tissue == 'uterus':
 					tissueInd = header['pval_Uterus']
-				elif tissue == 'brain':
+				elif tissue == 'nervousSystem':
 					tissueInd = header['pval_Brain_Cortex']
+				
+				##### for this one, requires v8 of GTEx
+				elif tissue == 'kidney':
+					tissueInd = header['pval_Kidney_Cortex']
 				if splitLine[tissueInd] == 'NA':
 					continue
 				
 				pval = float(splitLine[tissueInd])
-				if pval > 5e-8:
+				if pval > 0.05:
 					if pval != 0:
 						continue
 				
