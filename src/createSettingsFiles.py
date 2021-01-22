@@ -32,6 +32,13 @@ defaultFiles = dict(
 #Then select a cancer type t use (this will be in the general part)
 cancerType = sys.argv[1]
 
+if cancerType == 'Colorectal':
+	cancerType = 'Colon/Rectum'
+elif cancerType == 'NervousSystem':
+	cancerType = 'Nervous system'
+elif cancerType == 'UrinaryTract':
+	cancerType = 'Urinary tract'
+
 #Create the general part
 general = dict(
 	source = "'HMF'",
@@ -53,9 +60,10 @@ for regulatoryType in regulatoryTypes:
 	#regulatoryType = 'kidney'
 
 	#determine the sub-folder in the settings folder
-	subOutFolder = mainOutFolder + 'settings_HMF_' + cancerType + '_' + regulatoryType
+	subOutFolder = mainOutFolder + 'settings_HMF_' + sys.argv[1] + '_' + regulatoryType
 	if not os.path.exists(subOutFolder):
 		os.makedirs(subOutFolder)
+
 
 	outFile = 'settings.py' #always give this the same name for the tool to recognize it
 

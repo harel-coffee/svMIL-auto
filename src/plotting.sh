@@ -37,7 +37,7 @@ fi
 #### PLOTTING #####
 
 ### FIGURE 1C, 4B ###
-run=false
+run=true
 
 if $run; then
 	runFolder='./plotting/'
@@ -79,7 +79,7 @@ fi
 #1. First run the old svMIL model and output normalizedBags.pkl.
 #2. Use these bags as input for plotVariances.py.
 
-run=true
+run=false
 
 if $run; then
 	runFolder='./plotting/'

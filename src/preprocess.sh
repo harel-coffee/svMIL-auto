@@ -19,13 +19,11 @@ fi
 ### CANCER TYPE-SPECIFIC DATA PROCESSING ###
 #These are the cancer types we want to run the tool for, so preprocess their data.
 
-###TO DO
-#### the rest also needs to be added. and make sure to update the folder output for hmec etc
-
 types=('hmec' 'ov' 'gm12878' 'coad' 'luad' 'urinaryTract' 'prostate' 'esophagus' 'skin' 'pancreas' 'uterus' 'nervousSystem' 'kidney')
 
 ### PARSE EQTLS ###
 #This requires download of GTEx_Analysis_v7.metasoft.txt.gz. See eQTLs/readme.txt.
+#FOr kidney, GTEx_Analysis_v8.metasoft.txt needs to be downloaded.
 run=false
 
 if $run; then
@@ -47,9 +45,8 @@ if $run; then
 	done
 
 fi
-types=('skin')
 
-run=true
+run=false
 if $run; then
 	runFolder='./DataProcessing/'
 
@@ -60,15 +57,14 @@ if $run; then
 		python "$runFolder/genericClustering.py" "../data/h3k27ac/$type/"
 
 		#cluster eQTLs
-		#python "$runFolder/eQTLClustering.py" "../data/eQTLs/$type/"
+		python "$runFolder/eQTLClustering.py" "../data/eQTLs/$type/"
 	done
 
 fi
 
 #convert the SEdb files to actual bed files
 run=false
-#types=('uterus' 'kidney' 'nervousSystem', 'prostate')
-types=('prostate')
+types=('uterus' 'kidney' 'nervousSystem', 'prostate')
 if $run; then
 	runFolder='./DataProcessing'
 	dataFolder='../data/superEnhancers/'
@@ -88,7 +84,7 @@ run=false
 
 if $run; then
 	runFolder='./DataProcessing'
-	settingsFile='./settings/settings_HMF_Breast' #which file does not matter, all we need
+	settingsFile='./settings/settings_HMF_Breast_hmec' #which file does not matter, all we need
 	#are the paths to the svDir, expressionDir and metadata file.
 
 	#first merge the HMF expression files
