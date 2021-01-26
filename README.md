@@ -12,9 +12,12 @@ Used regulatory data is provided in the data folder. For more details on data so
 
 # How to use: preprocessing
 
-All steps for preprocessing are listed in preprocess.sh
+Most required pre-processed data is provided in the data folder. Only 2 things are needed:
 
-Provided data in the data folder has been pre-processed. Only the TMM normalization step of the RNA-seq data from the HMF dataset is required.
+- The TMM normalization step of the RNA-seq data from the HMF dataset is required.
+- eQTLs are too large to provide and need to be parsed and clustered.
+
+All steps for preprocessing, including re-creating the provided data, are listed in preprocess.sh
 
 # How to use: generating all paper figures
 
