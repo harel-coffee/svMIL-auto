@@ -83,6 +83,9 @@ def plotAUC(cancerTypes, outFileName, svTypes = ['DEL', 'DUP', 'INV', 'ITX']):
 
 	plt.show()
 
+	plotData = np.array(plotData, dtype='object')
+	print('Mean AUC: ', np.mean(plotData[:,1]))
+
 #1. Make figure 1C for the TAD-based results
 cancerTypes = ['HMF_Breast_hmec', 'HMF_Ovary_ov', 'HMF_Lung_luad', 'HMF_Colorectal_coad',
 			   'HMF_UrinaryTract_urinaryTract', 'HMF_Prostate_prostate', 'HMF_Esophagus_esophagus', 'HMF_Skin_skin',
@@ -90,5 +93,5 @@ cancerTypes = ['HMF_Breast_hmec', 'HMF_Ovary_ov', 'HMF_Lung_luad', 'HMF_Colorect
 
 plotAUC(cancerTypes, 'figure1C')
 
-cancerTypesCTCF = ['HMF_Breast_CTCF']
-plotAUC(cancerTypesCTCF, 'figure4B')
+#cancerTypesCTCF = ['HMF_Breast_CTCF']
+#plotAUC(cancerTypesCTCF, 'figure4B')

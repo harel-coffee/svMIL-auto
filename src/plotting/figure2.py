@@ -488,6 +488,9 @@ class Figure2:
 		plt.tight_layout()
 		plt.savefig('output/figures/figure2B.svg')
 
+		plotData = np.array(plotData, dtype='object')
+		print("Correlation: ", stats.pearsonr(plotData[:,1], plotData[:,2]))
+
 	def getCosmicGenes(self):
 		"""
 			Read all names of COSMIC genes into a dictionary. Keys are the names,
