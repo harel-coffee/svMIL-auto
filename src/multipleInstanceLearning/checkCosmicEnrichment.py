@@ -22,6 +22,7 @@ from inputParser import InputParser
 outDir = sys.argv[1]
 
 svTypes = ['DEL', 'DUP', 'INV', 'ITX']
+#svTypes = ['DEL']
 
 #get the cosmic genes
 cosmicGenes = InputParser().readCausalGeneFile(settings.files['causalGenesFile'])
@@ -214,20 +215,29 @@ for pair in cosmicPairs:
 	
 	splitPair = pair.split('_')
 	svType = splitPair[2]
-	
-	if splitPair[0] in snvPatients[splitPair[1]]:
-		print('snv')
-	if splitPair[0] in cnvPatientsAmp[splitPair[1]]:
-		print('cnv amp')
-	if splitPair[0] in cnvPatientsDel[splitPair[1]]:
-		print('cnv del')
-	if splitPair[0] in svPatientsDel[splitPair[1]]:
-		print('sv del')
-	if splitPair[0] in svPatientsDup[splitPair[1]]:
-		print('sv dup')
-	if splitPair[0] in svPatientsInv[splitPair[1]]:
-		print('sv inv')
-	if splitPair[0] in svPatientsItx[splitPair[1]]:
-		print('sv itx')
+
+
+	if splitPair[1] in snvPatients:
+		if splitPair[0] in snvPatients[splitPair[1]]:
+			print('snv')
+	if splitPair[1] in cnvPatientsAmp:
+		if splitPair[0] in cnvPatientsAmp[splitPair[1]]:
+			print('cnv amp')
+	if splitPair[1] in cnvPatientsDel:
+		if splitPair[0] in cnvPatientsDel[splitPair[1]]:
+			print('cnv del')
+
+	if splitPair[1] in svPatientsDel:
+		if splitPair[0] in svPatientsDel[splitPair[1]]:
+			print('sv del')
+	if splitPair[1] in svPatientsDup:
+		if splitPair[0] in svPatientsDup[splitPair[1]]:
+			print('sv dup')
+	if splitPair[1] in svPatientsInv:
+		if splitPair[0] in svPatientsInv[splitPair[1]]:
+			print('sv inv')
+	if splitPair[1] in svPatientsItx:
+		if splitPair[0] in svPatientsItx[splitPair[1]]:
+			print('sv itx')
 		
 

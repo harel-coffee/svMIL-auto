@@ -10,6 +10,7 @@ from os.path import isfile, join
 import glob
 import gzip
 import sys
+import random
 
 from tad import TAD
 from sv import SV
@@ -44,6 +45,7 @@ class NeighborhoodDefiner:
 		print("Getting TADs")
 		tadData = InputParser().getTADsFromFile(tadFile)
 
+
 		print("original number of svs:", svData.shape)
 
 		if settings.general['shuffleTads'] == True:
@@ -55,13 +57,13 @@ class NeighborhoodDefiner:
 		self.mapTADsToGenes(genes[:,3], tadData)
 
 		
-		#2. Get eQTLs from the eQTL file, and map eQTLs to TADs. 			
+		# #2. Get eQTLs from the eQTL file, and map eQTLs to TADs.
 		eQTLFile = settings.files['eQTLFile']
 		print("getting eQTLs")
 		eQTLData = InputParser().getEQTLsFromFile(eQTLFile, genes[:,3], self)
 		#map the regulatory elements to the TADs so that we can later on when looking at disrupted TADs easily find which elements are affected.
 		tadData = self.mapElementsToTads(eQTLData, tadData)
-		
+
 		#map the genes to TADs. These are all the gene objects that we can then access when looking at disrupted TADs. 
 		tadData = self.mapGenesToTads(genes, tadData) 
 		
@@ -76,77 +78,83 @@ class NeighborhoodDefiner:
 		
 		print("getting promoters")
 		promoterData = InputParser().getPromotersFromFile(settings.files['promoterFile'], genes[:,3], self)
-			
+
 		#Add the promoters to the TADs
 		tadData = self.mapElementsToTads(promoterData, tadData)
-		
+
 		#5. Get CpG islands
 		print("Getting cpg islands")
 		cpgData = InputParser().getCpgIslandsFromFile(settings.files['cpgFile'])
-		
+
 		#Add the CpG sites to the TADs
 		tadData = self.mapElementsToTads(cpgData, tadData)
-		
+
 		#6. Get Transcription factors
 		print("Getting transcription factors")
 
 		tfData = InputParser().getTranscriptionFactorsFromFile(settings.files['tfFile'])
-	
+
 		#Add the CpG sites to the TADs
 		tadData = self.mapElementsToTads(tfData, tadData)
-		
-		
+
+
 		#7. Get Hi-C data
 		print("Getting Hi-C data")
 		hicData = InputParser().getHiCInteractionsFromFile(settings.files['hicFile'])
-			
+
 		#Map the interactions to TADs as elements
 		tadData = self.mapInteractionsToTads(hicData, tadData)
-		
+
 		#8. Get histone marks
-		
+
 		print("Getting histone marks")
 		files = [settings.files['h3k9me3'], settings.files['h3k4me3'], settings.files['h3k27ac'], settings.files['h3k27me3'],
 					settings.files['h3k4me1'], settings.files['h3k36me3']]
 		types = ['h3k9me3', 'h3k4me3', 'h3k27ac', 'h3k27me3', 'h3k4me1', 'h3k36me3']
+
+		#only use the types that matter
+		# files = [settings.files['h3k4me3'], settings.files['h3k27ac'], settings.files['h3k27me3'],
+		# 			settings.files['h3k4me1']]
+		# types = ['h3k4me3', 'h3k27ac', 'h3k27me3', 'h3k4me1']
+
 		for histoneFileInd in range(0, len(files)):
 			histoneData = InputParser().getHistoneMarksFromFile(files[histoneFileInd], types[histoneFileInd])
-			
+
 			#map the histone marks to the TADs
 			tadData = self.mapElementsToTads(histoneData, tadData)
-		
+
 		#9. Get DNAse I hypersensitivty sites
 		print("Getting DNAse I hypersensitivity sites")
-			
+
 		dnaseIData = InputParser().getDNAseIFromFile(settings.files['dnaseIFile'])
-			
+
 		tadData = self.mapElementsToTads(dnaseIData, tadData)
-		
+
 		#10. get chromHMM states
 		print("Getting chromHMM states")
 		chromHmmData = InputParser().getChromHmmFromFile(settings.files['chromHmmFile'])
-			
+
 		tadData = self.mapElementsToTads(chromHmmData, tadData)
-		
+
 		#11. get RNAPolII peaks
 		print("Getting rnaPol binding sites")
 		rnaPolData = InputParser().getRnaPolFromFile(settings.files['rnaPolFile'])
-			
+
 		tadData = self.mapElementsToTads(rnaPolData, tadData)
-		
+
 		#12. get super enhancers
 		print("Getting super enhancers")
 		superEnhancerData = InputParser().getSuperEnhancersFromFile(settings.files['superEnhancerFile'])
-			
+
 		tadData = self.mapElementsToTads(superEnhancerData, tadData)
-		
+
 		#13. get CTCF sites
 		print("Getting ctcf sites")
 		ctcfData = InputParser().getCTCFSitesFromFile(settings.files['ctcfFile'])
-			
+
 		tadData = self.mapElementsToTads(ctcfData, tadData)
 		tadData = self.mapCTCFStrengthToTads(ctcfData, tadData)
-		
+
 		
 		#3. Determine the effect of the SVs on the neighborhood/regulator set
 		print("Mapping SVs to the neighborhood")
@@ -343,6 +351,31 @@ class NeighborhoodDefiner:
 			
 		"""
 		
+		#test random shuffling of positions
+		# np.random.shuffle(elementData[:,1])
+		# np.random.shuffle(elementData[:,2])
+		# np.random.shuffle(elementData[:,0])
+		# np.random.shuffle(elementData[:,4])
+
+		# print(elementData)
+
+		# uniqueChromosomes = np.unique(elementData[:,0])
+		# if elementData[0,4] != None:
+		# 	uniqueGenes = np.unique(elementData[:,4])
+		# else:
+		# 	uniqueGenes = [None]
+		# maxStartPos = np.max(elementData[:,1])
+		# newElementData = []
+		# for element in elementData:
+		# 	randomChromosome = uniqueChromosomes[random.randint(0,len(uniqueChromosomes)-1)]
+		# 	randomGene = uniqueGenes[random.randint(0,len(uniqueGenes)-1)]
+		# 	randomStartPos = random.randint(0,maxStartPos)
+		# 	newEndPos = randomStartPos + (element[2] - element[1])
+		# 	newElementData.append([randomChromosome, randomStartPos, newEndPos, element[3], randomGene, element[5]])
+		#
+		# elementData = np.array(newElementData, dtype='object')
+		# print(elementData)
+
 		#Go through each TAD and find which elements are within the TAD.
 		#List these elements as interaction objects in the tAD object.
 		previousChromosome = 0

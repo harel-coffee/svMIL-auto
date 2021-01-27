@@ -28,28 +28,27 @@ outDir = sys.argv[2]
 
 
 #Get the CNVs per gene
-def getPatientsWithCNVGeneBased_hmf(cnvDir):
-
-	tsvs = glob.glob(cnvDir + '/**/*.gene.tsv', recursive=True)
+def getPatientsWithCNVGeneBased_hmf(cnvDir, cancerTypeIds):
 
 	cnvPatientsDel = dict()
 	cnvPatientsAmp = dict()
 
-	for tsv in tsvs:
+	for sampleId in cancerTypeIds:
+		patientId = cancerTypeIds[sampleId]
 
-		#get the samplename from the vcf
-		sampleName = re.search('.*\/([A-Z\d]+)\.', tsv).group(1)
 
-		if sampleName not in cnvPatientsAmp:
-			cnvPatientsAmp[sampleName] = []
-		if sampleName not in cnvPatientsDel:
-			cnvPatientsDel[sampleName] = []
+		matchedFile = glob.glob(cnvDir + '/*_' + patientId + '/' + sampleId + '.purple.cnv.gene.tsv')[0]
 
-		#open the .gz file
-		with open(tsv, 'r') as inF:
+		if sampleId not in cnvPatientsAmp:
+			cnvPatientsAmp[sampleId] = []
+		if sampleId not in cnvPatientsDel:
+			cnvPatientsDel[sampleId] = []
+
+		with open(matchedFile, 'rb') as inF:
 
 			lineCount = 0
 			for line in inF:
+				line = line.decode('ISO-8859-1')
 
 				if lineCount < 1: #skip header
 					lineCount += 1
@@ -65,44 +64,28 @@ def getPatientsWithCNVGeneBased_hmf(cnvDir):
 
 				if float(splitLine[5]) > 2.3:
 
-					cnvPatientsAmp[sampleName].append(gene)
+					cnvPatientsAmp[sampleId].append(gene)
 				elif float(splitLine[5]) < 1.7:
 
-					cnvPatientsDel[sampleName].append(gene)
+					cnvPatientsDel[sampleId].append(gene)
 
 	return cnvPatientsAmp, cnvPatientsDel
 
 #Get the SNVs per gene
-def getPatientsWithSNVs_hmf(snvDir):
-
-	geneNameConversionMap = dict()
-	geneNameConversionFile = settings.files['geneNameConversionFile']
-	with open(geneNameConversionFile, 'r') as inF:
-
-		for line in inF:
-			line = line.strip()
-			splitLine = line.split("\t")
-			ensgId = splitLine[3]
-			splitEnsgId = ensgId.split('.') #we only keep everything before the dot
-
-			geneName = splitLine[4]
-			geneNameConversionMap[splitEnsgId[0]] = geneName
-
-	#search through the SNVs and link these to genes.
-	vcfs = glob.glob(snvDir + '/**/*.somatic.vcf.gz', recursive=True)
+def getPatientsWithSNVs_hmf(snvDir, cancerTypeIds):
 
 	patientsWithSNVs = dict()
-	for vcf in vcfs:
 
-		#get the samplename from the vcf
-		sampleName = re.search('.*\/([A-Z\d]+)\.', vcf).group(1)
+	for sampleId in cancerTypeIds:
+		patientId = cancerTypeIds[sampleId]
 
+		matchedFile = glob.glob(snvDir + '/*_' + patientId + '/' + sampleId + '.purple.somatic.vcf.gz')[0]
 
 		#open the .gz file
-		with gzip.open(vcf, 'rb') as inF:
+		with gzip.open(matchedFile, 'rb') as inF:
 
 			for line in inF:
-				line = line.strip().decode('utf-8')
+				line = line.strip().decode('ISO-8859-1')
 
 				if re.search('^#', line): #skip header
 					continue
@@ -118,49 +101,48 @@ def getPatientsWithSNVs_hmf(snvDir):
 
 				geneSearch = re.search('(ENSG\d+)', infoField)
 				if geneSearch:
-					geneMatch = re.search('(ENSG\d+)', infoField).group(1)
-					#skip genes for which we do not know the name
-					if geneMatch not in geneNameConversionMap:
-						continue
-					geneName = geneNameConversionMap[geneMatch]
+					#the gene name is always directly before the ENSG identifier
+					geneMatch = re.search('.+[\|\=\(](.+)?\|ENSG\d+', infoField).group(1)
 
-					if sampleName not in patientsWithSNVs:
-						patientsWithSNVs[sampleName] = []
-					patientsWithSNVs[sampleName].append(geneName)
+
+					if sampleId not in patientsWithSNVs:
+						patientsWithSNVs[sampleId] = []
+					patientsWithSNVs[sampleId].append(geneMatch)
 
 	return patientsWithSNVs
 
 # #Get the SV per gene
-def getPatientsWithSVs_hmf(svDir, allGenes):
+def getPatientsWithSVs_hmf(svDir, allGenes, cancerTypeIds):
 
 	#Get all parsed and annotated SV type files from the main dir
 	#use all genes because there is no gene in the file, so by overlap we determine which genes are affected by the SVs. 
-
-	vcfs = glob.glob(svDir + '/**/*.svTypes.passed', recursive=True)
 
 	svPatientsDel = dict()
 	svPatientsDup = dict()
 	svPatientsInv = dict()
 	svPatientsItx = dict()
 
-	for vcf in vcfs:
+	patientsWithSNVs = dict()
 
-		#get the samplename from the vcf
-		sampleName = re.search('.*\/([A-Z\d]+)\.', vcf).group(1)
-		if sampleName not in svPatientsDel:
-			svPatientsDel[sampleName] = []
-		if sampleName not in svPatientsDup:
-			svPatientsDup[sampleName] = []
-		if sampleName not in svPatientsInv:
-			svPatientsInv[sampleName] = []
-		if sampleName not in svPatientsItx:
-			svPatientsItx[sampleName] = []
+	for sampleId in cancerTypeIds:
+		patientId = cancerTypeIds[sampleId]
 
+		if sampleId not in svPatientsDel:
+			svPatientsDel[sampleId] = []
+		if sampleId not in svPatientsDup:
+			svPatientsDup[sampleId] = []
+		if sampleId not in svPatientsInv:
+			svPatientsInv[sampleId] = []
+		if sampleId not in svPatientsItx:
+			svPatientsItx[sampleId] = []
+
+		matchedFile = glob.glob(svDir + '/*_' + patientId + '/' + sampleId + '.purple.sv.ann.vcf.gz')[0]
 
 		#open the .gz file
-		with open(vcf, 'r') as inF:
+		with gzip.open(matchedFile, 'rb') as inF:
 
 			for line in inF:
+				line = line.strip().decode('ISO-8859-1')
 
 				if re.search('^#', line): #skip header
 					continue
@@ -171,19 +153,53 @@ def getPatientsWithSVs_hmf(svDir, allGenes):
 				if filterInfo != 'PASS':
 					continue
 
-				#Check if the SV is a deletion
-				infoField = splitLine[7]
-				splitInfoField = infoField.split(";")
+				chr1 = splitLine[0]
+				pos1 = int(splitLine[1])
+				pos2Info = splitLine[4]
+
+				#match the end position and orientation. if there is no orientation info, this is an insertion, which we can skip.
+				if not re.search(':', pos2Info):
+					continue
+
+				if re.match('[A-Z]*\[.*\:\d+\[$', pos2Info):
+					o1 = '+'
+					o2 = '-'
+				elif re.match('[A-Z]*\].*\:\d+\]$', pos2Info):
+					o1 = '-'
+					o2 = '+'
+				elif re.match('^\].*\:\d+\][A-Z]*', pos2Info):
+					o1 = '+'
+					o2 = '+'
+				elif re.match('^\[.*\:\d+\[[A-Z]*', pos2Info):
+					o1 = '-'
+					o2 = '-'
+				else:
+					print('unmatched: ', pos2Info)
+					print(line)
+					exit()
+
+				#get the chr2 information
+				chr2 = re.search('[\[\]]+(.*):(\d+).*', pos2Info).group(1)
+				pos2 = int(re.search('.*\:(\d+).*', pos2Info).group(1))
+
+
+				#get the SV type. This uses the rules as defined in the LUMPY paper.
 				svType = ''
-				for field in splitInfoField:
+				if chr1 != chr2: #this is definitely a translocation.
+					svType = 'ITX'
+				else:
+					#if the strands are the same, it is an inversion
+					if o1 == o2:
+						svType = 'INV'
+					elif o1 == '+' and o2 == '-':
+						svType = 'DEL'
+					elif o1 == '-' and o2 == '+':
+						svType = 'DUP'
+					else:
+						print('unknown sv type, ', line)
+						exit(1)
 
-					splitField = field.split("=")
-					if splitField[0] == 'SIMPLE_TYPE':
-						svType = splitField[1]
-
-				#skip non-deletions
 				if svType not in ['DEL', 'DUP', 'INV', 'ITX']:
-				#if svType not in ['DUP']:
 					continue
 
 				chr1 = splitLine[0]
@@ -249,15 +265,15 @@ def getPatientsWithSVs_hmf(svDir, allGenes):
 
 					if svType == 'DEL':
 						for match in geneMatches:
-							svPatientsDel[sampleName].append(match[3].name)
+							svPatientsDel[sampleId].append(match[3].name)
 
 
 					elif svType == 'DUP':
 						for match in geneMatches:
-							svPatientsDup[sampleName].append(match[3].name)
+							svPatientsDup[sampleId].append(match[3].name)
 					elif svType == 'INV':
 						for match in geneMatches:
-							svPatientsInv[sampleName].append(match[3].name)
+							svPatientsInv[sampleId].append(match[3].name)
 
 				else:
 
@@ -270,262 +286,18 @@ def getPatientsWithSVs_hmf(svDir, allGenes):
 					geneChr2Matches = geneChr2Subset[(s2 >= geneChr2Subset[:,1]) * (s2 <= geneChr2Subset[:,2])]
 
 					for match in geneChr1Matches:
-						svPatientsItx[sampleName].append(match[3].name)
+						svPatientsItx[sampleId].append(match[3].name)
 
 
 
 					for match in geneChr2Matches:
-						svPatientsItx[sampleName].append(match[3].name)
+						svPatientsItx[sampleId].append(match[3].name)
 
 
 
 	return svPatientsDel, svPatientsDup, svPatientsInv, svPatientsItx
 
-def getPatientsWithSVs_tcga(svFile, allGenes):
-	#use all genes because there is no gene in the file, so by overlap we determine which genes are affected by the SVs. 
-	
-	#load the svs
-	svData = InputParser().getSVsFromFile(svFile, '')
-	
-	svPatientsDel = dict()
-	svPatientsDup = dict()
-	svPatientsInv = dict()
-	svPatientsItx = dict()
 
-	for sv in svData:
-		
-		sampleName = sv[7]
-		if sampleName not in svPatientsDel:
-			svPatientsDel[sampleName] = []
-		if sampleName not in svPatientsDup:
-			svPatientsDup[sampleName] = []
-		if sampleName not in svPatientsInv:
-			svPatientsInv[sampleName] = []
-		if sampleName not in svPatientsItx:
-			svPatientsItx[sampleName] = []
-
-		chr1 = sv[0]
-		s1 = sv[1]
-		e1 = sv[2]
-		chr2 = sv[3]
-		s2 = sv[4]
-		e2 = sv[5]
-		svType = sv[8].svType
-		#intrachromosomal SV
-		if chr1 == chr2:
-
-			geneChrSubset = allGenes[allGenes[:,0] == chr1]
-
-			geneMatches = geneChrSubset[(geneChrSubset[:,1] <= e2) * (geneChrSubset[:,2] >= s1)]
-
-			if svType == 'DEL':
-				for match in geneMatches:
-					svPatientsDel[sampleName].append(match[3].name)
-
-
-			elif svType == 'DUP':
-				for match in geneMatches:
-					svPatientsDup[sampleName].append(match[3].name)
-			elif svType == 'INV':
-				for match in geneMatches:
-					svPatientsInv[sampleName].append(match[3].name)
-
-		else:
-
-			#find breakpoints in the gene for each side of the SV
-			geneChr1Subset = allGenes[allGenes[:,0] == chr1]
-			geneChr2Subset = allGenes[allGenes[:,0] == chr2]
-
-			#check if the bp start is within the gene.
-			geneChr1Matches = geneChr1Subset[(s1 >= geneChr1Subset[:,1]) * (s1 <= geneChr1Subset[:,2])]
-			geneChr2Matches = geneChr2Subset[(s2 >= geneChr2Subset[:,1]) * (s2 <= geneChr2Subset[:,2])]
-
-			for match in geneChr1Matches:
-				svPatientsItx[sampleName].append(match[3].name)
-
-			for match in geneChr2Matches:
-				svPatientsItx[sampleName].append(match[3].name)
-
-	return svPatientsDel, svPatientsDup, svPatientsInv, svPatientsItx
-
-def getPatientsWithSNVs_tcga(snvDir):
-
-	allFiles = [f for f in listdir(snvDir) if isfile(join(snvDir, f))]
-
-	snvPatients = dict()
-
-	for currentFile in allFiles:
-
-		if currentFile == "MANIFEST.txt":
-			continue
-		splitFileName = currentFile.split(".")
-		patientID = splitFileName[0]
-		splitPatientID = patientID.split("-")
-		shortPatientID = settings.general['cancerType'] + splitPatientID[2]
-		
-		if shortPatientID not in snvPatients:
-			snvPatients[shortPatientID] = []
-
-		#Load the contents of the file
-		with open(snvDir + "/" + currentFile, 'r') as inF:
-			lineCount = 0
-			for line in inF:
-				line = line.strip() #remove newlines
-				if lineCount < 1: #only read the line if it is not a header line
-					lineCount += 1
-					continue
-
-				splitLine = line.split("\t")
-				geneName = splitLine[0]
-
-				if splitLine[8] == 'Silent': #skip the ones with no effect
-					continue
-
-				snvPatients[shortPatientID].append(geneName)
-
-	return snvPatients
-
-def getMetadataPCAWG(metadataFile):
-	#get the metadata file to extract the mapping from wgs to rna-seq identifiers
-
-	nameMap = dict()
-	with open(metadataFile, 'r') as inF:
-
-		header = dict()
-		lineCount = 0
-		for line in inF:
-			line = line.strip()
-			splitLine = line.split('\t')
-			if lineCount < 1:
-
-				for colInd in range(0, len(splitLine)):
-					header[splitLine[colInd]] = colInd
-
-				lineCount += 1
-				continue
-
-			#only get the ones with the right study that we selected in the settings
-			if settings.general['cancerType'] == 'OV':
-				if splitLine[header['study']] != 'Ovarian Cancer - AU':
-					continue
-
-			if header['matched_wgs_aliquot_id'] < len(splitLine):
-				wgsName = splitLine[header['matched_wgs_aliquot_id']]
-				rnaName = splitLine[header['aliquot_id']]
-
-				nameMap[wgsName] = rnaName
-
-	return nameMap
-
-def getPatientsWithSNVs_pcawg(snvDir, allGenes, nameMap):
-	#use nameMap to map the WGS identifiers to the rna-seq identifiers
-	#use all genes because there is no gene in the file, so by overlap we determine which genes are affected by the SNVs. 
-
-	import gzip
-	#search through the SNVs and link these to genes.
-	vcfs = glob.glob(snvDir + '/*.vcf.gz', recursive=True)
-
-	patientsWithSNVs = dict()
-	for vcf in vcfs:
-
-		#get the samplename from the vcf
-		splitFileName = vcf.split('.')[4]
-		wgsSampleName = splitFileName.split('/')[4]
-
-		##use the rna sample names here, map from the metadata
-		#based on the settings we already select the right cancer type, so these snvs will be skipped
-		if wgsSampleName not in nameMap:
-			continue
-		sampleName = nameMap[wgsSampleName]
-
-
-		#open the .gz file
-		with gzip.open(vcf, 'rb') as inF:
-
-			for line in inF:
-				line = line.strip().decode('utf-8')
-
-				if re.search('^#', line): #skip header
-					continue
-				
-				splitLine = line.split("\t")
-
-				#Check if this SNV has any affiliation with a gene. This means that in the info field, a gene is mentioned somewhere. That is, there is an ENSG identifier.
-				infoField = splitLine[7]
-
-				#check if the mutation is silent
-				splitInfoField = infoField.split(';')
-				skip = False
-				for field in splitInfoField:
-
-					splitField = field.split('=')
-					if splitField[0] == 'Variant_Classification' and splitField[1] == 'Silent':
-						skip = True
-
-				if skip == True:
-					continue
-
-				#link it to the gene it is in
-				geneChrSubset = allGenes[allGenes[:,0] == 'chr' + splitLine[0]]
-
-				geneMatch = geneChrSubset[(geneChrSubset[:,1] <= int(splitLine[1])) * (geneChrSubset[:,2] >= int(splitLine[1]))]
-
-				if len(geneMatch) < 1:
-					continue
-
-				geneName = geneMatch[0][3].name
-
-				if sampleName not in patientsWithSNVs:
-					patientsWithSNVs[sampleName] = []
-				patientsWithSNVs[sampleName].append(geneName)
-
-	return patientsWithSNVs
-
-def getPatientsWithCNVGeneBased_pcawg(cnvFile, nameMap):
-	#use nameMap to map the WGS identifiers to the rna-seq identifiers
-
-	cnvPatientsDel = dict()
-	cnvPatientsAmp = dict()
-
-	with open(cnvFile, 'r') as inF:
-
-		#first line is samples
-		samples = []
-		lineCount = 0
-		for line in inF:
-			line = line.strip()
-			splitLine = line.split('\t')
-
-			if lineCount < 1:
-				lineCount += 1
-				samples = splitLine
-				continue
-
-			#read for each sample what the CN is
-			gene = splitLine[0]
-
-			for sampleInd in range(0, len(samples)):
-
-				if sampleInd > 2:
-					wgsSampleName = samples[sampleInd]
-					if wgsSampleName not in nameMap:
-						continue
-					sampleName = nameMap[wgsSampleName]
-
-					if sampleName not in cnvPatientsAmp:
-						cnvPatientsAmp[sampleName] = []
-					if sampleName not in cnvPatientsDel:
-						cnvPatientsDel[sampleName] = []
-
-					if splitLine[sampleInd] != 'NaN':
-
-						if float(splitLine[sampleInd]) > 2.3:
-							cnvPatientsAmp[sampleName].append(splitLine[0])
-						elif float(splitLine[sampleInd]) < 1.7:
-							cnvPatientsDel[sampleName].append(splitLine[0])
-
-	return cnvPatientsAmp, cnvPatientsDel
-		
 causalGenes = InputParser().readCausalGeneFile(settings.files['causalGenesFile'])
 nonCausalGenes = InputParser().readNonCausalGeneFile(settings.files['nonCausalGenesFile'], causalGenes) #In the same format as the causal genes.
 
@@ -534,19 +306,45 @@ allGenes = np.concatenate((causalGenes, nonCausalGenes), axis=0)
 
 #get the right data based on the data input source.
 if settings.general['source'] == 'HMF':
-	cnvPatientsAmp, cnvPatientsDel = getPatientsWithCNVGeneBased_hmf(settings.files['cnvDir'])
-	snvPatients = getPatientsWithSNVs_hmf(settings.files['snvDir'])
-	svPatientsDel, svPatientsDup, svPatientsInv, svPatientsItx = getPatientsWithSVs_hmf(settings.files['svDir'], allGenes)
-elif settings.general['source'] == 'TCGA':
-	svPatientsDel, svPatientsDup, svPatientsInv, svPatientsItx = getPatientsWithSVs_tcga(settings.files['svFile'], allGenes)
-	cnvPatientsAmp = dict() #not available for TCGA. Only SNP6 arrays but there is no copy number or purity, so hard to interpret.
-	cnvPatientsDel = dict()
-	snvPatients = getPatientsWithSNVs_tcga(settings.files['snvDir'])
-elif settings.general['source'] == 'PCAWG':
-	nameMap = getMetadataPCAWG(settings.files['metaDataFile'])
-	snvPatients = getPatientsWithSNVs_pcawg(settings.files['snvDir'], allGenes, nameMap)
-	cnvPatientsAmp, cnvPatientsDel = getPatientsWithCNVGeneBased_pcawg(settings.files['cnvFile'], nameMap)
-	svPatientsDel, svPatientsDup, svPatientsInv, svPatientsItx = getPatientsWithSVs_tcga(settings.files['svFile'], allGenes)
+
+	#from the metadata, get the right samples to use.
+	#read in the metadata file and get the right file identifiers
+	metadataFile = settings.files['metadataHMF']
+
+	#save the IDs of the patients with this cancer type
+	cancerTypeIds = dict()
+	with open(metadataFile, 'rb') as inF:
+
+		for line in inF:
+			line = line.decode('ISO-8859-1')
+
+			splitLine = line.split('\t')
+			if splitLine[6] == settings.general['cancerType']:
+				sampleId = splitLine[1]
+				patientId = splitLine[0]
+
+				#here already skip patients for which there is no SV/expression data.
+				#we don't need to process these patients
+				matchedFiles = glob.glob(settings.files['svDir'] + '/*_' + patientId + '/' + sampleId + '.purple.sv.ann.vcf.gz')
+
+				#if we don't have SVs for this sample, skip it.
+				if len(matchedFiles) < 1:
+					print('Skipping ', sampleId, ' which has no SVs')
+					continue
+
+				#### check if we have expression for this sample.
+				expressionDir = settings.files['expressionDir']
+				matchedExpressionFiles = glob.glob(expressionDir + sampleId)
+
+				if len(matchedExpressionFiles) < 1:
+					print('Skipping ', sampleId, ' due to missing expression data')
+					continue
+
+				cancerTypeIds[sampleId] = patientId
+	
+	svPatientsDel, svPatientsDup, svPatientsInv, svPatientsItx = getPatientsWithSVs_hmf(settings.files['svDir'], allGenes, cancerTypeIds)
+	cnvPatientsAmp, cnvPatientsDel = getPatientsWithCNVGeneBased_hmf(settings.files['cnvDir'], cancerTypeIds)
+	snvPatients = getPatientsWithSNVs_hmf(settings.files['snvDir'], cancerTypeIds)
 
 
 finalOutDir = outDir + '/patientGeneMutationPairs/'

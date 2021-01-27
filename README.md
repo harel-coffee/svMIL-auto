@@ -1,31 +1,27 @@
-# svMIL: predicting the pathogenic effect of somatic structural variants through multiple instance learning
+# svMIL2: predicting the pathogenic effect of somatic non-coding structural variants disrupting the 3D genome through Multiple Instance Learning
+
+svMIL2 is the improved version of svMIL, tested across multiple cancer types.
+
+For details on the previous version of svMIL, refer to: https://doi.org/10.1093/bioinformatics/btaa802
 
 # How to use: setting up the data
 
-For the HMF data, SVs, SNVs, CNVs and RNA-seq data needs to be requested.
+All used data (SVs, SNVs, CNVs and RNA-seq data) needs to be requested from the HMF: https://www.hartwigmedicalfoundation.nl/en/appyling-for-data/.
 
-To run for the PCAWG data, make sure all datasets are properly downloaded. Some files are provided, but some will need to be downloaded as they are too large. The data folders that are incomplete and need to be downloaded are:
-
-- data/cnvs
-- data/expression
-- data/snvs
-- data/svs
-
-Instructions are found in the readme.txt in the respective folders.
-
-For the regulatory data, everything is provided except for the HiC data, as these files are too large. Follow the steps in data/hic/readme.txt to download this data.
-
-All sources of the other files are also listed in the readme.txt files if these need to be re-downloaded.
+Used regulatory data is provided in the data folder. For more details on data sources and used tissue types, please refer to Table S1 (TBA).
 
 # How to use: preprocessing
 
-Except for Hi-C data, the provided data are already pre-processed. In the script src/preprocess.sh, steps are listed that are required to process the Hi-C data. Here, the processing steps for all
-the other data is also listed, if needed.
+Most required pre-processed data is provided in the data folder. Only 2 things are needed:
+
+- The TMM normalization step of the RNA-seq data from the HMF dataset is required.
+- eQTLs are too large to provide and need to be parsed and clustered.
+
+All steps for preprocessing, including re-creating the provided data, are listed in preprocess.sh
 
 # How to use: generating all paper figures
 
-The script src/workflow.sh lists all steps that need to be executed to produces all figures in order. These steps are specific for the HMF breast cancer data.
-The scripts src/workflow_pcawg_liver.sh and src/workflow_pcawg_ov.sh are specific for running on the PCAWG ovarian and liver datasets.
+plotting.sh lists all steps and instructions to generate the figures.
 
 # Requirements
 
@@ -34,7 +30,7 @@ All code was tested using:
 - Numpy 1.16.4
 - Scipy 1.3.0
 - Scikit-learn 0.22.2.postl
-- Matplotlib 3.1.0
+- Matplotlib 3.2.1
 - Statsmodels 0.10.0
 
 

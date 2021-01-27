@@ -31,7 +31,7 @@ from genomicShuffler import GenomicShuffler
 
 ###parameters
 geneNameConversionFile = settings.files['geneNameConversionFile']
-expressionFile = settings.files['expressionFile']
+expressionFile = settings.files['normalizedExpressionFile']
 outDir = sys.argv[2]
 randomize = sys.argv[3] #shuffle expression to get random z-scores?
 
@@ -72,6 +72,26 @@ with open(geneNameConversionFile, 'r') as inF:
 		geneName = splitLine[4]
 		geneNameConversionMap[splitEnsgId[0]] = geneName
 
+#Get all SVs
+if settings.general['source'] == 'HMF':
+	svDir = settings.files['svDir']
+	svData = InputParser().getSVs_hmf(svDir, settings.general['cancerType'])
+elif settings.general['source'] == 'PCAWG':
+	svDir = settings.files['svDir']
+	svData = InputParser().getSVsFromFile_pcawg(svDir, settings.general['cancerType'])
+
+else:
+	print('Other data sources not supported')
+	exit(1)
+
+#fix this
+filteredSVs = svData
+
+print(len(np.unique(filteredSVs[:,7])))
+
+#load the expression data from the pre-normalized file.
+
+
 #get the gene expression
 expressionData = []
 samples = []
@@ -80,33 +100,18 @@ with open(expressionFile, 'r') as inF:
 	for line in inF:
 		line = line.strip()
 		if lineCount == 0:
-			if settings.general['source'] == 'PCAWG':
-				samples += line.split("\t")
-				samples[0] = '' #replace this 'feature' thing
-			else:
-				samples = ['']
-				samples += line.split("\t")
+
+			samples = ['']
+			samples += line.split("\t")
 
 			lineCount += 1
 			continue
 		splitLine = line.split("\t")
-		fullGeneName = splitLine[0]
-		if settings.general['source'] == 'HMF':
+		geneName = splitLine[0]
 
-			if fullGeneName not in geneNameConversionMap:
-				continue
-			geneName = geneNameConversionMap[fullGeneName] #get the gene name rather than the ENSG ID
-		elif settings.general['source'] == 'PCAWG': #parse the gene name correctly
-
-			splitGeneName = fullGeneName.split('.')
-			if splitGeneName[0] not in geneNameConversionMap:
-				continue
-			geneName = geneNameConversionMap[splitGeneName[0]]
-		else:
-
-			geneName = fullGeneName.split("|")[0]
-			if geneName == 'gene_id':
-				continue #skip this line
+		#no need to check for genes that we did not check SVs for
+		if geneName not in genes[:,3]:
+			continue
 
 		data = splitLine[1:len(splitLine)]
 
@@ -117,20 +122,18 @@ with open(expressionFile, 'r') as inF:
 
 expressionData = np.array(expressionData, dtype="object")
 
+#remove the columns that do not have SVs, and are thus not for this cancer type. 
+columnsToRemove = []
+filteredSamples = []
+patientsWithSVs = np.unique(filteredSVs[:,7])
+for sampleCol in range(1, len(samples)):
+	if samples[sampleCol] not in patientsWithSVs:
+		columnsToRemove.append(sampleCol)
+	else:
+		filteredSamples.append(samples[sampleCol])
 
-#Get all SVs
-if settings.general['source'] == 'HMF':
-	svDir = settings.files['svDir']
-	svData = InputParser().getSVsFromFile_hmf(svDir)
-elif settings.general['source'] == 'TCGA' or settings.general['source'] == 'PCAWG':
-	svData = InputParser().getSVsFromFile(settings.files['svFile'], '')
-
-else:
-	print('Other data sources not supported')
-	exit(1)
-	
-#fix this
-filteredSVs = svData
+expressionData = np.delete(expressionData, columnsToRemove, axis=1)
+samples = [''] + filteredSamples
 
 
 #Get the TADs.
@@ -417,6 +420,7 @@ for tad in tadDisruptions:
 			patient = sv[0]
 			
 			if patient not in samples:
+				print(patient, 'not in samples')
 				continue
 			patientInd = samples.index(patient)
 			
@@ -445,6 +449,7 @@ for tad in tadDisruptions:
 				if gene[3].name in svPatientsDel[patient] or gene[3].name in svPatientsInv[patient] or \
 				gene[3].name in svPatientsItx[patient] or gene[3].name in cnvPatientsDel[patient] or \
 				gene[3].name in snvPatients[patient]:
+				#gene[3].name in snvPatients[patient] or gene[3].name in cnvPatientsAmp[patient]:
 					continue
 				
 			elif svType == 'INV':
@@ -521,11 +526,23 @@ for patient in disruptedPairs:
 		negExprPatients = nonDisruptedPairs[gene]
 		
 		
+		##if we work with GTEx as normal controls, read the negative expression from that matrix instead.
 		negExpr = []
-		for negPatient in negExprPatients:
+		if settings.general['gtexControl'] == True:
 			
-			negExpr.append(negExprPatients[negPatient])
-		
+			gtexExpressionForGene = gtexExpressionData[gtexExpressionData[:,0] == gene][0]
+			negExpr = [float(i) for i in gtexExpressionForGene[1:]] #skip the gene name and convert to float
+
+			for negPatient in negExprPatients:
+
+				negExpr.append(negExprPatients[negPatient])
+			
+		else:	
+			
+			for negPatient in negExprPatients:
+				
+				negExpr.append(negExprPatients[negPatient])
+			
 		if np.std(negExpr) == 0:
 			continue
 
@@ -577,10 +594,14 @@ for pValueInd in range(0, len(pValues[:,1])):
 signPatients = np.array(signPatients, dtype='object')
 
 print(signPatients.shape)
+prefix = ''
+if settings.general['gtexControl'] == True:
+	suffix = '_gtex'
+
 if randomize == 'True':
-	np.savetxt(specificOutDir + '/zScores_random.txt', signPatients, fmt='%s', delimiter='\t')
+	np.savetxt(specificOutDir + '/zScores' + prefix + '_random.txt', signPatients, fmt='%s', delimiter='\t')
 else:
-	np.savetxt(specificOutDir + '/zScores.txt', signPatients, fmt='%s', delimiter='\t')
+	np.savetxt(specificOutDir + '/zScores' + prefix + '.txt', signPatients, fmt='%s', delimiter='\t')
 
 
 

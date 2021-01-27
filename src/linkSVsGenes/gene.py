@@ -1,6 +1,7 @@
 from __future__ import absolute_import
 from copy import deepcopy
 import numpy as np
+import random
 
 import settings
 
@@ -9,7 +10,7 @@ class Gene:
 		Class to describe a gene. Holds all other information related to the neighborhood of the gene as well, like the TADs, regulatory elements and SVs affecting the gene.
 	"""
 	def __init__(self, name, chromosome, start, end):
-		
+
 		self.name = name
 		self.chromosome = chromosome
 		self.start = start
@@ -27,10 +28,13 @@ class Gene:
 		self.gainedElementsStrengthsSVs = dict()
 		self.lostElementsStrengthsSVs = dict()
 		self.alteredElements = dict()
-		self.elementsNotLinkedToGenes = ['ctcf', 'rnaPol', 'cpg', 'tf', 'hic', 'dnaseI', 'h3k9me3', 'h3k4me3', 'h3k27ac', 'h3k27me3', 'h3k4me1', 'h3k36me3',
+		self.elementsNotLinkedToGenes = ['ctcf', 'rnaPol', 'cpg', 'tf', 'dnaseI', 'h3k4me3', 'h3k27ac', 'h3k27me3', 'h3k4me1',
 									'CTCF', 'CTCF+Enhancer', 'CTCF+Promoter', 'Enhancer', 'Heterochromatin',
-									'Poised_Promoter', 'Promoter', 'Repeat', 'Repressed', 'Transcribed', 'superEnhancer']
-		self.strengthElements = ['enhancer', 'ctcf', 'rnaPol', 'h3k9me3', 'h3k4me3', 'h3k27ac', 'h3k27me3', 'h3k4me1', 'h3k36me3']
+									'Poised_Promoter', 'Promoter', 'Repressed', 'Transcribed', 'superEnhancer']
+
+		self.strengthElements = ['ctcf', 'rnaPol', 'h3k4me3', 'h3k27ac', 'h3k27me3', 'h3k4me1']
+		## the old way
+		#self.strengthElements = ['enhancer', 'ctcf', 'rnaPol', 'h3k9me3', 'h3k4me3', 'h3k27ac', 'h3k27me3', 'h3k4me1', 'h3k36me3']
 		self.cosmic = 0
 		
 		
@@ -203,65 +207,74 @@ class Gene:
 		"""
 		
 		allowedElements = ['enhancer', 'eQTL', 'superEnhancer']
+		#allowedElements = ['enhancer', 'eQTL']
 
 		if len(elements) > 0:
 			if sv not in self.alteredElements:
 				self.alteredElements[sv] = dict()
 
 		#For methylation marks, gather all relevant marks here for easy lookup.
-		#For now, just focus on what is relevant for enhancers
 		methylationMarks = []
-		annotationElements = ['cpg', 'tf', 'hic', 'ctcf', 'dnaseI', 'h3k9me3', 'h3k4me3', 'h3k27ac', 'h3k27me3', 'h3k4me1', 'h3k36me3',
-							  'CTCF', 'CTCF+Enhancer', 'CTCF+Promoter', 'Enhancer', 'Heterochromatin', 'Poised_Promoter', 'Promoter', 'Repeat', 'Repressed', 'Transcribed', 'rnaPol']
-		
-		strengthElements = ['enhancer', 'ctcf', 'rnaPol', 'h3k9me3', 'h3k4me3', 'h3k27ac', 'h3k27me3', 'h3k4me1', 'h3k36me3']
+		annotationElements = ['cpg', 'tf', 'ctcf', 'dnaseI', 'h3k4me3', 'h3k27ac', 'h3k27me3', 'h3k4me1',
+							  'CTCF', 'CTCF+Enhancer', 'CTCF+Promoter', 'Enhancer', 'Heterochromatin', 'Poised_Promoter', 'Promoter', 'Repressed', 'Transcribed', 'rnaPol']
+
+		#the old way
+		#annotationElements = ['cpg', 'tf', 'hic', 'ctcf', 'dnaseI', 'h3k9me3', 'h3k4me3', 'h3k27ac', 'h3k27me3', 'h3k4me1', 'h3k36me3',
+		#					  'CTCF', 'CTCF+Enhancer', 'CTCF+Promoter', 'Enhancer', 'Heterochromatin', 'Poised_Promoter', 'Promoter', 'Repeat', 'Repressed', 'Transcribed', 'rnaPol']
+
+
 		for element in elements:
 
 			if element[3] in annotationElements:
 				methylationMarks.append(element)
-		
-		methylationMarks = np.array(methylationMarks, dtype='object')	
+
+		methylationMarks = np.array(methylationMarks, dtype='object')
 
 		for element in elements:
-	
+
 			if element[3] not in allowedElements:
 				continue
-			
+
+			#skip these cases here already to improve run time. These element losses are never
+			#accepted because the elements are not linked to the current gene.
+			if alterationType == 'loss':
+				if element[3] not in self.elementsNotLinkedToGenes and element[4] != self.name:
+					continue
+
 			elementStr = element[0] + "_" + str(element[1]) + "_" + str(element[2]) + "_" + element[3]
-			
+
 			#Check if the element is methylated or not
-			#first, just set the things for enhancers only, this should later be element un-specific
-			#For all the other elements, determine if the enhancer has a specific mark or not (at the same position)
-			
+
 			#Find overlap with the methylated elements
 			#Any overlap is accepted
 			methylationMatches = []
 			if len(methylationMarks) > 0:
-				methylationMatches = methylationMarks[(methylationMarks[:,0] == element[0]) * (methylationMarks[:,2] >= element[1]) * (methylationMarks[:,1] <= element[2])]
-			
-			#Fix this later and make it not-so-hardcoded
-			#elementMethylation = [0, 0] #keep order of elements
+				#methylationMatches = methylationMarks[(methylationMarks[:,0] == element[0]) * (methylationMarks[:,2] >= element[1]) * (methylationMarks[:,1] <= element[2])]
+
+				methylationMatches = methylationMarks[(methylationMarks[:,2] >= element[1]) * (methylationMarks[:,1] <= element[2])]
+
+
 			elementMethylation = [0]*len(annotationElements) #keep order of elements
-			elementStrength = [0]*len(strengthElements) #keep order of elements
+			elementStrength = [0]*len(self.strengthElements) #keep order of elements
 			for match in methylationMatches:
-				
+
 				for elementInd in range(0, len(annotationElements)):
 					annotationElement = annotationElements[elementInd]
 					if match[3] == annotationElement:
 						elementMethylation[elementInd] = 1
-			
-				for elementInd in range(0, len(strengthElements)):
-					strengthElement = strengthElements[elementInd]
+
+				for elementInd in range(0, len(self.strengthElements)):
+					strengthElement = self.strengthElements[elementInd]
 					if match[3] == strengthElement:
 						elementStrength[elementInd] = match[5]
-			
-			
-				
+
+
+
 			lossGains = [0,0]
 			if alterationType == 'loss':
 				if element[3] in self.elementsNotLinkedToGenes:
 					lossGains[0] = 1
-				else: #make sure that elements that belong to the gene are only lost. 
+				else: #make sure that elements that belong to the gene are only lost.
 					if element[4] == self.name:
 						lossGains[0] = 1
 					else: #if the loss is from an element that was not interacting with this gene, it is not a true loss.
@@ -269,40 +282,30 @@ class Gene:
 
 			if alterationType == "gain":
 				lossGains[1] = 1
-			
-			if lossGains[0] == 0 and lossGains[1] == 0:
-				continue #this pair ended up with a bad loss, so we need to skip it then if it also has no gains. 
 
-			#distance of gene to element
-			###this distance is a very bad feature, so it is not added. the performance drops a lot
-			startStartDist = np.abs(element[1] - self.start)
-			startEndDist = np.abs(element[1] - self.end)
-			endStartDist = np.abs(element[2] - self.start)
-			endEndDist = np.abs(element[2] - self.end)
-			
-			minDist = np.min([startStartDist, startEndDist, endStartDist, endEndDist])
-			
-			#promoters are too noisy, are omitted from the model.
+			if lossGains[0] == 0 and lossGains[1] == 0:
+				continue #this pair ended up with a bad loss, so we need to skip it then if it also has no gains.
+
 			enhancerType = 0
-			promoterType = 0
 			eQTLType = 0
 			superEnhancerType = 0
-			
+
 			if element[3] == 'enhancer':
 				enhancerType = 1
-			elif element[3] == 'promoter':
-				promoterType = 1
 			elif element[3] == 'eQTL':
 				eQTLType = 1
 			elif element[3] == 'superEnhancer':
 				superEnhancerType = 1
 
-			#strength of the disrupted TAD by CTCF intensity
-			#these features are not added in the end because they do not add anything more. 
-			splitSV = sv.split('_')
-			tadStrengths = [splitSV[7], splitSV[8], splitSV[9], splitSV[10]]
+			#try shuffling here.
+			# lossGains = [random.randint(0,1), random.randint(0,1)]
+			# elementMethylation = [random.randint(0,1)]*len(elementMethylation)
+			# elementStrength = [random.randint(0,1000)]*len(elementStrength)
+			# enhancerType = random.randint(0,1)
+			# eQTLType = random.randint(0,1)
+			# superEnhancerType = random.randint(0,1)
 
-			tadStrentghsSignal = [splitSV[12], splitSV[13], splitSV[14], splitSV[15]]
+
 
 			#if we get here, we passed all checks and there is a valid gain OR loss
 			if elementStr not in self.alteredElements[sv]:

@@ -60,15 +60,23 @@ causalGenes = np.concatenate((causalGenes, nonCausalGenes), axis=0)
 #2. Read the SVs, depending on the data source. Currently a TCGA format is supported (see data preprocessing), PCAWG and HMF
 variantData = []
 
-if settings.general['source'] == 'TCGA' or settings.general['source'] == 'PCAWG':
+if settings.general['source'] == 'PCAWG':
 
-	print("Reading SV data TCGA or PCAWG")
-	svFile = settings.files['svFile']
-	svData = InputParser().getSVsFromFile(svFile, "all")
+	print("Reading SV data PCAWG")
+	svDir = settings.files['svDir']
+	#get the cancer type from the settings
+	cancerType = settings.general['cancerType']
+	svData = InputParser().getSVsFromFile_pcawg(svDir, cancerType)
 if settings.general['source'] == 'HMF':
 	print("Reading SV data")
 	svDir = settings.files['svDir']
-	svData = InputParser().getSVsFromFile_hmf(svDir)
+	cancerType = settings.general['cancerType']
+	svData = InputParser().getSVs_hmf(svDir, cancerType)
+if settings.general['source'] == 'HMF_simple':
+	print("Reading SV data")
+	svDir = settings.files['svDir']
+	cancerType = settings.general['cancerType']
+	svData = InputParser().getSVs_hmf_simple(svDir)
 print(svData) #check if the SVs are read in correctly
 
 #Check the SV distribution

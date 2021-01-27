@@ -842,16 +842,6 @@ for svType in svTypes:
 	if randomExpression == 'False':
 		zScores = np.loadtxt(outDir + '/tadDisruptionsZScores/zScores.txt', dtype='object')
 	else:
-		zScores = np.loadtxt(outDir + '/tadDisruptionsZScores/zScores_random.txt', dtype='object')
-	binScores = getBinScores(zScores, rules, cosmic, expressionCutoff, randomExpression, svType, elementType)
-
-	allData = []
-
-	for binInd in range(0, len(binScores)):
-		allData.append(binScores[binInd])
-
-	np.save(tmpOutDir + '/' + outFilePrefix + svType + '.npy', allData)
-
 
 ###combined figures
 #make plots with the median per bin, and show the percentiles as error bars. 
