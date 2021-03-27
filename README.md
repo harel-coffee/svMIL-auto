@@ -4,7 +4,7 @@ svMIL2 is the improved version of svMIL, tested across multiple cancer types.
 
 For details on the previous version of svMIL, refer to: https://doi.org/10.1093/bioinformatics/btaa802
 
-#How to use
+# How to use
 
 An example test dataset is provided in the src/test folder.
 
@@ -25,7 +25,7 @@ expression/ (here, expression data (read counts) per patient should be stored)
 	- patient2
 
 
-#Step 1: setting up the regulatory data (features)
+#3 Step 1: setting up the regulatory data (features)
 
 Used regulatory data is provided in the data folder. For more details on data sources and used tissue types, please refer to Table S1 (TBA).
 
@@ -34,45 +34,45 @@ Most required pre-processed data is provided in the data folder. Only 2 things a
 - eQTLs are too large to provide and need to be parsed and clustered.
 - Normalization of expression data (see expression data section below)
 
-#Step 2: formatting input data
+## Step 2: formatting input data
 
 Examples of the required files are in the src/test folder.
 
-## SV calls
+#SV calls
 
 SV calls are expected in gzipped VCF format. The CHROM, POS, ALT and INFO fields are required. The INFO field
 is used to only filter out calls with a PASS. From the ALT field, the second chromosome, position and SV
 orientation are obtained.
 
-## SNV calls
+#SNV calls
 
 SNV calls are expected in gzipped VCF format. The CHROM, POS, INFO and FORMAT fields are required. The INFO field
 is used to filter out calls with a PASS. From the FORMAT field, snpEff annotated gene names are parsed
 to link SNVs to genes (which should be formatted like TF_binding_site_variant|MODIFIER|GJB3)
 
-## CNV calls
+#CNV calls
 
 CNV calls are expected in tsv format. The chromosome, start, end, gene, minCopyNumber and maxCopyNumber fields
 are required. The copy number of each gene is determined through this file. Genes with a copy number
 < 1.7 or > 2.3 are considered affected by a copy number. 
 
-## Expression data
+#Expression data
 
 svMIL2 requires a normalized expression data file with the patient IDs in the columns, and gene
 names in the rows. For the HMF data, we used TMM normalization.
 
-## Metadata
+#Metadata
 
 The metadata file is used to link patient IDs to cancer type. This is useful if the data folder
 contains data of multiple cancer types, and the model should be run on only 1 type. The columns
 patientId, sampleId and primaryTumorLocation (cancer type) are required. Patient ID and sample ID
 should be the same.
 
-#Step 3: setting paths
+## Step 3: setting paths
 
 All paths to data and data folders should be in a file called settings.py.
 
-#Step 4: running svMIL2
+## Step 4: running svMIL2
 
 All commands required to run the model are provided in src/test/test.sh. This script should be
 run from the main src folder and provide the path to the settings file folder and the output folder, e.g.:
@@ -81,7 +81,7 @@ sh test/test.sh test/settings test/output
 
 Please refer to test.sh for more details.
 
-#Step 5: output files
+## Step 5: output files
 
 Within the output folder, a number of files are created that may be relevant to the user.
 
@@ -92,12 +92,14 @@ linkedSVGenePairs
 tadDisruptionsZScores
 	- zScores.txt (For each gene in each patient, the z-score from patients with TAD disruptions to patients without TAD disruptions. Only contains pairs WITHOUT coding mutations)
 multipleInstanceLearning
-	- leaveOnePatientOutCV (if the model is used in leave-one-patient-out CV setting)
+	- leaveOnePatientOutCV
 		- leaveOnePatientOutCV_SVType.txt (SV-gene pair, true label, predicted label)
 rocCurves
 	- Output ROC and PR curves from the leave-one-patient-out CV run.
 
-#How to use: recreating paper figures
+
+
+# How to use: recreating paper figures
 
 ## Step 1: setting up the data
 
