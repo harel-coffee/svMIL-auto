@@ -25,7 +25,7 @@ expression/ (here, expression data (read counts) per patient should be stored)
 	- patient2
 
 
-#3 Step 1: setting up the regulatory data (features)
+## Step 1: setting up the regulatory data (features)
 
 Used regulatory data is provided in the data folder. For more details on data sources and used tissue types, please refer to Table S1 (TBA).
 
