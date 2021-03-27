@@ -9,14 +9,11 @@ import numpy as np
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import average_precision_score
 from sklearn.metrics import confusion_matrix
+import os.path
 
-sys.path.insert(1, './multipleInstanceLearning')
-#import generateSimilarityMatrices
+outDirTrain = sys.argv[1]
+outDirTest = sys.argv[2]
 
-outDir = sys.argv[1]
-outDirPCAWG = sys.argv[2]
-
-##### how to properly import this from other function??
 def getSimilarityMatrixTest(testBags, trainInstances, labels):
 	"""
 		function to get the similarity matrix specific for the test case.
@@ -48,51 +45,8 @@ def getSimilarityMatrixTest(testBags, trainInstances, labels):
 
 	return similarityMatrix
 
-#get the cosmic genes to check for cancer gene overrepresentation among the positives
-cosmicGenes = []
-causalGeneFile = '../data/genes/CCGC.tsv'
-with open(causalGeneFile, 'r') as geneFile:
-	
-	lineCount = 0
-	header = []
-	for line in geneFile:
-		splitLine = line.split("\t")
-		#First extract the header and store it in the dictionary to remove dependency on the order of columns in the file
-		if lineCount < 1:
 
-			header = splitLine
-			lineCount += 1
-			continue
-			
-		#Obtain the gene name and gene position
-		
-		geneSymbolInd = header.index('Gene Symbol')
-		genePositionInd = header.index('Genome Location')
-		
-		geneSymbol = splitLine[geneSymbolInd]
-		genePosition = splitLine[genePositionInd]
-		
-		#Split the gene position into chr, start and end
-		
-		colonSplitPosition = genePosition.split(":")
-		dashSplitPosition = colonSplitPosition[1].split("-")
-		
-		chromosome = colonSplitPosition[0]
-		start = dashSplitPosition[0].replace('"',"") #apparently there are some problems with the data, sometimes there are random quotes in there
-		end = dashSplitPosition[1].replace('"', "")
-		
-		cancerTypeInd = header.index('Tumour Types(Somatic)')
-		cancerType = splitLine[cancerTypeInd]
-		
-		if start == '' or end == '':
-			continue
-		
-		cosmicGenes.append([geneSymbol, cancerType])
-
-cosmicGenes = np.array(cosmicGenes, dtype='object')		
-
-#1. Get the training similarity matrix on the full HMF data
-
+#1. Get the training similarity matrix on the full training data
 svTypes = ['DEL', 'DUP', 'INV', 'ITX']
 for svType in svTypes:
 	print('sv type: ', svType)
@@ -114,10 +68,12 @@ for svType in svTypes:
 	else:
 		print('SV type not supported')
 		exit(1)
-		
-	#clf = RandomForestClassifier()
 
-	dataPath = outDir + '/multipleInstanceLearning/similarityMatrices/'
+	dataPath = outDirTrain + '/multipleInstanceLearning/similarityMatrices/'
+	
+	if not os.path.exists(dataPath + '/similarityMatrix_' + svType + '.npy'):
+		continue
+	
 	similarityMatrix = np.load(dataPath + '/similarityMatrix_' + svType + '.npy', encoding='latin1', allow_pickle=True)
 	bagLabelsTrain = np.load(dataPath + '/bagLabelsSubsampled_' + svType + '.npy', encoding='latin1', allow_pickle=True)
 	trainInstances = np.load(dataPath + '/instancesSubsampled_' + svType + '.npy', encoding='latin1', allow_pickle=True)
@@ -126,43 +82,37 @@ for svType in svTypes:
 	clf.fit(similarityMatrix, bagLabelsTrain)
 	print('Classifier performance on all data: ', clf.score(similarityMatrix, bagLabelsTrain))
 
-	#load the PCAWG OV data
-	dataPath = outDirPCAWG + '/multipleInstanceLearning/similarityMatrices/'
+	#load the test data
+	dataPath = outDirTest + '/multipleInstanceLearning/similarityMatrices/'
 	#load the bags
 	bags = np.load(dataPath + '/bagsNotSubsampled_' + svType + '.npy', encoding='latin1', allow_pickle=True)
 	bagLabelsTest = np.load(dataPath + '/bagLabelsNotSubsampled_' + svType + '.npy', encoding='latin1', allow_pickle=True)
 	instances = np.load(dataPath + '/instancesNotSubsampled_' + svType + '.npy', encoding='latin1', allow_pickle=True)
 	bagPairLabels = np.load(dataPath + '/bagPairLabelsNotSubsampled_' + svType + '.npy', encoding='latin1', allow_pickle=True)
 
-	import random
-	#random.shuffle(bagLabelsTest)
-
-	#generate test similarity matrix
+	#generate test similarity matrix (to the training dataset)
 	similarityMatrixTest = getSimilarityMatrixTest(bags, trainInstances, [])
 
 	#test classifier.
-	print('Classifier performance on PCAWG: ', clf.score(similarityMatrixTest, bagLabelsTest))
+	print('Classifier performance on test data: ', clf.score(similarityMatrixTest, bagLabelsTest))
 	proba = clf.predict_proba(similarityMatrixTest)
 	predictions = clf.predict(similarityMatrixTest)
 
 	average_precision = average_precision_score(bagLabelsTest, proba[:,1])
-	print(average_precision)
+	print('Average precision: ', average_precision)
 	
-	tn, fp, fn, tp = confusion_matrix(bagLabelsTest, predictions).ravel()
-	
-	print(tp, fp, tn, fn)
-	
-	for predictionInd in range(0, len(predictions)):
-		
-		prediction = predictions[predictionInd]
-		
-		if prediction == 1 and bagLabelsTest[predictionInd] == 1:
-			
-			label = bagPairLabels[predictionInd]
-			gene = label.split('_')[0]
-			
-			if gene in cosmicGenes[:,0]:
-				
-				print(cosmicGenes[cosmicGenes[:,0] == gene])
-	
+	#Get the probabilities of the SV-gene pairs, this is a ranked list/prioritization!
+	rankedList = []
+	for pairLabelInd in range(0, len(bagPairLabels)):
+		rankedList.append([bagPairLabels[pairLabelInd], proba[:,1][pairLabelInd]])
+
+	rankedList = np.array(rankedList, dtype='object')
+	sortedRankedList = rankedList[np.argsort(rankedList[:,1])][::-1]
+
+	print('Prioritized SV-gene pairs: ')
+	print(sortedRankedList)
+
+
+
+
 

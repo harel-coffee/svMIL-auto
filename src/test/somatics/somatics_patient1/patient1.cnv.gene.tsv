@@ -1,0 +1,2 @@
+chromosome      start   end     gene    minCopyNumber   maxCopyNumber   unused  somaticRegions  germlineHomDeletionRegions      germlineHetToHomDeletionRegions transcriptId    transcriptVersion       chromosomeBand  minRegions      minRegionStart  minRegionEnd    minRegionStartSupport   minRegionEndSupport     minRegionMethod minMinorAllelePloidy
+1	28728347	28738347	GJB3	1	1	0	1	0	0	ENST00000456328	2	p36.33	1	1	7716185	TELOMERE	BND	BAF_WEIGHTED	0
