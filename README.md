@@ -79,7 +79,9 @@ run from the main src folder and provide the path to the settings file folder an
 
 sh test/test.sh test/settings test/output
 
-Please refer to test.sh for more details.
+Please refer to test.sh for more details. This script provides options for running in the
+leave-one-patient-out CV setting, and also for training on one dataset and applying to another.
+With this script, a prioritized list of SV-gene pairs can be generated.
 
 ## Step 5: output files
 
@@ -96,7 +98,6 @@ multipleInstanceLearning
 		- leaveOnePatientOutCV_SVType.txt (SV-gene pair, true label, predicted label)
 rocCurves
 	- Output ROC and PR curves from the leave-one-patient-out CV run.
-
 
 
 # How to use: recreating paper figures
