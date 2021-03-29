@@ -38,7 +38,7 @@ svTypes = ['DEL', 'DUP', 'INV', 'ITX']
 
 outDir = sys.argv[1]
 
-finalOutDir = outDir + '/rocCurves_fig3_S2/'
+finalOutDir = outDir + '/rocCurves'
 
 if not os.path.exists(finalOutDir):
 	os.makedirs(finalOutDir)

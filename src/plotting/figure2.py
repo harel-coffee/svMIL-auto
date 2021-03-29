@@ -111,7 +111,6 @@ class Figure2:
 			correctCosmicPairs = self.getCorrectlyPredictedCosmicPairs(cancerType, cosmicGeneNames)
 			allCosmicPairs[cancerType] = correctCosmicPairs
 
-
 		#Create an order for the genes and cancer types
 		cancerTypesIndex = dict()
 		cosmicGenesIndex = dict()
@@ -242,6 +241,7 @@ class Figure2:
 		plt.tight_layout()
 
 		plt.savefig('output/figures/figureS3B.svg')
+
 		
 		
 		####Then use the same information to output figure 2A
@@ -267,6 +267,18 @@ class Figure2:
 		cosmicGeneNames = []
 		for gene in causalGenes:
 			cosmicGeneNames.append(gene[3].name)
+
+		intogenDrivers = []
+		intogenFile = '../data/genes/Compendium_Cancer_Genes.tsv'
+		with open(intogenFile, 'r') as inF:
+			lineCount = 0
+			for line in inF:
+				if lineCount < 1:
+					lineCount = 1
+					continue
+				splitLine = line.split('\t')
+				intogenDrivers.append(splitLine[0])
+
 		
 		#instead, sample 10.000 times X genes of the same set size
 		#take the average of that set.
@@ -308,6 +320,8 @@ class Figure2:
 				randomGenes = np.random.choice(allGeneNames, len(trueGenes))
 				for gene in randomGenes:
 					if gene in pathogenicSNVCounts[cancerType2]:
+						if gene not in intogenDrivers:
+							continue
 						randomDistribution.append(pathogenicSNVCounts[cancerType2][gene])
 					else:
 						randomDistribution.append(0)
@@ -316,10 +330,17 @@ class Figure2:
 			randomStd = np.std(randomDistribution)
 			pValues = []
 			#allPValues = []
+			seenGenes = []
 			for pair in allCosmicPairs[cancerType]:
 
 				splitPair = pair.split('_')
+				patient = splitPair[1]
+				svType = splitPair[2]
 				gene = splitPair[0]
+
+				if gene in seenGenes:
+					continue
+				seenGenes.append(gene)
 
 				score = 0
 				if gene in pathogenicSNVCounts[cancerType2]:
@@ -332,19 +353,20 @@ class Figure2:
 
 				pValue = stats.norm.sf(abs(z))
 				pValues.append([gene, z, pValue])
-				allPValues.append([gene, cancerType, z, pValue, score])
+				allPValues.append([gene, cancerType, z, pValue, score, patient])
 
 
 
 			if len(allPValues) < 1:
 				continue
+			
 		uncorrectedPValues = np.array(allPValues, dtype='object')
 
 		#sort by most significant first
 		uncorrectedPValues = uncorrectedPValues[np.argsort(uncorrectedPValues[:,3])]
 
-		reject, pAdjusted, _, _ = multipletests(uncorrectedPValues[:,3], method='fdr_bh', alpha=0.1) #fdr_bh or bonferroni
-
+		#reject, pAdjusted, _, _ = multipletests(uncorrectedPValues[:,3], method='fdr_bh', alpha=0.1) #fdr_bh or bonferroni
+		reject, pAdjusted, _, _ = multipletests(uncorrectedPValues[:,3], method='bonferroni')
 		signPatients = []
 		for pValueInd in range(0, len(uncorrectedPValues[:,3])):
 
@@ -354,12 +376,46 @@ class Figure2:
 			if reject[pValueInd] == True and uncorrectedPValues[pValueInd, 2] > 0:
 			
 				geneFrequencies[cancerType][gene] = uncorrectedPValues[pValueInd, 2]
-
-				signPatients.append([uncorrectedPValues[pValueInd][0], uncorrectedPValues[pValueInd][2], pAdjusted[pValueInd], uncorrectedPValues[pValueInd][3], uncorrectedPValues[pValueInd][4]])
+				
+				signPatients.append([uncorrectedPValues[pValueInd][0], uncorrectedPValues[pValueInd][2], pAdjusted[pValueInd], uncorrectedPValues[pValueInd][3], uncorrectedPValues[pValueInd][4], uncorrectedPValues[pValueInd][5]])
 
 		signPatients = np.array(signPatients, dtype='object')
 		print(signPatients)
+		print(signPatients.shape)
 
+		cosmicCountSignificantGenes = 0
+		for gene in signPatients[:,0]:
+			if gene in cosmicGeneCancerTypes:
+				cosmicCountSignificantGenes += 1
+
+		print('Number of Cosmic genes in significant genes: ', cosmicCountSignificantGenes)
+
+
+		sortedPatients = signPatients[np.argsort(signPatients[:,2])]
+		signPatients = sortedPatients[0:50]
+		
+		print(signPatients)
+
+		#save the significant genes to a file for table S3
+		tableS3Data = []
+		for row in sortedPatients:
+
+			#find which cancer type had this gene.
+			for cancerType in cancerTypes:
+				for pair in allCosmicPairs[cancerType]:
+
+					splitPair = pair.split('_')
+					patient = splitPair[1]
+					svType = splitPair[2]
+					gene = splitPair[0]
+					
+					if gene == row[0]:
+						#gene, uncorrected, corrected, patient, sv type, cancer type
+						splitCancerType = cancerType.split('_')
+						tableS3Data.append([gene, row[2], row[3], patient, svType, splitCancerType[1]])
+		
+		tableS3Data = np.array(tableS3Data)
+		np.savetxt('output/significantGenes.txt', tableS3Data, fmt='%s', delimiter='\t')
 
 		#create the scatter plot in this order, use the frequency as point size
 		genePlotIndices = dict()
@@ -403,6 +459,8 @@ class Figure2:
 					plotData.append([genePlotIndices[gene], cancerTypeIndex, edgecolors, geneFrequency*500])
 					
 		plotData = np.array(plotData)
+		print(plotData)
+		print(plotData.shape)
 		data = pd.DataFrame(plotData)
 		data.columns = ['Gene', 'Cancer type', 'color', 'frequency']
 		data = data.drop_duplicates()
@@ -425,6 +483,9 @@ class Figure2:
 		
 		plt.xticks(np.arange(0, len(genePlotIndices)), list(genePlotIndices.keys()), rotation = 'vertical')
 		plt.yticks(np.arange(0, len(cancerTypesIndex)), cancerTypePlotNames)
+
+		ax = plt.axes()
+		ax.grid(which='minor', axis='y', linestyle='-')
 
 		plt.tight_layout()
 		plt.savefig('output/figures/figure2A.svg')
@@ -451,6 +512,21 @@ class Figure2:
 			correctCosmicPairs = self.getCorrectlyPredictedCosmicPairs(cancerType, cosmicGeneNames)
 			correctPairsPerCancerType[cancerType] = correctCosmicPairs
 
+		#Filter the genes in the plot for bona fide drivers from intogen.
+		#make a map for the cancer type names to match our file names.
+
+		intogenDrivers = []
+		intogenFile = '../data/genes/Compendium_Cancer_Genes.tsv'
+		with open(intogenFile, 'r') as inF:
+			lineCount = 0
+			for line in inF:
+				if lineCount < 1:
+					lineCount = 1
+					continue
+				splitLine = line.split('\t')
+				intogenDrivers.append(splitLine[0])
+				
+
 		#check how many SNVs there are compared to ncSV drivers.
 		plotData = []
 		for cancerType in cancerTypes:
@@ -459,9 +535,16 @@ class Figure2:
 			geneSNVCounts = 0
 			snvGenes = dict()
 			for gene in pathogenicSNVCounts[cancerType2]:
+
+				#if gene not in intogenDrivers[cancerType]:
+				#	continue
+				if gene not in intogenDrivers:
+					continue
+				
 				geneSNVCounts += pathogenicSNVCounts[cancerType2][gene]
 				snvGenes[gene] = 0
-
+			#print(geneSNVCounts)
+			#exit()
 			geneNcSVCounts = len(correctPairsPerCancerType[cancerType])
 			ncSVGenes = dict()
 			for pair in correctPairsPerCancerType[cancerType]:
@@ -525,6 +608,7 @@ class Figure2:
 
 		"""
 
+
 		leaveOneOutDataFolder = 'output/' + cancerType + '/multipleInstanceLearning/similarityMatrices/leaveOnePatientOut/'
 
 		patientsWithCorrectCosmic = dict()
@@ -541,6 +625,21 @@ class Figure2:
 			if os.path.isfile(predOutFile) is False:
 				continue
 
+			rheinbayGenes = ['TMPRSS2', 'CDKN2A', 'TERT', 'KIAA1549', 'ERG', 'PTEN', 'IGH',
+						'MIR-21', 'VMP1', 'MACROD2', 'LSAMP', 'ERBB2', 'BCL2', 'PDE4D',
+						'CCND1', 'RUNX1', 'RB1', 'MDM2', 'PCAT1', 'MYC', 'STS', 'TP53',
+						'IGH', 'BCL2', 'BRAF', 'BCL6', 'PML', 'RARA', 'SLC45A3', 'RUNX1',
+						'RUNX1T1', 'THADA', 'IGF2BP3', 'RET', 'CCDC6', 'ETV1', 'MDM2',
+						'ATP5E', 'KL', 'EGFR', 'QKI', 'NTRK2', 'NDUFC2', 'TERT', 'TBCD',
+						'VWC2', 'TMTC3', 'ITFG1', 'SDCCAG8', 'SKIL', 'RNF144A', 'MCF2L2',
+						'EWSR1', 'BEND2', 'KCNJ6', 'GRIA3', 'TRIM8', 'MTHFD1L', 'FUT9',
+						'ROS1', 'CLLU1', 'C9orf57', 'BASP1', 'DOCK8', 'OTUD3', 'RUVBL1',
+						'ERCC5', 'CABIN1', 'SLC25A28', 'COQ7', 'RALGPS2', 'PTPRR',
+						'RNF130', 'BRAF']
+			#literature curated list of genes often affected by tad disruptions
+			otherTADOncogenes = ['LMO2', 'TAL1', 'IRS4', 'IGF2', 'FAM135B', 'SMARCA1',
+								 'PDGFRA', 'NOTCH1', 'EV1', 'MYC', 'IGH', 'GFI1B', 'GFI1',
+								 'PAX5', 'MECOM', 'FOXC1', 'CLCN4']
 
 			perPatientPredictions = dict()
 			with open(predOutFile, 'r') as inF:
@@ -557,7 +656,11 @@ class Figure2:
 
 					if prediction == "1":
 
+						if splitPairLabel[0] in rheinbayGenes:
+							print(pair, cancerType, trueLabel)
+
 						cosmicPairs.append(splitPairLabel[0] + '_' + splitPairLabel[7] + '_' + svType)
+
 
 		return cosmicPairs
 
@@ -656,7 +759,7 @@ cancerTypes = ['HMF_Breast_hmec', 'HMF_Ovary_ov', 'HMF_Lung_luad', 'HMF_Colorect
 pathogenicSNVCounts = np.load('pathogenicSNVCounts.npy', encoding='latin1', allow_pickle=True).item()
 
 #2. Generate figure 2A
-#Figure2().generateFrequencyScatterPlot(cancerTypes, pathogenicSNVCounts)
+Figure2().generateFrequencyScatterPlot(cancerTypes, pathogenicSNVCounts)
 
 #3. Generate figure 2B
 Figure2().plotSVContributionPanel(cancerTypes, pathogenicSNVCounts)

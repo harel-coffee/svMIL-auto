@@ -205,7 +205,8 @@ class Gene:
 			alterationType (str): either 'gain' or 'loss'.
 			
 		"""
-		
+
+
 		allowedElements = ['enhancer', 'eQTL', 'superEnhancer']
 		#allowedElements = ['enhancer', 'eQTL']
 
@@ -297,16 +298,7 @@ class Gene:
 			elif element[3] == 'superEnhancer':
 				superEnhancerType = 1
 
-			#try shuffling here.
-			# lossGains = [random.randint(0,1), random.randint(0,1)]
-			# elementMethylation = [random.randint(0,1)]*len(elementMethylation)
-			# elementStrength = [random.randint(0,1000)]*len(elementStrength)
-			# enhancerType = random.randint(0,1)
-			# eQTLType = random.randint(0,1)
-			# superEnhancerType = random.randint(0,1)
-
-
-
+			
 			#if we get here, we passed all checks and there is a valid gain OR loss
 			if elementStr not in self.alteredElements[sv]:
 				self.alteredElements[sv][elementStr] = lossGains + elementMethylation + elementStrength + [enhancerType, eQTLType, superEnhancerType]

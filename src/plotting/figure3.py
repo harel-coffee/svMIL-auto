@@ -82,15 +82,17 @@ class Figure3:
 			signCutoff = 1e-5
 			for pValueInd in range(0, len(pValues)):
 				pValue = pValues[pValueInd]
+				significances.append(zScores[pValueInd])
+				continue
 				if pValue < 0.05 and zScores[pValueInd] > 0:
 
-					if pValue < signCutoff:
+					if zScores[pValueInd] > signCutoff:
 						significances.append(2)
 					else:
 						significances.append(1)
 				elif pValue < 0.05 and zScores[pValueInd] < 0:
 
-					if pValue < signCutoff:
+					if zScores[pValueInd] < signCutoff:
 						significances.append(-2)
 					else:
 						significances.append(-1)
@@ -108,7 +110,8 @@ class Figure3:
 
 		data = pd.DataFrame(significanceMatrix) #exclude translocations, these are not there for germline.
 		g=sns.heatmap(data,annot=False,square=True, linewidths=0.5,
-					  cmap=ListedColormap(['#0055d4ff', '#0055d47d', '#f7f6f6ff', '#c8373780', '#c83737ff']),
+					  #cmap=ListedColormap(['#0055d4ff', '#0055d47d', '#f7f6f6ff', '#c8373780', '#c83737ff']),
+					  cmap="vlag", center=0,
 					  yticklabels=shortCancerTypeNames)
 
 		g.set_yticklabels(g.get_yticklabels(), horizontalalignment='right',fontsize='small')
@@ -174,6 +177,9 @@ class Figure3:
 			for featureInd in range(0, len(totalRandomInstances)):
 				nullDistributions[featureInd].append(totalRandomInstances[featureInd])
 
+		from math import sqrt
+
+
 		#for each feature, compute a z-score
 		featurePValues = []
 		featureZScores = []
@@ -185,10 +191,10 @@ class Figure3:
 				featureZScores.append(z)
 				featurePValues.append(pValue)
 				continue
-
+			
 			z = (totalInstances[featureInd] - np.mean(nullDistributions[featureInd])) / float(np.std(nullDistributions[featureInd]))
 			pValue = stats.norm.sf(abs(z))*2
-
+			
 			featureZScores.append(z)
 			featurePValues.append(pValue)
 

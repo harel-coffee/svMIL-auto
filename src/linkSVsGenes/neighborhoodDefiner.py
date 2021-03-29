@@ -99,23 +99,23 @@ class NeighborhoodDefiner:
 
 
 		#7. Get Hi-C data
-		print("Getting Hi-C data")
-		hicData = InputParser().getHiCInteractionsFromFile(settings.files['hicFile'])
+		#print("Getting Hi-C data")
+		#hicData = InputParser().getHiCInteractionsFromFile(settings.files['hicFile'])
 
 		#Map the interactions to TADs as elements
-		tadData = self.mapInteractionsToTads(hicData, tadData)
+		#tadData = self.mapInteractionsToTads(hicData, tadData)
 
 		#8. Get histone marks
 
 		print("Getting histone marks")
-		files = [settings.files['h3k9me3'], settings.files['h3k4me3'], settings.files['h3k27ac'], settings.files['h3k27me3'],
-					settings.files['h3k4me1'], settings.files['h3k36me3']]
-		types = ['h3k9me3', 'h3k4me3', 'h3k27ac', 'h3k27me3', 'h3k4me1', 'h3k36me3']
+		#files = [settings.files['h3k9me3'], settings.files['h3k4me3'], settings.files['h3k27ac'], settings.files['h3k27me3'],
+		#			settings.files['h3k4me1'], settings.files['h3k36me3']]
+		#types = ['h3k9me3', 'h3k4me3', 'h3k27ac', 'h3k27me3', 'h3k4me1', 'h3k36me3']
 
 		#only use the types that matter
-		# files = [settings.files['h3k4me3'], settings.files['h3k27ac'], settings.files['h3k27me3'],
-		# 			settings.files['h3k4me1']]
-		# types = ['h3k4me3', 'h3k27ac', 'h3k27me3', 'h3k4me1']
+		files = [settings.files['h3k4me3'], settings.files['h3k27ac'], settings.files['h3k27me3'],
+		 			settings.files['h3k4me1']]
+		types = ['h3k4me3', 'h3k27ac', 'h3k27me3', 'h3k4me1']
 
 		for histoneFileInd in range(0, len(files)):
 			histoneData = InputParser().getHistoneMarksFromFile(files[histoneFileInd], types[histoneFileInd])

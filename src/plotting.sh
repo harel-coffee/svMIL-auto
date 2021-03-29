@@ -10,6 +10,9 @@
 
 # Assumes that preprocessing.sh has already been run.
 
+#Change 'false' to 'true' for each section to generate that output.
+
+
 ##### REQUIRED RUNS #####
 #1. In createSettingsFiles.py, set all correct paths.
 #2. Run svMIL2 to create all output needed for figures.
@@ -36,6 +39,7 @@ fi
 
 #### PLOTTING #####
 
+
 ### FIGURE 1C, 4B ###
 run=true
 
@@ -45,8 +49,8 @@ if $run; then
 	python "$runFolder/plotAUC.py"
 fi
 
-### FIGURE 2A, 2B ###
-run=false
+### FIGURE 2A, 2B, S4 ###
+run=true
 
 if $run; then
 	runFolder='./plotting/'
@@ -56,7 +60,7 @@ fi
 
 ### FIGURE 3, 4C ###
 
-run=false
+run=true
 
 if $run; then
 	runFolder='./plotting/'
@@ -65,7 +69,7 @@ if $run; then
 fi
 
 ### FIGURE 5 ###
-run=false
+run=true
 
 if $run; then
 	runFolder='./plotting/'
@@ -74,12 +78,12 @@ if $run; then
 
 fi
 
-### FIGURE S1 ###
+### FIGURE S2 ###
 
 #1. First run the old svMIL model and output normalizedBags.pkl.
 #2. Use these bags as input for plotVariances.py.
 
-run=false
+run=true
 
 if $run; then
 	runFolder='./plotting/'
@@ -90,8 +94,8 @@ if $run; then
 
 fi
 
-### FIGURE S2, S4 and 4A ###
-run=false
+### FIGURE S3, S5 and 4A ###
+run=true
 
 if $run; then
 	runFolder='./plotting/'
@@ -101,11 +105,20 @@ if $run; then
 
 fi
 
-### FIGURE 1B & S5 ###
-#Generate 1B by running svMIL and svMIL2 on the breast samples, then combining
+### Figure S6 & S7 ###
+run=true
+
+if $run; then
+	runFolder='./plotting/'
+	python "$runFolder/plotFeatureImportancesWheel.py"
+
+fi
+
+### FIGURE S1 & S8 ###
+#Generate S1 by running svMIL and svMIL2 on the breast samples, then combining
 #the ROC curves in output/specifiedOutputFolder/rocCurves
 
-#Generate S5 by running svMIL2 on the breast samples with a bag limit of 700 in
+#Generate S8 by running svMIL2 on the breast samples with a bag limit of 700 in
 #the settings vs no limit (e.g. 70000), and combine the ROC curves
 #in output/specifiedOutputFolder/rocCurves
 
