@@ -97,16 +97,16 @@ With this script, a prioritized list of SV-gene pairs can be generated.
 
 Within the output folder, a number of files are created that may be relevant to the user.
 
-linkedSVGenePairs<br/>
+linkedSVGenePairs/<br/>
 	- nonCoding_geneSVPairs.txt (List of all SV-gene pairs and which regulatory elements/features are disrupted)<br/>
 	- nonCoding_geneSVPairs.txt_pathogenicPairsFeatures.txt & nonCoding_geneSVPairs.txt_nonPathogenicPairsFeatures.txt (SV-gene pairs split into pathogenic and non-pathogenic based on z-score)<br/>
 	- bags.pkl & normalizedBags.pkl (bags made by svMIL)<br/>
-tadDisruptionsZScores<br/>
+tadDisruptionsZScores/<br/>
 	- zScores.txt (For each gene in each patient, the z-score from patients with TAD disruptions to patients without TAD disruptions. Only contains pairs WITHOUT coding mutations)<br/>
-multipleInstanceLearning<br/>
+multipleInstanceLearning/<br/>
 	- leaveOnePatientOutCV<br/>
 		- leaveOnePatientOutCV_SVType.txt (SV-gene pair, true label, predicted label)<br/>
-rocCurves<br/>
+rocCurves/<br/>
 	- Output ROC and PR curves from the leave-one-patient-out CV run.<br/>
 
 
