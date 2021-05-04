@@ -4,6 +4,14 @@ svMIL2 is the improved version of svMIL, tested across multiple cancer types.
 
 For details on the previous version of svMIL, refer to: https://doi.org/10.1093/bioinformatics/btaa802
 
+# Installation
+
+To install, run:
+
+```git clone https://github.com/UMCUGenetics/svMIL.git```
+
+This will download all code to the current folder. From here, the data/ and src/ folders can be accessed.
+
 # How to use
 
 An example test dataset is provided in the src/test folder.
@@ -12,17 +20,17 @@ svMIL requires the following data for each cancer patient: SVs, SNVs, CNVs and e
 without CNVs, SNVs or expression data will be skipped automatically. These data are expected in the
 following folder structure to make it compatible with the HMF data used in the paper:
 
-somatics/ (here CNVs, SNVs and SV data should be stored)
-	- somatics_patient1 (make sure that there is an underscore before the patient ID)
-		- patient1.sv.ann.vcf.gz (SV data in VCF format, this exact name is required)
-		- patient1.somatic.vcf.gz (SNV calls in VCF format, this exact name is required)
-		- patient1.cnv.gene.tsv (CNV calls in tsv format, listing the copy numbers of each gene, this exact name is required)
-	- somatics_patient2
-		- ...
-expression/ (here, expression data (read counts) per patient should be stored)
-	- patient1 (make sure that the patient IDs match the patient IDs in the somatics folder, the folder names are used to check if expression data exists for each patient)
-		- read counts file (not used by the model directly, see expression data section below)
-	- patient2
+somatics/ (here CNVs, SNVs and SV data should be stored) <br/>
+	- somatics_patient1 (make sure that there is an underscore before the patient ID) <br/>
+		- patient1.sv.ann.vcf.gz (SV data in VCF format, this exact name is required) <br/>
+		- patient1.somatic.vcf.gz (SNV calls in VCF format, this exact name is required) <br/>
+		- patient1.cnv.gene.tsv (CNV calls in tsv format, listing the copy numbers of each gene, this exact name is required) <br/>
+	- somatics_patient2 <br/>
+		- ... <br/>
+expression/ (here, expression data (read counts) per patient should be stored) <br/>
+	- patient1 (make sure that the patient IDs match the patient IDs in the somatics folder, the folder names are used to check if expression data exists for each patient)<br/>
+		- read counts file (not used by the model directly, see expression data section below)<br/>
+	- patient2<br/>
 
 
 ## Step 1: setting up the regulatory data (features)
@@ -70,7 +78,9 @@ should be the same.
 
 ## Step 3: setting paths
 
-All paths to data and data folders should be in a file called settings.py.
+All paths to data and data folders should be in a file called settings.py. The location to the folder
+containing this file can be specified by the user and provided as parameter (see how to do this
+in step 4 below). An example settings file can be found under src/test/settings. 
 
 ## Step 4: running svMIL2
 
@@ -87,17 +97,17 @@ With this script, a prioritized list of SV-gene pairs can be generated.
 
 Within the output folder, a number of files are created that may be relevant to the user.
 
-linkedSVGenePairs
-	- nonCoding_geneSVPairs.txt (List of all SV-gene pairs and which regulatory elements/features are disrupted)
-	- nonCoding_geneSVPairs.txt_pathogenicPairsFeatures.txt & nonCoding_geneSVPairs.txt_nonPathogenicPairsFeatures.txt (SV-gene pairs split into pathogenic and non-pathogenic based on z-score)
-	- bags.pkl & normalizedBags.pkl (bags made by svMIL)
-tadDisruptionsZScores
-	- zScores.txt (For each gene in each patient, the z-score from patients with TAD disruptions to patients without TAD disruptions. Only contains pairs WITHOUT coding mutations)
-multipleInstanceLearning
-	- leaveOnePatientOutCV
-		- leaveOnePatientOutCV_SVType.txt (SV-gene pair, true label, predicted label)
-rocCurves
-	- Output ROC and PR curves from the leave-one-patient-out CV run.
+linkedSVGenePairs<br/>
+	- nonCoding_geneSVPairs.txt (List of all SV-gene pairs and which regulatory elements/features are disrupted)<br/>
+	- nonCoding_geneSVPairs.txt_pathogenicPairsFeatures.txt & nonCoding_geneSVPairs.txt_nonPathogenicPairsFeatures.txt (SV-gene pairs split into pathogenic and non-pathogenic based on z-score)<br/>
+	- bags.pkl & normalizedBags.pkl (bags made by svMIL)<br/>
+tadDisruptionsZScores<br/>
+	- zScores.txt (For each gene in each patient, the z-score from patients with TAD disruptions to patients without TAD disruptions. Only contains pairs WITHOUT coding mutations)<br/>
+multipleInstanceLearning<br/>
+	- leaveOnePatientOutCV<br/>
+		- leaveOnePatientOutCV_SVType.txt (SV-gene pair, true label, predicted label)<br/>
+rocCurves<br/>
+	- Output ROC and PR curves from the leave-one-patient-out CV run.<br/>
 
 
 # How to use: recreating paper figures
